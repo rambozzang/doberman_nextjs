@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# 크롤링하지 않을 경로들
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+# 사이트맵 위치
+Sitemap: https://doberman.co.kr/sitemap.xml
+
+# 크롤 딜레이 (선택사항)
+Crawl-delay: 1 

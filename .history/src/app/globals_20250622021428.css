@@ -1,0 +1,73 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(to bottom right, rgb(15 23 42), rgb(30 41 59), rgb(51 65 85));
+  min-height: 100vh;
+  color: rgb(226 232 240);
+}
+
+/* 메인 페이지 히어로 섹션 */
+.hero-section {
+  background: linear-gradient(135deg, rgb(59 130 246 / 0.1), rgb(147 51 234 / 0.1));
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+}
+
+/* 견적 요청 페이지 배경 */
+.quote-request-bg {
+  background: linear-gradient(to bottom right, rgb(239 246 255), rgb(243 232 255));
+  min-height: 100vh;
+}
+
+/* 카드 컴포넌트 개선 */
+.card-enhanced {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card-enhanced:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* 진행률 바 스타일링 */
+.progress-bar {
+  background: linear-gradient(90deg, rgb(59 130 246), rgb(147 51 234));
+  border-radius: 8px;
+  height: 8px;
+  transition: all 0.3s ease;
+}
+
+/* 버튼 개선 */
+.btn-primary {
+  background: linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.4);
+}
+
+/* 섹션별 배경 */
+.section-alternate {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(5px);
+}

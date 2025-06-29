@@ -1,0 +1,19 @@
+import ApiClient from '@/lib/api';
+import { 
+  ApiResponse, 
+  CustomerRequestListRequest, 
+  CustomerRequestListResponse,
+  CustomerRequest 
+} from '@/types/api';
+
+export class CustomerRequestService {
+  // 전체 견적 요청 리스트 조회
+  static async getAllList(params: CustomerRequestListRequest): Promise<ApiResponse<CustomerRequestListResponse>> {
+    return await ApiClient.post<CustomerRequestListResponse>('/customer-request/all-list', params);
+  }
+
+  // 특정 견적 요청 상세 조회 (추후 구현)
+  static async getDetail(id: number): Promise<ApiResponse<CustomerRequest>> {
+    return await ApiClient.get<CustomerRequest>(`/customer-request/${id}`);
+  }
+} 
