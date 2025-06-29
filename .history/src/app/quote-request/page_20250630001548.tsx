@@ -1062,46 +1062,47 @@ export default function QuoteRequestPage() {
 
                   </div>
 
-                  {/* 네비게이션 버튼 */}
-                  <div className="border-t border-white/10 pt-6 md:pt-8 mt-6 md:mt-10">
-                    <div className="flex justify-between items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={currentStep === 0}
-                        className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
-                          currentStep === 0
-                            ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
-                            : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center">
-                          <ChevronLeftIcon className="w-5 h-5 mr-2" />
-                          <span>이전</span>
-                        </div>
-                      </button>
+                  {/* 마지막 단계(완료 준비)가 아닐 때만 네비게이션 버튼 표시 */}
+                  {currentStep !== 7 && (
+                    <div className="border-t border-white/10 pt-6 md:pt-8 mt-6 md:mt-10">
+                      <div className="flex justify-between items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={prevStep}
+                          disabled={currentStep === 0}
+                          className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
+                            currentStep === 0
+                              ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
+                              : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center">
+                            <ChevronLeftIcon className="w-5 h-5 mr-2" />
+                            <span>이전</span>
+                          </div>
+                        </button>
 
-                      <button
-                        type="submit"
-                        disabled={isLoading || !validateCurrentStep()}
-                        className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
-                          isLoading || !validateCurrentStep()
-                            ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
-                            : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105'
-                              : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
-                        }`}
-                      >
+                        <button
+                          type="submit"
+                          disabled={isLoading || (currentStep < steps.length - 1 && !validateCurrentStep())}
+                          className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
+                            isLoading || (currentStep < steps.length - 1 && !validateCurrentStep())
+                              ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
+                              : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
+                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
+                                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
+                          }`}
+                        >
                         <div className="flex items-center justify-center">
                           {isLoading ? (
                             <>
                               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                              <span>신청 중...</span>
+                              <span>처리중...</span>
                             </>
                           ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
                             <>
-                              <CheckIcon className="w-5 h-5 mr-3" />
-                              <span>견적 신청하기</span>
+                              <Sparkles className="w-5 h-5 mr-3" />
+                              <span>견적 요청하기</span>
                             </>
                           ) : (
                             <>
@@ -1111,8 +1112,9 @@ export default function QuoteRequestPage() {
                           )}
                         </div>
                       </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </form>
               </div>
             </div>

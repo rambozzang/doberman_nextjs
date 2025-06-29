@@ -1,0 +1,91 @@
+{
+  "environments": {
+    "development": {
+      "name": "개발환경",
+      "branch": "develop",
+      "deploy_path": "/var/www/doberman-dev",
+      "port": 3001,
+      "pm2_app_name": "doberman-dev",
+      "nginx_config": "nginx-doberman-dev.conf",
+      "backup_enabled": false,
+      "health_check_url": "http://localhost:3001/api/health",
+      "auto_deploy": true,
+      "notification": {
+        "slack": false,
+        "email": false
+      }
+    },
+    "staging": {
+      "name": "스테이징환경",
+      "branch": "staging",
+      "deploy_path": "/var/www/doberman-staging",
+      "port": 3002,
+      "pm2_app_name": "doberman-staging",
+      "nginx_config": "nginx-doberman-staging.conf",
+      "backup_enabled": true,
+      "backup_retention_days": 3,
+      "health_check_url": "http://localhost:3002/api/health",
+      "auto_deploy": false,
+      "notification": {
+        "slack": true,
+        "email": true
+      }
+    },
+    "production": {
+      "name": "운영환경",
+      "branch": "main",
+      "deploy_path": "/var/www/doberman",
+      "port": 3000,
+      "pm2_app_name": "doberman",
+      "nginx_config": "nginx-doberman-optimized.conf",
+      "backup_enabled": true,
+      "backup_retention_days": 7,
+      "health_check_url": "http://localhost:3000/api/health",
+      "auto_deploy": false,
+      "notification": {
+        "slack": true,
+        "email": true
+      }
+    }
+  },
+  "jenkins": {
+    "node_version": "18",
+    "build_timeout": 1800,
+    "deploy_timeout": 900,
+    "health_check_timeout": 300,
+    "health_check_retries": 10,
+    "health_check_interval": 10
+  },
+  "pm2": {
+    "max_memory_restart": "1G",
+    "min_uptime": "10s",
+    "max_restarts": 10,
+    "restart_delay": 4000,
+    "kill_timeout": 5000
+  },
+  "notification": {
+    "slack": {
+      "webhook_url": "${SLACK_WEBHOOK_URL}",
+      "channel": "#deployments",
+      "username": "Jenkins Bot"
+    },
+    "email": {
+      "smtp_server": "${SMTP_SERVER}",
+      "smtp_port": 587,
+      "from_email": "${FROM_EMAIL}",
+      "to_emails": ["${ADMIN_EMAIL}"]
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics": {
+      "cpu_threshold": 80,
+      "memory_threshold": 85,
+      "disk_threshold": 90
+    },
+    "alerts": {
+      "enabled": true,
+      "channels": ["slack", "email"]
+    }
+  }
+} 

@@ -210,85 +210,22 @@ export default function QuoteRequestPage() {
     return item ? item.label : "";
   };
 
-  // 견적 요청 완료 처리
-  const handleQuoteRequest = async () => {
-    if (!confirm('견적 요청을 신청하시겠습니까?')) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 로그인된 경우 사용자 정보 사용, 비로그인시 폼 데이터 사용
-      const customerName = isLoggedIn && userInfo ? userInfo.customerName : formState.name;
-      const customerPhone = isLoggedIn && userInfo ? userInfo.customerPhone : formState.phone;
-      const customerEmail = isLoggedIn && userInfo ? userInfo.customerEmail : formState.email;
-      const customerPassword = isLoggedIn && userInfo ? userInfo.customerPassword : formState.password;
-      const webCustomerId = isLoggedIn && userInfo ? userInfo.customerId : 0;
-
-      // API 요청 데이터 구성
-      const requestData: CreateCustomerRequestRequest = {
-        webCustomerId: webCustomerId,
-        buildingType: getBuildingTypeLabel(formState.buildingType),
-        constructionLocation: getConstructionScopeLabels(formState.constructionScope),
-        roomCount: formState.roomCount || 0,
-        area: formState.area.pyeong || 0,
-        areaSize: formState.area.squareMeter || 0,
-        wallpaper: getWallpaperTypeLabel(formState.wallpaperType),
-        ceiling: "전체",
-        specialInfo: getAdditionalRequestLabels(formState.additionalRequest),
-        specialInfoDetail: "",
-        hasItems: formState.additionalRequest.includes('furniture-move') ? "짐이 있음" : "",
-        preferredDate: formState.visitDate,
-        preferredDateDetail: formState.visitDate ? "원하는 날짜가 있어요" : "",
-        region: getRegionLabel(formState.region),
-        customerName: customerName,
-        customerPhone: customerPhone,
-        customerEmail: customerEmail,
-        customerPassword: customerPassword,
-        agreeTerms: formState.privacyConsent,
-        requestDate: new Date().toISOString(),
-        status: "검토중",
-        etc1: "",
-        etc2: "",
-        etc3: ""
-      };
-
-      // 로그인 상태 확인
-      const currentLoginStatus = AuthManager.isTokenValid();
-      
-      let response;
-      if (currentLoginStatus) {
-        response = await CustomerRequestService.createCustomerRequest(requestData);
-      } else {
-        response = await CustomerRequestService.createCustomerRequestNonLogin(requestData);
-      }
-      
-      if (response.success) {
-        console.log("견적 요청 성공:", response.data);
-        setIsComplete(true);
-      } else {
-        console.error("견적 요청 실패:", response.message);
-        alert(response.message || "견적 요청 중 오류가 발생했습니다.");
-      }
-    } catch (error) {
-      console.error("제출 오류:", error);
-      alert("견적 요청 중 오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // 폼 제출 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 마지막 단계(고객정보 또는 지역선택)에서는 견적 요청 처리
-    if ((isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)) {
-      await handleQuoteRequest();
+    // 마지막 단계(완료)에서는 아무것도 하지 않음
+    if (currentStep === steps.length - 1) {
       return;
     }
     
-    // 그 외에는 다음 단계로 이동
+    // 견적 요청 단계가 아니면 다음 단계로 이동
+    if ((isLoggedIn && currentStep < 5) || (!isLoggedIn && currentStep < 6)) {
+      nextStep();
+      return;
+    }
+    
+    // 마지막 견적 요청 단계에서 다음 단계(완료 단계)로 이동
     nextStep();
   };
 
@@ -1059,49 +996,209 @@ export default function QuoteRequestPage() {
                       </div>
                     )}
 
+                    {/* 8단계: 완료 단계 */}
+                    {currentStep === 7 && (
+                      <div className="text-center space-y-6">
+                        <div className="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6">
+                          <div className="w-full h-full bg-gradient-to-br from-green-400 via-emerald-500 to-blue-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30">
+                            <CheckIcon className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-blue-500 rounded-full blur-2xl opacity-40 animate-pulse"></div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                            <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                              🎉 견적 요청 준비됨!
+                            </span>
+                          </h4>
+                          <p className="text-lg text-slate-200 mb-4 leading-relaxed">
+                            모든 정보가 입력되었습니다.
+                          </p>
+                          <p className="text-base text-slate-300 leading-relaxed">
+                            아래 버튼을 클릭하여 견적 요청을 완료하세요.
+                          </p>
+                        </div>
+                        
+                        <div className="bg-slate-800/50 border border-slate-600/50 rounded-xl p-6">
+                          <h5 className="text-lg font-semibold text-white mb-4">요청 정보 요약</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-slate-400">건물 유형:</span>
+                              <span className="text-white ml-2">{getBuildingTypeLabel(formState.buildingType)}</span>
+                            </div>
+                                                         <div>
+                               <span className="text-slate-400">시공 위치:</span>
+                               <span className="text-white ml-2">{getConstructionScopeLabels(formState.constructionScope)}</span>
+                             </div>
+                             {formState.constructionScope.includes('room') && formState.roomCount && (
+                               <div>
+                                 <span className="text-slate-400">방 개수:</span>
+                                 <span className="text-white ml-2">{formState.roomCount}개</span>
+                               </div>
+                             )}
+                            <div>
+                              <span className="text-slate-400">시공 면적:</span>
+                              <span className="text-white ml-2">{formState.area.pyeong}평 ({formState.area.squareMeter}㎡)</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">벽지 종류:</span>
+                              <span className="text-white ml-2">{getWallpaperTypeLabel(formState.wallpaperType)}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">지역:</span>
+                              <span className="text-white ml-2">{getRegionLabel(formState.region)}</span>
+                            </div>
+                            {formState.additionalRequest.length > 0 && (
+                              <div>
+                                <span className="text-slate-400">추가 요청:</span>
+                                <span className="text-white ml-2">{getAdditionalRequestLabels(formState.additionalRequest)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="pt-6 space-y-3">
+                          <button
+                            onClick={async () => {
+                              setIsLoading(true);
+                              try {
+                                // 로그인된 경우 사용자 정보 사용, 비로그인시 폼 데이터 사용
+                                const customerName = isLoggedIn && userInfo ? userInfo.customerName : formState.name;
+                                const customerPhone = isLoggedIn && userInfo ? userInfo.customerPhone : formState.phone;
+                                const customerEmail = isLoggedIn && userInfo ? userInfo.customerEmail : formState.email;
+                                const customerPassword = isLoggedIn && userInfo ? userInfo.customerPassword : formState.password;
+                                const webCustomerId = isLoggedIn && userInfo ? userInfo.customerId : 0;
 
+                                                                 // API 요청 데이터 구성
+                                 const requestData: CreateCustomerRequestRequest = {
+                                   webCustomerId: webCustomerId,
+                                   buildingType: getBuildingTypeLabel(formState.buildingType),
+                                   constructionLocation: getConstructionScopeLabels(formState.constructionScope),
+                                   roomCount: formState.roomCount || 0,
+                                   area: formState.area.pyeong || 0,
+                                   areaSize: formState.area.squareMeter || 0,
+                                   wallpaper: getWallpaperTypeLabel(formState.wallpaperType),
+                                   ceiling: "전체",
+                                   specialInfo: getAdditionalRequestLabels(formState.additionalRequest),
+                                   specialInfoDetail: "",
+                                   hasItems: formState.additionalRequest.includes('furniture-move') ? "짐이 있음" : "",
+                                   preferredDate: formState.visitDate,
+                                   preferredDateDetail: formState.visitDate ? "원하는 날짜가 있어요" : "",
+                                   region: getRegionLabel(formState.region),
+                                   customerName: customerName,
+                                   customerPhone: customerPhone,
+                                   customerEmail: customerEmail,
+                                   customerPassword: customerPassword,
+                                   agreeTerms: formState.privacyConsent,
+                                   requestDate: new Date().toISOString(),
+                                   status: "검토중",
+                                   etc1: "",
+                                   etc2: "",
+                                   etc3: ""
+                                 };
+
+                                // 로그인 상태 확인
+                                const currentLoginStatus = AuthManager.isTokenValid();
+                                
+                                let response;
+                                if (currentLoginStatus) {
+                                  response = await CustomerRequestService.createCustomerRequest(requestData);
+                                } else {
+                                  response = await CustomerRequestService.createCustomerRequestNonLogin(requestData);
+                                }
+                                
+                                if (response.success) {
+                                  console.log("견적 요청 성공:", response.data);
+                                  setIsComplete(true);
+                                } else {
+                                  console.error("견적 요청 실패:", response.message);
+                                  alert(response.message || "견적 요청 중 오류가 발생했습니다.");
+                                }
+                              } catch (error) {
+                                console.error("제출 오류:", error);
+                                alert("견적 요청 중 오류가 발생했습니다. 다시 시도해주세요.");
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }}
+                            disabled={isLoading}
+                            className={`w-full px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-xl ${
+                              isLoading
+                                ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
+                            }`}
+                          >
+                            <div className="flex items-center justify-center">
+                              {isLoading ? (
+                                <>
+                                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                                  <span>견적 요청 중...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-5 h-5 mr-3" />
+                                  <span>견적 요청 완료하기</span>
+                                </>
+                              )}
+                            </div>
+                          </button>
+                          
+                          <button
+                            onClick={prevStep}
+                            className="w-full px-8 py-4 rounded-xl font-semibold text-base transition-all duration-300 bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105"
+                          >
+                            <div className="flex items-center justify-center">
+                              <ChevronLeftIcon className="w-5 h-5 mr-3" />
+                              <span>이전 단계로 돌아가기</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* 네비게이션 버튼 */}
-                  <div className="border-t border-white/10 pt-6 md:pt-8 mt-6 md:mt-10">
-                    <div className="flex justify-between items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={currentStep === 0}
-                        className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
-                          currentStep === 0
-                            ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
-                            : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center">
-                          <ChevronLeftIcon className="w-5 h-5 mr-2" />
-                          <span>이전</span>
-                        </div>
-                      </button>
+                  {/* 마지막 단계(완료 준비)가 아닐 때만 네비게이션 버튼 표시 */}
+                  {currentStep !== 7 && (
+                    <div className="border-t border-white/10 pt-6 md:pt-8 mt-6 md:mt-10">
+                      <div className="flex justify-between items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={prevStep}
+                          disabled={currentStep === 0}
+                          className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
+                            currentStep === 0
+                              ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
+                              : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center">
+                            <ChevronLeftIcon className="w-5 h-5 mr-2" />
+                            <span>이전</span>
+                          </div>
+                        </button>
 
-                      <button
-                        type="submit"
-                        disabled={isLoading || !validateCurrentStep()}
-                        className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
-                          isLoading || !validateCurrentStep()
-                            ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
-                            : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105'
-                              : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
-                        }`}
-                      >
+                        <button
+                          type="submit"
+                          disabled={isLoading || (currentStep < steps.length - 1 && !validateCurrentStep())}
+                          className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
+                            isLoading || (currentStep < steps.length - 1 && !validateCurrentStep())
+                              ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
+                              : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
+                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
+                                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
+                          }`}
+                        >
                         <div className="flex items-center justify-center">
                           {isLoading ? (
                             <>
                               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                              <span>신청 중...</span>
+                              <span>처리중...</span>
                             </>
                           ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
                             <>
-                              <CheckIcon className="w-5 h-5 mr-3" />
-                              <span>견적 신청하기</span>
+                              <Sparkles className="w-5 h-5 mr-3" />
+                              <span>견적 요청하기</span>
                             </>
                           ) : (
                             <>
@@ -1111,8 +1208,9 @@ export default function QuoteRequestPage() {
                           )}
                         </div>
                       </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </form>
               </div>
             </div>
