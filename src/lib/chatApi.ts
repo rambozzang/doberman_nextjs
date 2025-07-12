@@ -110,16 +110,18 @@ class ChatApi {
   }
 
   // 채팅방 생성
-  async createChatRoom(requestId: number, expertId: string): Promise<ChatApiResponse<{ roomId: number; isNew: boolean }>> {
+  async createChatRoom(requestId: number, expertId: string, customerId: string): Promise<ChatApiResponse<{ roomId: number; isNew: boolean }>> {
     try {
-      console.log('채팅방 생성 API 호출:', { customerId: requestId, userId: expertId });
+      console.log('채팅방 생성 API 호출:', { requestId: requestId , customerId: customerId, userId: expertId });
       
-      const response = await this.api.post("/chat/room", null, {
-        params: {
-          customerId: requestId,
-          userId: expertId,
-        },
+      // 아래 호출 방식으로 body에 json 형식으로 넘겨야 함
+      const response = await this.api.post("/chat/room", {
+        requestId: requestId,
+        customerId: customerId,
+        userId: expertId,
       });
+
+
       
       console.log('채팅방 생성 API 응답:', response.data);
       return response.data;

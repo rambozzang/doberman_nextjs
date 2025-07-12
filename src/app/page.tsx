@@ -234,7 +234,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-slate-300 mb-8 sm:mb-12 max-w-4xl mx-auto leading-relaxed font-light px-4"
+              className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-slate-300 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed font-light px-4"
             >
               전국 200명 이상의 검증된 도배 전문가들과 함께하는
               <br className="hidden sm:block" />
@@ -242,12 +242,86 @@ export default function Home() {
                 스마트한 비교견적 플랫폼
               </span>
             </motion.p>
+
+            {/* 서비스 워크플로우 섹션 */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="mb-8 sm:mb-12 px-4"
+            >
+              <div className="max-w-5xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  {/* 사용자 섹션 */}
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                    <div className="relative bg-slate-800/50 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 sm:p-8 hover:border-blue-400/50 transition-all duration-300">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                          <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg sm:text-xl font-bold text-white">일반 사용자</h3>
+                          <p className="text-sm text-blue-300">웹사이트에서 간편하게</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="text-sm sm:text-base text-slate-300">웹에서 견적신청 작성</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                          <span className="text-sm sm:text-base text-slate-300">최대 5개 업체 견적 비교</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
+                          <span className="text-sm sm:text-base text-slate-300">최적의 업체 선택</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 도배사장님 섹션 */}
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                    <div className="relative bg-slate-800/50 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 sm:p-8 hover:border-purple-400/50 transition-all duration-300">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <div className="text-xl sm:text-2xl">🔨</div>
+                        </div>
+                        <div>
+                          <h3 className="text-lg sm:text-xl font-bold text-white">도배사장님</h3>
+                          <p className="text-sm text-purple-300">도배르만 앱에서 전문적으로</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                          <span className="text-sm sm:text-base text-slate-300">도배르만 앱에서 견적 작성</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
+                          <span className="text-sm sm:text-base text-slate-300">전문적인 견적서 제공</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-purple-300 rounded-full"></div>
+                          <span className="text-sm sm:text-base text-slate-300">고객과 직접 매칭</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+           
+              </div>
+            </motion.div>
             
             {/* 기술 스택 태그들 - 현대적 디자인 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.8 }}
+              transition={{ delay: 1.0, duration: 0.8 }}
               className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 mb-8 sm:mb-12 px-4"
             >
               {[
@@ -285,7 +359,7 @@ export default function Home() {
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ 
-                    delay: 0.8 + index * 0.1, 
+                    delay: 1.1 + index * 0.1, 
                     duration: 0.6,
                     type: "spring",
                     stiffness: 100
@@ -319,8 +393,6 @@ export default function Home() {
                 </motion.div>
               ))}
             </motion.div>
-
-    
           </div>
         </motion.div>
 
@@ -329,7 +401,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-12 lg:py-16"
+          className="px-4  md:px-8 "
         >
           <div className="relative max-w-4xl mx-auto">
             {/* 배경 글로우 효과 - 모바일에서 줄임 */}
@@ -344,9 +416,9 @@ export default function Home() {
                 transition={{ delay: 0.6, duration: 0.4 }}
               >
                 <p className="text-sm sm:text-base md:text-lg lg:text-xl text-subtle mb-6 md:mb-8 leading-relaxed px-2 sm:px-4">
-                  <span className="block sm:inline">3분만 투자하면</span>
-                  <span className="text-gradient-primary font-semibold"> 최대 5개 업체</span>의
-                  <span className="block sm:inline"> 견적을 무료로 받아보세요</span>
+                  <span className="block sm:inline">웹에서 간편하게 견적신청하면</span>
+                  <span className="text-gradient-primary font-semibold"> 도배르만 앱 전문가들</span>이
+                  <span className="block sm:inline"> 최고의 견적을 제공해드립니다</span>
                 </p>
                 
                 {/* 반응형 버튼 - 모바일 최적화 */}
@@ -394,12 +466,12 @@ export default function Home() {
                   <div className="w-px h-3 sm:h-4 bg-slate-600"></div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs sm:text-sm font-medium">3분 견적</span>
+                    <span className="text-xs sm:text-sm font-medium">도배르만 앱 연동</span>
                   </div>
                   <div className="w-px h-3 sm:h-4 bg-slate-600"></div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs sm:text-sm font-medium">로그인 불필요</span>
+                    <span className="text-xs sm:text-sm font-medium">전문가 직접 매칭</span>
                   </div>
                 </motion.div>
               </motion.div>
@@ -509,7 +581,7 @@ export default function Home() {
         >
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              왜 도베르만을 선택해야 할까요?
+              왜 도배르만을 선택해야 할까요?
             </h2>
             <p className="text-xl text-slate-300">
               검증된 전문가들과 투명한 견적 시스템으로 최고의 도배 서비스를 제공합니다

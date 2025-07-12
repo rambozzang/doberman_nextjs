@@ -119,6 +119,13 @@ const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = "hidden";
+      // 모바일 메뉴가 열릴 때 메뉴 컨테이너를 최상단으로 스크롤
+      setTimeout(() => {
+        const mobileMenu = document.querySelector('[data-mobile-menu]');
+        if (mobileMenu) {
+          mobileMenu.scrollTop = 0;
+        }
+      }, 50);
     } else {
       document.body.style.overflow = "unset";
     }
@@ -308,7 +315,9 @@ const Header: React.FC<HeaderProps> = ({
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                onClick={() => {
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                }}
                 className="relative p-3 text-slate-300 hover:text-white transition-colors duration-300 bg-slate-800/30 rounded-xl border border-slate-700/50"
               >
                 <AnimatePresence mode="wait">
@@ -348,7 +357,7 @@ const Header: React.FC<HeaderProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998]"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
               
@@ -358,7 +367,8 @@ const Header: React.FC<HeaderProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: '100%' }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="fixed top-0 right-0 h-full w-full bg-slate-900/98 backdrop-blur-xl z-50 overflow-y-auto"
+                className="fixed inset-0 bg-slate-900 backdrop-blur-xl z-[9999] overflow-y-auto min-h-screen"
+                data-mobile-menu
               >
                 {/* 모바일 메뉴 헤더 */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
@@ -491,8 +501,13 @@ const Header: React.FC<HeaderProps> = ({
                     >
                       <Link
                         href="/quote-request"
-                        className="flex items-center justify-center w-full p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold shadow-lg transition-all duration-300 min-h-[56px]"
-                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center justify-center w-full p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold shadow-lg transition-all duration-300 min-h-[56px] relative z-10 touch-manipulation"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsMobileMenuOpen(false);
+                          router.push('/quote-request');
+                        }}
                       >
                         <Sparkles className="w-5 h-5 mr-3" />
                         <span className="text-lg">견적 요청하기</span>

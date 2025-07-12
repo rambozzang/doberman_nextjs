@@ -109,12 +109,14 @@ export default function RootLayout({
         <meta name="revisit-after" content="1 days" />
         <meta name="expires" content="never" />
         <meta name="cache-control" content="public" />
+        <meta name="naver-site-verification" content="8a8f1fd238cdf6738ea971dfcc060431b50f8fd8" />
         <link rel="canonical" href={process.env.NEXT_PUBLIC_BASE_URL || 'https://www.doberman.kr'} />
         <link rel="alternate" hrefLang="ko" href={process.env.NEXT_PUBLIC_BASE_URL || 'https://www.doberman.kr'} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -171,7 +173,7 @@ export default function RootLayout({
             })
           }}
         />
-        <Script
+        <Script async
           id="adsbygoogle-init"
           strategy="afterInteractive"
           crossOrigin="anonymous"

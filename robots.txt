@@ -1,0 +1,6 @@
+# 모든 검색엔진 로봇에 대해 수집 허용
+User-agent: *
+Allow: /
+
+# 사이트맵 위치 지정
+Sitemap: https://www.doberman.kr/sitemap.xml

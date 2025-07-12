@@ -76,7 +76,8 @@ export const useChatRooms = () => {
     try {
       chatApi.setAuthHeader(chatAuth.token);
       console.log('채팅방 생성 요청:', { requestId, expertId });
-      const response = await chatApi.createChatRoom(requestId, expertId);
+      // 로그인 한사람  customerId
+      const response = await chatApi.createChatRoom(requestId, expertId, chatAuth.userId);
 
       if (response.success && response.data) {
         console.log('채팅방 생성 성공:', response.data.roomId, `(requestId: ${requestId}, expertId: ${expertId})`);

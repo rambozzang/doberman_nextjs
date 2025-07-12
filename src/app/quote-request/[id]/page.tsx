@@ -638,10 +638,10 @@ export default function QuoteRequestDetailPage() {
                           {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
                             <button
                               onClick={() => {
-                        // 채팅 파트너 설정과 채팅 열기 플래그 설정
-                        setCurrentChatPartner(answer);
-                        setShouldOpenChat(true);
-                      }}
+                                // 채팅 파트너 설정과 채팅 열기 플래그 설정
+                                setCurrentChatPartner(answer);
+                                setShouldOpenChat(true);
+                              }}
                               className="group/chat flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 hover:from-emerald-500/50 hover:to-teal-500/50 border border-emerald-400/40 hover:border-emerald-300/60 rounded-xl transition-all duration-300 text-emerald-300 hover:text-emerald-200 hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/30 backdrop-blur-sm"
                             >
                               <MessageSquareIcon className="w-4 h-4 group-hover/chat:scale-110 transition-transform" />

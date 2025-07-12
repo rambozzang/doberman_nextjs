@@ -82,7 +82,7 @@ export default function QuoteRequestListPage() {
   
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(12);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -95,6 +95,18 @@ export default function QuoteRequestListPage() {
     completed: 0,
     canceled: 0
   });
+
+  // 고객명 가운데 이름 * 으로 변경 함수
+  const hideMiddleName = (name: string) => {
+    const nameString = name.trim();
+    if(nameString.length > 2) {
+      return nameString.slice(0, 1) + '*'.repeat(nameString.length - 2) + nameString.slice(-1);
+    } else if(nameString.length === 2) {
+      return nameString.slice(0, 1) + '*';
+    }
+    return nameString;
+  };
+ 
 
   // 필터 옵션을 위한 상태 (현재는 사용하지 않음)
   // const [filterOptions, setFilterOptions] = useState({
@@ -499,9 +511,9 @@ export default function QuoteRequestListPage() {
                     onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                     className="px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white text-sm"
                   >
-                    <option value={10}>10개</option>
-                    <option value={20}>20개</option>
-                    <option value={50}>50개</option>
+                    <option value={12}>12개</option>
+                    <option value={24}>24개</option>
+                    <option value={48}>48개</option>
                   </select>
                 </div>
               </div>
@@ -582,7 +594,7 @@ export default function QuoteRequestListPage() {
                         
                         <div className="flex items-center text-xs text-slate-300">
                           <UserIcon className="w-3 h-3 mr-1.5 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{request.customerName}</span>
+                          <span className="truncate">{hideMiddleName(request.customerName)}</span>
                         </div>
                         
                         <div className="flex items-center text-xs text-slate-300">
