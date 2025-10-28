@@ -21,7 +21,7 @@ import {
 const serviceFeatures = [
   {
     icon: UsersIcon,
-    title: "200+ 검증된 전문가",
+    title: "300+ 검증된 전문가",
     description: "엄격한 심사를 통과한 전국의 도배 전문가들",
     color: "from-blue-500 to-cyan-500"
   },
@@ -159,7 +159,7 @@ export default function ServiceIntroPage() {
               transition={{ delay: 0.6, duration: 0.6 }}
               className="text-base md:text-lg text-slate-300 mb-6 max-w-2xl mx-auto leading-relaxed"
             >
-              도배르만은 전국 200명 이상의 검증된 전문가와 고객을 연결하여 합리적이고 투명한 도배 서비스를 제공합니다.
+              도배르만은 전국 300여명 이상의 검증된 전문가와 고객을 연결하여 합리적이고 투명한 도배 서비스를 제공합니다.
             </motion.p>
           </motion.div>
         </div>

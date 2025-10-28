@@ -244,7 +244,7 @@ export default function MyQuoteRequestsPage() {
             </div>
           
             {/* 통계 정보 */}
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 max-w-3xl">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 max-w-3xl">
               {[
                 { label: "전체", count: statusCounts.total, color: "from-blue-500 to-cyan-500" },
                 { label: "대기중", count: statusCounts.pending, color: "from-yellow-500 to-orange-500" },
@@ -252,11 +252,11 @@ export default function MyQuoteRequestsPage() {
                 { label: "완료", count: statusCounts.completed, color: "from-emerald-500 to-green-500" },
                 { label: "취소", count: statusCounts.cancelled, color: "from-red-500 to-pink-500" }
               ].map((stat, index) => (
-                <div key={index} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl px-3 py-1 sm:px-4">
-                  <div className={`text-base sm:text-lg font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                <div key={index} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-3">
+                  <div className={`text-lg sm:text-xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent text-center`}>
                     {stat.count}
                   </div>
-                  <div className="text-xs text-slate-300">{stat.label}</div>
+                  <div className="text-xs sm:text-sm text-slate-300 text-center mt-1">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -268,14 +268,14 @@ export default function MyQuoteRequestsPage() {
       <main className="flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="container mx-auto px-4 py-8">
           {/* 액션 바 */}
-          <section className="mb-8">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="flex gap-4">
+          <section className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="w-full sm:w-auto">
                 <Link 
                   href="/quote-request"
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300"
+                  className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 w-full sm:w-auto"
                 >
-                  <PlusIcon className="w-5 h-5" />
+                  <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   새 견적 요청
                 </Link>
               </div>
@@ -297,60 +297,65 @@ export default function MyQuoteRequestsPage() {
               </button>
 
               <div className={`mt-4 lg:mt-0 ${isFilterVisible ? 'block' : 'hidden'} lg:block`}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-4">
                   {/* 검색 */}
-                  <div className="lg:col-span-2">
-                    <div className="relative">
-                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="내 견적 요청 검색..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white placeholder-slate-400"
-                      />
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="내 견적 요청 검색..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white placeholder-slate-400 text-sm sm:text-base"
+                    />
+                  </div>
+
+                  {/* 필터 및 정렬 - 모바일에서 세로 배치 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* 상태 필터 */}
+                    <div>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full px-3 sm:px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white text-sm sm:text-base"
+                      >
+                        <option value="all">모든 상태</option>
+                        <option value="검토중">검토중</option>
+                        <option value="진행중">진행중</option>
+                        <option value="채택 성공">채택 성공</option>
+                        <option value="취소">취소</option>
+                      </select>
+                    </div>
+
+                    {/* 정렬 */}
+                    <div>
+                      <select
+                        value={`${sortBy}-${sortOrder}`}
+                        onChange={(e) => {
+                          const [sort, order] = e.target.value.split('-');
+                          setSortBy(sort as "date" | "status" | "quotes");
+                          setSortOrder(order as "asc" | "desc");
+                        }}
+                        className="w-full px-3 sm:px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white text-sm sm:text-base"
+                      >
+                        <option value="date-desc">최신순</option>
+                        <option value="date-asc">오래된순</option>
+                        <option value="status-asc">상태순</option>
+                        <option value="quotes-desc">견적 많은순</option>
+                        <option value="quotes-asc">견적 적은순</option>
+                      </select>
                     </div>
                   </div>
 
-                  {/* 상태 필터 */}
-                  <div>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white"
-                    >
-                      <option value="all">모든 상태</option>
-                      <option value="검토중">검토중</option>
-                      <option value="진행중">진행중</option>
-                      <option value="채택 성공">채택 성공</option>
-                      <option value="취소">취소</option>
-                    </select>
-                  </div>
-
-                  {/* 정렬 및 새로고침 */}
-                  <div className="flex gap-2">
-                    <select
-                      value={`${sortBy}-${sortOrder}`}
-                      onChange={(e) => {
-                        const [sort, order] = e.target.value.split('-');
-                        setSortBy(sort as "date" | "status" | "quotes");
-                        setSortOrder(order as "asc" | "desc");
-                      }}
-                      className="flex-1 px-3 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white text-sm"
-                    >
-                      <option value="date-desc">최신순</option>
-                      <option value="date-asc">오래된순</option>
-                      <option value="status-asc">상태순</option>
-                      <option value="quotes-desc">견적 많은순</option>
-                      <option value="quotes-asc">견적 적은순</option>
-                    </select>
-                    
+                  {/* 새로고침 버튼 */}
+                  <div className="flex justify-center sm:justify-end">
                     <button
                       onClick={handleRefresh}
                       disabled={isLoading}
-                      className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl transition-all disabled:opacity-50"
+                      className="flex items-center gap-2 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl transition-all disabled:opacity-50 text-sm sm:text-base"
                     >
-                      <RefreshCwIcon className={`w-5 h-5 text-blue-400 ${isLoading ? 'animate-spin' : ''}`} />
+                      <RefreshCwIcon className={`w-4 h-4 sm:w-5 sm:h-5 text-blue-400 ${isLoading ? 'animate-spin' : ''}`} />
+                      <span className="text-blue-400">새로고침</span>
                     </button>
                   </div>
                 </div>
@@ -416,90 +421,87 @@ export default function MyQuoteRequestsPage() {
                     <Link
                       key={request.id}
                       href={`/quote-request/${request.id}`}
-                      className="block bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-4 hover:border-white/20 hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                      className="block bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                     >
-                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-                        {/* 기본 정보 */}
-                        <div className="lg:col-span-3">
-                          {/* 헤더 */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3">
-                                <span className="text-sm font-mono text-slate-400">#{request.id}</span>
-                                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
-                                  <StatusIcon className="w-4 h-4" />
-                                  {statusConfig.label}
-                                </div>
-                              </div>
-                              <h3 className="text-lg font-bold text-white leading-tight truncate mt-1">
-                                {removeBrackets(request.buildingType)} {request.constructionLocation}
-                              </h3>
-                            </div>
+                      {/* 헤더 - ID와 상태 */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-sm font-mono text-slate-400">#{request.id}</span>
+                          <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
+                            <StatusIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                            {statusConfig.label}
                           </div>
+                        </div>
+                      </div>
 
-                          {/* 상세 정보 - 한 줄로 압축 */}
-                          <div className="flex items-center gap-4 mt-2 text-sm text-slate-300">
-                            <div className="flex items-center gap-1">
-                              <BuildingIcon className="w-4 h-4 text-slate-400" />
-                              <span className="truncate">{removeBrackets(request.buildingType)}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium">{request.areaSize}㎡</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <MapPinIcon className="w-4 h-4 text-slate-400" />
-                              <span className="truncate">{request.region}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <CalendarIcon className="w-4 h-4 text-slate-400" />
-                              <span className="truncate">{formatDate(request.requestDate)}</span>
-                            </div>
-                          </div>
+                      {/* 메인 제목 */}
+                      <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-3">
+                        {removeBrackets(request.buildingType)} {request.constructionLocation}
+                      </h3>
 
-                          {/* 벽지 종류 및 특이사항 - 조건부 표시 */}
-                          {(request.wallpaper || request.specialInfo) && (
-                            <div className="flex items-center gap-3 mt-2">
-                              {request.wallpaper && (
-                                <span className="px-3 py-1 bg-slate-700/50 text-sm text-slate-300 rounded text-nowrap">
-                                  {removeBrackets(request.wallpaper)}
-                                </span>
-                              )}
-                              {request.specialInfo && (
-                                <p className="text-sm text-slate-400 truncate flex-1">{request.specialInfo}</p>
-                              )}
+                      {/* 상세 정보 - 모바일에서 세로 배치 */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-3">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
+                          <BuildingIcon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" />
+                          <span className="truncate">{removeBrackets(request.buildingType)}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
+                          <span className="font-medium">{request.areaSize}㎡</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
+                          <MapPinIcon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" />
+                          <span className="truncate">{request.region}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
+                          <CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" />
+                          <span className="truncate">{formatDate(request.requestDate)}</span>
+                        </div>
+                      </div>
+
+                      {/* 벽지 종류 및 특이사항 */}
+                      {(request.wallpaper || request.specialInfo) && (
+                        <div className="mb-3">
+                          {request.wallpaper && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              <span className="px-2 sm:px-3 py-1 bg-slate-700/50 text-xs sm:text-sm text-slate-300 rounded-full">
+                                {removeBrackets(request.wallpaper)}
+                              </span>
                             </div>
                           )}
-                        </div>
-
-                        {/* 우측 정보 패널 */}
-                        <div className="flex lg:flex-col gap-2">
-                          {/* 견적 정보 */}
-                          <div className="bg-slate-800/30 rounded-lg p-3 flex-1 lg:flex-none text-center">
-                            <div className="text-xl font-bold text-blue-400">{request.answerCount}</div>
-                            <div className="text-sm text-slate-400">답변</div>
-                          </div>
-
-                          {/* 액션 버튼 */}
-                          {request.status === '검토중' && (
-                            <div className="flex lg:flex-col gap-2">
-                              <button 
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // TODO: 수정 기능 구현
-                                  console.log("수정할 ID:", request.id);
-                                }}
-                                className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg transition-all text-slate-300 hover:text-white text-sm whitespace-nowrap"
-                              >
-                                <EditIcon className="w-4 h-4" />
-                                수정
-                              </button>
-                            </div>
+                          {request.specialInfo && (
+                            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{request.specialInfo}</p>
                           )}
                         </div>
+                      )}
+
+                      {/* 하단 액션 바 */}
+                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                        {/* 견적 정보 */}
+                        <div className="flex items-center gap-2">
+                          <div className="bg-slate-800/30 rounded-lg px-3 py-2">
+                            <div className="text-lg sm:text-xl font-bold text-blue-400">{request.answerCount}</div>
+                            <div className="text-xs sm:text-sm text-slate-400">답변</div>
+                          </div>
+                        </div>
+
+                        {/* 액션 버튼 */}
+                        {request.status === '검토중' && (
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // TODO: 수정 기능 구현
+                              console.log("수정할 ID:", request.id);
+                            }}
+                            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg transition-all text-slate-300 hover:text-white text-xs sm:text-sm"
+                          >
+                            <EditIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                            수정
+                          </button>
+                        )}
                       </div>
                     </Link>
                   );

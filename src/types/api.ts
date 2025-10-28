@@ -53,8 +53,10 @@ export interface ForgotPasswordRequest {
 
 // 비밀번호 찾기 응답 타입
 export interface ForgotPasswordResponse {
-  message: string;
-  success: boolean;
+  customerId: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
 }
 
 // 사용자 정보 타입

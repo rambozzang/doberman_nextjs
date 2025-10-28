@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import {  User, Github, Zap, Layers, Play, ExternalLink, ArrowRight, HelpCircle, CheckSquare, MapPin,  Youtube } from 'lucide-react';
+import {  User, Github, Zap, Layers, Play, ExternalLink, ArrowRight, HelpCircle, CheckSquare, MapPin,  Youtube, List, Building, Calendar, Eye } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { CustomerRequestService } from '@/services/customerRequestService';
+import { CustomerRequest } from '@/types/api';
 import { YoutubeService } from '@/services/youtubeService';
 import { YoutubeVideo } from '@/types/api';
 
@@ -16,6 +18,36 @@ export default function Home() {
 
   const router = useRouter();
   const [youtubeRequested, setYoutubeRequested] = useState(false);
+  const [customerRequestsRequested, setCustomerRequestsRequested] = useState(false);
+
+  // 실제 견적 요청 데이터 로드 - 지연 로딩으로 홈페이지 속도 최적화
+  const { data: customerRequests, isLoading: isCustomerRequestsLoading } = useQuery({
+    queryKey: ['customer-requests-preview'],
+    queryFn: async () => {
+      const response = await CustomerRequestService.searchRequests({
+        page: 0,
+        size: 20, // 20개로 증가
+        sortBy: 'latest',
+        sortDirection: 'desc'
+      });
+      return response.success ? response.data?.content || [] : [];
+    },
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
+    enabled: customerRequestsRequested, // 지연 로딩 활성화
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 재호출 방지
+  });
+
+  // 통계 데이터 로드 - 지연 로딩으로 홈페이지 속도 최적화
+  const { data: statistics } = useQuery({
+    queryKey: ['customer-requests-statistics'],
+    queryFn: async () => {
+      const response = await CustomerRequestService.getStatistics();
+      return response.success ? response.data : null;
+    },
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
+    enabled: customerRequestsRequested, // 지연 로딩 활성화
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 재호출 방지
+  });
 
 
 
@@ -30,11 +62,20 @@ export default function Home() {
   });
 
 
-  // 페이지 로딩 후 1초 뒤에 유튜브 API 자동 호출
+  // 페이지 로딩 후 1초 뒤에 견적 요청 데이터 자동 호출 (홈페이지 속도 최적화)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCustomerRequestsRequested(true);
+    }, 1000); // 1초 후 자동 호출
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 페이지 로딩 후 2초 뒤에 유튜브 API 자동 호출
   useEffect(() => {
     const timer = setTimeout(() => {
       setYoutubeRequested(true);
-    }, 1000); // 1초 후 자동 호출
+    }, 2000); // 2초 후 자동 호출
 
     return () => clearTimeout(timer);
   }, []);
@@ -62,61 +103,61 @@ export default function Home() {
               }}
             >
               {/* 도배업체명들 - 첫 번째 세트 */}
-              <span className="text-slate-300 font-medium text-m">김도배 전문가</span>
+              <span className="text-slate-300 font-medium text-m">올바른인테리어</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">이인테리어</span>
+              <span className="text-slate-300 font-medium text-m">도배연가</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">박마스터</span>
+              <span className="text-slate-300 font-medium text-m">도배마스터</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">최프로</span>
+              <span className="text-slate-300 font-medium text-m">원 인테리어</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">정장인</span>
+              <span className="text-slate-300 font-medium text-m">새로고침하우징</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">서울도배</span>
+              <span className="text-slate-300 font-medium text-m">인테리어 도배필름</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">부산인테리어</span>
+              <span className="text-slate-300 font-medium text-m">늘솜도배</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">대구도배마스터</span>
+              <span className="text-slate-300 font-medium text-m">자연으로도배</span>
               <span className="text-slate-400">•</span>
-                  <span className="text-slate-300 font-medium text-m">인천프로</span>
+                  <span className="text-slate-300 font-medium text-m">미소앤하우스</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">강남인테리어</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">홍도배</span>
+              <span className="text-slate-300 font-medium text-m">원탑도배</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">전문가그룹</span>
+              <span className="text-slate-300 font-medium text-m">시안건재</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">마스터도배</span>
+              <span className="text-slate-300 font-medium text-m">앱팩토리</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">프리미엄인테리어</span>
+              <span className="text-slate-300 font-medium text-m">강도배</span>
               
               {/* 도배업체명들 - 두 번째 세트 (무한 루프를 위한 복사본) */}
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">김도배 전문가</span>
+              <span className="text-slate-300 font-medium text-m">픽스앤필름</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">이인테리어</span>
+              <span className="text-slate-300 font-medium text-m">메가맥</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">최프로</span>
+              <span className="text-slate-300 font-medium text-m">봉화지업사</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">정장인</span>
+              <span className="text-slate-300 font-medium text-m">새늘도배</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">서울도배</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">부산인테리어</span>
+              <span className="text-slate-300 font-medium text-m">예쁜집도배</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">대구도배마스터</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">인천프로</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">경기도배</span>
+              <span className="text-slate-300 font-medium text-m">태양지업사</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">강남인테리어</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">홍도배</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300 font-medium text-m">전문가그룹</span>
+              <span className="text-slate-300 font-medium text-m">도배홀릭</span>
               <span className="text-slate-400">•</span>
-                <span className="text-slate-300 font-medium text-m">마스터도배</span>
+                <span className="text-slate-300 font-medium text-m">플레나코퍼레이션</span>
               <span className="text-slate-400">•</span>
               <span className="text-slate-300 font-medium text-m">프리미엄인테리어</span>
             </motion.div>
@@ -196,7 +237,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 mb-6 sm:mb-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl border border-blue-500/20 rounded-full"
             >
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs sm:text-sm font-medium text-blue-300">전국 200+ 전문가 온라인</span>
+              <span className="text-xs sm:text-sm font-medium text-blue-300">전국 300+ 전문가 온라인</span>
             </motion.div>
 
             {/* 메인 타이틀 */}
@@ -224,7 +265,7 @@ export default function Home() {
                 무료 도배 비교견적
                 <br />
                 <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  전국 200+ 전문가 매칭
+                  전국 300+ 전문가 매칭
                 </span>
               </motion.h1>
             </div>
@@ -236,7 +277,7 @@ export default function Home() {
               transition={{ delay: 0.5, duration: 0.8 }}
               className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-slate-300 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed font-light px-4"
             >
-              전국 200명 이상의 검증된 도배 전문가들과 함께하는
+              전국 300여명 이상의 검증된 도배 전문가들과 함께하는
               <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-semibold">
                 스마트한 비교견적 플랫폼
@@ -253,7 +294,7 @@ export default function Home() {
               <div className="max-w-5xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   {/* 사용자 섹션 */}
-                  <div className="relative group">
+                  <div className="relative group cursor-pointer" onClick={() => router.push('/quote-request')}>
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                     <div className="relative bg-slate-800/50 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 sm:p-8 hover:border-blue-400/50 transition-all duration-300">
                       <div className="flex items-center gap-4 mb-4">
@@ -272,7 +313,7 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
-                          <span className="text-sm sm:text-base text-slate-300">최대 5개 업체 견적 비교</span>
+                          <span className="text-sm sm:text-base text-slate-300">최고의 업체 견적 비교</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
@@ -283,7 +324,7 @@ export default function Home() {
                   </div>
 
                   {/* 도배사장님 섹션 */}
-                  <div className="relative group">
+                  <div className="relative group cursor-pointer" onClick={() => window.open('https://www.codelabtiger.com/doberman/', '_blank')}>
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                     <div className="relative bg-slate-800/50 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 sm:p-8 hover:border-purple-400/50 transition-all duration-300">
                       <div className="flex items-center gap-4 mb-4">
@@ -298,7 +339,7 @@ export default function Home() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
                           <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                          <span className="text-sm sm:text-base text-slate-300">도배르만 앱에서 견적 작성</span>
+                          <span className="text-sm sm:text-base text-slate-300">앱에서 비교견적 작성</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
@@ -533,7 +574,7 @@ export default function Home() {
               transition={{ delay: 0.9 }}
               className="text-center bg-slate-800/30 rounded-lg p-3 sm:p-4 backdrop-blur-sm border border-slate-700/30"
             >
-              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient-primary mb-1">2,340+</div>
+              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient-primary mb-1">1,400+</div>
               <div className="text-xs sm:text-sm md:text-base text-muted">누적 견적 요청</div>
             </motion.div>
 
@@ -544,7 +585,7 @@ export default function Home() {
               transition={{ delay: 1.0 }}
               className="text-center bg-slate-800/30 rounded-lg p-3 sm:p-4 backdrop-blur-sm border border-slate-700/30"
             >
-              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient-primary mb-1">200+</div>
+              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient-primary mb-1">300+</div>
               <div className="text-xs sm:text-sm md:text-base text-muted">등록 전문가</div>
             </motion.div>
 
@@ -668,6 +709,422 @@ export default function Home() {
                 도배에 관한 궁금한 점을 전문가에게 무료로 상담받을 수 있습니다.
               </p>
             </motion.div>
+          </div>
+        </motion.div>
+
+                {/* 전체 견적 요청 미리보기 섹션 */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.6 }}
+          className="max-w-7xl mx-auto mb-20"
+        >
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <List className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-lg sm:text-2xl font-bold text-white">
+                최신 견적 요청
+              </h2>
+            </div>
+            <p className="hidden sm:block text-sm sm:text-base text-slate-400 max-w-2xl mx-auto">
+              전국 각지에서 신청된 최신 도배 견적 요청들
+            </p>
+          </div>
+
+          {/* 견적 요청 리스트 테이블 */}
+          <div className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden mb-8">
+            {/* 테이블 헤더 - 데스크톱 */}
+            <div className="hidden md:block bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-b border-slate-600/50 px-6 py-4">
+              <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-slate-300">
+                <div className="col-span-1">번호</div>
+                <div className="col-span-2">지역</div>
+                <div className="col-span-2">건물유형</div>
+                <div className="col-span-1">면적</div>
+                <div className="col-span-2">고객명</div>
+                <div className="col-span-2">요청일</div>
+                <div className="col-span-1">답변</div>
+                <div className="col-span-1">상태</div>
+              </div>
+            </div>
+
+            {/* 테이블 헤더 - 모바일 */}
+            <div className="md:hidden bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-b border-slate-600/50 px-2 py-3">
+              <div className="grid grid-cols-7 gap-1 text-xs font-semibold text-slate-300">
+                <div className="text-center">번호</div>
+                <div className="text-center">지역</div>
+                <div className="text-center">유형</div>
+                <div className="text-center">고객명</div>
+                <div className="text-center">요청일</div>
+                <div className="text-center">답변</div>
+                <div className="text-center">상태</div>
+              </div>
+            </div>
+
+            {/* 테이블 바디 */}
+            <div className="divide-y divide-slate-700/30">
+              {!customerRequestsRequested ? (
+                <div className="px-6 py-12 text-center">
+                  <div className="text-slate-500 mb-4">📋</div>
+                  <p className="text-slate-400">실시간 견적 요청 현황을 불러오는 중...</p>
+                </div>
+              ) : isCustomerRequestsLoading ? (
+                <div className="px-6 py-12 text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-4">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <p className="text-slate-300">견적 요청을 불러오는 중...</p>
+                </div>
+              ) : customerRequests && customerRequests.length > 0 ? (
+                <>
+                  {/* 데스크톱 버전 */}
+                  <div className="hidden md:block">
+                    {customerRequests.map((request: CustomerRequest, index: number) => {
+                      // 상태별 설정
+                      const getStatusConfig = (status: string) => {
+                        switch (status) {
+                          case "검토중":
+                            return {
+                              color: "from-yellow-500 to-orange-500",
+                              bg: "bg-yellow-500/10",
+                              text: "text-yellow-400"
+                            };
+                          case "진행중":
+                            return {
+                              color: "from-blue-500 to-cyan-500",
+                              bg: "bg-blue-500/10",
+                              text: "text-blue-400"
+                            };
+                          case "채택 성공":
+                            return {
+                              color: "from-emerald-500 to-green-500",
+                              bg: "bg-emerald-500/10",
+                              text: "text-emerald-400"
+                            };
+                          default:
+                            return {
+                              color: "from-gray-500 to-slate-500",
+                              bg: "bg-gray-500/10",
+                              text: "text-gray-400"
+                            };
+                        }
+                      };
+
+                      const statusConfig = getStatusConfig(request.status);
+                      
+                      // 고객명 가운데 이름 * 으로 변경
+                      const hideMiddleName = (name: string) => {
+                        const nameString = name.trim();
+                        if(nameString.length > 2) {
+                          return nameString.slice(0, 1) + '*'.repeat(nameString.length - 2) + nameString.slice(-1);
+                        } else if(nameString.length === 2) {
+                          return nameString.slice(0, 1) + '*';
+                        }
+                        return nameString;
+                      };
+
+                      // 날짜 포맷팅
+                      const formatDate = (dateString: string) => {
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('ko-KR', {
+                          month: 'short',
+                          day: 'numeric'
+                        });
+                      };
+
+                      // 대괄호 제거
+                      const removeBrackets = (str: string) => {
+                        return str.replace(/[\[\]]/g, '');
+                      };
+
+                      return (
+                        <motion.div
+                          key={request.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 1.0 + index * 0.05 }}
+                          className="group cursor-pointer hover:bg-slate-700/20 transition-all duration-200"
+                          onClick={() => router.push('/quote-request/list')}
+                        >
+                          <div className="grid grid-cols-12 gap-4 px-6 py-4 text-sm">
+                            {/* 번호 */}
+                            <div className="col-span-1">
+                              <span className="text-slate-400 font-mono">#{request.id}</span>
+                            </div>
+                            
+                            {/* 지역 */}
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3 h-3 text-slate-400" />
+                                <span className="text-white font-medium">{request.region}</span>
+                              </div>
+                            </div>
+                            
+                            {/* 건물유형 */}
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2">
+                                <Building className="w-3 h-3 text-slate-400" />
+                                <span className="text-slate-300">{removeBrackets(request.buildingType)}</span>
+                              </div>
+                            </div>
+                            
+                            {/* 면적 */}
+                            <div className="col-span-1">
+                              <span className="text-slate-300 font-medium">{request.areaSize}평</span>
+                            </div>
+                            
+                            {/* 고객명 */}
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2">
+                                <User className="w-3 h-3 text-slate-400" />
+                                <span className="text-slate-300">{hideMiddleName(request.customerName)}</span>
+                              </div>
+                            </div>
+                            
+                            {/* 요청일 */}
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                <span className="text-slate-300">{formatDate(request.requestDate)}</span>
+                              </div>
+                            </div>
+                            
+                            {/* 답변 수 */}
+                            <div className="col-span-1">
+                              <div className="flex items-center justify-center">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  request.answerCount > 5 
+                                    ? 'bg-blue-500/20 text-blue-400' 
+                                    : request.answerCount > 2 
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-slate-500/20 text-slate-400'
+                                }`}>
+                                  {request.answerCount}개
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* 상태 */}
+                            <div className="col-span-1">
+                              <div className="flex items-center justify-center">
+                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                                  <div className={`w-1.5 h-1.5 bg-gradient-to-r ${statusConfig.color} rounded-full`}></div>
+                                  <span>{request.status}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 모바일 버전 - 테이블 형태 */}
+                  <div className="md:hidden">
+                    {customerRequests.slice(0, 12).map((request: CustomerRequest, index: number) => {
+                      // 상태별 설정
+                      const getStatusConfig = (status: string) => {
+                        switch (status) {
+                          case "검토중":
+                            return {
+                              color: "from-yellow-500 to-orange-500",
+                              bg: "bg-yellow-500/10",
+                              text: "text-yellow-400"
+                            };
+                          case "진행중":
+                            return {
+                              color: "from-blue-500 to-cyan-500",
+                              bg: "bg-blue-500/10",
+                              text: "text-blue-400"
+                            };
+                          case "채택 성공":
+                            return {
+                              color: "from-emerald-500 to-green-500",
+                              bg: "bg-emerald-500/10",
+                              text: "text-emerald-400"
+                            };
+                          default:
+                            return {
+                              color: "from-gray-500 to-slate-500",
+                              bg: "bg-gray-500/10",
+                              text: "text-gray-400"
+                            };
+                        }
+                      };
+
+                      const statusConfig = getStatusConfig(request.status);
+                      
+                      // 고객명 가운데 이름 * 으로 변경
+                      const hideMiddleName = (name: string) => {
+                        const nameString = name.trim();
+                        if(nameString.length > 2) {
+                          return nameString.slice(0, 1) + '*'.repeat(nameString.length - 2) + nameString.slice(-1);
+                        } else if(nameString.length === 2) {
+                          return nameString.slice(0, 1) + '*';
+                        }
+                        return nameString;
+                      };
+
+                      // 날짜 포맷팅
+                      const formatDate = (dateString: string) => {
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('ko-KR', {
+                          month: 'short',
+                          day: 'numeric'
+                        });
+                      };
+
+                      // 대괄호 제거
+                      const removeBrackets = (str: string) => {
+                        return str.replace(/[\[\]]/g, '');
+                      };
+
+                      return (
+                        <motion.div
+                          key={request.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 1.0 + index * 0.05 }}
+                          className="group cursor-pointer hover:bg-slate-700/20 transition-all duration-200 border-b border-slate-700/30 last:border-b-0"
+                          onClick={() => router.push('/quote-request/list')}
+                        >
+                          <div className="grid grid-cols-7 gap-0.5 px-1 py-3 text-xs">
+                            {/* 번호 */}
+                            <div className="text-center">
+                              <span className="text-slate-400 font-mono text-xs">#{request.id}</span>
+                            </div>
+                            
+                            {/* 지역 */}
+                            <div className="text-center">
+                              <span className="text-white font-medium text-xs">{request.region}</span>
+                            </div>
+                            
+                            {/* 유형 */}
+                            <div className="text-center">
+                              <span className="text-slate-300 text-xs">{removeBrackets(request.buildingType)}</span>
+                            </div>
+                            
+                            {/* 고객명 */}
+                            <div className="text-center">
+                              <span className="text-slate-300 text-xs">{hideMiddleName(request.customerName)}</span>
+                            </div>
+                            
+                            {/* 요청일 */}
+                            <div className="text-center">
+                              <span className="text-slate-300 text-xs">{formatDate(request.requestDate)}</span>
+                            </div>
+                            
+                            {/* 답변 */}
+                            <div className="text-center">
+                              <span className={`px-1 py-0.5 rounded text-xs font-medium ${
+                                request.answerCount > 5 
+                                  ? 'bg-blue-500/20 text-blue-400' 
+                                  : request.answerCount > 2 
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-slate-500/20 text-slate-400'
+                              }`}>
+                                {request.answerCount}
+                              </span>
+                            </div>
+                            
+                            {/* 상태 */}
+                            <div className="text-center">
+                              <div className={`inline-flex items-center justify-center px-1 py-0.5 rounded text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                                <div className={`w-1 h-1 bg-gradient-to-r ${statusConfig.color} rounded-full mr-0.5`}></div>
+                                <span className="text-xs whitespace-nowrap">{request.status}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="px-6 py-12 text-center">
+                  <div className="text-slate-500 mb-4">📋</div>
+                  <p className="text-slate-400">현재 등록된 견적 요청이 없습니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 통계 정보 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {!customerRequestsRequested ? (
+              // 데이터 로딩 시작 전 상태
+              Array.from({ length: 4 }).map((_, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.4 + index * 0.1 }}
+                  className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 text-center"
+                >
+                  <div className="text-2xl mb-2">📊</div>
+                  <div className="text-xl font-bold text-slate-400 mb-1">-</div>
+                  <div className="text-xs text-slate-500">로딩 중...</div>
+                </motion.div>
+              ))
+            ) : (
+              [
+                { 
+                  label: "전체 요청", 
+                  count: statistics ? `${statistics.totalCount}+` : "1,470+", 
+                  color: "from-blue-500 to-cyan-500", 
+                  icon: "📊" 
+                },
+                { 
+                  label: "검토중", 
+                  count: statistics ? statistics.reviewingCount.toString() : "156", 
+                  color: "from-yellow-500 to-orange-500", 
+                  icon: "⏳" 
+                },
+                { 
+                  label: "진행중", 
+                  count: statistics ? statistics.adoptedCount.toString() : "89", 
+                  color: "from-purple-500 to-violet-500", 
+                  icon: "🔄" 
+                },
+                { 
+                  label: "완료", 
+                  count: statistics ? statistics.completedCount.toString() : "789", 
+                  color: "from-emerald-500 to-green-500", 
+                  icon: "✅" 
+                }
+              ].map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.4 + index * 0.1 }}
+                  className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 text-center hover:border-blue-500/30 transition-all duration-300"
+                >
+                  <div className="text-2xl mb-2">{stat.icon}</div>
+                  <div className={`text-xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-1`}>
+                    {stat.count}
+                  </div>
+                  <div className="text-xs text-slate-400">{stat.label}</div>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+          {/* 더보기 버튼 */}
+          <div className="text-center">
+            <motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/quote-request/list')}
+              className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-blue-500/30 border border-blue-500/30"
+            >
+              <span>전체 견적 요청 보기</span>
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
+            <p className="text-sm text-slate-400 mt-4">
+              실시간으로 업데이트되는 전국의 도배 견적 요청 현황을 확인하세요
+            </p>
           </div>
         </motion.div>
 

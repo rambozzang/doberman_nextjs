@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import { AuthManager } from '@/lib/auth';
 import { AuthService } from '@/services/authService';
 import { UserInfo, LoginRequest, ApiResponse, LoginResponse, RegisterRequest } from '@/types/api';
@@ -74,8 +75,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AuthService.logout();
       setIsLoggedIn(false);
       setUser(null);
+      
+      // 로그아웃 성공 토스트 메시지 표시
+      toast.success("로그아웃되었습니다.", {
+        duration: 3000,
+        position: 'top-center',
+      });
+      
       // 세션 타임아웃 또는 로그아웃 시 홈화면으로 이동
       router.push('/');
+    } catch (error) {
+      console.error('로그아웃 중 오류:', error);
+      toast.error("로그아웃 중 오류가 발생했습니다.", {
+        duration: 3000,
+        position: 'top-center',
+      });
     } finally {
       setIsLoading(false);
     }

@@ -43,7 +43,7 @@ export class AuthService {
 
   // 회원가입 (실제 API 엔드포인트에 맞게 수정)
   static async register(userData: RegisterRequest): Promise<ApiResponse<LoginResponse>> {
-    const response = await ApiClient.post<LoginResponse>('/auth/login/with-email', userData);
+    const response = await ApiClient.post<LoginResponse>('/auth/login/register', userData);
     
     // 회원가입 성공 시 자동 로그인 (토큰과 사용자 정보 저장)
     if (response.success && response.data) {
@@ -64,7 +64,7 @@ export class AuthService {
 
   // 비밀번호 찾기
   static async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse<ForgotPasswordResponse>> {
-    return await ApiClient.post<ForgotPasswordResponse>('/auth/forgot-password', data);
+    return await ApiClient.post<ForgotPasswordResponse>('/auth/find-password', data);
   }
 
   // 토큰 갱신

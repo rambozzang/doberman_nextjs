@@ -320,33 +320,33 @@ export default function QuoteRequestDetailPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/5 via-transparent to-transparent"></div>
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]"></div>
         
-        <div className="container mx-auto px-4 py-6 relative">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="container mx-auto px-4 py-4 sm:py-6 relative">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
             <Link
               href="/quote-request/list"
-              className="group inline-flex items-center justify-center w-12 h-12 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 text-slate-300 hover:text-white backdrop-blur-sm hover:scale-105"
+              className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 text-slate-300 hover:text-white backdrop-blur-sm hover:scale-105 self-start"
             >
-              <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
             </Link>
             
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl shadow-2xl shadow-blue-500/25 ring-1 ring-white/10">
-                  <EyeIcon className="w-6 h-6 text-white" />
+                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl shadow-2xl shadow-blue-500/25 ring-1 ring-white/10">
+                  <EyeIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
                     견적 요청 상세
                   </h1>
-                  <p className="text-slate-400 font-medium">#{customerRequest.id}</p>
+                  <p className="text-slate-400 font-medium text-sm sm:text-base">#{customerRequest.id}</p>
                 </div>
               </div>
             </div>
 
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${statusConf.bgColor} ${statusConf.textColor} border border-current/20 backdrop-blur-sm shadow-lg`}>
-              <StatusIcon className="w-5 h-5" />
-              <span className="font-semibold">{statusConf.label}</span>
+            <div className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl ${statusConf.bgColor} ${statusConf.textColor} border border-current/20 backdrop-blur-sm shadow-lg self-start sm:self-auto`}>
+              <StatusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="font-semibold text-sm sm:text-base">{statusConf.label}</span>
             </div>
           </div>
         </div>
@@ -354,30 +354,30 @@ export default function QuoteRequestDetailPage() {
 
       {/* 메인 콘텐츠 */}
       <main className="flex-grow w-full">
-        <div className="container mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             
             {/* 왼쪽 컬럼 - 기본 정보 */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               
               {/* 기본 정보 카드 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <h2 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
+              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <h2 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <div className="p-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg">
-                    <InfoIcon className="w-5 h-5 text-blue-400" />
+                    <InfoIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   </div>
                   기본 정보
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-3">
+                    <div className="group/item flex items-center gap-3 p-3 sm:p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
                       <div className="p-1.5 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-md">
                         <BuildingIcon className="w-4 h-4 text-blue-400" />
                       </div>
                       <div>
-                        <div className="text-xs text-slate-400 font-medium">건물 유형</div>
-                        <div className="text-white font-semibold text-sm">{removeBrackets(customerRequest.buildingType)}</div>
+                        <div className="text-xs sm:text-sm text-slate-400 font-medium">건물 유형</div>
+                        <div className="text-white font-semibold text-sm sm:text-base">{removeBrackets(customerRequest.buildingType)}</div>
                       </div>
                     </div>
                     
@@ -560,17 +560,17 @@ export default function QuoteRequestDetailPage() {
 
           {/* 답변 현황 섹션 */}
           <div className="mt-6">
-            <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                   <div className="p-2 bg-gradient-to-br from-violet-500/20 to-violet-600/20 rounded-lg">
-                    <MessageCircleIcon className="w-5 h-5 text-violet-400" />
+                    <MessageCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400" />
                   </div>
                   답변 현황
                 </h2>
-                <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full border border-blue-400/20 shadow-lg">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full border border-blue-400/20 shadow-lg">
                   <MessageCircleIcon className="w-4 h-4 text-blue-400" />
-                  <span className="text-blue-400 font-semibold text-sm">{answers.length}개의 답변</span>
+                  <span className="text-blue-400 font-semibold text-sm sm:text-base">{answers.length}개의 답변</span>
                 </div>
               </div>
 
@@ -585,53 +585,107 @@ export default function QuoteRequestDetailPage() {
                   </div>
                 ) : answers.length > 0 ? (
                   answers.map((answer, index) => (
-                    <div key={answer.answerId || answer.id} className="group/answer bg-gradient-to-r from-slate-800/40 via-slate-700/40 to-slate-800/40 hover:from-slate-700/50 hover:via-slate-600/50 hover:to-slate-700/50 rounded-xl p-4 border border-slate-700/50 hover:border-slate-600/60 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full border border-blue-400/20 shadow-lg">
-                            <span className="text-blue-400 font-bold text-sm">{index + 1}</span>
-                          </div>
-                          <div>
-                            <h4 className="text-white font-semibold text-base mb-1 group-hover/answer:text-blue-100 transition-colors">
-                              {answer.answerTitle || "제목 없음"}
-                            </h4>
-                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div key={answer.answerId || answer.id} className="group/answer bg-gradient-to-r from-slate-800/40 via-slate-700/40 to-slate-800/40 hover:from-slate-700/50 hover:via-slate-600/50 hover:to-slate-700/50 rounded-xl p-4 sm:p-6 border border-slate-700/50 hover:border-slate-600/60 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
+                      {/* 헤더 - 답변 번호와 제목 */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full border border-blue-400/20 shadow-lg">
+                          <span className="text-blue-400 font-bold text-sm sm:text-base">{index + 1}</span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-white font-semibold text-base sm:text-lg mb-2 group-hover/answer:text-blue-100 transition-colors">
+                            {answer.answerTitle || "견적서 보내드립니다."}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-400">
+                            <div className="flex items-center gap-1.5">
                               <div className="p-0.5 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded">
-                                <UserIcon className="w-3 h-3 text-cyan-400" />
+                                <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" />
                               </div>
-                              <span>{answer.userName || answer.user?.userName || answer.webCustomer?.customerName || "익명"}</span>
-                              {answer.companyName && (
-                                <>
-                                  <span className="text-slate-500">•</span>
-                                  <span className="text-blue-400">{answer.companyName}</span>
-                                </>
-                              )}
-                              {answer.createdDt && (
-                                <>
-                                  <span className="text-slate-500">•</span>
-                                  <span>{formatDateTime(answer.createdDt)}</span>
-                                </>
-                              )}
+                              <span>{answer.userName || answer.user?.userName || answer.webCustomer?.customerName || "홍정수"}</span>
                             </div>
+                            {answer.companyName && (
+                              <>
+                                <span className="text-slate-500">•</span>
+                                <span className="text-blue-400">{answer.companyName}</span>
+                              </>
+                            )}
+                            {answer.createdDt && (
+                              <>
+                                <span className="text-slate-500">•</span>
+                                <span>{formatDateTime(answer.createdDt)}</span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {answer.cost && (
-                            <div className="text-right bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg px-3 py-1 border border-blue-400/20">
-                              <div className="text-xs text-slate-400 font-medium">견적 금액</div>
-                              <div className="text-blue-400 font-bold text-base">
-                                {answer.cost.toLocaleString()}원
-                              </div>
+                      </div>
+
+                      {/* 인사말 */}
+                      <div className="mb-4">
+                        <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                          안녕하세요, 요청하신 서비스에 대한 견적내용입니다.
+                        </p>
+                      </div>
+
+                      {/* 서비스 내용 */}
+                      <div className="mb-4">
+                        <h5 className="text-white font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          서비스 내용
+                        </h5>
+                        {answer.answerBody ? (
+                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 sm:p-4 border border-slate-700/30 hover:border-slate-600/40 transition-all duration-200">
+                            <div className="text-slate-300 leading-relaxed text-sm sm:text-base whitespace-pre-wrap">
+                              {answer.answerBody}
                             </div>
-                          )}
+                          </div>
+                        ) : (
+                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 sm:p-4 border border-slate-700/30">
+                            <div className="text-slate-400 text-sm sm:text-base">
+                              서비스 내용이 아직 입력되지 않았습니다.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 기타 안내사항 */}
+                      <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 sm:p-4 border border-slate-700/30 mb-4">
+                        <h5 className="text-white font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
+                          <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                          기타 안내사항
+                        </h5>
+                        <ul className="space-y-1 text-slate-300 text-sm sm:text-base">
+                          <li className="flex items-start gap-2">
+                            <span className="text-slate-500 mt-1">•</span>
+                            <span>추가 요청사항에 따라 비용이 변동될 수 있습니다.</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-slate-500 mt-1">•</span>
+                            <span>문의사항이 있으시면 언제든지 연락주세요.</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* 견적 금액과 액션 버튼 - 하단에 배치 */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-700/30">
+                        {/* 견적 금액 */}
+                        {answer.cost && (
+                          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg px-4 py-3 border border-blue-400/20">
+                            <div className="text-xs sm:text-sm text-slate-400 font-medium mb-1">견적 금액</div>
+                            <div className="text-blue-400 font-bold text-xl sm:text-2xl">
+                              {answer.cost.toLocaleString()}원
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 액션 버튼들 */}
+                        <div className="flex flex-col sm:flex-row gap-2">
                           {/* 채택하기 버튼 - 검토중 상태이고 아직 채택되지 않은 답변에만 표시 */}
                           {customerRequest?.status === "검토중" && answer.status !== '채택' && (
                             <button
                               onClick={() => handleAdoptClick(answer)}
-                              className="group/adopt flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-emerald-500/20 to-green-500/20 hover:from-emerald-500/30 hover:to-green-500/30 border border-emerald-500/30 hover:border-emerald-400/50 rounded-lg transition-all duration-300 text-emerald-400 hover:text-emerald-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20"
+                              className="group/adopt flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500/20 to-green-500/20 hover:from-emerald-500/30 hover:to-green-500/30 border border-emerald-500/30 hover:border-emerald-400/50 rounded-lg transition-all duration-300 text-emerald-400 hover:text-emerald-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 w-full sm:w-auto"
                             >
-                              <StarIcon className="w-3 h-3 group-hover/adopt:rotate-12 transition-transform" />
-                              <span className="text-xs font-semibold">채택하기</span>
+                              <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover/adopt:rotate-12 transition-transform" />
+                              <span className="text-sm sm:text-base font-semibold">채택하기</span>
                             </button>
                           )}
                           {/* 대화하기 버튼 - 채택 성공 상태이고 채택된 답변에만 표시 */}
@@ -642,33 +696,14 @@ export default function QuoteRequestDetailPage() {
                                 setCurrentChatPartner(answer);
                                 setShouldOpenChat(true);
                               }}
-                              className="group/chat flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 hover:from-emerald-500/50 hover:to-teal-500/50 border border-emerald-400/40 hover:border-emerald-300/60 rounded-xl transition-all duration-300 text-emerald-300 hover:text-emerald-200 hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/30 backdrop-blur-sm"
+                              className="group/chat flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 hover:from-emerald-500/50 hover:to-teal-500/50 border border-emerald-400/40 hover:border-emerald-300/60 rounded-lg transition-all duration-300 text-emerald-300 hover:text-emerald-200 hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/30 backdrop-blur-sm w-full sm:w-auto"
                             >
-                              <MessageSquareIcon className="w-4 h-4 group-hover/chat:scale-110 transition-transform" />
-                              <span className="text-sm font-bold">대화하기</span>
+                              <MessageSquareIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover/chat:scale-110 transition-transform" />
+                              <span className="text-sm sm:text-base font-bold">대화하기</span>
                             </button>
                           )}
-                          
-                          {/* 답변 상태 표시 - 채택 성공일 때는 채택된 답변에만 표시 */}
-                          {/* {((customerRequest?.status !== "채택 성공") || (customerRequest?.status === "채택 성공" && answer.status === '채택 성공')) && answer.status && (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shadow-lg ${
-                              answer.status === '채택' 
-                                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30'
-                                : 'bg-gradient-to-r from-slate-500/20 to-slate-600/20 text-slate-400 border border-slate-500/30'
-                            }`}>
-                              {answer.status}
-                            </span>
-                          )} */}
                         </div>
                       </div>
-                      
-                      {answer.answerBody && (
-                        <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 mt-3 border border-slate-700/30 hover:border-slate-600/40 transition-all duration-200">
-                          <div className="text-slate-300 leading-relaxed text-sm whitespace-pre-wrap">
-                            {answer.answerBody}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))
                 ) : (

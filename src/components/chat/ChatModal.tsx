@@ -75,6 +75,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     }
   };
 
+  // 키보드 이벤트 처리
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // 기본 동작 방지
+      if (newMessage.trim() && isConnected && !uploadingFile) {
+        onSendMessage();
+      }
+    }
+  };
+
   // 파일 업로드 버튼 클릭
   const handleFileButtonClick = () => {
     fileInputRef.current?.click();
@@ -293,8 +303,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         </div>
 
         {/* 입력 영역 */}
-        <div className="p-6 border-t border-white/10 bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-b-3xl">
-          <div className="flex items-end space-x-3">
+        <div className="p-1 border-t border-white/10 bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-b-3xl">
+          <div className="flex items-center space-x-1">
             <input
               type="file"
               ref={fileInputRef}
@@ -305,6 +315,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             
             <button
               onClick={handleFileButtonClick}
+              type="button"
               disabled={uploadingFile || !isConnected}
               className="group flex-shrink-0 w-12 h-12 bg-gradient-to-br from-slate-700/50 to-slate-600/50 hover:from-slate-600/60 hover:to-slate-500/60 border border-white/20 hover:border-white/30 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 backdrop-blur-sm"
               title="파일 첨부"
@@ -319,7 +330,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 type="text"
                 value={newMessage}
                 onChange={onMessageChange}
-                onKeyPress={onKeyPress}
+                onKeyDown={handleKeyPress}
                 placeholder={
                   !isConnected 
                     ? "연결 중..." 
@@ -328,12 +339,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       : "메시지를 입력하세요..."
                 }
                 disabled={!isConnected || uploadingFile}
-                className="w-full px-4 py-3 bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm border border-white/20 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-white placeholder-slate-400 transition-all duration-200"
+                className="w-full h-12 px-4 bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-white placeholder-slate-400 transition-all duration-200"
               />
             </div>
 
             <button
               onClick={onSendMessage}
+              type="button"
               disabled={!newMessage.trim() || !isConnected || uploadingFile}
               className="group flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-slate-600 disabled:to-slate-700 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-blue-500/25"
             >
@@ -371,3 +383,4 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     </div>
   );
 }; 
+

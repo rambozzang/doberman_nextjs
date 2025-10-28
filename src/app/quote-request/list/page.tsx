@@ -574,7 +574,7 @@ export default function QuoteRequestListPage() {
                         
                         <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConf.bgColor} ${statusConf.textColor} ml-2 flex-shrink-0`}>
                           <StatusIcon className="w-3 h-3" />
-                          <span className="hidden sm:inline">{statusConf.label}</span>
+                          <span>{statusConf.label}</span>
                         </div>
                       </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '@/providers/AuthProvider';
 
 // 개발 환경에서도 운영과 동일한 시간으로 설정
@@ -21,6 +22,14 @@ export const useAutoLogout = () => {
     timeoutRef.current = setTimeout(() => {
       console.log('비활성화로 인한 자동 로그아웃');
       setShowWarning(false);
+      
+      // 자동 로그아웃 토스트 메시지 표시
+      toast("장시간 비활성으로 인해 자동 로그아웃되었습니다.", {
+        duration: 4000,
+        position: 'top-center',
+        icon: 'ℹ️',
+      });
+      
       logout();
     }, WARNING_TIME);
   }, [logout]);

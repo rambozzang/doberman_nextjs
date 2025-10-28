@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Github, Twitter, Linkedin, Mail, Phone, MapPin, ChevronDown } from "lucide-react";
+import { Github, Twitter, Linkedin, Mail, Phone, MapPin, ChevronDown, User } from "lucide-react";
 
 import Image from "next/image";
 
@@ -31,6 +31,7 @@ interface FooterProps {
   contactInfo?: {
     email?: string;
     phone?: string;
+    owner?: string;
     address?: string;
   };
   showNewsletter?: boolean;
@@ -41,8 +42,8 @@ const defaultSections: FooterSection[] = [
     title: "서비스 안내",
     links: [
       { title: "서비스 소개", href: "/service-intro" },
-      { title: "서비스 이용약관", href: "/terms-of-service" },
-      { title: "개인정보 처리방침", href: "/privacy-policy" },
+      { title: "서비스 이용약관", href: "https://www.codelabtiger.com/doberman/service/" },
+      { title: "개인정보 처리방침", href: "https://www.codelabtiger.com/doberman/privacy/" },
     ],
   },
   {
@@ -85,6 +86,7 @@ const Footer: React.FC<FooterProps> = ({
   contactInfo = {
     email: "codelabtiger@gmail.com",
     phone: "+82 010-2468-7272",
+    owner: "대표이사 전범규",
     address: "서울특별시 강남구 테헤란로 123",
   },
   showNewsletter = true,
@@ -187,6 +189,14 @@ const Footer: React.FC<FooterProps> = ({
                         <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                       </div>
                       <span>{contactInfo.phone}</span>
+                    </div>
+                  )}
+                  {contactInfo.owner && (
+                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base text-slate-300 hover:text-blue-400 transition-colors">
+                      <div className="p-0.5 rounded bg-slate-800/50">
+                        <User className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                      </div>
+                      <span>{contactInfo.owner}</span>
                     </div>
                   )}
                   {contactInfo.address && (
@@ -357,19 +367,22 @@ const Footer: React.FC<FooterProps> = ({
           className="py-2 lg:py-2.5 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800/50 backdrop-blur-sm"
         >
           <div className="flex flex-col md:flex-row justify-between items-center space-y-1 md:space-y-0">
-            <div className="text-sm sm:text-base lg:text-sm text-slate-400">
-              © {new Date().getFullYear()} <span className="text-blue-400 font-medium">{logo}</span>. All rights reserved.
+            <div className="text-sm sm:text-base lg:text-sm text-slate-400 text-center md:text-left">
+              <div>© {new Date().getFullYear()} <span className="text-blue-400 font-medium">(주)코드랩타이거</span>. All rights reserved.</div>
+              <div className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                사업자등록번호: 744-50-01045
+              </div>
             </div>
             <div className="flex space-x-3 lg:space-x-4">
               <Link
-                href="/privacy"
+                href="https://www.codelabtiger.com/doberman/privacy/"
                 className="text-sm sm:text-base lg:text-sm text-slate-400 hover:text-blue-400 transition-colors relative group"
               >
                 개인정보처리방침
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-gradient-to-r from-blue-400 to-purple-400 group-hover:w-full transition-all duration-300"></span>
               </Link>
               <Link
-                href="/terms"
+                href="https://www.codelabtiger.com/doberman/service/"
                 className="text-sm sm:text-base lg:text-sm text-slate-400 hover:text-blue-400 transition-colors relative group"
               >
                 이용약관

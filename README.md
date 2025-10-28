@@ -34,3 +34,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+서버 반영 방법
+
+1. build-deploy.sh 실행
+2. doberman.tar.gz 파일 서버에 업로드
+3. /home/ubuntu/web_mv.sh 실행
+4. pm2 list 실행
+5. pm2 restart doberman

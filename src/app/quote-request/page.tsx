@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, Sparkles, MapPin, Home, Calendar, User } from "lucide-react";
 import { CustomerRequestService } from "@/services/customerRequestService";
 import { CreateCustomerRequestRequest, UserInfo } from "@/types/api";
 import { AuthManager } from "@/lib/auth";
+import SocialAuthService from '@/services/socialAuthService';
+import { toast } from 'react-hot-toast';
 
 // 단계 정의
 const steps = [
@@ -20,7 +22,9 @@ const steps = [
 
 // 옵션 데이터
 const buildingTypes = [
-  { value: 'apartment', label: '아파트/빌라', icon: '🏢', description: '아파트, 빌라, 오피스텔' },
+  { value: 'apartment', label: '아파트', icon: '🏢', description: '아파트' },
+  { value: 'billa', label: '빌라', icon: '🏢', description: '빌라' },
+  { value: 'officetel', label: '오피스텔', icon: '🏢', description: '오피스텔' },
   { value: 'house', label: '단독주택', icon: '🏠', description: '단독주택, 전원주택' },
   { value: 'office', label: '사무실', icon: '🏢', description: '사무실, 업무공간' },
   { value: 'commercial', label: '상가', icon: '🏪', description: '상가, 매장, 카페' },
@@ -51,33 +55,367 @@ const additionalRequests = [
   { value: 'quick-service', label: '당일 시공', icon: '⚡' },
 ];
 
-const regions = [
-  { value: 'seoul', label: '서울특별시', icon: '🏙️' },
-  { value: 'busan', label: '부산광역시', icon: '🌊' },
-  { value: 'daegu', label: '대구광역시', icon: '🏔️' },
-  { value: 'incheon', label: '인천광역시', icon: '✈️' },
-  { value: 'gwangju', label: '광주광역시', icon: '🌸' },
-  { value: 'daejeon', label: '대전광역시', icon: '🚄' },
-  { value: 'ulsan', label: '울산광역시', icon: '🏭' },
-  { value: 'sejong', label: '세종특별자치시', icon: '🏛️' },
-  { value: 'gyeonggi', label: '경기도', icon: '🏘️' },
-  { value: 'gangwon', label: '강원도', icon: '⛰️' },
-  { value: 'chungnam', label: '충청남도', icon: '🌾' },
-  { value: 'chungbuk', label: '충청북도', icon: '🏞️' },
-  { value: 'jeonnam', label: '전라남도', icon: '🌿' },
-  { value: 'jeonbuk', label: '전라북도', icon: '🍃' },
-  { value: 'gyeongnam', label: '경상남도', icon: '🏔️' },
-  { value: 'gyeongbuk', label: '경상북도', icon: '⛰️' },
-  { value: 'jeju', label: '제주도', icon: '🏝️' },
+const regionData = [
+  {
+    id: "seoul",
+    name: "서울특별시",
+    icon: "🏙️",
+    districts: [
+      { id: "gangnam", name: "강남구" },
+      { id: "gangdong", name: "강동구" },
+      { id: "gangbuk", name: "강북구" },
+      { id: "gangseo", name: "강서구" },
+      { id: "gwanak", name: "관악구" },
+      { id: "gwangjin", name: "광진구" },
+      { id: "guro", name: "구로구" },
+      { id: "geumcheon", name: "금천구" },
+      { id: "nowon", name: "노원구" },
+      { id: "dobong", name: "도봉구" },
+      { id: "dongdaemun", name: "동대문구" },
+      { id: "dongjak", name: "동작구" },
+      { id: "mapo", name: "마포구" },
+      { id: "seodaemun", name: "서대문구" },
+      { id: "seocho", name: "서초구" },
+      { id: "seongdong", name: "성동구" },
+      { id: "seongbuk", name: "성북구" },
+      { id: "songpa", name: "송파구" },
+      { id: "yangcheon", name: "양천구" },
+      { id: "yeongdeungpo", name: "영등포구" },
+      { id: "yongsan", name: "용산구" },
+      { id: "eunpyeong", name: "은평구" },
+      { id: "jongno", name: "종로구" },
+      { id: "jung", name: "중구" },
+      { id: "jungnang", name: "중랑구" }
+    ]
+  },
+  {
+    id: "busan",
+    name: "부산광역시",
+    icon: "🌊",
+    districts: [
+      { id: "gangseo-busan", name: "강서구" },
+      { id: "geumjeong", name: "금정구" },
+      { id: "gijang", name: "기장군" },
+      { id: "nam", name: "남구" },
+      { id: "dong", name: "동구" },
+      { id: "dongnae", name: "동래구" },
+      { id: "busanjin", name: "부산진구" },
+      { id: "buk", name: "북구" },
+      { id: "sasang", name: "사상구" },
+      { id: "saha", name: "사하구" },
+      { id: "seo", name: "서구" },
+      { id: "suyeong", name: "수영구" },
+      { id: "yeonje", name: "연제구" },
+      { id: "yeongdo", name: "영도구" },
+      { id: "jung-busan", name: "중구" },
+      { id: "haeundae", name: "해운대구" }
+    ]
+  },
+  {
+    id: "daegu",
+    name: "대구광역시",
+    icon: "🏔️",
+    districts: [
+      { id: "jung-daegu", name: "중구" },
+      { id: "dong-daegu", name: "동구" },
+      { id: "seo-daegu", name: "서구" },
+      { id: "nam-daegu", name: "남구" },
+      { id: "buk-daegu", name: "북구" },
+      { id: "suseong", name: "수성구" },
+      { id: "dalseo", name: "달서구" },
+      { id: "dalseong", name: "달성군" },
+      { id: "gunwi", name: "군위군" }
+    ]
+  },
+  {
+    id: "incheon",
+    name: "인천광역시",
+    icon: "✈️",
+    districts: [
+      { id: "jung-incheon", name: "중구" },
+      { id: "dong-incheon", name: "동구" },
+      { id: "michuhol", name: "미추홀구" },
+      { id: "yeonsu", name: "연수구" },
+      { id: "namdong", name: "남동구" },
+      { id: "bupyeong", name: "부평구" },
+      { id: "gyeyang", name: "계양구" },
+      { id: "seo-incheon", name: "서구" },
+      { id: "ganghwa", name: "강화군" },
+      { id: "ongjin", name: "옹진군" }
+    ]
+  },
+  {
+    id: "gwangju",
+    name: "광주광역시",
+    icon: "🌸",
+    districts: [
+      { id: "dong-gwangju", name: "동구" },
+      { id: "seo-gwangju", name: "서구" },
+      { id: "nam-gwangju", name: "남구" },
+      { id: "buk-gwangju", name: "북구" },
+      { id: "gwangsan", name: "광산구" }
+    ]
+  },
+  {
+    id: "daejeon",
+    name: "대전광역시",
+    icon: "🚄",
+    districts: [
+      { id: "dong-daejeon", name: "동구" },
+      { id: "jung-daejeon", name: "중구" },
+      { id: "seo-daejeon", name: "서구" },
+      { id: "yuseong", name: "유성구" },
+      { id: "daedeok", name: "대덕구" }
+    ]
+  },
+  {
+    id: "ulsan",
+    name: "울산광역시",
+    icon: "🏭",
+    districts: [
+      { id: "jung-ulsan", name: "중구" },
+      { id: "nam-ulsan", name: "남구" },
+      { id: "dong-ulsan", name: "동구" },
+      { id: "buk-ulsan", name: "북구" },
+      { id: "ulju", name: "울주군" }
+    ]
+  },
+  {
+    id: "sejong",
+    name: "세종특별자치시",
+    icon: "🏛️",
+    districts: [
+      { id: "sejong-city", name: "세종시" }
+    ]
+  },
+  {
+    id: "gyeonggi",
+    name: "경기도",
+    icon: "🏘️",
+    districts: [
+      { id: "suwon", name: "수원시" },
+      { id: "seongnam", name: "성남시" },
+      { id: "uijeongbu", name: "의정부시" },
+      { id: "anyang", name: "안양시" },
+      { id: "bucheon", name: "부천시" },
+      { id: "gwangmyeong", name: "광명시" },
+      { id: "pyeongtaek", name: "평택시" },
+      { id: "dongducheon", name: "동두천시" },
+      { id: "ansan", name: "안산시" },
+      { id: "goyang", name: "고양시" },
+      { id: "gwacheon", name: "과천시" },
+      { id: "guri", name: "구리시" },
+      { id: "namyangju", name: "남양주시" },
+      { id: "osan", name: "오산시" },
+      { id: "siheung", name: "시흥시" },
+      { id: "gunpo", name: "군포시" },
+      { id: "uiwang", name: "의왕시" },
+      { id: "hanam", name: "하남시" },
+      { id: "yongin", name: "용인시" },
+      { id: "paju", name: "파주시" },
+      { id: "icheon", name: "이천시" },
+      { id: "anseong", name: "안성시" },
+      { id: "gimpo", name: "김포시" },
+      { id: "hwaseong", name: "화성시" },
+      { id: "gwangju-gyeonggi", name: "광주시" },
+      { id: "yangju", name: "양주시" },
+      { id: "pocheon", name: "포천시" },
+      { id: "yeoju", name: "여주시" },
+      { id: "yeoncheon", name: "연천군" },
+      { id: "gapyeong", name: "가평군" },
+      { id: "yangpyeong", name: "양평군" }
+    ]
+  },
+  {
+    id: "gangwon",
+    name: "강원도",
+    icon: "⛰️",
+    districts: [
+      { id: "chuncheon", name: "춘천시" },
+      { id: "wonju", name: "원주시" },
+      { id: "gangneung", name: "강릉시" },
+      { id: "donghae", name: "동해시" },
+      { id: "taebaek", name: "태백시" },
+      { id: "sokcho", name: "속초시" },
+      { id: "samcheok", name: "삼척시" },
+      { id: "hongcheon", name: "홍천군" },
+      { id: "hoengseong", name: "횡성군" },
+      { id: "yeongwol", name: "영월군" },
+      { id: "pyeongchang", name: "평창군" },
+      { id: "jeongseon", name: "정선군" },
+      { id: "cheorwon", name: "철원군" },
+      { id: "hwacheon", name: "화천군" },
+      { id: "yanggu", name: "양구군" },
+      { id: "inje", name: "인제군" },
+      { id: "goseong-gangwon", name: "고성군" },
+      { id: "yangyang", name: "양양군" }
+    ]
+  },
+  {
+    id: "chungbuk",
+    name: "충청북도",
+    icon: "🏞️",
+    districts: [
+      { id: "cheongju", name: "청주시" },
+      { id: "chungju", name: "충주시" },
+      { id: "jecheon", name: "제천시" },
+      { id: "boeun", name: "보은군" },
+      { id: "okcheon", name: "옥천군" },
+      { id: "yeongdong", name: "영동군" },
+      { id: "jeungpyeong", name: "증평군" },
+      { id: "jincheon", name: "진천군" },
+      { id: "goesan", name: "괴산군" },
+      { id: "eumseong", name: "음성군" },
+      { id: "danyang", name: "단양군" }
+    ]
+  },
+  {
+    id: "chungnam",
+    name: "충청남도",
+    icon: "🌾",
+    districts: [
+      { id: "cheonan", name: "천안시" },
+      { id: "gongju", name: "공주시" },
+      { id: "boryeong", name: "보령시" },
+      { id: "asan", name: "아산시" },
+      { id: "seosan", name: "서산시" },
+      { id: "nonsan", name: "논산시" },
+      { id: "gyeryong", name: "계룡시" },
+      { id: "dangjin", name: "당진시" },
+      { id: "geumsan", name: "금산군" },
+      { id: "buyeo", name: "부여군" },
+      { id: "seocheon", name: "서천군" },
+      { id: "cheongyang", name: "청양군" },
+      { id: "hongseong", name: "홍성군" },
+      { id: "yesan", name: "예산군" },
+      { id: "taean", name: "태안군" }
+    ]
+  },
+  {
+    id: "jeonbuk",
+    name: "전라북도",
+    icon: "🍃",
+    districts: [
+      { id: "jeonju", name: "전주시" },
+      { id: "gunsan", name: "군산시" },
+      { id: "iksan", name: "익산시" },
+      { id: "jeongeup", name: "정읍시" },
+      { id: "namwon", name: "남원시" },
+      { id: "gimje", name: "김제시" },
+      { id: "wanju", name: "완주군" },
+      { id: "jinan", name: "진안군" },
+      { id: "muju", name: "무주군" },
+      { id: "jangsu", name: "장수군" },
+      { id: "imsil", name: "임실군" },
+      { id: "sunchang", name: "순창군" },
+      { id: "gochang", name: "고창군" },
+      { id: "buan", name: "부안군" }
+    ]
+  },
+  {
+    id: "jeonnam",
+    name: "전라남도",
+    icon: "🌿",
+    districts: [
+      { id: "mokpo", name: "목포시" },
+      { id: "yeosu", name: "여수시" },
+      { id: "suncheon", name: "순천시" },
+      { id: "naju", name: "나주시" },
+      { id: "gwangyang", name: "광양시" },
+      { id: "damyang", name: "담양군" },
+      { id: "gokseong", name: "곡성군" },
+      { id: "gurye", name: "구례군" },
+      { id: "goheung", name: "고흥군" },
+      { id: "boseong", name: "보성군" },
+      { id: "hwasun", name: "화순군" },
+      { id: "jangheung", name: "장흥군" },
+      { id: "gangjin", name: "강진군" },
+      { id: "haenam", name: "해남군" },
+      { id: "yeongam", name: "영암군" },
+      { id: "muan", name: "무안군" },
+      { id: "hampyeong", name: "함평군" },
+      { id: "yeonggwang", name: "영광군" },
+      { id: "jangseong", name: "장성군" },
+      { id: "wando", name: "완도군" },
+      { id: "jindo", name: "진도군" },
+      { id: "sinan", name: "신안군" }
+    ]
+  },
+  {
+    id: "gyeongbuk",
+    name: "경상북도",
+    icon: "⛰️",
+    districts: [
+      { id: "pohang", name: "포항시" },
+      { id: "gyeongju", name: "경주시" },
+      { id: "gimcheon", name: "김천시" },
+      { id: "andong", name: "안동시" },
+      { id: "gumi", name: "구미시" },
+      { id: "yeongju", name: "영주시" },
+      { id: "yeongcheon", name: "영천시" },
+      { id: "sangju", name: "상주시" },
+      { id: "mungyeong", name: "문경시" },
+      { id: "gyeongsan", name: "경산시" },
+      { id: "uiseong", name: "의성군" },
+      { id: "cheongsong", name: "청송군" },
+      { id: "yeongyang", name: "영양군" },
+      { id: "yeongdeok", name: "영덕군" },
+      { id: "cheongdo", name: "청도군" },
+      { id: "goryeong", name: "고령군" },
+      { id: "seongju", name: "성주군" },
+      { id: "chilgok", name: "칠곡군" },
+      { id: "yecheon", name: "예천군" },
+      { id: "bonghwa", name: "봉화군" },
+      { id: "uljin", name: "울진군" },
+      { id: "ulleung", name: "울릉군" }
+    ]
+  },
+  {
+    id: "gyeongnam",
+    name: "경상남도",
+    icon: "🏔️",
+    districts: [
+      { id: "changwon", name: "창원시" },
+      { id: "jinju", name: "진주시" },
+      { id: "tongyeong", name: "통영시" },
+      { id: "sacheon", name: "사천시" },
+      { id: "gimhae", name: "김해시" },
+      { id: "miryang", name: "밀양시" },
+      { id: "geoje", name: "거제시" },
+      { id: "yangsan", name: "양산시" },
+      { id: "uiryeong", name: "의령군" },
+      { id: "haman", name: "함안군" },
+      { id: "changnyeong", name: "창녕군" },
+      { id: "goseong-gyeongnam", name: "고성군" },
+      { id: "namhae", name: "남해군" },
+      { id: "hadong", name: "하동군" },
+      { id: "sancheong", name: "산청군" },
+      { id: "hamyang", name: "함양군" },
+      { id: "geochang", name: "거창군" },
+      { id: "hapcheon", name: "합천군" }
+    ]
+  },
+  {
+    id: "jeju",
+    name: "제주특별자치도",
+    icon: "🏝️",
+    districts: [
+      { id: "jeju-city", name: "제주시" },
+      { id: "seogwipo", name: "서귀포시" }
+    ]
+  }
 ];
 
 export default function QuoteRequestPage() {
   const router = useRouter();
+  const districtRef = useRef<HTMLDivElement>(null); // 구/군 선택 영역 참조
+  const nameInputRef = useRef<HTMLInputElement>(null); // 이름 입력 필드 참조
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 중복 제출 방지용
   // const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [formState, setFormState] = useState({
     buildingType: "",
@@ -93,6 +431,7 @@ export default function QuoteRequestPage() {
     password: "",
     address: "",
     region: "",
+    district: "",
     privacyConsent: false,
   });
 
@@ -107,6 +446,62 @@ export default function QuoteRequestPage() {
 
     checkLoginStatus();
   }, []);
+
+  // 팝업창으로부터 메시지 수신 처리
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // 보안을 위해 origin 확인
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data.type === 'SOCIAL_LOGIN_SUCCESS') {
+        toast.success(event.data.message, {
+          duration: 3000,
+          position: 'top-center',
+        });
+        
+        // 로그인 상태 다시 확인
+        const loginStatus = AuthManager.isLoggedIn();
+        const user = AuthManager.getUserInfo();
+        setIsLoggedIn(loginStatus);
+        setUserInfo(user);
+        
+        // 로그인 성공 시 다음 단계로 이동 (고객정보 단계 스킵)
+        if (loginStatus && currentStep === 6) {
+          setCurrentStep(5); // 지역 선택 단계로 이동
+        }
+      } else if (event.data.type === 'SOCIAL_LOGIN_ERROR') {
+        toast.error(event.data.message, {
+          duration: 3000,
+          position: 'top-center',
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [currentStep]);
+
+  // 고객정보 단계로 넘어갈 때 스크롤 최상단 이동 및 이름 필드 포커스
+  useEffect(() => {
+    if (currentStep === 6) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      // 모바일에서 로그인하지 않은 경우 이름 입력 필드에 포커스
+      if (!isLoggedIn && window.innerWidth < 1024) {
+        setTimeout(() => {
+          nameInputRef.current?.focus();
+        }, 300); // 스크롤 후 포커스
+      }
+    }
+  }, [currentStep, isLoggedIn]);
 
   // 로그인 상태에 따른 총 단계 수 계산 (로그인된 경우 고객정보 단계 제외)
   const totalSteps = isLoggedIn ? steps.length - 1 : steps.length;
@@ -143,7 +538,7 @@ export default function QuoteRequestPage() {
       case 4: // 추가 요청사항 (선택사항)
         return true;
       case 5: // 지역 선택
-        return !!formState.region;
+        return !!(formState.region && formState.district);
       case 6: // 고객 정보 (로그인된 경우 스킵)
         if (isLoggedIn) return true; // 로그인된 경우 항상 통과
         return !!(formState.name && formState.phone && formState.email && formState.password);
@@ -205,17 +600,29 @@ export default function QuoteRequestPage() {
     return labels.join(', ');
   };
 
-  const getRegionLabel = (value: string): string => {
-    const item = regions.find(region => region.value === value);
-    return item ? item.label : "";
+  const getRegionLabel = (regionId: string, districtId: string): string => {
+    const region = regionData.find(r => r.id === regionId);
+    if (!region) return "";
+    
+    const district = region.districts.find(d => d.id === districtId);
+    if (!district) return region.name;
+    
+    return `${region.name} ${district.name}`;
   };
 
   // 견적 요청 완료 처리
   const handleQuoteRequest = async () => {
+    // 중복 제출 방지
+    if (isSubmitting || isLoading) {
+      console.log('이미 제출 중입니다. 잠시만 기다려주세요.');
+      return;
+    }
+
     if (!confirm('견적 요청을 신청하시겠습니까?')) {
       return;
     }
 
+    setIsSubmitting(true);
     setIsLoading(true);
     try {
       // 로그인된 경우 사용자 정보 사용, 비로그인시 폼 데이터 사용
@@ -240,7 +647,7 @@ export default function QuoteRequestPage() {
         hasItems: formState.additionalRequest.includes('furniture-move') ? "짐이 있음" : "",
         preferredDate: formState.visitDate,
         preferredDateDetail: formState.visitDate ? "원하는 날짜가 있어요" : "",
-        region: getRegionLabel(formState.region),
+        region: getRegionLabel(formState.region, formState.district),
         customerName: customerName,
         customerPhone: customerPhone,
         customerEmail: customerEmail,
@@ -275,12 +682,18 @@ export default function QuoteRequestPage() {
       alert("견적 요청 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   // 폼 제출 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 중복 제출 방지
+    if (isSubmitting || isLoading) {
+      return;
+    }
     
     // 마지막 단계(고객정보 또는 지역선택)에서는 견적 요청 처리
     if ((isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)) {
@@ -308,10 +721,12 @@ export default function QuoteRequestPage() {
       password: "",
       address: "",
       region: "",
+      district: "",
       privacyConsent: false,
     });
     setCurrentStep(0);
     setIsComplete(false);
+    setIsSubmitting(false);
   };
 
   // 폼 필드 업데이트
@@ -408,8 +823,8 @@ export default function QuoteRequestPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* 빠른 링크 섹션 */}
-      <section className="w-full bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 pt-20 pb-4">
+      {/* 빠른 링크 섹션 - 모바일에서는 숨김 */}
+      <section className="hidden md:block w-full bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 pt-20 pb-4">
         <div className="container mx-auto px-4">
           <div className="text-center mb-4">
             <h2 className="text-base md:text-xl font-bold text-white mb-1">
@@ -483,7 +898,7 @@ export default function QuoteRequestPage() {
       </section>
 
       {/* 모바일 상단 네비게이션 */}
-      <div className="quote-mobile-nav lg:hidden w-full">
+      <div className="quote-mobile-nav lg:hidden w-full pt-16">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -526,7 +941,7 @@ export default function QuoteRequestPage() {
          
 
       {/* 메인 콘텐츠 영역 */}
-      <main className="quote-main-content flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800">
+      <main className="quote-main-content flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800 pt-4 md:pt-0">
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             {/* 왼쪽 사이드바 - 데스크톱에서만 표시 */}
@@ -634,7 +1049,7 @@ export default function QuoteRequestPage() {
 
             {/* 메인 콘텐츠 */}
             <div className="lg:col-span-2 col-span-full">
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-2xl">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-2xl mb-20 lg:mb-0">
                 <form onSubmit={handleSubmit}>
                   <div className="mb-4 sm:mb-6 md:mb-8 lg:mb-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6">
@@ -668,7 +1083,7 @@ export default function QuoteRequestPage() {
                         {buildingTypes.map((type) => (
                           <div
                             key={type.value}
-                            className={`group relative p-3 md:p-4 border-2 rounded-lg md:rounded-xl cursor-pointer transition-all duration-300 min-h-[90px] md:min-h-[100px] hover:scale-105 hover:-translate-y-1 ${
+                            className={`group relative p-2 md:p-3 border-2 rounded-lg md:rounded-xl cursor-pointer transition-all duration-300 min-h-[65px] md:min-h-[70px] hover:scale-105 hover:-translate-y-1 ${
                               formState.buildingType === type.value
                                 ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-xl shadow-blue-500/25'
                                 : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60 backdrop-blur-sm'
@@ -676,13 +1091,13 @@ export default function QuoteRequestPage() {
                             onClick={() => updateField('buildingType', type.value)}
                           >
                             {formState.buildingType === type.value && (
-                              <div className="absolute top-2 right-2 md:top-3 md:right-3 w-5 h-5 md:w-6 md:h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                                <CheckIcon className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
+                              <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2 w-4 h-4 md:w-5 md:h-5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                                <CheckIcon className="w-2 h-2 md:w-2.5 md:h-2.5 text-white" />
                               </div>
                             )}
                             
-                            <div className="relative mb-2 md:mb-3">
-                              <div className={`text-xl md:text-2xl mb-1 transition-transform duration-300 ${
+                            <div className="relative mb-1 md:mb-2">
+                              <div className={`text-lg md:text-xl mb-1 transition-transform duration-300 ${
                                 formState.buildingType === type.value ? 'scale-110' : 'group-hover:scale-105'
                               }`}>
                                 {type.icon}
@@ -690,12 +1105,12 @@ export default function QuoteRequestPage() {
                             </div>
                             
                             <div className="relative">
-                              <h4 className={`text-sm md:text-base font-bold mb-1 transition-colors duration-300 ${
+                              <h4 className={`text-xs md:text-sm font-bold mb-0.5 transition-colors duration-300 ${
                                 formState.buildingType === type.value ? 'text-white' : 'text-white group-hover:text-blue-200'
                               }`}>
                                 {type.label}
                               </h4>
-                              <p className={`text-xs leading-relaxed transition-colors duration-300 ${
+                              <p className={`text-xs leading-tight transition-colors duration-300 ${
                                 formState.buildingType === type.value ? 'text-blue-100' : 'text-slate-300 group-hover:text-slate-200'
                               }`}>
                                 {type.description}
@@ -927,41 +1342,122 @@ export default function QuoteRequestPage() {
                     {currentStep === 5 && (
                       <div className="space-y-6">
                         <div>
-                          <label className="block text-sm font-medium text-white mb-3">
-                            지역 선택 *
-                          </label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
-                            {regions.map((region) => (
-                              <div
-                                key={region.value}
-                                className={`group relative py-2 md:py-2 md:px-2 border-2 rounded-lg md:rounded-xl cursor-pointer transition-all duration-300 min-h-[80px] hover:scale-105 hover:-translate-y-1 ${
-                                  formState.region === region.value
-                                    ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-xl shadow-blue-500/25'
-                                    : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60 backdrop-blur-sm'
-                                }`}
-                                onClick={() => updateField('region', region.value)}
-                              >
-                                {formState.region === region.value && (
-                                  <div className="absolute top-1 right-1 md:top-1 md:right-1 w-5 h-5 md:w-6 md:h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                                    <CheckIcon className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
+                          {/* 선택된 지역 표시 */}
+                          {formState.region && formState.district && (
+                            <div className="mb-4 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/30 rounded-xl">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                                    <CheckIcon className="w-4 h-4 text-white" />
                                   </div>
-                                )}
-                                
-                                <div className="flex flex-col items-center justify-center gap-1">
-                                  <div className={`text-lg md:text-xl transition-transform duration-300 ${
-                                    formState.region === region.value ? 'scale-110' : 'group-hover:scale-105'
-                                  }`}>
-                                    {region.icon}
+                                  <div>
+                                    <p className="text-sm text-blue-300">선택된 지역</p>
+                                    <p className="text-lg font-bold text-white">
+                                      {regionData.find(r => r.id === formState.region)?.name} {regionData.find(r => r.id === formState.region)?.districts.find(d => d.id === formState.district)?.name}
+                                    </p>
                                   </div>
-                                  <h4 className={`text-xs md:text-sm font-bold transition-colors duration-300 ${
-                                    formState.region === region.value ? 'text-white' : 'text-white group-hover:text-blue-200'
-                                  }`}>
-                                    {region.label}
-                                  </h4>
                                 </div>
+                                <button
+                                  onClick={() => {
+                                    updateField('region', '');
+                                    updateField('district', '');
+                                  }}
+                                  className="text-sm text-blue-300 hover:text-blue-200 underline"
+                                >
+                                  다시 선택
+                                </button>
                               </div>
-                            ))}
+                            </div>
+                          )}
+
+                          {/* 시/도 선택 */}
+                          <div className="mb-6">
+                            <label className="block text-sm font-medium text-white mb-3">
+                              시/도 선택 *
+                            </label>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2">
+                              {regionData.map((region) => (
+                                <button
+                                  key={region.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateField('region', region.id);
+                                    updateField('district', ''); // 구/군 초기화
+                                    
+                                    // 모바일에서 구/군 선택 영역으로 스크롤
+                                    setTimeout(() => {
+                                      if (districtRef.current && window.innerWidth < 1024) {
+                                        const element = districtRef.current;
+                                        const yOffset = -120; // 헤더와 여유 공간을 위한 오프셋
+                                        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                                        
+                                        window.scrollTo({
+                                          top: y,
+                                          behavior: 'smooth'
+                                        });
+                                      }
+                                    }, 150);
+                                  }}
+                                  className={`relative py-4 px-3 border-2 rounded-lg transition-all duration-300 hover:scale-[1.02] min-h-[80px] ${
+                                    formState.region === region.id
+                                      ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/25'
+                                      : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60'
+                                  }`}
+                                >
+                                  {formState.region === region.id && (
+                                    <div className="absolute top-1 right-1 w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                      <CheckIcon className="w-2 h-2 text-white" />
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col items-center justify-center">
+                                    <div className="text-xl mb-1">{region.icon}</div>
+                                    <span className={`text-sm font-semibold ${
+                                      formState.region === region.id ? 'text-white' : 'text-slate-200'
+                                    }`}>
+                                      {region.name}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
                           </div>
+
+                          {/* 구/군 선택 - 시/도가 선택된 경우만 표시 */}
+                          {formState.region && (
+                            <div ref={districtRef} className="animate-in slide-in-from-top duration-300">
+                              <label className="block text-sm font-medium text-white mb-3">
+                                구/군 선택 *
+                              </label>
+                              
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                                {regionData.find(r => r.id === formState.region)?.districts.map((district) => (
+                                  <button
+                                    key={district.id}
+                                    type="button"
+                                    onClick={() => updateField('district', district.id)}
+                                    className={`relative py-2 px-2 border-2 rounded-lg transition-all duration-300 hover:scale-[1.02] min-h-[50px] ${
+                                      formState.district === district.id
+                                        ? 'border-green-400 bg-gradient-to-br from-green-500/20 to-emerald-500/20 shadow-lg shadow-green-500/25'
+                                        : 'border-slate-600/50 hover:border-green-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60'
+                                    }`}
+                                  >
+                                    {formState.district === district.id && (
+                                      <div className="absolute top-1 right-1 w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                        <CheckIcon className="w-2 h-2 text-white" />
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-center">
+                                      <span className={`text-xs font-semibold text-center ${
+                                        formState.district === district.id ? 'text-white' : 'text-slate-200'
+                                      }`}>
+                                        {district.name}
+                                      </span>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -969,12 +1465,77 @@ export default function QuoteRequestPage() {
                     {/* 7단계: 고객 정보 (로그인된 경우 스킵) */}
                     {currentStep === 6 && !isLoggedIn && (
                       <div className="space-y-6">
+                        {/* 소셜 로그인 섹션 */}
+                        <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-400/30 rounded-2xl p-6">
+                          <div className="text-center mb-4">
+                            <h4 className="text-sm font-semibold text-white mb-1">빠른 가입하기</h4>
+                            <p className="text-xs text-slate-400">소셜 계정으로 간편하게 가입하세요</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                           {/* Google 로그인 버튼 */}
+                           <button
+                             type="button"
+                             onClick={async () => {
+                               try {
+                                 await SocialAuthService.initiateGoogleLogin();
+                               } catch (error) {
+                                 console.error('Google 로그인 시작 오류:', error);
+                                 toast.error('Google 로그인을 시작할 수 없습니다.', {
+                                   duration: 3000,
+                                   position: 'top-center',
+                                 });
+                               }
+                             }}
+                             className="flex items-center justify-center py-3 px-4 bg-white/10 hover:bg-white/20 border border-slate-500 rounded-lg text-white transition-all duration-200 font-medium gap-2 group hover:scale-105"
+                           >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px">
+                                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.09,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.941l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-1.85,4.216-3.197,5.849l0,0l6.373,5.103C37.007,36.067,44,29.24,44,20.083z"/>
+                              </svg>
+                              <span className="text-sm">Google</span>
+                            </button>
+                            
+                           {/* Kakao 로그인 버튼 */}
+                           <button
+                             type="button"
+                             onClick={async () => {
+                               try {
+                                 await SocialAuthService.initiateKakaoLogin();
+                               } catch (error) {
+                                 console.error('Kakao 로그인 시작 오류:', error);
+                                 toast.error('Kakao 로그인을 시작할 수 없습니다.', {
+                                   duration: 3000,
+                                   position: 'top-center',
+                                 });
+                               }
+                             }}
+                             className="flex items-center justify-center py-3 px-4 bg-yellow-400/20 hover:bg-yellow-400/30 border border-yellow-500/50 rounded-lg text-yellow-300 transition-all duration-200 font-medium gap-2 group hover:scale-105"
+                           >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px">
+                                <path fill="currentColor" d="M24 4c-11.046 0-20 7.402-20 16.534 0 6.206 4.136 11.575 10.242 14.205-.322 2.154-1.784 7.561-1.823 7.801 0 0-.062.548.356.691.418.143 1.017-.252 1.635-.779 1.771-1.542 9.436-8.329 12.879-11.379 2.159.177 4.353.271 6.711.271 11.046 0 20-7.402 20-16.534C44 11.402 35.046 4 24 4z"/>
+                              </svg>
+                              <span className="text-sm">Kakao</span>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* 구분선 */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 border-t border-slate-600"></div>
+                          <p className="text-xs text-slate-400 font-medium">또는 직접 입력</p>
+                          <div className="flex-1 border-t border-slate-600"></div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-white mb-2">
                               이름 *
                             </label>
                             <input
+                              ref={nameInputRef}
                               type="text"
                               placeholder="홍길동"
                               value={formState.name}
@@ -992,6 +1553,7 @@ export default function QuoteRequestPage() {
                               placeholder="(-) 없이 숫자만 입력 (예: 01012345678)"
                               value={formState.phone}
                               onChange={(e) => updateField('phone', e.target.value)}
+                              maxLength={11}
                               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors"
                               required
                             />
@@ -1062,58 +1624,122 @@ export default function QuoteRequestPage() {
 
                   </div>
 
-                  {/* 네비게이션 버튼 */}
-                  <div className="border-t border-white/10 pt-6 md:pt-8 mt-6 md:mt-10">
-                    <div className="flex justify-between items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={currentStep === 0}
-                        className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
-                          currentStep === 0
-                            ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
-                            : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center">
-                          <ChevronLeftIcon className="w-5 h-5 mr-2" />
-                          <span>이전</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="submit"
-                        disabled={isLoading || !validateCurrentStep()}
-                        className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
-                          isLoading || !validateCurrentStep()
-                            ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
-                            : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105'
-                              : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center">
-                          {isLoading ? (
-                            <>
-                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                              <span>신청 중...</span>
-                            </>
-                          ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
-                            <>
-                              <CheckIcon className="w-5 h-5 mr-3" />
-                              <span>견적 신청하기</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>다음 단계</span>
-                              <ChevronRightIcon className="w-5 h-5 ml-3" />
-                            </>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-                  </div>
                 </form>
+              </div>
+            </div>
+          </div>
+          
+          {/* 네비게이션 버튼 - 완전히 독립적으로 모바일 하단 고정 */}
+          <div className="fixed lg:hidden bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-slate-900 via-slate-900 to-slate-900/95 border-t border-white/10 pt-3 pb-3 px-4 backdrop-blur-xl shadow-2xl">
+            <div className="container mx-auto max-w-7xl">
+              <div className="flex justify-between items-center gap-3">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  className={`group relative px-4 py-3 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
+                    currentStep === 0
+                      ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
+                      : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl active:scale-95'
+                  }`}
+                >
+                  <div className="flex items-center justify-center">
+                    <ChevronLeftIcon className="w-5 h-5 mr-1" />
+                    <span className="text-sm">이전</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading || isSubmitting || !validateCurrentStep()}
+                  className={`group relative px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
+                    isLoading || isSubmitting || !validateCurrentStep()
+                      ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
+                      : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 active:scale-95'
+                        : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95'
+                  }`}
+                >
+                  <div className="flex items-center justify-center">
+                    {isLoading || isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span>신청 중...</span>
+                      </>
+                    ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
+                      <>
+                        <CheckIcon className="w-5 h-5 mr-2" />
+                        <span>견적 신청하기</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>다음 단계</span>
+                        <ChevronRightIcon className="w-5 h-5 ml-2" />
+                      </>
+                    )}
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* 데스크톱용 버튼 - 기존 위치 유지 */}
+          <div className="hidden lg:block container mx-auto px-4 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              <div className="lg:col-span-1"></div>
+              <div className="lg:col-span-2">
+                <div className="border-t border-white/10 pt-6">
+                  <div className="flex justify-between items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={prevStep}
+                      disabled={currentStep === 0}
+                      className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${
+                        currentStep === 0
+                          ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
+                          : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center">
+                        <ChevronLeftIcon className="w-5 h-5 mr-2" />
+                        <span className="text-base">이전</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isLoading || isSubmitting || !validateCurrentStep()}
+                      className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${
+                        isLoading || isSubmitting || !validateCurrentStep()
+                          ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
+                          : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center">
+                        {isLoading || isSubmitting ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                            <span>신청 중...</span>
+                          </>
+                        ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
+                          <>
+                            <CheckIcon className="w-5 h-5 mr-3" />
+                            <span>견적 신청하기</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>다음 단계</span>
+                            <ChevronRightIcon className="w-5 h-5 ml-3" />
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

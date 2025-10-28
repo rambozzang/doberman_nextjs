@@ -30,11 +30,13 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     
     if (!formData.customerName.trim()) {
       console.log("이름을 입력해주세요.");
+      alert("이름을 입력해주세요.");
       return;
     }
     
     if (!formData.customerPhone.trim()) {
       console.log("핸드폰 번호를 입력해주세요.");
+      alert("핸드폰 번호를 입력해주세요.");
       return;
     }
 
@@ -45,14 +47,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         customerName: formData.customerName.trim(),
         customerPhone: formData.customerPhone.trim(),
       });
-      
       if (response.success) {
-        console.log(response.data?.message || "등록된 이메일로 임시 비밀번호를 발송했습니다.");
+        alert("등록된 이메일로 임시 비밀번호를 발송했습니다.\n" + response.data?.customerEmail);
+        console.log(response.message || "등록된 이메일로 임시 비밀번호를 발송했습니다.");
         onClose();
         // 폼 초기화
         setFormData({ customerName: "", customerPhone: "" });
       } else {
         console.log(response.error || "비밀번호 찾기에 실패했습니다.");
+        alert(response.error);
       }
     } catch (error) {
       console.error("비밀번호 찾기 오류:", error);
@@ -107,10 +110,10 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
                 transition={{ delay: 0.1 }}
               >
                 <h2 className="text-2xl font-bold text-white mb-2">
-                  비밀번호 찾기
+                  비밀번호 찾기1
                 </h2>
                 <p className="text-slate-400 text-sm">
-                  이름과 전화번호를 입력하시면 등록된 이메일로 안내를 받으실 수 
+                  이름과 전화번호를 입력하시면 등록된 이메일로 <br />안내를 받으실 수 
                   있습니다.
                 </p>
               </motion.div>

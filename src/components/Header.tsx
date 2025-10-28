@@ -8,7 +8,7 @@ import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
 import { useAuth } from "@/providers/AuthProvider";
 import { useStore } from "@/store/useStore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import Image from "next/image";
 
@@ -82,6 +82,27 @@ const Header: React.FC<HeaderProps> = ({
   const { isLoggedIn, user, logout, refreshAuth } = useAuth();
   const { checkLoginAndNavigate } = useStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // URL 파라미터 확인하여 로그인 모달 자동 열기
+  useEffect(() => {
+    const loginParam = searchParams.get('login');
+    const registerParam = searchParams.get('register');
+    
+    if (loginParam === 'true' && !isLoggedIn) {
+      setIsLoginModalOpen(true);
+      // URL에서 파라미터 제거 (선택사항)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('login');
+      window.history.replaceState({}, '', url.toString());
+    } else if (registerParam === 'true' && !isLoggedIn) {
+      setIsRegisterModalOpen(true);
+      // URL에서 파라미터 제거 (선택사항)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('register');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, isLoggedIn]);
 
   // 로그아웃 처리
   const handleLogout = async () => {
@@ -89,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({
       await logout();
       console.log("로그아웃되었습니다.");
     } catch (error) {
-      console.error("로그아웃 중 오류가 발생했습니다.");
+      console.error("로그아웃 중 오류가 발생했습니다.", error);
     }
   };
 
@@ -310,8 +331,26 @@ const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* Mobile menu button */}
-            <div className="lg:hidden">
+            {/* Mobile menu button and user info */}
+            <div className="lg:hidden flex items-center gap-3">
+              {/* Mobile User Info - 로그인된 경우에만 표시 */}
+              {showAuth && isLoggedIn && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                >
+                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <User className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-white truncate max-w-[80px]">
+                    {user?.customerName || "사용자"}
+                  </span>
+                </motion.div>
+              )}
+              
+              {/* Menu Button */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
