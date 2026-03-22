@@ -6,11 +6,11 @@ export class AuthService {
   // 로그인
   static async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
     const response = await ApiClient.post<LoginResponse>('/auth/login', credentials);
-    
+
     // 로그인 성공 시 토큰과 사용자 정보 저장
     if (response.success && response.data) {
       const loginData = response.data as LoginResponse;
-      
+
       if (loginData.token && loginData.userInfo) {
         console.log('로그인 성공 - 토큰과 사용자 정보 저장:', {
           token: loginData.token,
@@ -24,7 +24,7 @@ export class AuthService {
     } else {
       console.log('로그인 응답 구조 확인:', response);
     }
-    
+
     return response;
   }
 
@@ -44,11 +44,11 @@ export class AuthService {
   // 회원가입 (실제 API 엔드포인트에 맞게 수정)
   static async register(userData: RegisterRequest): Promise<ApiResponse<LoginResponse>> {
     const response = await ApiClient.post<LoginResponse>('/auth/login/register', userData);
-    
+
     // 회원가입 성공 시 자동 로그인 (토큰과 사용자 정보 저장)
     if (response.success && response.data) {
       const loginData = response.data as LoginResponse;
-      
+
       if (loginData.token && loginData.userInfo) {
         console.log('회원가입 성공 - 자동 로그인:', {
           token: loginData.token,
@@ -58,7 +58,7 @@ export class AuthService {
         AuthManager.setUserInfo(loginData.userInfo);
       }
     }
-    
+
     return response;
   }
 
@@ -70,16 +70,16 @@ export class AuthService {
   // 토큰 갱신
   static async refreshToken(): Promise<ApiResponse<{ token: string }>> {
     const response = await ApiClient.postPrivate<{ token: string }>('/auth/refresh');
-    
+
     if (response.success && response.data) {
       const tokenData = response.data as { token: string };
-      
+
       if (tokenData.token) {
         console.log('토큰 갱신 성공:', tokenData.token);
         AuthManager.setToken(tokenData.token);
       }
     }
-    
+
     return response;
   }
 
@@ -112,5 +112,22 @@ export class AuthService {
   // 이메일 인증 재전송
   static async resendVerificationEmail(): Promise<ApiResponse<{ message: string }>> {
     return await ApiClient.postPrivate<{ message: string }>('/auth/resend-verification');
+  }
+
+  // 사용자 정보 수정
+  static async updateUserInfo(userData: {
+    customerId: string;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+  }): Promise<ApiResponse<UserInfo>> {
+    const response = await ApiClient.postPrivate<UserInfo>('/auth/update', userData);
+
+    // 수정 성공 시 로컬 사용자 정보 업데이트
+    if (response.success && response.data) {
+      AuthManager.setUserInfo(response.data);
+    }
+
+    return response;
   }
 } 

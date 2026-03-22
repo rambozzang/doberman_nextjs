@@ -27,7 +27,7 @@ export const useStore = create<StoreState>((set) => ({
   checkLoginAndNavigate: (isLoggedIn: boolean, targetPath: string, onLogin: () => void) => {
     if (!isLoggedIn) {
       toast.error("로그인이 필요한 서비스입니다.", {
-        duration: 3000,
+        duration: 2000,
         position: 'top-center',
       });
       onLogin();

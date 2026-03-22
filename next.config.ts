@@ -5,10 +5,6 @@ const nextConfig: NextConfig = {
   
   // 성능 최적화 설정
   experimental: {
-    // 더 빠른 빌드와 런타임 성능
-    turbo: {
-      loaders: {},
-    },
     // 메모리 사용량 최적화
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },

@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ChatMessage } from './types';
+import { ChatMessage, ChatApiMessage } from './types';
 import { CustomerRequestAnswer } from '@/types/api';
 import { useChatAuth } from '@/hooks/useChatAuth';
 import { useChatRooms } from '@/hooks/useChatRooms';
@@ -8,6 +7,7 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useMessageReadStatus } from '@/hooks/useMessageReadStatus';
 import { chatApi } from '@/lib/chatApi';
+import toast from 'react-hot-toast';
 
 export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: number) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,23 +26,23 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     refreshChatAuth();
   }, [refreshChatAuth]);
   const { createChatRoom, findChatRoomByRequestId, updateLastMessage, updateUnreadCount } = useChatRooms();
-  const { 
-    messages, 
-    isLoading, 
-    addMessage, 
+  const {
+    messages,
+    isLoading,
+    addMessage,
     updateMessage,
     removeMessage,
     markRoomMessagesAsRead,
     markMyMessagesAsRead,
-    refreshMessages 
+    refreshMessages
   } = useChatMessages(currentRoomId);
 
   // 메시지 읽음 상태 처리 Hook
-  const { 
+  const {
     markMessagesAsRead: markSpecificMessagesAsRead,
     markVisibleMessagesAsRead,
     observeMessage,
-    unobserveMessage 
+    unobserveMessage
   } = useMessageReadStatus({
     roomId: currentRoomId,
     onMarkAsRead: (messageIds) => {
@@ -54,25 +54,25 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
   });
 
   // 웹소켓 연결
-  const { 
-    isConnected, 
-    sendMessage: sendWebSocketMessage, 
-    sendTypingStatus 
+  const {
+    isConnected,
+    sendMessage: sendWebSocketMessage,
+    sendTypingStatus
   } = useChatWebSocket(
     currentRoomId,
     // 새 메시지 수신 시
     (message) => {
       console.log('새 메시지 수신:', message);
       addMessage(message);
-      
+
       // 상대방 메시지이고 채팅방이 열려있으면 자동 읽음 처리
-      if (isOpen && document.visibilityState === 'visible' && 
-          message.senderType !== chatAuth.userType && message.senderId !== chatAuth.userId) {
+      if (isOpen && document.visibilityState === 'visible' &&
+        message.senderType !== chatAuth.userType && message.senderId !== chatAuth.userId) {
         setTimeout(() => {
           markSpecificMessagesAsRead([message.messageId]);
         }, 1000); // 1초 후 읽음 처리
       }
-      
+
       // 마지막 메시지 업데이트
       if (currentRoomId) {
         updateLastMessage(currentRoomId, message.message || '', message.createdAt);
@@ -85,7 +85,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
         isRead: sentMessage.isRead,
         hasMessage: !!sentMessage.message
       });
-      
+
       // addMessage에서 임시 메시지 교체 로직 처리
       addMessage(sentMessage);
     },
@@ -104,11 +104,11 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     // 사용자 입장 시 - 상대방이 입장하면 모든 내 메시지를 읽음 처리
     (joinedUserId) => {
       console.log('사용자 입장:', joinedUserId);
-      
+
       // 상대방이 입장한 경우 (내가 아닌 경우)
       if (joinedUserId !== chatAuth.userId) {
         console.log('상대방이 입장했으므로 모든 내 메시지를 읽음 처리');
-        
+
         // useChatMessages의 함수를 사용하여 안전하게 처리
         markMyMessagesAsRead();
       }
@@ -140,7 +140,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
       const unreadMessageIds = messages
         .filter(msg => !msg.isRead && msg.senderType !== chatAuth.userType && msg.senderId !== chatAuth.userId)
         .map(msg => msg.messageId);
-      
+
       if (unreadMessageIds.length > 0) {
         // 개선된 읽음 처리 사용
         markSpecificMessagesAsRead(unreadMessageIds);
@@ -222,16 +222,16 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
       userType: chatAuth.userType,
       hasToken: !!chatAuth.token
     });
-    
+
     if (!chatAuth.isAuthenticated) {
-      console.log('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       return;
     }
 
     // 필수 파라미터 검증
     if (!chatPartner?.userId || !requestId) {
       console.error('채팅 파트너 정보 또는 요청 ID가 없습니다.');
-      console.log('채팅을 시작하기 위한 정보가 부족합니다.');
+      toast.error('채팅을 시작하기 위한 정보가 부족합니다.');
       return;
     }
 
@@ -248,7 +248,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
 
       // 1. 먼저 기존 채팅방이 있는지 확인
       const existingRoomId = await findChatRoomByRequestId(requestId, expertId.toString());
-      
+
       if (existingRoomId) {
         // 기존 채팅방이 있으면 연결
         setCurrentRoomId(existingRoomId);
@@ -257,7 +257,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
         // 기존 채팅방이 없으면 새로 생성
         console.log('새 채팅방 생성 시도:', { requestId, expertId });
         const roomId = await createChatRoom(requestId, expertId.toString());
-        
+
         if (roomId) {
           setCurrentRoomId(roomId);
           console.log('새 채팅방 생성 완료:', roomId);
@@ -268,7 +268,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     } catch (error) {
       console.error('채팅방 처리 오류:', error);
       setIsOpen(false);
-      console.log('채팅방 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      toast.error('채팅방 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -293,7 +293,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
 
     // 웹소켓이 연결되지 않은 경우
     if (!isConnected) {
-      console.log('채팅방에 연결되지 않았습니다.');
+      toast.error('채팅방에 연결되지 않았습니다.');
       return;
     }
 
@@ -313,13 +313,13 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
         createdAt: new Date().toISOString(),
         timeAgo: '방금 전'
       };
-      
+
       // UI에 즉시 추가
       addMessage(tempMessage);
-      
+
       // 웹소켓을 통해 메시지 전송
       const success = sendWebSocketMessage(messageText);
-      
+
       if (success) {
         // 마지막 메시지 업데이트
         if (currentRoomId) {
@@ -329,9 +329,9 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
         // 전송 실패 시 UI에서 메시지 제거
         removeMessage(tempMessage.messageId);
         setNewMessage(messageText); // 메시지 복원
-        console.log('메시지 전송에 실패했습니다.');
+        toast.error('메시지 전송에 실패했습니다.');
       }
-      
+
     } catch (error) {
       console.error('메시지 전송 실패:', error);
       // 실패 시 메시지 복원
@@ -347,14 +347,18 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
 
     setUploadingFile(true);
     try {
-      const uploadedFile = await chatApi.uploadFile(currentRoomId, file);
-      
-      // 파일 메시지 전송
-      await sendWebSocketMessage(`[파일] ${uploadedFile.fileName}`, 'file', uploadedFile.fileUrl);
-      
+      const uploadResponse = await chatApi.uploadFile(currentRoomId, file);
+
+      if (uploadResponse.success && uploadResponse.data) {
+        // 파일 메시지 전송
+        sendWebSocketMessage(`[파일] ${uploadResponse.data.fileName}`);
+      } else {
+        throw new Error(uploadResponse.error || '파일 업로드 실패');
+      }
+
     } catch (error) {
       console.error('파일 업로드 실패:', error);
-      console.log('파일 업로드에 실패했습니다.');
+      toast.error('파일 업로드에 실패했습니다.');
     } finally {
       setUploadingFile(false);
     }
@@ -380,7 +384,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     isLoading,
     messages,
     messagesEndRef,
-    
+
     // 액션
     openChat,
     closeChat,
@@ -390,13 +394,13 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     handleKeyPress,
     setNewMessage,
     refreshMessages,
-    
+
     // 읽음 처리 관련
     markSpecificMessagesAsRead,
     markVisibleMessagesAsRead,
     observeMessage,
     unobserveMessage,
-    
+
     // 채팅 파트너 정보
     chatPartner,
     requestId

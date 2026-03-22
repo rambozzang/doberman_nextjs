@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse, ApiError } from '@/types/api';
 import { AuthManager } from './auth';
 
@@ -17,12 +17,26 @@ const commonConfig: AxiosRequestConfig = {
 // 비로그인용 Axios 인스턴스
 const publicApi: AxiosInstance = axios.create(commonConfig);
 
+// 비로그인용 인스턴스에도 토큰이 있으면 추가 (백엔드 로그 및 컨텍스트 파악용)
+publicApi.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = AuthManager.getToken();
+    if (token && AuthManager.isTokenValid()) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // 로그인용 Axios 인스턴스
 const privateApi: AxiosInstance = axios.create(commonConfig);
 
 // 로그인용 인스턴스에 토큰 인터셉터 추가
 privateApi.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = AuthManager.getToken();
     if (token && AuthManager.isTokenValid()) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -36,7 +50,7 @@ privateApi.interceptors.request.use(
 
 // 응답 인터셉터 - 토큰 만료 처리
 privateApi.interceptors.response.use(
-  (response) => response,
+  (response: AxiosResponse) => response,
   (error) => {
     if (error.response?.status === 401) {
       // 토큰이 만료되었거나 유효하지 않은 경우
@@ -151,7 +165,7 @@ class ApiClient {
   private static handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
       const responseData = error.response?.data as ApiResponse;
-      
+
       return {
         success: false,
         message: responseData?.message || '요청 처리 중 오류가 발생했습니다.',

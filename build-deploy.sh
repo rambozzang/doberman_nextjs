@@ -1,4 +1,4 @@
-./#!/bin/bash
+#!/bin/bash
 
 # 색상 정의
 RED='\033[0;31m'
@@ -39,9 +39,17 @@ rm -rf .next
 rm -rf out
 rm -f doberman.tar.gz
 
+# node_modules 정리 (안전하게)
+log_info "🧹 기존 node_modules를 정리합니다..."
+if [ -d "node_modules" ]; then
+    rm -rf node_modules
+    log_success "node_modules 정리 완료"
+fi
+
 # 의존성 설치
 log_info "📦 의존성을 설치합니다..."
-if npm ci; then
+# npm ci가 실패하면 npm install로 대체
+if npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps; then
     log_success "의존성 설치 완료"
 else
     log_error "의존성 설치 실패"
@@ -230,8 +238,9 @@ cat > $DEPLOY_DIR/README-DEPLOY.md << 'EOF'
 
 2. **서버에서 압축 해제**
    ```bash
-   tar -xzf doberman.tar.gz
-   cd doberman-deploy
+    rm -rf doberman-deploy && mkdir -p doberman-deploy
+    tar -xzf doberman.tar.gz -C doberman-deploy --overwrite --no-same-owner
+    cd doberman-deploy
    ```
 
 3. **배포 스크립트 실행**
@@ -276,7 +285,8 @@ log_success "배포 가이드 생성 완료"
 
 # tar.gz 파일 생성
 log_info "📦 doberman.tar.gz 파일을 생성합니다..."
-if tar -czf doberman.tar.gz -C $DEPLOY_DIR .; then
+# macOS 확장 속성 경고 방지를 위해 COPYFILE_DISABLE 사용
+if COPYFILE_DISABLE=1 tar -czf doberman.tar.gz --no-xattrs -C $DEPLOY_DIR .; then
     log_success "doberman.tar.gz 파일 생성 완료"
 else
     log_error "tar.gz 파일 생성 실패"
@@ -298,7 +308,9 @@ echo "   - 위치: $(pwd)/doberman.tar.gz"
 echo ""
 echo "🚀 다음 단계:"
 echo "   1. doberman.tar.gz 파일을 서버에 업로드"
-echo "   2. 서버에서 압축 해제: tar -xzf doberman.tar.gz"
-echo "   3. 배포 스크립트 실행: ./deploy-server.sh"
+echo "   2. 서버에서 기존 폴더 삭제 및 압축 해제: 
+      rm -rf doberman-deploy && mkdir -p doberman-deploy
+      tar -xzf doberman.tar.gz -C doberman-deploy --overwrite --no-same-owner
+   3. 배포 스크립트 실행: cd doberman-deploy && ./deploy-server.sh"
 echo ""
-log_success "🎉 빌드 및 패키징이 완료되었습니다!" 
+log_success "🎉 빌드 및 패키징이 완료되었습니다!"

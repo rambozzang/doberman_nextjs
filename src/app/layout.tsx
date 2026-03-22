@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr"),
   title: {
     default: "도배 견적 | 전국 300+ 검증된 도배 전문가 무료 견적",
     template: "%s | 도배르만 - 도배 견적 비교 플랫폼"
@@ -77,12 +78,36 @@ export const metadata: Metadata = {
   verification: {
     ...(process.env.GOOGLE_VERIFICATION_ID && { google: process.env.GOOGLE_VERIFICATION_ID }),
     other: {
-      ...(process.env.NAVER_VERIFICATION_ID && { 'naver-site-verification': process.env.NAVER_VERIFICATION_ID }),
+      'naver-site-verification': process.env.NAVER_VERIFICATION_ID || '8a8f1fd238cdf6738ea971dfcc060431b50f8fd8',
     },
   },
-      alternates: {
-      canonical: process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr",
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr",
+    languages: {
+      'ko': process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr",
     },
+  },
+  other: {
+    'viewport': 'width=device-width, initial-scale=1',
+    'format-detection': 'telephone=no',
+    'theme-color': '#1e293b',
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-title': '도배르만',
+    'application-name': '도배르만',
+    'msapplication-TileColor': '#1e293b',
+    'msapplication-config': '/browserconfig.xml',
+    'referrer': 'origin-when-cross-origin',
+    'geo.region': 'KR',
+    'geo.country': 'Korea',
+    'geo.placename': 'Seoul',
+    'distribution': 'global',
+    'rating': 'general',
+    'revisit-after': '1 days',
+    'expires': 'never',
+    'cache-control': 'public',
+  },
 };
 
 export default function RootLayout({
@@ -93,35 +118,13 @@ export default function RootLayout({
   return (
     <html lang="ko" className="scroll-smooth">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="theme-color" content="#1e293b" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="도배르만" />
-        <meta name="application-name" content="도배르만" />
-        <meta name="msapplication-TileColor" content="#1e293b" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="referrer" content="origin-when-cross-origin" />
-        <meta httpEquiv="x-ua-compatible" content="ie=edge" />
-        <meta name="geo.region" content="KR" />
-        <meta name="geo.country" content="Korea" />
-        <meta name="geo.placename" content="Seoul" />
-        <meta name="distribution" content="global" />
-        <meta name="rating" content="general" />
-        <meta name="revisit-after" content="1 days" />
-        <meta name="expires" content="never" />
-        <meta name="cache-control" content="public" />
-        <meta name="naver-site-verification" content="8a8f1fd238cdf6738ea971dfcc060431b50f8fd8" />
-        <link rel="canonical" href={process.env.NEXT_PUBLIC_BASE_URL || 'https://www.doberman.kr'} />
-        <link rel="alternate" hrefLang="ko" href={process.env.NEXT_PUBLIC_BASE_URL || 'https://www.doberman.kr'} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
-        
-        <script
+
+        <Script
+          id="structured-data-local-business"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
@@ -244,12 +247,6 @@ export default function RootLayout({
             })
           }}
         />
-        <Script async
-          id="adsbygoogle-init"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7861255216779015`}
-        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900`}
@@ -265,6 +262,13 @@ export default function RootLayout({
             </div>
 
             <AdSense adSlot="1234567890" />
+
+            <Script async
+              id="adsbygoogle-init"
+              strategy="afterInteractive"
+              crossOrigin="anonymous"
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-7861255216779015'}`}
+            />
 
             <Toaster
               position="top-right"
@@ -289,7 +293,7 @@ export default function RootLayout({
             />
 
             <Script
-              src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'GA_MEASUREMENT_ID'}`}
               strategy="afterInteractive"
             />
             <Script id="google-analytics" strategy="afterInteractive">
@@ -297,13 +301,13 @@ export default function RootLayout({
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', 'GA_MEASUREMENT_ID');
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'GA_MEASUREMENT_ID'}');
               `}
             </Script>
 
             <Script
               async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-YOUR_PUBLISHER_ID'}`}
               crossOrigin="anonymous"
               strategy="afterInteractive"
             />
@@ -316,7 +320,7 @@ export default function RootLayout({
             <Script id="naver-analytics" strategy="afterInteractive">
               {`
                 if(!wcs_add) var wcs_add = {};
-                wcs_add["wa"] = "YOUR_NAVER_ANALYTICS_ID";
+                wcs_add["wa"] = "${process.env.NEXT_PUBLIC_NAVER_ANALYTICS_ID || 'YOUR_NAVER_ANALYTICS_ID'}";
                 if(window.wcs) {
                   wcs_do();
                 }
@@ -326,7 +330,7 @@ export default function RootLayout({
             <Script id="kakao-pixel" strategy="afterInteractive">
               {`
                 !function(e,n,t,a,c,o,s){e.fbq||(c=e.fbq=function(){c.callMethod?c.callMethod.apply(c,arguments):c.queue.push(arguments)},e._fbq||(e._fbq=c),c.push=c,c.loaded=!0,c.version="2.0",c.queue=[],o=n.createElement(t),o.async=!0,o.src="https://connect.facebook.net/en_US/fbevents.js",s=n.getElementsByTagName(t)[0],s.parentNode.insertBefore(o,s))}(window,document,"script");
-                fbq('init', 'YOUR_PIXEL_ID');
+                fbq('init', '${process.env.NEXT_PUBLIC_PIXEL_ID || 'YOUR_PIXEL_ID'}');
                 fbq('track', 'PageView');
               `}
             </Script>
@@ -348,7 +352,7 @@ export default function RootLayout({
                       }
                     },
                     {
-                      "@type": "Question", 
+                      "@type": "Question",
                       "name": "도배 견적을 받기까지 얼마나 걸리나요?",
                       "acceptedAnswer": {
                         "@type": "Answer",

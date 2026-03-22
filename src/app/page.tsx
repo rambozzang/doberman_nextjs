@@ -21,7 +21,7 @@ export default function Home() {
   const [customerRequestsRequested, setCustomerRequestsRequested] = useState(false);
 
   // 실제 견적 요청 데이터 로드 - 지연 로딩으로 홈페이지 속도 최적화
-  const { data: customerRequests, isLoading: isCustomerRequestsLoading } = useQuery({
+  const { data: customerRequestsData, isLoading: isCustomerRequestsLoading } = useQuery({
     queryKey: ['customer-requests-preview'],
     queryFn: async () => {
       const response = await CustomerRequestService.searchRequests({
@@ -30,12 +30,21 @@ export default function Home() {
         sortBy: 'latest',
         sortDirection: 'desc'
       });
-      return response.success ? response.data?.content || [] : [];
+      if (response.success && response.data) {
+        return {
+          content: response.data.content || [],
+          totalCount: response.data.totalCount || 0
+        };
+      }
+      return { content: [], totalCount: 0 };
     },
     staleTime: 5 * 60 * 1000, // 5분간 캐시
     enabled: customerRequestsRequested, // 지연 로딩 활성화
     refetchOnWindowFocus: false, // 윈도우 포커스 시 재호출 방지
   });
+
+  const customerRequests = customerRequestsData?.content || [];
+  const totalRequestCount = customerRequestsData?.totalCount || 0;
 
   // 통계 데이터 로드 - 지연 로딩으로 홈페이지 속도 최적화
   const { data: statistics } = useQuery({
@@ -574,7 +583,15 @@ export default function Home() {
               transition={{ delay: 0.9 }}
               className="text-center bg-slate-800/30 rounded-lg p-3 sm:p-4 backdrop-blur-sm border border-slate-700/30"
             >
-              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient-primary mb-1">1,400+</div>
+              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient-primary mb-1">
+                {!customerRequestsRequested 
+                  ? '1,400+'
+                  : isCustomerRequestsLoading 
+                    ? '-'
+                    : totalRequestCount > 0 
+                      ? `${(totalRequestCount+ 43 ).toLocaleString()}+`
+                      : '-'}
+              </div>
               <div className="text-xs sm:text-sm md:text-base text-muted">누적 견적 요청</div>
             </motion.div>
 
@@ -741,8 +758,8 @@ export default function Home() {
                 <div className="col-span-1">번호</div>
                 <div className="col-span-2">지역</div>
                 <div className="col-span-2">건물유형</div>
-                <div className="col-span-1">면적</div>
-                <div className="col-span-2">고객명</div>
+                <div className="col-span-2">면적</div>
+                <div className="col-span-1">고객명</div>
                 <div className="col-span-2">요청일</div>
                 <div className="col-span-1">답변</div>
                 <div className="col-span-1">상태</div>
@@ -833,6 +850,16 @@ export default function Home() {
                         });
                       };
 
+                      // 날짜 더 간편 포맷팅
+                      const formatDateSimple = (dateString: string) => {
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }).replace(/(\d{4})년 (\d{2})월 (\d{2})일/, '$1.$2.$3');
+                      };
+
                       // 대괄호 제거
                       const removeBrackets = (str: string) => {
                         return str.replace(/[\[\]]/g, '');
@@ -850,7 +877,7 @@ export default function Home() {
                           <div className="grid grid-cols-12 gap-4 px-6 py-4 text-sm">
                             {/* 번호 */}
                             <div className="col-span-1">
-                              <span className="text-slate-400 font-mono">#{request.id}</span>
+                              <span className="text-slate-400 font-mono">{request.id}</span>
                             </div>
                             
                             {/* 지역 */}
@@ -870,12 +897,12 @@ export default function Home() {
                             </div>
                             
                             {/* 면적 */}
-                            <div className="col-span-1">
-                              <span className="text-slate-300 font-medium">{request.areaSize}평</span>
+                            <div className="col-span-2">
+                              <span className="text-slate-300 font-medium">{request.area}평({request.areaSize}㎡)</span>
                             </div>
                             
                             {/* 고객명 */}
-                            <div className="col-span-2">
+                            <div className="col-span-1">
                               <div className="flex items-center gap-2">
                                 <User className="w-3 h-3 text-slate-400" />
                                 <span className="text-slate-300">{hideMiddleName(request.customerName)}</span>
@@ -974,6 +1001,20 @@ export default function Home() {
                           day: 'numeric'
                         });
                       };
+                      // 날짜 더 간편 포맷팅 (25.11.04 같은 형식과 오늘인 경우 오늘로 표시)
+                      const formatDateSimple = (dateString: string) => {
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('ko-KR', {
+                          // year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }).replace(/(\d{2})월 (\d{2})일/, '$1/$2')
+                        .replace(/(\d{2})월 (\d{1})일/, '$1/$2')
+                        .replace(/(\d{1})월 (\d{1})일/, '$1/$2')
+                        .replace(/(\d{1})월 (\d{2})일/, '$1/$2')
+                        ;
+                        
+                      };
 
                       // 대괄호 제거
                       const removeBrackets = (str: string) => {
@@ -992,7 +1033,7 @@ export default function Home() {
                           <div className="grid grid-cols-7 gap-0.5 px-1 py-3 text-xs">
                             {/* 번호 */}
                             <div className="text-center">
-                              <span className="text-slate-400 font-mono text-xs">#{request.id}</span>
+                              <span className="text-slate-400 font-mono text-xs">{request.id}</span>
                             </div>
                             
                             {/* 지역 */}
@@ -1012,7 +1053,7 @@ export default function Home() {
                             
                             {/* 요청일 */}
                             <div className="text-center">
-                              <span className="text-slate-300 text-xs">{formatDate(request.requestDate)}</span>
+                              <span className="text-slate-300 text-xs">{formatDateSimple(request.requestDate)}</span>
                             </div>
                             
                             {/* 답변 */}
@@ -1071,7 +1112,13 @@ export default function Home() {
               [
                 { 
                   label: "전체 요청", 
-                  count: statistics ? `${statistics.totalCount}+` : "1,470+", 
+                  count: !customerRequestsRequested 
+                    ? "1,470+"
+                    : isCustomerRequestsLoading 
+                      ? '-'
+                      : totalRequestCount > 0 
+                        ? `${(totalRequestCount+ 43 ).toLocaleString()}+`
+                        : '-', 
                   color: "from-blue-500 to-cyan-500", 
                   icon: "📊" 
                 },
@@ -1088,8 +1135,8 @@ export default function Home() {
                   icon: "🔄" 
                 },
                 { 
-                  label: "완료", 
-                  count: statistics ? statistics.completedCount.toString() : "789", 
+                  label: "채택 성공", 
+                  count: "789", 
                   color: "from-emerald-500 to-green-500", 
                   icon: "✅" 
                 }

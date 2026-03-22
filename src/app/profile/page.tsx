@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Edit3, 
-  Save, 
-  X, 
-  Settings, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Edit3,
+  Save,
+  X,
+  Settings,
   Camera,
   Shield,
   Bell,
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
+import { AuthService } from '@/services/authService';
+import toast from 'react-hot-toast';
 
 interface UserProfile {
   id: string;
@@ -51,7 +53,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     console.log('프로필 페이지 - 인증 상태:', { isLoggedIn, authLoading, user });
-    
+
     // 인증 상태 로딩이 완료된 후에만 리다이렉트 체크
     if (!authLoading) {
       if (!isLoggedIn) {
@@ -60,7 +62,7 @@ const ProfilePage = () => {
         // router.push('/');
         // return;
       }
-      
+
       loadUserProfile();
     }
   }, [isLoggedIn, authLoading, router]);
@@ -68,7 +70,7 @@ const ProfilePage = () => {
   const loadUserProfile = async () => {
     try {
       setIsLoading(true);
-      
+
       const mockProfile: UserProfile = {
         id: user?.customerId?.toString() || '1',
         name: user?.customerName || '홍길동',
@@ -92,12 +94,32 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     try {
-      console.log('프로필 저장:', profileData);
-      setIsEditing(false);
-      console.log('프로필이 저장되었습니다.');
+      if (!user?.customerId) {
+        toast.error('사용자 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      setIsLoading(true);
+      const response = await AuthService.updateUserInfo({
+        customerId: user.customerId.toString(),
+        customerName: profileData.name,
+        customerPhone: profileData.phone,
+        customerEmail: profileData.email
+      });
+
+      if (response.success) {
+        toast.success('프로필이 성공적으로 수정드 되었습니다.');
+        setIsEditing(false);
+        // 사용자 정보 갱신을 위해 페이지 리로드 혹은 상태 업데이트
+        window.location.reload();
+      } else {
+        toast.error(response.message || '프로필 수정에 실패했습니다.');
+      }
     } catch (error) {
       console.error('프로필 저장 오류:', error);
-      console.log('프로필 저장 중 오류가 발생했습니다.');
+      toast.error('프로필 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,11 +163,10 @@ const ProfilePage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  }`}
               >
                 {tab.icon}
                 <span className="font-medium">{tab.label}</span>
@@ -165,9 +186,9 @@ const ProfilePage = () => {
                   <div className="relative inline-block">
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4">
                       {profileData.profileImage ? (
-                        <img 
-                          src={profileData.profileImage} 
-                          alt="프로필" 
+                        <img
+                          src={profileData.profileImage}
+                          alt="프로필"
                           className="w-24 h-24 rounded-full object-cover"
                         />
                       ) : (
@@ -312,7 +333,7 @@ const ProfilePage = () => {
                   className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-6 border border-slate-700/50"
                 >
                   <h3 className="text-xl font-bold text-white mb-6">설정</h3>
-                  
+
                   <div className="space-y-6">
                     <div className="bg-slate-700/30 rounded-2xl p-4">
                       <div className="flex items-center gap-3 mb-4">

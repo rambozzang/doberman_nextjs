@@ -1,18 +1,27 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SocialAuthService from '@/services/socialAuthService';
 import { toast } from 'react-hot-toast';
 
-export default function KakaoCallbackPage() {
+// 이 페이지는 동적으로만 렌더링되어야 함 (정적 생성 방지)
+export const dynamic = 'force-dynamic';
+
+function KakaoCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const processedRef = useRef(false);
+
   useEffect(() => {
     const handleKakaoCallback = async () => {
+      // 이미 처리되었으면 스킵
+      if (processedRef.current) return;
+      processedRef.current = true;
+
       try {
         const code = searchParams.get('code');
         const error = searchParams.get('error');
@@ -20,9 +29,8 @@ export default function KakaoCallbackPage() {
         if (error) {
           if (window.opener) {
             window.opener.postMessage({
-              type: 'SOCIAL_LOGIN_ERROR',
-              provider: 'kakao',
-              message: 'Kakao 로그인이 취소되었습니다.'
+              type: 'KAKAO_LOGIN_ERROR',
+              error: 'Kakao 로그인이 취소되었습니다.'
             }, window.location.origin);
             window.close();
           } else {
@@ -35,9 +43,8 @@ export default function KakaoCallbackPage() {
         if (!code) {
           if (window.opener) {
             window.opener.postMessage({
-              type: 'SOCIAL_LOGIN_ERROR',
-              provider: 'kakao',
-              message: '인증 코드를 받지 못했습니다.'
+              type: 'KAKAO_LOGIN_ERROR',
+              error: '인증 코드를 받지 못했습니다.'
             }, window.location.origin);
             window.close();
           } else {
@@ -47,63 +54,42 @@ export default function KakaoCallbackPage() {
           return;
         }
 
-        // Kakao 콜백 처리
+        // Kakao 콜백 처리 (백엔드 API 연동)
         const result = await SocialAuthService.handleKakaoCallback(code);
 
-        if (result.success && result.user) {
-          // 소셜 로그인 처리 (기존 사용자면 로그인, 신규 사용자면 회원가입)
-          const loginResult = await SocialAuthService.processSocialLogin(result.user, false);
-          
-          if (loginResult.success) {
-            // 팝업창에서 부모 창으로 성공 메시지 전달
-            if (window.opener) {
-              window.opener.postMessage({
-                type: 'SOCIAL_LOGIN_SUCCESS',
-                provider: 'kakao',
-                message: 'Kakao 로그인이 완료되었습니다!'
-              }, window.location.origin);
-              window.close();
-            } else {
-              toast.success('Kakao 로그인이 완료되었습니다!', {
-                duration: 3000,
-                position: 'top-center',
-              });
-              router.push('/');
-            }
+        if (result.success) {
+          // 팝업창에서 부모 창으로 성공 메시지 전달
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'KAKAO_LOGIN_SUCCESS'
+            }, window.location.origin);
+
+            // 토스트 없이 즉시 닫기 (더 빠른 UX)
+            window.close();
           } else {
-            // 로그인 실패 시 회원가입 시도
-            const signupResult = await SocialAuthService.processSocialLogin(result.user, true);
-            
-            if (signupResult.success) {
-              // 팝업창에서 부모 창으로 성공 메시지 전달
-              if (window.opener) {
-                window.opener.postMessage({
-                  type: 'SOCIAL_LOGIN_SUCCESS',
-                  provider: 'kakao',
-                  message: 'Kakao 회원가입이 완료되었습니다!'
-                }, window.location.origin);
-                window.close();
-              } else {
-                toast.success('Kakao 회원가입이 완료되었습니다!', {
-                  duration: 3000,
-                  position: 'top-center',
-                });
-                router.push('/');
-              }
-            } else {
-              setError(signupResult.error || '회원가입 중 오류가 발생했습니다.');
-            }
+            toast.success('Kakao 로그인이 완료되었습니다!', {
+              duration: 2000,
+            });
+            router.push('/');
           }
         } else {
-          setError(result.error || 'Kakao 로그인 중 오류가 발생했습니다.');
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'KAKAO_LOGIN_ERROR',
+              error: result.error || 'Kakao 로그인 중 오류가 발생했습니다.'
+            }, window.location.origin);
+            window.close();
+          } else {
+            setError(result.error || 'Kakao 로그인 중 오류가 발생했습니다.');
+            setIsProcessing(false); // 처리 실패 시 로딩 상태 해제
+          }
         }
       } catch (error) {
         console.error('Kakao 콜백 처리 오류:', error);
         if (window.opener) {
           window.opener.postMessage({
-            type: 'SOCIAL_LOGIN_ERROR',
-            provider: 'kakao',
-            message: 'Kakao 로그인 처리 중 오류가 발생했습니다.'
+            type: 'KAKAO_LOGIN_ERROR',
+            error: 'Kakao 로그인 처리 중 오류가 발생했습니다.'
           }, window.location.origin);
           window.close();
         } else {
@@ -151,4 +137,20 @@ export default function KakaoCallbackPage() {
   }
 
   return null;
+}
+
+export default function KakaoCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-white mb-2">Kakao 로그인 처리 중...</h2>
+          <p className="text-slate-400">잠시만 기다려주세요.</p>
+        </div>
+      </div>
+    }>
+      <KakaoCallbackContent />
+    </Suspense>
+  );
 }

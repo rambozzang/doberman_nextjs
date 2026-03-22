@@ -25,7 +25,7 @@ export const useAutoLogout = () => {
       
       // 자동 로그아웃 토스트 메시지 표시
       toast("장시간 비활성으로 인해 자동 로그아웃되었습니다.", {
-        duration: 4000,
+        duration: 2000,
         position: 'top-center',
         icon: 'ℹ️',
       });

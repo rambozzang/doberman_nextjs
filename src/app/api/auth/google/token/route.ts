@@ -8,6 +8,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '인증 코드가 필요합니다.' }, { status: 400 });
     }
 
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.error('Google OAuth 환경변수가 설정되지 않았습니다.');
+      return NextResponse.json({ 
+        error: 'Google OAuth 설정이 완료되지 않았습니다. 환경변수를 확인해주세요.' 
+      }, { status: 500 });
+    }
+
     // Google OAuth 토큰 교환
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -15,8 +25,8 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        client_id: clientId,
+        client_secret: clientSecret,
         code,
         grant_type: 'authorization_code',
         redirect_uri: redirectUri,
@@ -26,7 +36,10 @@ export async function POST(request: NextRequest) {
     if (!tokenResponse.ok) {
       const error = await tokenResponse.text();
       console.error('Google 토큰 교환 실패:', error);
-      return NextResponse.json({ error: '토큰 교환에 실패했습니다.' }, { status: 400 });
+      return NextResponse.json({ 
+        error: '토큰 교환에 실패했습니다.',
+        details: error 
+      }, { status: 400 });
     }
 
     const tokenData = await tokenResponse.json();
@@ -34,6 +47,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Google 토큰 API 오류:', error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+    return NextResponse.json({ 
+      error: '서버 오류가 발생했습니다.',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }

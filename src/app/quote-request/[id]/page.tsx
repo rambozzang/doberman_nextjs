@@ -358,131 +358,71 @@ export default function QuoteRequestDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             
             {/* 왼쪽 컬럼 - 기본 정보 */}
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               
               {/* 기본 정보 카드 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <h2 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <h2 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
                   <div className="p-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg">
                     <InfoIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   </div>
-                  기본 정보
+                  정보
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="space-y-3">
-                    <div className="group/item flex items-center gap-3 p-3 sm:p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                      <div className="p-1.5 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-md">
-                        <BuildingIcon className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs sm:text-sm text-slate-400 font-medium">건물 유형</div>
-                        <div className="text-white font-semibold text-sm sm:text-base">{removeBrackets(customerRequest.buildingType)}</div>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                  {/* 왼쪽 열 - 기본 정보 */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">건물 유형</span>
+                      <span className="text-xs text-white font-semibold">{removeBrackets(customerRequest.buildingType)}</span>
                     </div>
-                    
-                    <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                      <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-md">
-                        <HomeIcon className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 font-medium">시공 위치</div>
-                        <div className="text-white font-semibold text-sm">{removeBrackets(customerRequest.constructionLocation)}</div>
-                      </div>
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">시공 위치</span>
+                      <span className="text-xs text-white font-semibold">{removeBrackets(customerRequest.constructionLocation)}</span>
                     </div>
-                    
-                    <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                      <div className="p-1.5 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-md">
-                        <FileTextIcon className="w-4 h-4 text-amber-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 font-medium">면적</div>
-                        <div className="text-white font-semibold text-sm">{customerRequest.areaSize}평</div>
-                      </div>
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">면적</span>
+                      <span className="text-xs text-white font-semibold">{customerRequest.area}평({customerRequest.areaSize}㎡)</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">벽지 종류</span>
+                      <span className="text-xs text-white font-semibold">{removeBrackets(customerRequest.wallpaper)}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">지역</span>
+                      <span className="text-xs text-white font-semibold">{customerRequest.region}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">요청일</span>
+                      <span className="text-xs text-white font-semibold">{formatDate(customerRequest.requestDate)}</span>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                      <div className="p-1.5 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-md">
-                        <PaletteIcon className="w-4 h-4 text-purple-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 font-medium">벽지 종류</div>
-                        <div className="text-white font-semibold text-sm">{removeBrackets(customerRequest.wallpaper)}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                      <div className="p-1.5 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-md">
-                        <MapPinIcon className="w-4 h-4 text-red-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 font-medium">지역</div>
-                        <div className="text-white font-semibold text-sm">{customerRequest.region}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                      <div className="p-1.5 bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 rounded-md">
-                        <CalendarIcon className="w-4 h-4 text-indigo-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 font-medium">요청일</div>
-                        <div className="text-white font-semibold text-sm">{formatDate(customerRequest.requestDate)}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* 상세 정보 카드 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <h2 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-lg">
-                    <FileTextIcon className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  상세 정보
-                </h2>
-                
-                <div className="space-y-3">
-                  {/* 특이사항 */}
-                  {customerRequest.specialInfo && (
-                    <div className="p-3 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200">
-                      <div className="text-sm text-slate-300 mb-1 font-medium">특이사항</div>
-                      <div className="text-white text-sm leading-relaxed">{customerRequest.specialInfo}</div>
-                    </div>
-                  )}
-                  
-                  {/* 특이사항 상세 */}
-                  {customerRequest.specialInfoDetail && (
-                    <div className="p-3 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200">
-                      <div className="text-sm text-slate-300 mb-1 font-medium">특이사항 상세</div>
-                      <div className="text-white text-sm leading-relaxed">{customerRequest.specialInfoDetail}</div>
-                    </div>
-                  )}
-                  
-                  {/* 짐 보관 상태 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200">
-                      <div className="text-sm text-slate-300 mb-1 font-medium">짐 보관 상태</div>
-                      <div className="text-white text-sm font-semibold">{customerRequest.hasItems}</div>
+                  {/* 오른쪽 열 - 상세 정보 */}
+                  <div className="space-y-1">
+                    {/* 짐 보관 상태 */}
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">짐 보관</span>
+                      <span className="text-xs text-white font-semibold">{customerRequest.hasItems}</span>
                     </div>
                     
                     {/* 천장 시공 여부 */}
-                    <div className="p-3 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200">
-                      <div className="text-sm text-slate-300 mb-1 font-medium">천장 시공</div>
-                      <div className="text-white text-sm font-semibold">{customerRequest.ceiling}</div>
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">천장 시공</span>
+                      <span className="text-xs text-white font-semibold">{customerRequest.ceiling}</span>
                     </div>
-                  </div>
-                  
-                  {/* 선호 일정 */}
-                  <div className="p-3 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200">
-                    <div className="text-sm text-slate-300 mb-1 font-medium">선호 일정</div>
-                    <div className="text-white text-sm font-semibold">{customerRequest.preferredDate}</div>
-                    {customerRequest.preferredDateDetail && (
-                      <div className="text-xs text-slate-400 mt-1">
-                        상세: {formatDate(customerRequest.preferredDateDetail)}
+                    
+                    {/* 선호 일정 */}
+                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <span className="text-xs text-slate-400 font-medium">선호 일정</span>
+                      <span className="text-xs text-white font-semibold">{customerRequest.preferredDate}</span>
+                    </div>
+
+                    {/* 특이사항 */}
+                    {customerRequest.specialInfo && (
+                      <div className="flex items-start justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                        <span className="text-xs text-slate-400 font-medium">특이사항</span>
+                        <span className="text-xs text-white text-right ml-2 flex-1 line-clamp-1">{customerRequest.specialInfo}</span>
                       </div>
                     )}
                   </div>
@@ -491,52 +431,39 @@ export default function QuoteRequestDetailPage() {
             </div>
 
             {/* 오른쪽 컬럼 - 고객 정보 */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               
               {/* 고객 정보 카드 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <h2 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
+              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <h2 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
                   <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded-lg">
-                    <UserIcon className="w-5 h-5 text-cyan-400" />
+                    <UserIcon className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
                   </div>
                   고객 정보
                 </h2>
                 
-                <div className="space-y-2">
-                  <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                    <div className="p-1.5 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded-md">
-                      <UserIcon className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-400 font-medium">이름</div>
-                      <div className="text-white font-semibold text-sm">{customerRequest.customerName}</div>
-                    </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                    <span className="text-xs text-slate-400 font-medium">이름</span>
+                    <span className="text-xs text-white font-semibold">{customerRequest.customerName}</span>
                   </div>
+                  <div className="border-b border-white/5"></div>
                   
-                  <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                    <div className="p-1.5 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-md">
-                      <PhoneIcon className="w-4 h-4 text-green-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-400 font-medium">전화번호</div>
-                      <div className="text-white font-semibold text-sm">{customerRequest.customerPhone}</div>
-                    </div>
+                  <div className="flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                    <span className="text-xs text-slate-400 font-medium">전화번호</span>
+                    <span className="text-xs text-white font-semibold">{customerRequest.customerPhone}</span>
                   </div>
+                  <div className="border-b border-white/5"></div>
                   
-                  <div className="group/item flex items-center gap-3 p-2.5 bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/50 hover:to-slate-600/50 rounded-lg transition-all duration-200 border border-slate-700/30 hover:border-slate-600/50">
-                    <div className="p-1.5 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-md">
-                      <MailIcon className="w-4 h-4 text-orange-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-400 font-medium">이메일</div>
-                      <div className="text-white font-semibold text-sm">{customerRequest.customerEmail}</div>
-                    </div>
+                  <div className="flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg transition-colors">
+                    <span className="text-xs text-slate-400 font-medium">이메일</span>
+                    <span className="text-xs text-white font-semibold truncate">{customerRequest.customerEmail}</span>
                   </div>
                 </div>
               </div>
 
               {/* 액션 버튼 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300">
+              {/* <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="space-y-2">
                   <button
                     onClick={handleRefresh}
@@ -554,7 +481,7 @@ export default function QuoteRequestDetailPage() {
                     뒤로가기
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -585,16 +512,54 @@ export default function QuoteRequestDetailPage() {
                   </div>
                 ) : answers.length > 0 ? (
                   answers.map((answer, index) => (
-                    <div key={answer.answerId || answer.id} className="group/answer bg-gradient-to-r from-slate-800/40 via-slate-700/40 to-slate-800/40 hover:from-slate-700/50 hover:via-slate-600/50 hover:to-slate-700/50 rounded-xl p-4 sm:p-6 border border-slate-700/50 hover:border-slate-600/60 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
+                    <div key={answer.answerId || answer.id} className={`group/answer rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+                      customerRequest?.status === "채택 성공" && answer.status === '채택 성공'
+                        ? 'bg-gradient-to-r from-emerald-900/30 via-emerald-800/25 to-emerald-900/30 hover:from-emerald-900/40 hover:via-emerald-800/35 hover:to-emerald-900/40 border-emerald-700/50 hover:border-emerald-600/60'
+                        : 'bg-gradient-to-r from-slate-800/40 via-slate-700/40 to-slate-800/40 hover:from-slate-700/50 hover:via-slate-600/50 hover:to-slate-700/50 border-slate-700/50 hover:border-slate-600/60'
+                    }`}>
                       {/* 헤더 - 답변 번호와 제목 */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full border border-blue-400/20 shadow-lg">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full border border-blue-400/20 shadow-lg flex-shrink-0 mt-1">
                           <span className="text-blue-400 font-bold text-sm sm:text-base">{index + 1}</span>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-white font-semibold text-base sm:text-lg mb-2 group-hover/answer:text-blue-100 transition-colors">
-                            {answer.answerTitle || "견적서 보내드립니다."}
-                          </h4>
+                        <div className="flex-1 min-w-0">
+                          {/* 제목과 배지 한 줄 */}
+                          <div className="flex items-center gap-2 mb-2 justify-between">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-white font-semibold text-base sm:text-lg group-hover/answer:text-blue-100 transition-colors">
+                                {answer.answerTitle || "견적서 보내드립니다."}
+                              </h4>
+                              {/* 채택된 항목 배지 */}
+                              {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-emerald-500/40 to-green-500/40 hover:from-emerald-500/50 hover:to-green-500/50 border border-emerald-400/60 rounded-full transition-all duration-200">
+                                  <CheckCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-300 flex-shrink-0" />
+                                  <span className="text-xs font-semibold text-emerald-300 whitespace-nowrap">채택됨</span>
+                                </div>
+                              )}
+                              {/* 채택 안된 항목 배지 - 검토중 상태에서 아직 채택되지 않은 답변 */}
+                              {customerRequest?.status === "검토중" && answer.status !== '채택' && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-slate-700/40 to-slate-600/40 hover:from-slate-700/50 hover:to-slate-600/50 border border-slate-500/60 rounded-full transition-all duration-200">
+                                  <XCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 flex-shrink-0" />
+                                  <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">검토 중</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* 대화하기 버튼 - 채택 성공 상태이고 채택된 답변에만 표시 */}
+                            {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
+                              <button
+                                onClick={() => {
+                                  // 채팅 파트너 설정과 채팅 열기 플래그 설정
+                                  setCurrentChatPartner(answer);
+                                  setShouldOpenChat(true);
+                                }}
+                                className="group/chat flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 hover:from-emerald-500/50 hover:to-teal-500/50 border border-emerald-400/40 hover:border-emerald-300/60 rounded-lg transition-all duration-300 text-emerald-300 hover:text-emerald-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 backdrop-blur-sm text-xs sm:text-sm flex-shrink-0"
+                              >
+                                <MessageSquareIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/chat:scale-110 transition-transform flex-shrink-0" />
+                                <span className="font-semibold whitespace-nowrap">대화하기</span>
+                              </button>
+                            )}
+                          </div>
+                          {/* 사용자 정보 */}
                           <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-400">
                             <div className="flex items-center gap-1.5">
                               <div className="p-0.5 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded">
@@ -608,6 +573,12 @@ export default function QuoteRequestDetailPage() {
                                 <span className="text-blue-400">{answer.companyName}</span>
                               </>
                             )}
+                            {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r   hover:from-emerald-500/50 hover:to-green-500/50">
+                                  <CheckCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5  flex-shrink-0" />
+                                  <span className="text-xs font-semibold  whitespace-nowrap">{answer.companyPhone || answer.userPhone}</span>
+                                </div>
+                              )}
                             {answer.createdDt && (
                               <>
                                 <span className="text-slate-500">•</span>
@@ -618,27 +589,17 @@ export default function QuoteRequestDetailPage() {
                         </div>
                       </div>
 
-                      {/* 인사말 */}
-                      <div className="mb-4">
-                        <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                          안녕하세요, 요청하신 서비스에 대한 견적내용입니다.
-                        </p>
-                      </div>
-
                       {/* 서비스 내용 */}
-                      <div className="mb-4">
-                        <h5 className="text-white font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          서비스 내용
-                        </h5>
+                      <div className="mb-1">
+                       
                         {answer.answerBody ? (
-                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 sm:p-4 border border-slate-700/30 hover:border-slate-600/40 transition-all duration-200">
+                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/30 hover:border-slate-600/40 transition-all duration-200">
                             <div className="text-slate-300 leading-relaxed text-sm sm:text-base whitespace-pre-wrap">
                               {answer.answerBody}
                             </div>
                           </div>
                         ) : (
-                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 sm:p-4 border border-slate-700/30">
+                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/30">
                             <div className="text-slate-400 text-sm sm:text-base">
                               서비스 내용이 아직 입력되지 않았습니다.
                             </div>
@@ -647,20 +608,20 @@ export default function QuoteRequestDetailPage() {
                       </div>
 
                       {/* 기타 안내사항 */}
-                      <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-3 sm:p-4 border border-slate-700/30 mb-4">
+                      <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/30 mb-2">
                         <h5 className="text-white font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
                           <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                          기타 안내사항
+                       주의사항
                         </h5>
                         <ul className="space-y-1 text-slate-300 text-sm sm:text-base">
                           <li className="flex items-start gap-2">
                             <span className="text-slate-500 mt-1">•</span>
-                            <span>추가 요청사항에 따라 비용이 변동될 수 있습니다.</span>
+                            <span>추가 요청사항에 따라 비용이 변동될 수 있습니다.(주차비, 인력추가투입 등등)</span>
                           </li>
-                          <li className="flex items-start gap-2">
+                          {/* <li className="flex items-start gap-2">
                             <span className="text-slate-500 mt-1">•</span>
                             <span>문의사항이 있으시면 언제든지 연락주세요.</span>
-                          </li>
+                          </li> */}
                         </ul>
                       </div>
 
@@ -668,7 +629,7 @@ export default function QuoteRequestDetailPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-700/30">
                         {/* 견적 금액 */}
                         {answer.cost && (
-                          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg px-4 py-3 border border-blue-400/20">
+                          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl px-4 py-3 border border-blue-400/20">
                             <div className="text-xs sm:text-sm text-slate-400 font-medium mb-1">견적 금액</div>
                             <div className="text-blue-400 font-bold text-xl sm:text-2xl">
                               {answer.cost.toLocaleString()}원
@@ -677,7 +638,7 @@ export default function QuoteRequestDetailPage() {
                         )}
 
                         {/* 액션 버튼들 */}
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                           {/* 채택하기 버튼 - 검토중 상태이고 아직 채택되지 않은 답변에만 표시 */}
                           {customerRequest?.status === "검토중" && answer.status !== '채택' && (
                             <button
@@ -686,20 +647,6 @@ export default function QuoteRequestDetailPage() {
                             >
                               <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover/adopt:rotate-12 transition-transform" />
                               <span className="text-sm sm:text-base font-semibold">채택하기</span>
-                            </button>
-                          )}
-                          {/* 대화하기 버튼 - 채택 성공 상태이고 채택된 답변에만 표시 */}
-                          {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
-                            <button
-                              onClick={() => {
-                                // 채팅 파트너 설정과 채팅 열기 플래그 설정
-                                setCurrentChatPartner(answer);
-                                setShouldOpenChat(true);
-                              }}
-                              className="group/chat flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 hover:from-emerald-500/50 hover:to-teal-500/50 border border-emerald-400/40 hover:border-emerald-300/60 rounded-lg transition-all duration-300 text-emerald-300 hover:text-emerald-200 hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/30 backdrop-blur-sm w-full sm:w-auto"
-                            >
-                              <MessageSquareIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover/chat:scale-110 transition-transform" />
-                              <span className="text-sm sm:text-base font-bold">대화하기</span>
                             </button>
                           )}
                         </div>

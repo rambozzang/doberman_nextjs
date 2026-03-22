@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Home, FileText, Sparkles, Bell, User, ChevronDown, LogOut } from "lucide-react";
@@ -66,6 +66,34 @@ const defaultNavigationItems: NavigationItem[] = [
   },
 ];
 
+// URL 파라미터 기반 모달 제어 컴포넌트 (Suspense로 감싸기 위해 분리)
+const URLParamHandler: React.FC<{
+  isLoggedIn: boolean;
+  setIsLoginModalOpen: (open: boolean) => void;
+  setIsRegisterModalOpen: (open: boolean) => void;
+}> = ({ isLoggedIn, setIsLoginModalOpen, setIsRegisterModalOpen }) => {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const loginParam = searchParams.get('login');
+    const registerParam = searchParams.get('register');
+    
+    if (loginParam === 'true' && !isLoggedIn) {
+      setIsLoginModalOpen(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('login');
+      window.history.replaceState({}, '', url.toString());
+    } else if (registerParam === 'true' && !isLoggedIn) {
+      setIsRegisterModalOpen(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('register');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, isLoggedIn, setIsLoginModalOpen, setIsRegisterModalOpen]);
+
+  return null;
+};
+
 const Header: React.FC<HeaderProps> = ({
   logo = "도배 비교견적 플랫폼",
   navigationItems = defaultNavigationItems,
@@ -82,27 +110,6 @@ const Header: React.FC<HeaderProps> = ({
   const { isLoggedIn, user, logout, refreshAuth } = useAuth();
   const { checkLoginAndNavigate } = useStore();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // URL 파라미터 확인하여 로그인 모달 자동 열기
-  useEffect(() => {
-    const loginParam = searchParams.get('login');
-    const registerParam = searchParams.get('register');
-    
-    if (loginParam === 'true' && !isLoggedIn) {
-      setIsLoginModalOpen(true);
-      // URL에서 파라미터 제거 (선택사항)
-      const url = new URL(window.location.href);
-      url.searchParams.delete('login');
-      window.history.replaceState({}, '', url.toString());
-    } else if (registerParam === 'true' && !isLoggedIn) {
-      setIsRegisterModalOpen(true);
-      // URL에서 파라미터 제거 (선택사항)
-      const url = new URL(window.location.href);
-      url.searchParams.delete('register');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [searchParams, isLoggedIn]);
 
   // 로그아웃 처리
   const handleLogout = async () => {
@@ -157,6 +164,15 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
+      {/* URL 파라미터 핸들러 (Suspense로 감싸서 빌드 오류 방지) */}
+      <Suspense fallback={null}>
+        <URLParamHandler
+          isLoggedIn={isLoggedIn}
+          setIsLoginModalOpen={setIsLoginModalOpen}
+          setIsRegisterModalOpen={setIsRegisterModalOpen}
+        />
+      </Suspense>
+      
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

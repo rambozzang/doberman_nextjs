@@ -12,9 +12,15 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 # Kakao OAuth 2.0 설정
 NEXT_PUBLIC_KAKAO_CLIENT_ID=your_kakao_client_id_here
 
-# 백엔드 API 설정 (선택사항)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api
+# Naver OAuth 2.0 설정 (신규)
+NEXT_PUBLIC_NAVER_CLIENT_ID=your_naver_client_id_here
+NAVER_CLIENT_SECRET=your_naver_client_secret_here
+
+# 백엔드 API 설정
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
 ```
+
+---
 
 ## Google OAuth 2.0 설정 방법
 
@@ -27,6 +33,8 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api
    - `http://localhost:3000/auth/google/callback` (개발용)
    - `https://yourdomain.com/auth/google/callback` (프로덕션용)
 7. 클라이언트 ID와 클라이언트 보안 비밀번호 복사
+
+---
 
 ## Kakao OAuth 2.0 설정 방법
 
@@ -42,16 +50,47 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api
    - `https://yourdomain.com/auth/kakao/callback` (프로덕션용)
 7. "앱 키"에서 REST API 키 복사
 
+---
+
+## Naver OAuth 2.0 설정 방법 (신규)
+
+1. [Naver Developers](https://developers.naver.com/main/) 접속
+2. "Application" > "애플리케이션 등록" 클릭
+3. 사용 API: "네이버 아이디로 로그인" 선택
+4. 제공 정보 선택: 이메일, 이름, 프로필 사진 등 체크
+5. 환경 설정:
+   - 환경 추가: "PC웹"
+   - 서비스 URL: `http://localhost:3000` (개발용)
+   - Callback URL: `http://localhost:3000/auth/naver/callback` (개발용)
+6. 프로덕션 배포 시:
+   - 서비스 URL: `https://yourdomain.com`
+   - Callback URL: `https://yourdomain.com/auth/naver/callback`
+7. Client ID와 Client Secret 복사
+
+---
+
 ## 보안 주의사항
 
 - `.env.local` 파일은 절대 Git에 커밋하지 마세요
 - 프로덕션 환경에서는 HTTPS를 사용하세요
-- 클라이언트 시크릿은 서버에서만 사용하세요
+- 클라이언트 시크릿은 서버(백엔드)에서만 사용하세요
 - 정기적으로 OAuth 키를 갱신하세요
+
+---
 
 ## 테스트 방법
 
-1. 환경변수 설정 완료 후 개발 서버 재시작
+1. 환경변수 설정 완료 후 개발 서버 재시작 (`npm run dev`)
 2. LoginModal 또는 견적 요청 페이지에서 소셜 로그인 버튼 클릭
-3. OAuth 인증 플로우 확인
-4. 콜백 페이지에서 로그인 성공 확인
+3. 팝업에서 OAuth 인증 플로우 확인
+4. 콜백 페이지에서 로그인 성공 확인 (페이지 자동 새로고침)
+
+---
+
+## 콜백 URL 요약
+
+| 프로바이더 | 개발 환경 콜백 URL |
+|:---|:---|
+| Google | `http://localhost:3000/auth/google/callback` |
+| Kakao | `http://localhost:3000/auth/kakao/callback` |
+| Naver | `http://localhost:3000/auth/naver/callback` |

@@ -67,6 +67,8 @@ export interface UserInfo {
   customerPhone: string;
   customerPassword: string;
   marketingAgree: boolean | null;
+  provider: string | null;
+  socialId: string | null;
   memo: string;
   registrationDate: string;
   lastLoginDate: string;
@@ -189,6 +191,8 @@ export interface CustomerRequestAnswer {
   requestStatus?: string;
   userName?: string;
   companyName?: string;
+  companyPhone?: string;
+  userPhone?: string;
   // 이전 버전 호환성을 위해 유지
   id?: number;
   webCustomer?: TbWebCustomerDto;

@@ -9,7 +9,6 @@ import {
   UserIcon,
   BuildingIcon,
   FileTextIcon,
-  EyeIcon,
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -22,10 +21,8 @@ import {
   ChevronDownIcon,
   ShieldCheckIcon
 } from "lucide-react";
-import Link from "next/link";
 import { CustomerRequestService } from "@/services/customerRequestService";
 import { CustomerRequest } from "@/types/api";
-import { AuthManager } from "@/lib/auth";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -71,7 +68,7 @@ const defaultStatusConfig = {
 };
 
 export default function QuoteRequestListPage() {
-  const { user: currentUser, isLoggedIn } = useAuth();
+  const { user: currentUser } = useAuth();
   const [customerRequests, setCustomerRequests] = useState<CustomerRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -293,7 +290,7 @@ export default function QuoteRequestListPage() {
 
   // 대괄호 제거 함수
   const removeBrackets = (str: string) => {
-    return str.replace(/[\[\]]/g, '');
+    return str.replace(/[[\]]/g, '');
   };
 
   // 날짜 포맷팅 함수
@@ -319,9 +316,9 @@ export default function QuoteRequestListPage() {
     e.preventDefault();
     
     if (!canAccessRequest(request)) {
-      toast.error("본인이 작성한 견적 요청만 확인할 수 있습니다.", {
-        duration: 3000,
-        position: 'top-center',
+      toast.error("도배르만 앱에서 확인 가능합니다.", {
+        duration: 2000,
+        // position: 'mi-center' ,
         style: {
           background: '#1e293b',
           color: '#f1f5f9',
@@ -361,11 +358,11 @@ export default function QuoteRequestListPage() {
             {/* 통계 정보 */}
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 max-w-4xl mx-auto">
               {[
-                { label: "전체", count: stats.total, color: "from-blue-500 to-cyan-500" },
+                { label: "전체", count: (stats.total + 43).toLocaleString(), color: "from-blue-500 to-cyan-500" },
                 { label: "검토중", count: stats.reviewing, color: "from-yellow-500 to-orange-500" },
                 { label: "채택 성공", count: stats.inProgress, color: "from-purple-500 to-violet-500" },
-                { label: "완료", count: stats.completed, color: "from-emerald-500 to-green-500" },
-                { label: "취소", count: stats.canceled, color: "from-red-500 to-pink-500" }
+                // { label: "완료", count: stats.completed, color: "from-emerald-500 to-green-500" },
+                // { label: "취소", count: stats.canceled, color: "from-red-500 to-pink-500" }
               ].map((stat, index) => (
                 <div key={index} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl px-4 py-1">
                   <div className={`text-lg font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
@@ -544,7 +541,8 @@ export default function QuoteRequestListPage() {
                   return (
                     <div
                       key={request.id}
-                      className={`backdrop-blur-xl rounded-xl p-4 hover:scale-105 hover:-translate-y-1 transition-all duration-300 ${
+                      onClick={(e) => handleDetailClick(request, e)}
+                      className={`backdrop-blur-xl rounded-xl p-4 hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer ${
                         canAccessRequest(request)
                           ? 'bg-emerald-500/5 border border-emerald-500/20 hover:border-emerald-400/40 shadow-lg shadow-emerald-500/10'
                           : 'bg-white/5 border border-white/10 hover:border-white/20'
@@ -584,7 +582,9 @@ export default function QuoteRequestListPage() {
                           <BuildingIcon className="w-3 h-3 mr-1.5 text-slate-400 flex-shrink-0" />
                           <span className="truncate">{removeBrackets(request.buildingType)}</span>
                           <span className="mx-1">•</span>
-                          <span className="flex-shrink-0">{request.areaSize}평</span>
+                          <span className="flex-shrink-0">{request.constructionLocation.replaceAll('[', '').replaceAll(']', '')}</span>
+                          <span className="mx-1">•</span>
+                          <span className="flex-shrink-0">{request.area}평({request.areaSize}㎡)</span>
                         </div>
                         
                         <div className="flex items-center text-xs text-slate-300">
@@ -601,21 +601,6 @@ export default function QuoteRequestListPage() {
                           <CalendarIcon className="w-3 h-3 mr-1.5 text-slate-400 flex-shrink-0" />
                           <span className="truncate">{formatDate(request.requestDate)}</span>
                         </div>
-                      </div>
-
-                      {/* 액션 버튼 */}
-                      <div className="pt-3 border-t border-white/10">
-                        <button
-                          onClick={(e) => handleDetailClick(request, e)}
-                          className={`flex items-center justify-center gap-2 w-full px-3 py-2 border rounded-lg transition-all text-sm font-medium ${
-                            canAccessRequest(request)
-                              ? 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/30 text-blue-400 hover:text-blue-300'
-                              : 'bg-gray-500/20 hover:bg-gray-500/30 border-gray-500/30 text-gray-400 hover:text-gray-300 cursor-not-allowed'
-                          }`}
-                        >
-                          <EyeIcon className="w-4 h-4" />
-                          {canAccessRequest(request) ? '상세보기' : '접근 제한'}
-                        </button>
                       </div>
                     </div>
                   );

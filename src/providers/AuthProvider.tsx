@@ -78,8 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // 로그아웃 성공 토스트 메시지 표시
       toast.success("로그아웃되었습니다.", {
-        duration: 3000,
-        position: 'top-center',
+        duration: 2000, 
       });
       
       // 세션 타임아웃 또는 로그아웃 시 홈화면으로 이동
@@ -87,8 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('로그아웃 중 오류:', error);
       toast.error("로그아웃 중 오류가 발생했습니다.", {
-        duration: 3000,
-        position: 'top-center',
+        duration: 2000, 
       });
     } finally {
       setIsLoading(false);

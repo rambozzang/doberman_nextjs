@@ -4,7 +4,7 @@ export interface SocialUserInfo {
   email: string;
   name: string;
   picture?: string;
-  provider: 'google' | 'kakao';
+  provider: 'google' | 'kakao' | 'naver';
 }
 
 export interface SocialLoginResponse {
