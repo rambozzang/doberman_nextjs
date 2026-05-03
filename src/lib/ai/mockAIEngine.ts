@@ -14,15 +14,39 @@ import {
 } from './data/quickReplies';
 
 const QUESTION_BY_SLOT: Record<string, { text: string; replies: QuickReply[] }> = {
-  buildingType: { text: '어떤 건물 도배를 계획하고 계세요?', replies: BUILDING_TYPE_REPLIES },
-  area:         { text: '시공 면적은 어느 정도세요? (자유롭게 입력해도 됩니다)', replies: AREA_REPLIES },
-  scope:        { text: '어느 공간을 시공하실 계획이에요? (여러 개 선택 가능)', replies: SCOPE_REPLIES },
-  roomCount:    { text: '방은 몇 개를 시공하실 계획이세요?', replies: ROOM_COUNT_REPLIES },
-  wallpaperType:{ text: '벽지 종류 선호하는 게 있으세요?', replies: WALLPAPER_REPLIES },
-  region:       { text: '시공 지역(시·도) 알려주세요. 직접 입력해도 좋아요.', replies: ALL_REGION_REPLIES },
+  buildingType: {
+    text: '어떤 건물 도배를 계획하고 계세요?\n예: 아파트, 빌라, 오피스텔\n아래 칩에서 빠르게 선택하거나 자유롭게 입력해 주세요.',
+    replies: BUILDING_TYPE_REPLIES,
+  },
+  area: {
+    text: '시공 면적은 어느 정도세요?\n예: 24평, 32평 (잘 모르시면 평수만 적어도 됩니다)\n아래 칩에서 평수대를 빠르게 고를 수도 있어요.',
+    replies: AREA_REPLIES,
+  },
+  scope: {
+    text: '어느 공간을 시공하실 계획이에요?\n예: 거실만, 거실 + 방, 전체\n여러 공간을 한 번에 선택할 수 있어요. \'전체\' 선택 시 다른 항목은 자동 해제됩니다.',
+    replies: SCOPE_REPLIES,
+  },
+  roomCount: {
+    text: '방은 몇 개를 시공하실 계획이세요?\n예: 2개, 3개\n아래 칩에서 빠르게 선택할 수 있어요. (정확한 견적 산출에 사용됩니다)',
+    replies: ROOM_COUNT_REPLIES,
+  },
+  wallpaperType: {
+    text: '벽지 종류 선호하는 게 있으세요?\n예: 합지(가성비), 실크(인기), 천연(친환경), 수입(프리미엄)\n잘 모르시면 우선 합지부터 살펴보세요.',
+    replies: WALLPAPER_REPLIES,
+  },
+  region: {
+    text: '시공 지역(시·도)을 알려주세요.\n예: 서울, 경기, 인천, 부산\n직접 입력하셔도 매칭됩니다.',
+    replies: ALL_REGION_REPLIES,
+  },
   // district는 동적이므로 chat() 내에서 처리
-  additionalRequest: { text: '추가로 필요하신 서비스가 있으세요?', replies: ADDITIONAL_REPLIES },
-  visitDate:    { text: '방문 희망일이 있으세요?', replies: VISIT_DATE_REPLIES },
+  additionalRequest: {
+    text: '추가로 필요하신 서비스가 있으세요?\n예: 가구 이동, 기존 벽지 제거, 벽면 보수, 당일 시공\n없으시면 \'없음\' 칩을 눌러 다음 단계로 넘어가세요.',
+    replies: ADDITIONAL_REPLIES,
+  },
+  visitDate: {
+    text: '방문 희망일이 있으세요?\n예: 이번 주말, 다음 주, 1월 15일\n시간 여유가 있으시면 \'협의 가능\'을 골라주세요.',
+    replies: VISIT_DATE_REPLIES,
+  },
 };
 
 function makeId(): string {
@@ -105,7 +129,7 @@ export class MockAIEngine implements AIQuoteEngine {
         const aiMessage: ChatMessage = {
           id: makeId(),
           role: 'ai',
-          text: '시·군·구를 선택해주세요. 직접 입력해도 좋아요.',
+          text: '시·군·구를 선택해주세요.\n예: 강남구, 수원시, 해운대구\n칩에서 빠르게 선택하거나 직접 입력하셔도 됩니다.',
           quickReplies: districtReplies,
           timestamp: Date.now(),
         };
