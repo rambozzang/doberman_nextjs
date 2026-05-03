@@ -1,37 +1,75 @@
 import type { QuoteSlots, PriceEstimate, PackageOption, WallpaperType } from './types';
-import { PRICE_PER_PYEONG, ADDITIONAL_FEE, REGION_FACTOR, BASE_FEE, PER_PYEONG_EXTRA } from './data/pricingTable';
+import {
+  ADDITIONAL_FEE, REGION_FACTOR,
+  ESTIMATE_TABLE, NATURAL_MULTIPLIER, PREMIUM_MULTIPLIER,
+  type EstimateRow,
+} from './data/pricingTable';
 import { pickSimilarCases } from './data/similarCases';
 import { computeConfidence } from './nlu';
 
 /**
- * 시공 범위(scope)에 따른 실효 면적(평) 계산.
- * 한국 일반 아파트 비율 + 도배는 벽 + 천장이라 평형 대비 다소 큰 면적이 됨:
- *  - 거실: 전체의 약 40% (벽+천장 환산)
- *  - 방 1개: 약 20% (보통 5~8평, 30평 아파트 기준)
- *  - 주방: 약 15%
- *  - 화장실: 약 8%
- *  - 전체(all-rooms): 100%
+ * 분양평수 기준 견적표에서 전체 시공 가격 lookup (선형 보간).
+ * 테이블 범위 밖이면 가까운 끝 행 + 선형 외삽.
  */
-function calcEffectivePyeong(slots: QuoteSlots): number {
-  const totalPyeong = slots.area?.pyeong
-    ?? (slots.area?.squareMeter ? slots.area.squareMeter / 3.3 : 25);
+function lookupTotalQuote(pyeong: number, wallpaper: WallpaperType): number {
+  // wallpaper → 견적표 컬럼 매핑
+  const getColumn = (row: EstimateRow): number => {
+    switch (wallpaper) {
+      case 'vinyl': return row.vinylWide;        // 광폭 합지를 표준으로
+      case 'silk-vinyl': return row.silkVinyl;
+      case 'fabric': return row.silk;
+      case 'natural': return Math.round(row.silk * NATURAL_MULTIPLIER);
+      case 'premium': return Math.round(row.silk * PREMIUM_MULTIPLIER);
+    }
+  };
+
+  const table = ESTIMATE_TABLE;
+  const first = table[0];
+  const last = table[table.length - 1];
+
+  // 범위 밖 (작은 평수)
+  if (pyeong <= first.pyeong) {
+    return getColumn(first);
+  }
+  // 범위 밖 (큰 평수): 마지막 두 행 기울기로 외삽
+  if (pyeong >= last.pyeong) {
+    const prev = table[table.length - 2];
+    const slope = (getColumn(last) - getColumn(prev)) / (last.pyeong - prev.pyeong);
+    return Math.round(getColumn(last) + slope * (pyeong - last.pyeong));
+  }
+  // 사이 구간: 선형 보간
+  for (let i = 0; i < table.length - 1; i += 1) {
+    const lo = table[i];
+    const hi = table[i + 1];
+    if (pyeong >= lo.pyeong && pyeong <= hi.pyeong) {
+      const t = (pyeong - lo.pyeong) / (hi.pyeong - lo.pyeong);
+      return Math.round(getColumn(lo) + t * (getColumn(hi) - getColumn(lo)));
+    }
+  }
+  return getColumn(last);
+}
+
+/**
+ * 시공 범위(scope)에 따른 부분 시공 비율 (전체 시공 가격 대비).
+ * 출장비/기본비를 일부 보존하기 위해 최소 0.18 보장.
+ */
+function calcScopeRatio(slots: QuoteSlots): number {
   const scopes = slots.scope ?? [];
+  if (scopes.length === 0) return 0.55;
+  if (scopes.includes('all-rooms')) return 1.0;
 
-  if (scopes.length === 0) return totalPyeong * 0.6;
-  if (scopes.includes('all-rooms')) return totalPyeong;
-
-  let factor = 0;
-  if (scopes.includes('living-room')) factor += 0.40;
+  let ratio = 0;
+  if (scopes.includes('living-room')) ratio += 0.32;
   if (scopes.includes('room')) {
     const roomCount = slots.roomCount ?? 1;
-    factor += Math.min(roomCount * 0.20, 0.7);
+    ratio += Math.min(roomCount * 0.16, 0.7);
   }
-  if (scopes.includes('kitchen')) factor += 0.15;
-  if (scopes.includes('bathroom')) factor += 0.08;
+  if (scopes.includes('kitchen')) ratio += 0.10;
+  if (scopes.includes('bathroom')) ratio += 0.06;
 
-  // 최소 시공은 30%, 최대 100%
-  factor = Math.min(Math.max(factor, 0.30), 1.0);
-  return totalPyeong * factor;
+  // 부분이라도 출장비 비중 보존: ratio × 0.85 + 0.15 (출장비 15% 보장)
+  const adjusted = Math.min(Math.max(ratio, 0.18), 1.0) * 0.85 + 0.15;
+  return Math.min(adjusted, 1.0);
 }
 
 const WALLPAPER_ORDER: WallpaperType[] = ['vinyl', 'silk-vinyl', 'fabric', 'natural', 'premium'];
@@ -55,34 +93,37 @@ const WALLPAPER_DISPLAY: Record<WallpaperType, string> = {
 };
 
 /**
- * 평당 단가 + 출장비 + 평당 부자재로 합산한 기본 가격.
- * 매우 작은 면적이라도 최소 시공비가 보장됨.
+ * 견적표 lookup + scope 비율 + 지역 보정 = 표준 견적
  */
-function basePrice(effectivePyeong: number, wallpaper: WallpaperType, regionFactor: number): number {
-  const construction = effectivePyeong * PRICE_PER_PYEONG[wallpaper];
-  const extras = effectivePyeong * PER_PYEONG_EXTRA;
-  return (construction + extras + BASE_FEE) * regionFactor;
+function basePrice(totalPyeong: number, wallpaper: WallpaperType, scopeRatio: number, regionFactor: number): number {
+  const fullQuote = lookupTotalQuote(totalPyeong, wallpaper);
+  return fullQuote * scopeRatio * regionFactor;
 }
 
-const MIN_QUOTE = 400000; // 최소 견적 보장 (출처: 방한칸 부분도배 270,000~350,000원, 출장 기본비 포함 최소 40만원)
+const MIN_QUOTE = 400000; // 최소 견적 보장 (방 1칸 부분도배 + 출장기본비)
 
 export function calculatePrice(slots: QuoteSlots): PriceEstimate {
-  const effectivePyeong = calcEffectivePyeong(slots);
   const totalPyeong = slots.area?.pyeong
     ?? (slots.area?.squareMeter ? slots.area.squareMeter / 3.3 : 25);
   const wallpaper = slots.wallpaperType ?? 'vinyl';
   const regionFactor = slots.region ? (REGION_FACTOR[slots.region] ?? 1.0) : 1.0;
+  const scopeRatio = calcScopeRatio(slots);
 
-  const additionalFee = (slots.additionalRequest ?? [])
-    .reduce((sum, req) => sum + (ADDITIONAL_FEE[req] ?? 0), 0);
+  // 기존 벽지가 실크/발포면 제거비 면제 (사용자 제공 견적표 룰)
+  const additionalFee = (slots.additionalRequest ?? []).reduce((sum, req) => {
+    if (req === 'old-removal' && (wallpaper === 'fabric' || wallpaper === 'silk-vinyl')) {
+      return sum; // 면제
+    }
+    return sum + (ADDITIONAL_FEE[req] ?? 0);
+  }, 0);
 
-  const center = Math.max(basePrice(effectivePyeong, wallpaper, regionFactor) + additionalFee, MIN_QUOTE);
+  const center = Math.max(basePrice(totalPyeong, wallpaper, scopeRatio, regionFactor) + additionalFee, MIN_QUOTE);
 
   return {
-    min: Math.round(center * 0.90),
-    max: Math.round(center * 1.12),
+    min: Math.round(center * 0.92),
+    max: Math.round(center * 1.10),
     matchConfidence: computeConfidence(slots),
-    packages: buildPackages(slots, effectivePyeong, regionFactor, additionalFee, center),
+    packages: buildPackages(slots, totalPyeong, scopeRatio, regionFactor, additionalFee, center),
     similarCases: pickSimilarCases({
       pyeong: Math.round(totalPyeong),
       wallpaperType: wallpaper,
@@ -101,7 +142,8 @@ export function calculatePrice(slots: QuoteSlots): PriceEstimate {
  */
 function buildPackages(
   slots: QuoteSlots,
-  effectivePyeong: number,
+  totalPyeong: number,
+  scopeRatio: number,
   regionFactor: number,
   additionalFee: number,
   centerPrice: number,
@@ -110,12 +152,12 @@ function buildPackages(
   const budgetWallpaper = downgradeWallpaper(userWallpaper);
   const premiumWallpaper = upgradeWallpaper(userWallpaper);
 
-  const budgetCalc = basePrice(effectivePyeong, budgetWallpaper, regionFactor) + additionalFee * 0.5;
+  const budgetCalc = basePrice(totalPyeong, budgetWallpaper, scopeRatio, regionFactor) + additionalFee * 0.5;
   const premiumCalc =
-    basePrice(effectivePyeong, premiumWallpaper, regionFactor)
+    basePrice(totalPyeong, premiumWallpaper, scopeRatio, regionFactor)
     + additionalFee
     + ADDITIONAL_FEE['furniture-move']
-    + effectivePyeong * 8000; // 프리미엄 보증/마감 강화
+    + Math.round(totalPyeong * scopeRatio * 8000); // 프리미엄 보증/마감 강화
 
   const budget: PackageOption = {
     id: 'budget',
