@@ -1,0 +1,72 @@
+import type { QuoteSlots } from './types';
+import type { CreateCustomerRequestRequest, UserInfo } from '@/types/api';
+import { BUILDING_LABEL, SCOPE_LABEL, WALLPAPER_LABEL, ADDITIONAL_LABEL } from './data/pricingTable';
+
+export interface AIMeta {
+  matchConfidence: number;
+  selectedPackage?: 'budget' | 'standard' | 'premium';
+  hasImageAnalysis?: boolean;
+}
+
+const REGION_NAME: Record<string, string> = {
+  seoul: '서울특별시', busan: '부산광역시', daegu: '대구광역시', incheon: '인천광역시',
+  gwangju: '광주광역시', daejeon: '대전광역시', ulsan: '울산광역시', sejong: '세종특별자치시',
+  gyeonggi: '경기도', gangwon: '강원도', chungbuk: '충청북도', chungnam: '충청남도',
+  jeonbuk: '전라북도', jeonnam: '전라남도', gyeongbuk: '경상북도', gyeongnam: '경상남도',
+  jeju: '제주특별자치도',
+};
+
+function buildScopeLabel(slots: QuoteSlots): string {
+  const list = (slots.scope ?? []).map((s) => {
+    if (s === 'room' && slots.roomCount) return `[${SCOPE_LABEL[s]} ${slots.roomCount}개]`;
+    return `[${SCOPE_LABEL[s]}]`;
+  });
+  return list.join(',');
+}
+
+function buildAdditionalLabel(slots: QuoteSlots): string {
+  return (slots.additionalRequest ?? []).map((r) => ADDITIONAL_LABEL[r]).join(', ');
+}
+
+function buildAIMetaString(meta: AIMeta): string {
+  const parts = [`AI매칭률:${meta.matchConfidence}%`];
+  if (meta.selectedPackage) parts.push(`패키지:${meta.selectedPackage}`);
+  if (meta.hasImageAnalysis) parts.push('이미지분석:있음');
+  return parts.join('|');
+}
+
+export function slotsToCustomerRequest(
+  slots: QuoteSlots,
+  user: UserInfo,
+  meta: AIMeta
+): CreateCustomerRequestRequest {
+  const buildingLabel = slots.buildingType ? `[${BUILDING_LABEL[slots.buildingType]}]` : '';
+  const regionName = slots.region ? REGION_NAME[slots.region] ?? '' : '';
+
+  return {
+    webCustomerId: user.customerId,
+    buildingType: buildingLabel,
+    constructionLocation: buildScopeLabel(slots),
+    roomCount: slots.roomCount ?? 0,
+    area: slots.area?.pyeong ?? 0,
+    areaSize: slots.area?.squareMeter ?? 0,
+    wallpaper: slots.wallpaperType ? `[${WALLPAPER_LABEL[slots.wallpaperType]}]` : '',
+    ceiling: '전체',
+    specialInfo: buildAdditionalLabel(slots),
+    specialInfoDetail: '',
+    hasItems: (slots.additionalRequest ?? []).includes('furniture-move') ? '짐이 있음' : '',
+    preferredDate: slots.visitDate ?? '',
+    preferredDateDetail: slots.visitDate ? '원하는 날짜가 있어요' : '',
+    region: regionName,
+    customerName: user.customerName,
+    customerPhone: user.customerPhone,
+    customerEmail: user.customerEmail,
+    customerPassword: user.customerPassword,
+    agreeTerms: true,
+    requestDate: new Date().toISOString(),
+    status: '검토중',
+    etc1: buildAIMetaString(meta),
+    etc2: '',
+    etc3: '',
+  };
+}
