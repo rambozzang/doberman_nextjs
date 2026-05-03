@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Layers } from 'lucide-react';
+import { Sparkles, Layers, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AuthManager } from '@/lib/auth';
 import { CustomerRequestService } from '@/services/customerRequestService';
@@ -35,6 +35,16 @@ export default function QuoteRequestAIPage() {
 
   // user 상태 변수는 향후 사용자 정보 표시 확장을 위해 유지
   void user;
+
+  const handleReset = () => {
+    // 처음 시작 상태(빈 슬롯 + 초기 메시지 1개) 면 확인 없이 패스
+    const hasProgress = messages.length > 1 || Object.keys(slots).length > 0;
+    if (hasProgress && !window.confirm('지금까지 입력한 내용을 모두 초기화하고 처음부터 다시 시작할까요?')) {
+      return;
+    }
+    reset();
+    toast.success('처음부터 다시 시작합니다.', { position: 'top-center', duration: 1500 });
+  };
 
   const handleSubmit = async () => {
     if (!estimate) return;
@@ -98,18 +108,29 @@ export default function QuoteRequestAIPage() {
               <div className="text-xs text-slate-400">자연어 · 사진 · 음성으로 도배 견적</div>
             </div>
           </div>
-          {estimate && (
-            <div className="hidden md:flex items-center gap-2 text-xs">
-              <span className="text-slate-400">매칭 신뢰도</span>
-              <div className="w-24 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
-                  style={{ width: `${estimate.matchConfidence}%` }}
-                />
+          <div className="flex items-center gap-3">
+            {estimate && (
+              <div className="hidden md:flex items-center gap-2 text-xs">
+                <span className="text-slate-400">매칭 신뢰도</span>
+                <div className="w-24 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
+                    style={{ width: `${estimate.matchConfidence}%` }}
+                  />
+                </div>
+                <span className="text-emerald-300 font-semibold tabular-nums">{estimate.matchConfidence}%</span>
               </div>
-              <span className="text-emerald-300 font-semibold tabular-nums">{estimate.matchConfidence}%</span>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              aria-label="처음부터 다시"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-xs font-medium transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">처음부터</span>
+            </button>
+          </div>
         </div>
       </header>
 
