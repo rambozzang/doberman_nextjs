@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse, ApiError } from '@/types/api';
 import { BossAuthManager } from './bossAuth';
+import { ensureDeviceId } from './bossDeviceId';
 
 // 사장님(boss) 전용 API 클라이언트
 // Flutter `UrlConfig.baseURL` 과 동일한 기본 백엔드(api-doman) 를 사용한다.
@@ -17,20 +18,24 @@ const bossPublicApi: AxiosInstance = axios.create(commonConfig);
 const bossPrivateApi: AxiosInstance = axios.create(commonConfig);
 
 // 토큰이 존재하면 클라이언트 측 만료 검증 없이 그대로 첨부 (서버가 판정).
-// Note: Flutter Dio는 추가로 `Device-ID` 헤더를 보내지만, 백엔드 CORS
-// (`access-control-allow-headers`)가 Device-ID 를 허용하지 않아 브라우저
-// preflight 단계에서 차단된다. 백엔드 CORS가 갱신되기 전에는 Authorization
-// 만 전송한다.
+// Device-ID 헤더: Flutter 앱과 동일하게 localStorage 기반 UUID 를 첨부한다.
+// 백엔드 CORS 의 allowedHeaders 에 'Device-ID' 가 추가돼야 실제 전송되지만,
+// 클라이언트는 미리 헤더를 준비해두고 백엔드 CORS 갱신 즉시 동작하도록 한다.
 bossPrivateApi.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = BossAuthManager.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    const deviceId = ensureDeviceId();
+    if (deviceId) {
+      config.headers['Device-ID'] = deviceId;
+    }
+    if (process.env.NODE_ENV !== 'production') {
       console.debug('[bossApi req]', config.method?.toUpperCase(), config.url, {
         hasToken: !!token,
         tokenPreview: token ? `${token.slice(0, 16)}...(len ${token.length})` : null,
+        deviceId: deviceId ? `${deviceId.slice(0, 8)}...` : null,
       });
     }
     return config;
@@ -42,15 +47,19 @@ bossPrivateApi.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // 401 발생 시 즉시 로그아웃 + 리다이렉트하지 않고 콘솔에 자세한 정보 노출.
-      // 사용자가 실제 응답 본문을 확인한 뒤 재로그인 여부를 결정할 수 있게 함.
-      if (typeof window !== 'undefined') {
+      const isDev = process.env.NODE_ENV !== 'production';
+      if (isDev) {
         console.error('[bossApi 401]', {
           url: error.config?.url,
           requestHeaders: error.config?.headers,
           responseData: error.response?.data,
           responseHeaders: error.response?.headers,
         });
+      }
+      // 401 시 토큰 제거 + 로그인 페이지로 리다이렉트 (production 동작)
+      BossAuthManager.removeToken();
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/boss/login')) {
+        window.location.href = '/boss/login';
       }
     }
     return Promise.reject(error);
