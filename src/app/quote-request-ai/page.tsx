@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Layers, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AuthManager } from '@/lib/auth';
 import { CustomerRequestService } from '@/services/customerRequestService';
 import type { UserInfo } from '@/types/api';
@@ -28,6 +29,7 @@ export default function QuoteRequestAIPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   useEffect(() => {
     setUser(AuthManager.getUserInfo());
@@ -36,13 +38,19 @@ export default function QuoteRequestAIPage() {
   // user 상태 변수는 향후 사용자 정보 표시 확장을 위해 유지
   void user;
 
-  const handleReset = () => {
-    // 처음 시작 상태(빈 슬롯 + 초기 메시지 1개) 면 확인 없이 패스
+  const handleResetClick = () => {
+    // 처음 시작 상태(빈 슬롯 + 초기 메시지 1개) 면 확인 없이 바로 초기화
     const hasProgress = messages.length > 1 || Object.keys(slots).length > 0;
-    if (hasProgress && !window.confirm('지금까지 입력한 내용을 모두 초기화하고 처음부터 다시 시작할까요?')) {
+    if (!hasProgress) {
+      reset();
       return;
     }
+    setResetDialogOpen(true);
+  };
+
+  const performReset = () => {
     reset();
+    setResetDialogOpen(false);
     toast.success('처음부터 다시 시작합니다.', { position: 'top-center', duration: 1500 });
   };
 
@@ -123,7 +131,7 @@ export default function QuoteRequestAIPage() {
             )}
             <button
               type="button"
-              onClick={handleReset}
+              onClick={handleResetClick}
               aria-label="처음부터 다시"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-xs font-medium transition"
             >
@@ -188,6 +196,55 @@ export default function QuoteRequestAIPage() {
           }}
         />
       </BottomSheet>
+
+      {/* 초기화 확인 다이얼로그 */}
+      <AnimatePresence>
+        {resetDialogOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setResetDialogOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 8 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-sm w-full rounded-2xl bg-slate-900 border border-slate-700 p-6 shadow-2xl shadow-black/50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center flex-shrink-0">
+                  <RotateCcw className="w-5 h-5 text-amber-300" />
+                </div>
+                <h3 className="text-white font-bold text-lg">처음부터 다시 시작</h3>
+              </div>
+              <p className="text-slate-300 text-sm mb-5 leading-relaxed">
+                지금까지 입력하신 내용이 모두 사라지고<br />
+                새로 견적을 시작합니다. 계속할까요?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setResetDialogOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700 transition"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={performReset}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-white font-bold transition shadow-lg shadow-emerald-500/30"
+                >
+                  네, 초기화
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
