@@ -1,0 +1,32 @@
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+
+interface BossPageHeaderProps {
+  title: string;
+  description?: string;
+  backHref?: string;
+  actions?: React.ReactNode;
+}
+
+export default function BossPageHeader({ title, description, backHref, actions }: BossPageHeaderProps) {
+  return (
+    <header className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2">
+        {backHref && (
+          <Link
+            href={backHref}
+            className="mt-1 rounded p-1 text-slate-300 hover:bg-slate-800 hover:text-white"
+            aria-label="뒤로"
+          >
+            <ChevronLeft size={20} />
+          </Link>
+        )}
+        <div>
+          <h1 className="text-2xl font-bold text-white">{title}</h1>
+          {description && <p className="mt-1 text-sm text-slate-400">{description}</p>}
+        </div>
+      </div>
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+    </header>
+  );
+}
