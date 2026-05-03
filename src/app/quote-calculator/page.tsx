@@ -24,6 +24,9 @@ import {
   type VatType,
   type PayType,
 } from '@/lib/quoteCalculator';
+import StandardEstimateTable from './components/StandardEstimateTable';
+import WallpaperComparisonGuide from './components/WallpaperComparisonGuide';
+import FaqAndGlossary from './components/FaqAndGlossary';
 
 // ========== 기본 입력값 (HTML 원본 defaultValue/selected 속성 그대로) ==========
 const DEFAULT_INPUT: CalculatorInput = {
@@ -602,6 +605,19 @@ export default function QuoteCalculatorPage() {
           </div>{/* /grid */}
         </div>{/* /max-w */}
       </div>
+
+      {/* ===== SEO 강화 컨텐츠 ===== */}
+      <section className="max-w-6xl mx-auto px-4 mt-12 md:mt-16 pb-16 space-y-12 md:space-y-16">
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8">
+          <StandardEstimateTable />
+        </div>
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8">
+          <WallpaperComparisonGuide />
+        </div>
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8">
+          <FaqAndGlossary />
+        </div>
+      </section>
     </>
   );
 }
