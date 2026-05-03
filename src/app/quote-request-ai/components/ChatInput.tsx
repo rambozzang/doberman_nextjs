@@ -32,7 +32,7 @@ export default function ChatInput({ disabled, onSendText, onUploadImage }: Props
   return (
     <div className="space-y-2">
       {stage !== 'idle' && (
-        <div className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-400/30 text-emerald-200 text-xs">
+        <div className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-400/30 text-blue-200 text-xs">
           {STAGE_LABEL[stage]}
         </div>
       )}
@@ -86,7 +86,7 @@ export default function ChatInput({ disabled, onSendText, onUploadImage }: Props
           onClick={submit}
           disabled={disabled || !text.trim()}
           aria-label="전송"
-          className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 transition disabled:opacity-40"
+          className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 transition disabled:opacity-40"
         >
           <Send className="w-4 h-4" />
         </button>

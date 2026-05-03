@@ -5,8 +5,8 @@ export default function AIBackground() {
       <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="ai-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
           </radialGradient>
         </defs>
         {Array.from({ length: 24 }).map((_, i) => {
@@ -37,7 +37,7 @@ export default function AIBackground() {
               y1={`${y1}%`}
               x2={`${x2}%`}
               y2={`${y2}%`}
-              stroke="#06b6d4"
+              stroke="#a855f7"
               strokeOpacity="0.15"
               strokeWidth="1"
             />

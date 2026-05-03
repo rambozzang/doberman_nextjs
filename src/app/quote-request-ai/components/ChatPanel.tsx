@@ -28,7 +28,7 @@ export default function ChatPanel({ messages, isThinking, onSendText, onUploadIm
         ))}
         {isThinking && (
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-sm">⚡</span>
             </div>
             <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-slate-800/70 border border-slate-700">

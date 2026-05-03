@@ -186,13 +186,13 @@ export default function QuoteRequestAIPage() {
       <header className="relative z-10 px-4 py-3 border-b border-slate-800 bg-slate-900/40 backdrop-blur">
         <div className="container mx-auto max-w-7xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
               <div className="text-sm font-bold text-white flex items-center gap-2">
                 도배르만 AI 컨시어지
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40">NEW</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/40">NEW</span>
               </div>
               <div className="text-xs text-slate-400">자연어 · 사진 · 음성으로 도배 견적</div>
             </div>
@@ -203,11 +203,11 @@ export default function QuoteRequestAIPage() {
                 <span className="text-slate-400">매칭 신뢰도</span>
                 <div className="w-24 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-blue-400 to-purple-500 transition-all duration-500"
                     style={{ width: `${estimate.matchConfidence}%` }}
                   />
                 </div>
-                <span className="text-emerald-300 font-semibold tabular-nums">{estimate.matchConfidence}%</span>
+                <span className="text-blue-300 font-semibold tabular-nums">{estimate.matchConfidence}%</span>
               </div>
             )}
             <button
@@ -253,13 +253,13 @@ export default function QuoteRequestAIPage() {
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
-          className="w-full py-3 rounded-2xl bg-slate-900/90 border border-emerald-400/30 backdrop-blur flex items-center justify-between px-4 shadow-xl shadow-emerald-500/10"
+          className="w-full py-3 rounded-2xl bg-slate-900/90 border border-blue-400/30 backdrop-blur flex items-center justify-between px-4 shadow-xl shadow-blue-500/10"
         >
           <span className="flex items-center gap-2 text-white text-sm">
-            <Layers className="w-4 h-4 text-emerald-300" />
+            <Layers className="w-4 h-4 text-blue-300" />
             견적 보기
           </span>
-          <span className="text-emerald-300 text-sm font-bold tabular-nums">{summaryPrice}</span>
+          <span className="text-blue-300 text-sm font-bold tabular-nums">{summaryPrice}</span>
         </button>
       </div>
 
@@ -317,7 +317,7 @@ export default function QuoteRequestAIPage() {
                 <button
                   type="button"
                   onClick={performReset}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-white font-bold transition shadow-lg shadow-emerald-500/30"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-bold transition shadow-lg shadow-blue-500/30"
                 >
                   네, 초기화
                 </button>
@@ -345,7 +345,7 @@ export default function QuoteRequestAIPage() {
       {isAutoSubmitting && (
         <div className="fixed inset-0 z-[70] bg-slate-900/80 backdrop-blur flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin" />
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full border-4 border-blue-400 border-t-transparent animate-spin" />
             <p className="text-white text-sm">AI 견적 신청 처리 중...</p>
           </div>
         </div>

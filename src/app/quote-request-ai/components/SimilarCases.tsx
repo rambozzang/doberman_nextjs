@@ -12,7 +12,7 @@ export default function SimilarCases({ cases }: Props) {
   if (cases.length === 0) return null;
   return (
     <div>
-      <div className="text-sm font-semibold text-emerald-200 mb-2">🏠 비슷한 시공 사례</div>
+      <div className="text-sm font-semibold text-blue-200 mb-2">🏠 비슷한 시공 사례</div>
       <div className="grid grid-cols-1 gap-2">
         {cases.map((c) => (
           <div key={c.id} className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-800/40 p-2">
@@ -24,7 +24,7 @@ export default function SimilarCases({ cases }: Props) {
               <div className="text-[11px] text-slate-400">
                 {c.pyeong}평 · {WALLPAPER_LABEL[c.wallpaperType]} · {c.region}
               </div>
-              <div className="text-xs text-emerald-300 font-bold mt-0.5 tabular-nums">{formatPriceShort(c.price)}</div>
+              <div className="text-xs text-blue-300 font-bold mt-0.5 tabular-nums">{formatPriceShort(c.price)}</div>
             </div>
           </div>
         ))}

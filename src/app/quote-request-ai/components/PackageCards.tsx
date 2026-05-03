@@ -12,7 +12,7 @@ export default function PackageCards({ packages, selectedId, onSelect }: Props) 
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-emerald-200">📦 추천 패키지</span>
+        <span className="text-sm font-semibold text-blue-200">📦 추천 패키지</span>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {packages.map((p) => {
@@ -24,15 +24,15 @@ export default function PackageCards({ packages, selectedId, onSelect }: Props) 
               onClick={() => onSelect?.(p.id)}
               className={`text-left rounded-xl p-3 border transition ${
                 selected
-                  ? 'border-emerald-400 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 shadow-lg shadow-emerald-500/30'
+                  ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/30'
                   : p.highlight
-                  ? 'border-emerald-400/40 bg-slate-800/60 hover:border-emerald-300/60'
+                  ? 'border-blue-400/40 bg-slate-800/60 hover:border-blue-300/60'
                   : 'border-slate-700 bg-slate-800/40 hover:border-slate-500'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-bold text-white">{p.name}</span>
-                {p.highlight && <span className="text-[10px] text-emerald-300">추천</span>}
+                {p.highlight && <span className="text-[10px] text-blue-300">추천</span>}
               </div>
               <div className="text-base font-bold text-white tabular-nums">{formatPriceShort(p.price)}</div>
               <ul className="mt-1 space-y-0.5">
