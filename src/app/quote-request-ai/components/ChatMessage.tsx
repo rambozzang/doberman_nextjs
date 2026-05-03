@@ -10,7 +10,8 @@ interface Props {
   disabled?: boolean;
 }
 
-const TYPING_SPEED_MS = 22;
+const TYPING_SPEED_MS = 8;
+const TYPING_STEP = 2;
 
 export default function ChatMessage({ message, onQuickReply, disabled }: Props) {
   const isAI = message.role === 'ai';
@@ -24,7 +25,7 @@ export default function ChatMessage({ message, onQuickReply, disabled }: Props) 
     let i = 0;
     setDisplayedText('');
     const timer = setInterval(() => {
-      i += 1;
+      i = Math.min(i + TYPING_STEP, message.text.length);
       setDisplayedText(message.text.slice(0, i));
       if (i >= message.text.length) clearInterval(timer);
     }, TYPING_SPEED_MS);
