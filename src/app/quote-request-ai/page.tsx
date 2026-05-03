@@ -6,8 +6,8 @@ import { toast } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthManager } from '@/lib/auth';
 import { CustomerRequestService } from '@/services/customerRequestService';
-import SocialAuthService from '@/services/socialAuthService';
 import type { UserInfo } from '@/types/api';
+import LoginModal from '@/components/LoginModal';
 import { useAIChat } from './hooks/useAIChat';
 import ChatPanel from './components/ChatPanel';
 import LiveQuotePanel from './components/LiveQuotePanel';
@@ -104,65 +104,9 @@ export default function QuoteRequestAIPage() {
     void run();
   }, [slots]);
 
-  // 소셜 로그인 팝업으로부터 메시지 수신
-  useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (
-        event.data?.type === 'KAKAO_LOGIN_SUCCESS' ||
-        event.data?.type === 'NAVER_LOGIN_SUCCESS' ||
-        event.data?.type === 'GOOGLE_LOGIN_SUCCESS'
-      ) {
-        toast.success('로그인이 완료되었습니다!', { position: 'top-center', duration: 1500 });
-        setShowLoginModal(false);
-        setUser(AuthManager.getUserInfo());
-
-        if (typeof window === 'undefined') return;
-        const pending = localStorage.getItem(AI_PENDING_SUBMIT_KEY) === 'true';
-        if (!pending) return;
-        const currentUser = AuthManager.getUserInfo();
-        if (!currentUser) return;
-
-        const metaRaw = localStorage.getItem(AI_PENDING_META_KEY);
-        if (!metaRaw) {
-          localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
-          return;
-        }
-        let meta: PendingMeta;
-        try {
-          meta = JSON.parse(metaRaw) as PendingMeta;
-        } catch {
-          localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
-          localStorage.removeItem(AI_PENDING_META_KEY);
-          return;
-        }
-
-        setIsAutoSubmitting(true);
-        toast.loading('AI 견적 신청을 처리 중입니다...', { id: 'ai-auto-submit-msg', position: 'top-center' });
-        try {
-          const payload = slotsToCustomerRequest(slots, currentUser, meta);
-          const res = await CustomerRequestService.createCustomerRequest(payload);
-          toast.dismiss('ai-auto-submit-msg');
-          if (res.success) {
-            toast.success('AI 견적 신청이 완료되었습니다!', { position: 'top-center' });
-            setSubmitted(true);
-          } else {
-            toast.error(res.message ?? '신청 중 오류가 발생했습니다.', { position: 'top-center' });
-          }
-        } catch (e) {
-          console.error(e);
-          toast.dismiss('ai-auto-submit-msg');
-          toast.error('신청 중 오류가 발생했습니다.', { position: 'top-center' });
-        } finally {
-          localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
-          localStorage.removeItem(AI_PENDING_META_KEY);
-          setIsAutoSubmitting(false);
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [slots, selectedPackage, hasImageAnalysis]);
+  // LoginModal이 자체적으로 소셜 로그인 메시지를 받고 window.location.reload() 를 호출하므로,
+  // 페이지 리로드 후 위의 autoSubmit useEffect 가 slots 복원 + pending 확인 후 자동 제출함.
+  // 일반 폼 로그인 성공 시에도 reload되어 동일 흐름으로 처리됨.
 
   const handleResetClick = () => {
     // 처음 시작 상태(빈 슬롯 + 초기 메시지 1개) 면 확인 없이 바로 초기화
@@ -383,104 +327,19 @@ export default function QuoteRequestAIPage() {
         )}
       </AnimatePresence>
 
-      {/* 소셜 로그인 모달 */}
-      <AnimatePresence>
-        {showLoginModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowLoginModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 8 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: 8 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 320 }}
-              onClick={(e) => e.stopPropagation()}
-              className="max-w-sm w-full rounded-2xl bg-slate-900 border border-slate-700 p-6 shadow-2xl shadow-black/50"
-            >
-              <div className="text-center mb-5">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-1">간편 로그인 후 신청 완료</h3>
-                <p className="text-slate-300 text-xs">
-                  지금까지 입력하신 견적 정보가 그대로 자동 신청됩니다.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await SocialAuthService.initiateKakaoLogin();
-                    } catch (error) {
-                      console.error('Kakao 로그인 시작 오류:', error);
-                      const errorMessage = error instanceof Error ? error.message : '';
-                      if (errorMessage.includes('팝업') || errorMessage.includes('차단')) {
-                        toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', { duration: 3000, position: 'top-center' });
-                      }
-                    }
-                  }}
-                  className="w-full py-3 rounded-xl bg-[#FEE500] hover:bg-[#FDD835] text-[#3C1E1E] font-bold text-sm transition flex items-center justify-center gap-2"
-                >
-                  카카오로 시작하기
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await SocialAuthService.initiateNaverLogin();
-                    } catch (error) {
-                      console.error('Naver 로그인 시작 오류:', error);
-                      const errorMessage = error instanceof Error ? error.message : '';
-                      if (errorMessage.includes('팝업') || errorMessage.includes('차단')) {
-                        toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', { duration: 3000, position: 'top-center' });
-                      }
-                    }
-                  }}
-                  className="w-full py-3 rounded-xl bg-[#03C75A] hover:bg-[#02B350] text-white font-bold text-sm transition flex items-center justify-center gap-2"
-                >
-                  네이버로 시작하기
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await SocialAuthService.initiateGoogleLogin();
-                    } catch (error) {
-                      console.error('Google 로그인 시작 오류:', error);
-                      const errorMessage = error instanceof Error ? error.message : '';
-                      if (errorMessage.includes('팝업') || errorMessage.includes('차단')) {
-                        toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', { duration: 3000, position: 'top-center' });
-                      }
-                    }
-                  }}
-                  className="w-full py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm transition flex items-center justify-center gap-2 border border-slate-300"
-                >
-                  Google로 시작하기
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLoginModal(false);
-                  // 사용자가 닫으면 pending도 정리
-                  if (typeof window !== 'undefined') {
-                    localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
-                    localStorage.removeItem(AI_PENDING_META_KEY);
-                  }
-                }}
-                className="w-full mt-3 py-2 text-slate-400 hover:text-slate-200 text-xs transition"
-              >
-                나중에 하기
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 기존 LoginModal 컴포넌트 사용 (소셜/일반 로그인 모두 처리, 성공 시 자동 페이지 리로드) */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false);
+          // 사용자가 모달을 닫으면 pending 플래그 정리 (리로드 후 자동제출 방지)
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+            localStorage.removeItem(AI_PENDING_META_KEY);
+          }
+        }}
+      />
+      {/* LoginModal이 일반 폼 로그인 성공 후 reload 안 하는 경우를 대비해 onLoginSuccess 콜백 자리도 제공 가능 — 현재는 reload로 처리됨 */}
 
       {/* 자동 제출 처리 중 오버레이 */}
       {isAutoSubmitting && (
