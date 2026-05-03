@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Layers, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthManager } from '@/lib/auth';
 import { CustomerRequestService } from '@/services/customerRequestService';
+import SocialAuthService from '@/services/socialAuthService';
 import type { UserInfo } from '@/types/api';
 import { useAIChat } from './hooks/useAIChat';
 import ChatPanel from './components/ChatPanel';
@@ -16,6 +17,16 @@ import CompletionScreen from './components/CompletionScreen';
 import { slotsToCustomerRequest } from '@/lib/ai/slotsMapper';
 import type { PackageOption } from '@/lib/ai/types';
 import { formatPriceShort } from '@/lib/ai/priceCalculator';
+
+// localStorage 키
+const AI_PENDING_SUBMIT_KEY = 'ai_quote_pending_submit';
+const AI_PENDING_META_KEY = 'ai_quote_pending_meta';
+
+interface PendingMeta {
+  matchConfidence: number;
+  selectedPackage: 'budget' | 'standard' | 'premium';
+  hasImageAnalysis: boolean;
+}
 
 export default function QuoteRequestAIPage() {
   const router = useRouter();
@@ -30,6 +41,8 @@ export default function QuoteRequestAIPage() {
   const [submitted, setSubmitted] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
 
   useEffect(() => {
     setUser(AuthManager.getUserInfo());
@@ -37,6 +50,119 @@ export default function QuoteRequestAIPage() {
 
   // user 상태 변수는 향후 사용자 정보 표시 확장을 위해 유지
   void user;
+
+  // slots 복원 후 pending submit 자동 처리 (소셜 로그인 후 돌아왔을 때)
+  const autoSubmitTriedRef = useRef(false);
+  useEffect(() => {
+    if (autoSubmitTriedRef.current) return;
+    if (Object.keys(slots).length === 0) return;
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(AI_PENDING_SUBMIT_KEY) !== 'true') return;
+    autoSubmitTriedRef.current = true;
+
+    const run = async () => {
+      if (!AuthManager.isLoggedIn()) return;
+      const currentUser = AuthManager.getUserInfo();
+      if (!currentUser) return;
+
+      const metaRaw = localStorage.getItem(AI_PENDING_META_KEY);
+      if (!metaRaw) {
+        localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+        return;
+      }
+      let meta: PendingMeta;
+      try {
+        meta = JSON.parse(metaRaw) as PendingMeta;
+      } catch {
+        localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+        localStorage.removeItem(AI_PENDING_META_KEY);
+        return;
+      }
+
+      setIsAutoSubmitting(true);
+      toast.loading('AI 견적 신청을 처리 중입니다...', { id: 'ai-auto-submit', position: 'top-center' });
+      try {
+        const payload = slotsToCustomerRequest(slots, currentUser, meta);
+        const res = await CustomerRequestService.createCustomerRequest(payload);
+        toast.dismiss('ai-auto-submit');
+        if (res.success) {
+          toast.success('AI 견적 신청이 완료되었습니다!', { position: 'top-center' });
+          setSubmitted(true);
+        } else {
+          toast.error(res.message ?? '신청 중 오류가 발생했습니다.', { position: 'top-center' });
+        }
+      } catch (e) {
+        console.error(e);
+        toast.dismiss('ai-auto-submit');
+        toast.error('신청 중 오류가 발생했습니다.', { position: 'top-center' });
+      } finally {
+        localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+        localStorage.removeItem(AI_PENDING_META_KEY);
+        setIsAutoSubmitting(false);
+      }
+    };
+    void run();
+  }, [slots]);
+
+  // 소셜 로그인 팝업으로부터 메시지 수신
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (
+        event.data?.type === 'KAKAO_LOGIN_SUCCESS' ||
+        event.data?.type === 'NAVER_LOGIN_SUCCESS' ||
+        event.data?.type === 'GOOGLE_LOGIN_SUCCESS'
+      ) {
+        toast.success('로그인이 완료되었습니다!', { position: 'top-center', duration: 1500 });
+        setShowLoginModal(false);
+        setUser(AuthManager.getUserInfo());
+
+        if (typeof window === 'undefined') return;
+        const pending = localStorage.getItem(AI_PENDING_SUBMIT_KEY) === 'true';
+        if (!pending) return;
+        const currentUser = AuthManager.getUserInfo();
+        if (!currentUser) return;
+
+        const metaRaw = localStorage.getItem(AI_PENDING_META_KEY);
+        if (!metaRaw) {
+          localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+          return;
+        }
+        let meta: PendingMeta;
+        try {
+          meta = JSON.parse(metaRaw) as PendingMeta;
+        } catch {
+          localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+          localStorage.removeItem(AI_PENDING_META_KEY);
+          return;
+        }
+
+        setIsAutoSubmitting(true);
+        toast.loading('AI 견적 신청을 처리 중입니다...', { id: 'ai-auto-submit-msg', position: 'top-center' });
+        try {
+          const payload = slotsToCustomerRequest(slots, currentUser, meta);
+          const res = await CustomerRequestService.createCustomerRequest(payload);
+          toast.dismiss('ai-auto-submit-msg');
+          if (res.success) {
+            toast.success('AI 견적 신청이 완료되었습니다!', { position: 'top-center' });
+            setSubmitted(true);
+          } else {
+            toast.error(res.message ?? '신청 중 오류가 발생했습니다.', { position: 'top-center' });
+          }
+        } catch (e) {
+          console.error(e);
+          toast.dismiss('ai-auto-submit-msg');
+          toast.error('신청 중 오류가 발생했습니다.', { position: 'top-center' });
+        } finally {
+          localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+          localStorage.removeItem(AI_PENDING_META_KEY);
+          setIsAutoSubmitting(false);
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [slots, selectedPackage, hasImageAnalysis]);
 
   const handleResetClick = () => {
     // 처음 시작 상태(빈 슬롯 + 초기 메시지 1개) 면 확인 없이 바로 초기화
@@ -58,7 +184,18 @@ export default function QuoteRequestAIPage() {
     if (!estimate) return;
     const currentUser = AuthManager.getUserInfo();
     if (!AuthManager.isLoggedIn() || !currentUser) {
-      toast.error('견적 신청을 위해 로그인이 필요합니다.', { position: 'top-center' });
+      // 슬롯/메시지는 useAIChat이 ai_quote_session에 이미 저장 중
+      // AI 메타만 추가 저장
+      if (typeof window !== 'undefined' && estimate) {
+        const meta: PendingMeta = {
+          matchConfidence: estimate.matchConfidence,
+          selectedPackage,
+          hasImageAnalysis,
+        };
+        localStorage.setItem(AI_PENDING_META_KEY, JSON.stringify(meta));
+        localStorage.setItem(AI_PENDING_SUBMIT_KEY, 'true');
+      }
+      setShowLoginModal(true);
       return;
     }
     setIsSubmitting(true);
@@ -245,6 +382,115 @@ export default function QuoteRequestAIPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 소셜 로그인 모달 */}
+      <AnimatePresence>
+        {showLoginModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowLoginModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 8 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-sm w-full rounded-2xl bg-slate-900 border border-slate-700 p-6 shadow-2xl shadow-black/50"
+            >
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-white font-bold text-lg mb-1">간편 로그인 후 신청 완료</h3>
+                <p className="text-slate-300 text-xs">
+                  지금까지 입력하신 견적 정보가 그대로 자동 신청됩니다.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await SocialAuthService.initiateKakaoLogin();
+                    } catch (error) {
+                      console.error('Kakao 로그인 시작 오류:', error);
+                      const errorMessage = error instanceof Error ? error.message : '';
+                      if (errorMessage.includes('팝업') || errorMessage.includes('차단')) {
+                        toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', { duration: 3000, position: 'top-center' });
+                      }
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-[#FEE500] hover:bg-[#FDD835] text-[#3C1E1E] font-bold text-sm transition flex items-center justify-center gap-2"
+                >
+                  카카오로 시작하기
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await SocialAuthService.initiateNaverLogin();
+                    } catch (error) {
+                      console.error('Naver 로그인 시작 오류:', error);
+                      const errorMessage = error instanceof Error ? error.message : '';
+                      if (errorMessage.includes('팝업') || errorMessage.includes('차단')) {
+                        toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', { duration: 3000, position: 'top-center' });
+                      }
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-[#03C75A] hover:bg-[#02B350] text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                >
+                  네이버로 시작하기
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await SocialAuthService.initiateGoogleLogin();
+                    } catch (error) {
+                      console.error('Google 로그인 시작 오류:', error);
+                      const errorMessage = error instanceof Error ? error.message : '';
+                      if (errorMessage.includes('팝업') || errorMessage.includes('차단')) {
+                        toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', { duration: 3000, position: 'top-center' });
+                      }
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm transition flex items-center justify-center gap-2 border border-slate-300"
+                >
+                  Google로 시작하기
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLoginModal(false);
+                  // 사용자가 닫으면 pending도 정리
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem(AI_PENDING_SUBMIT_KEY);
+                    localStorage.removeItem(AI_PENDING_META_KEY);
+                  }
+                }}
+                className="w-full mt-3 py-2 text-slate-400 hover:text-slate-200 text-xs transition"
+              >
+                나중에 하기
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 자동 제출 처리 중 오버레이 */}
+      {isAutoSubmitting && (
+        <div className="fixed inset-0 z-[70] bg-slate-900/80 backdrop-blur flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin" />
+            <p className="text-white text-sm">AI 견적 신청 처리 중...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
