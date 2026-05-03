@@ -828,6 +828,19 @@ export default function QuoteRequestPage() {
     }
   };
 
+  // 단일 선택 단계에서 카드 클릭 시 자동으로 다음 단계로 진행
+  // 선택 상태 시각 피드백을 잠시 보여준 후 이동
+  const advanceToNextStep = useCallback(() => {
+    setTimeout(() => {
+      setCurrentStep((prev) => {
+        const lastIndex = steps.length - 1;
+        // 로그인 사용자는 6단계(고객정보) 스킵
+        if (isLoggedIn && prev + 1 === 6) return prev + 2 > lastIndex ? lastIndex : prev + 2;
+        return prev + 1 > lastIndex ? lastIndex : prev + 1;
+      });
+    }, 250);
+  }, [isLoggedIn]);
+
   // value를 label로 변환하는 헬퍼 함수들
   const getBuildingTypeLabel = (value: string): string => {
     const item = buildingTypes.find(type => type.value === value);
@@ -1376,7 +1389,10 @@ export default function QuoteRequestPage() {
                               ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-xl shadow-blue-500/25'
                               : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60 backdrop-blur-sm'
                               }`}
-                            onClick={() => updateField('buildingType', type.value)}
+                            onClick={() => {
+                              updateField('buildingType', type.value);
+                              advanceToNextStep();
+                            }}
                           >
                             {formState.buildingType === type.value && (
                               <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2 w-4 h-4 md:w-5 md:h-5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
@@ -1523,7 +1539,10 @@ export default function QuoteRequestPage() {
                               ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-xl shadow-blue-500/25'
                               : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60 backdrop-blur-sm'
                               }`}
-                            onClick={() => updateField('wallpaperType', type.value)}
+                            onClick={() => {
+                              updateField('wallpaperType', type.value);
+                              advanceToNextStep();
+                            }}
                           >
                             {formState.wallpaperType === type.value && (
                               <div className="absolute top-2 right-2 md:top-3 md:right-3 w-5 h-5 md:w-6 md:h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
@@ -1705,7 +1724,10 @@ export default function QuoteRequestPage() {
                                   <button
                                     key={district.id}
                                     type="button"
-                                    onClick={() => updateField('district', district.id)}
+                                    onClick={() => {
+                                      updateField('district', district.id);
+                                      advanceToNextStep();
+                                    }}
                                     className={`relative py-2 px-2 border-2 rounded-lg transition-all duration-300 hover:scale-[1.02] min-h-[50px] ${formState.district === district.id
                                       ? 'border-green-400 bg-gradient-to-br from-green-500/20 to-emerald-500/20 shadow-lg shadow-green-500/25'
                                       : 'border-slate-600/50 hover:border-green-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60'
