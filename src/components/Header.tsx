@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Home, FileText, Sparkles, Bell, User, ChevronDown, LogOut } from "lucide-react";
@@ -113,6 +113,31 @@ const Header: React.FC<HeaderProps> = ({
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dropdownCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 드롭다운 hover 유지: 트리거에서 메뉴로 이동하는 짧은 빈틈 동안 닫히지 않도록 delay 적용
+  const openDropdown = useCallback((title: string) => {
+    if (dropdownCloseTimerRef.current) {
+      clearTimeout(dropdownCloseTimerRef.current);
+      dropdownCloseTimerRef.current = null;
+    }
+    setActiveDropdown(title);
+  }, []);
+
+  const scheduleCloseDropdown = useCallback(() => {
+    if (dropdownCloseTimerRef.current) clearTimeout(dropdownCloseTimerRef.current);
+    dropdownCloseTimerRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+      dropdownCloseTimerRef.current = null;
+    }, 200);
+  }, []);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (dropdownCloseTimerRef.current) clearTimeout(dropdownCloseTimerRef.current);
+    };
+  }, []);
   
   // 인증 상태 관리
   const { isLoggedIn, user, logout, refreshAuth } = useAuth();
@@ -228,8 +253,8 @@ const Header: React.FC<HeaderProps> = ({
                       // 드롭다운 메뉴가 있는 경우
                       <div
                         className="relative"
-                        onMouseEnter={() => setActiveDropdown(item.title)}
-                        onMouseLeave={() => setActiveDropdown(null)}
+                        onMouseEnter={() => openDropdown(item.title)}
+                        onMouseLeave={scheduleCloseDropdown}
                       >
                         <button
                           className="group relative flex items-center rounded-xl text-slate-300 hover:text-white transition-all duration-300 hover:bg-slate-700/50"
@@ -251,8 +276,11 @@ const Header: React.FC<HeaderProps> = ({
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: 10, scale: 0.95 }}
                               transition={{ duration: 0.2 }}
-                              className="absolute top-full left-0 mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl z-50"
+                              onMouseEnter={() => openDropdown(item.title)}
+                              onMouseLeave={scheduleCloseDropdown}
+                              className="absolute top-full left-0 pt-2 w-56 z-50"
                             >
+                              <div className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl">
                               <div className="p-2">
                                 {item.items.map((subItem, subIndex) => (
                                   <motion.div
@@ -273,6 +301,7 @@ const Header: React.FC<HeaderProps> = ({
                                     </Link>
                                   </motion.div>
                                 ))}
+                              </div>
                               </div>
                             </motion.div>
                           )}
