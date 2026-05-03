@@ -75,7 +75,7 @@ export default function LiveQuotePanel({
           disabled={!isComplete || isSubmitting}
           className={`w-full py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition ${
             isComplete && !isSubmitting
-              ? 'bg-gradient-to-br from-emerald-400 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-white shadow-xl shadow-emerald-500/30'
+              ? 'bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white shadow-xl shadow-blue-500/30'
               : 'bg-slate-800 text-slate-500 cursor-not-allowed'
           }`}
         >

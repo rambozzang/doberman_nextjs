@@ -31,9 +31,9 @@ export default function PriceGauge({ min, max, matchConfidence }: Props) {
   const minVal = useCountUp(min);
   const maxVal = useCountUp(max);
   return (
-    <div className="rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 p-5 backdrop-blur">
+    <div className="rounded-2xl border border-blue-400/30 bg-gradient-to-br from-blue-500/5 to-purple-500/5 p-5 backdrop-blur">
       <div className="flex items-baseline justify-between mb-3">
-        <span className="text-sm text-emerald-200">💰 예상 견적</span>
+        <span className="text-sm text-blue-200">💰 예상 견적</span>
         <span className="text-xs text-slate-400">±15% 변동</span>
       </div>
       <div className="text-2xl md:text-3xl font-bold text-white mb-3 tabular-nums">
@@ -42,11 +42,11 @@ export default function PriceGauge({ min, max, matchConfidence }: Props) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-400">매칭 신뢰도</span>
-          <span className="text-emerald-300 font-semibold">{matchConfidence}%</span>
+          <span className="text-blue-300 font-semibold">{matchConfidence}%</span>
         </div>
         <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 transition-all duration-700"
+            className="h-full bg-gradient-to-r from-blue-400 via-blue-400 to-purple-500 transition-all duration-700"
             style={{ width: `${matchConfidence}%` }}
           />
         </div>

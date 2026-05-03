@@ -35,7 +35,7 @@ export default function ChatMessage({ message, onQuickReply, disabled }: Props) 
   if (isAI) {
     return (
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
           <span className="text-white text-sm">⚡</span>
         </div>
         <div className="flex-1 min-w-0">
