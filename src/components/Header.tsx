@@ -46,16 +46,12 @@ const defaultNavigationItems: NavigationItem[] = [
     icon: <FileText className="w-4 h-4" />,
     items: [
       {
-        title: "🤖 AI 견적 컨시어지 NEW",
-        href: "/quote-request-ai",
-      },
-      {
-        title: "🧮 견적 계산기",
-        href: "/quote-calculator",
-      },
-      {
         title: "견적 요청하기",
         href: "/quote-request",
+      },
+      {
+        title: "🤖 AI 견적 요청하기 NEW",
+        href: "/quote-request-ai",
       },
       {
         title: "전체 견적 리스트",
@@ -64,6 +60,10 @@ const defaultNavigationItems: NavigationItem[] = [
       {
         title: "내 견적 요청",
         href: "/quote-request/my-quotes",
+      },
+      {
+        title: "🧮 견적 계산기",
+        href: "/quote-calculator",
       },
     ],
   },
