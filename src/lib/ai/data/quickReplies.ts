@@ -1,4 +1,5 @@
 import type { QuickReply } from '../types';
+import { REGION_DATA, getDistrictsByRegionId } from './regions';
 
 export const BUILDING_TYPE_REPLIES: QuickReply[] = [
   { label: '아파트', value: 'apartment', field: 'buildingType', icon: '🏢' },
@@ -55,3 +56,35 @@ export const VISIT_DATE_REPLIES: QuickReply[] = [
   { label: '시간 여유 있음', value: 'flexible', field: 'visitDate' },
   { label: '건너뛰기', value: '__skip__', field: 'visitDate' },
 ];
+
+/**
+ * 방 개수 빠른답변 (1~5개 이상)
+ */
+export const ROOM_COUNT_REPLIES: QuickReply[] = [
+  { label: '1개', value: '1', field: 'roomCount' },
+  { label: '2개', value: '2', field: 'roomCount' },
+  { label: '3개', value: '3', field: 'roomCount' },
+  { label: '4개', value: '4', field: 'roomCount' },
+  { label: '5개 이상', value: '5', field: 'roomCount' },
+];
+
+/**
+ * 시도 전체 (18개) 칩 — popular 4개 대신 전체 시도 노출
+ */
+export const ALL_REGION_REPLIES: QuickReply[] = REGION_DATA.map((r) => ({
+  label: r.name.replace(/광역시|특별시|특별자치시|특별자치도|도$/, ''),
+  value: r.id,
+  field: 'region' as const,
+  icon: r.icon,
+}));
+
+/**
+ * 특정 시도 ID로 해당 시군구 빠른답변 동적 생성
+ */
+export function getDistrictReplies(regionId: string): QuickReply[] {
+  return getDistrictsByRegionId(regionId).map((d) => ({
+    label: d.name,
+    value: d.id,
+    field: 'district' as const,
+  }));
+}

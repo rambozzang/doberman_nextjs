@@ -2,6 +2,7 @@
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import type { QuoteSlots, PriceEstimate, PackageOption } from '@/lib/ai/types';
 import { BUILDING_LABEL, SCOPE_LABEL, WALLPAPER_LABEL, ADDITIONAL_LABEL } from '@/lib/ai/data/pricingTable';
+import { getRegionName, getDistrictName } from '@/lib/ai/data/regions';
 import SlotCard from './SlotCard';
 import PriceGauge from './PriceGauge';
 import PackageCards from './PackageCards';
@@ -17,13 +18,6 @@ interface Props {
   onSubmit: () => void;
 }
 
-const REGION_NAME: Record<string, string> = {
-  seoul: '서울', busan: '부산', daegu: '대구', incheon: '인천',
-  gwangju: '광주', daejeon: '대전', ulsan: '울산', sejong: '세종',
-  gyeonggi: '경기', gangwon: '강원', chungbuk: '충북', chungnam: '충남',
-  jeonbuk: '전북', jeonnam: '전남', gyeongbuk: '경북', gyeongnam: '경남',
-  jeju: '제주',
-};
 
 function buildScopeText(slots: QuoteSlots): string | undefined {
   if (!slots.scope || slots.scope.length === 0) return undefined;
@@ -53,7 +47,17 @@ export default function LiveQuotePanel({
           <SlotCard icon="📐" label="면적" value={buildAreaText(slots)} />
           <SlotCard icon="🛋️" label="공간" value={buildScopeText(slots)} />
           <SlotCard icon="🎨" label="벽지" value={slots.wallpaperType ? WALLPAPER_LABEL[slots.wallpaperType] : undefined} />
-          <SlotCard icon="📍" label="지역" value={slots.region ? REGION_NAME[slots.region] : undefined} />
+          <SlotCard
+            icon="📍"
+            label="지역"
+            value={
+              slots.region
+                ? (slots.district
+                    ? `${getRegionName(slots.region).replace(/광역시|특별시|특별자치시|특별자치도|도$/, '')} ${getDistrictName(slots.region, slots.district)}`
+                    : getRegionName(slots.region))
+                : undefined
+            }
+          />
           <SlotCard icon="✨" label="추가 요청" value={buildAdditionalText(slots)} />
         </div>
         {estimate && (

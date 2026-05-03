@@ -1,6 +1,7 @@
 import type { QuoteSlots } from './types';
 import type { CreateCustomerRequestRequest, UserInfo } from '@/types/api';
 import { BUILDING_LABEL, SCOPE_LABEL, WALLPAPER_LABEL, ADDITIONAL_LABEL } from './data/pricingTable';
+import { getRegionName, getDistrictName } from './data/regions';
 
 export interface AIMeta {
   matchConfidence: number;
@@ -21,13 +22,6 @@ const VISIT_DATE_LABEL: Record<string, string> = {
   'flexible': '일정 협의 가능',
 };
 
-const REGION_NAME: Record<string, string> = {
-  seoul: '서울특별시', busan: '부산광역시', daegu: '대구광역시', incheon: '인천광역시',
-  gwangju: '광주광역시', daejeon: '대전광역시', ulsan: '울산광역시', sejong: '세종특별자치시',
-  gyeonggi: '경기도', gangwon: '강원도', chungbuk: '충청북도', chungnam: '충청남도',
-  jeonbuk: '전라북도', jeonnam: '전라남도', gyeongbuk: '경상북도', gyeongnam: '경상남도',
-  jeju: '제주특별자치도',
-};
 
 function buildScopeLabel(slots: QuoteSlots): string {
   const list = (slots.scope ?? []).map((s) => {
@@ -54,7 +48,11 @@ export function slotsToCustomerRequest(
   meta: AIMeta
 ): CreateCustomerRequestRequest {
   const buildingLabel = slots.buildingType ? `[${BUILDING_LABEL[slots.buildingType]}]` : '';
-  const regionName = slots.region ? REGION_NAME[slots.region] ?? '' : '';
+  const regionFullName = slots.region
+    ? (slots.district
+        ? `${getRegionName(slots.region)} ${getDistrictName(slots.region, slots.district)}`
+        : getRegionName(slots.region))
+    : '';
 
   return {
     webCustomerId: user.customerId,
@@ -70,7 +68,7 @@ export function slotsToCustomerRequest(
     hasItems: (slots.additionalRequest ?? []).includes('furniture-move') ? '짐이 있음' : '',
     preferredDate: slots.visitDate ? (VISIT_DATE_LABEL[slots.visitDate] ?? slots.visitDate) : '',
     preferredDateDetail: slots.visitDate ? '원하는 날짜가 있어요' : '',
-    region: regionName,
+    region: regionFullName,
     customerName: user.customerName,
     customerPhone: user.customerPhone,
     customerEmail: user.customerEmail,
