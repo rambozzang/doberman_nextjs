@@ -4,9 +4,11 @@
  * /quote-calculator — 도배르만 견적 계산기 페이지
  * HTML 원본(도배르만_견적계산기.html) 100% 포팅
  * 도배르만 디자인 시스템 적용 (slate-900 bg, blue-600~purple-700 gradient)
+ * SEO 강화: JSON-LD structured data, 시맨틱 HTML, 내부 링크, 추가 컨텐츠 섹션
  */
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   calculateEstimate,
   calcQuickTable,
@@ -27,6 +29,7 @@ import {
 import StandardEstimateTable from './components/StandardEstimateTable';
 import WallpaperComparisonGuide from './components/WallpaperComparisonGuide';
 import FaqAndGlossary from './components/FaqAndGlossary';
+import QuoteCalculatorJsonLd from './components/QuoteCalculatorJsonLd';
 
 // ========== 기본 입력값 (HTML 원본 defaultValue/selected 속성 그대로) ==========
 const DEFAULT_INPUT: CalculatorInput = {
@@ -91,6 +94,9 @@ export default function QuoteCalculatorPage() {
 
   return (
     <>
+      {/* JSON-LD Structured Data (서버 컴포넌트) */}
+      <QuoteCalculatorJsonLd />
+
       {/* 인쇄용 CSS — globals.css 수정 없이 인라인 */}
       <style>{`
         @media print {
@@ -105,16 +111,28 @@ export default function QuoteCalculatorPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 md:pt-24 pb-6 px-4">
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 md:pt-24 pb-6 px-4">
         <div className="max-w-6xl mx-auto">
 
           {/* ===== 헤더 ===== */}
           <header className="bg-gradient-to-br from-blue-600 to-purple-700 text-white rounded-2xl px-6 py-5 mb-5 shadow-lg shadow-blue-900/30 no-print">
             <h1 className="text-xl font-bold tracking-tight">
-              도배르만 도배 예상 견적 계산기
+              도배 견적 계산기 — 평당·평형별 정밀 자동 견적
             </h1>
             <p className="mt-1.5 text-sm opacity-90">
               아파트·빌라·주택, 평형·방수, 합지·실크 등을 종합 반영한 자동 견적 시스템 (2026 시장 평균 단가 기준)
+            </p>
+            {/* 첫 단락 내부 링크 */}
+            <p className="mt-2 text-xs opacity-75">
+              견적이 마음에 드셨다면{' '}
+              <Link href="/quote-request" className="underline underline-offset-2 hover:opacity-100 font-medium">
+                실제 견적 신청
+              </Link>
+              {' '}또는{' '}
+              <Link href="/quote-request-ai" className="underline underline-offset-2 hover:opacity-100 font-medium">
+                AI 견적 받기
+              </Link>
+              {' '}를 이용해 보세요.
             </p>
           </header>
 
@@ -124,10 +142,15 @@ export default function QuoteCalculatorPage() {
             {/* ======================================================
                 좌측: 입력 영역
             ====================================================== */}
-            <section className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 print-card no-print">
+            <section
+              id="calculator-input"
+              aria-labelledby="input-heading"
+              className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 print-card no-print"
+            >
+              <h2 id="input-heading" className="sr-only">견적 입력 폼</h2>
 
               {/* ① 기본 정보 */}
-              <h2 className={SECTION_TITLE_CLS}>① 기본 정보</h2>
+              <h3 className={SECTION_TITLE_CLS}>① 기본 정보</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-5">
                 <div>
                   <label className={LABEL_CLS}>주거 형태</label>
@@ -225,7 +248,7 @@ export default function QuoteCalculatorPage() {
               </div>
 
               {/* ② 벽지 선택 */}
-              <h2 className={SECTION_TITLE_CLS}>② 벽지 선택</h2>
+              <h3 className={SECTION_TITLE_CLS}>② 벽지 선택</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-5">
                 <div>
                   <label className={LABEL_CLS}>거실/주방 벽지</label>
@@ -298,7 +321,7 @@ export default function QuoteCalculatorPage() {
               </div>
 
               {/* ③ 추가 작업 옵션 */}
-              <h2 className={SECTION_TITLE_CLS}>③ 추가 작업 옵션</h2>
+              <h3 className={SECTION_TITLE_CLS}>③ 추가 작업 옵션</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-5">
                 <div>
                   <label className={LABEL_CLS}>기존 벽지 철거</label>
@@ -389,7 +412,7 @@ export default function QuoteCalculatorPage() {
               </div>
 
               {/* ④ 마진/세금 */}
-              <h2 className={SECTION_TITLE_CLS}>④ 마진 / 세금</h2>
+              <h3 className={SECTION_TITLE_CLS}>④ 마진 / 세금</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-5">
                 <div>
                   <label className={LABEL_CLS}>사업자 마진율(%)</label>
@@ -468,12 +491,17 @@ export default function QuoteCalculatorPage() {
             {/* ======================================================
                 우측: 결과 영역
             ====================================================== */}
-            <section className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 print-card">
-              <h2 className="text-sm font-bold text-blue-400 border-b border-slate-700 pb-1.5 mb-4">
+            <section
+              id="calculator-result"
+              aria-labelledby="result-heading"
+              className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 print-card"
+            >
+              <h2 id="result-heading" className="text-sm font-bold text-blue-400 border-b border-slate-700 pb-1.5 mb-4">
                 자동 산출 결과
               </h2>
 
               <table className="w-full text-sm">
+                <caption className="sr-only">도배 견적 자동 산출 결과 — 자재비, 인건비, 옵션, 합계</caption>
                 <tbody>
                   {/* 시공 평수 */}
                   <ResultRow label="도배 시공평수" value={`${result.dPyeong.toFixed(1)}평`} />
@@ -560,6 +588,7 @@ export default function QuoteCalculatorPage() {
                 </summary>
                 <div className="mt-2 overflow-x-auto">
                   <table className="w-full text-[11px] border-collapse min-w-[360px]">
+                    <caption className="sr-only">평형별 빠른 도배 견적 비교표</caption>
                     <thead>
                       <tr className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
                         <th className="px-2 py-1.5 text-center font-semibold border border-slate-600">평형</th>
@@ -604,23 +633,251 @@ export default function QuoteCalculatorPage() {
 
           </div>{/* /grid */}
         </div>{/* /max-w */}
-      </div>
+      </main>
 
       {/* ===== SEO 강화 컨텐츠 ===== */}
-      <section className="max-w-6xl mx-auto px-4 mt-12 md:mt-16 pb-16 space-y-12 md:space-y-16">
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8">
-          <StandardEstimateTable />
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 pb-16">
+        <div className="max-w-6xl mx-auto space-y-12 md:space-y-16">
+
+          {/* 평형별 표준 견적표 */}
+          <section
+            id="standard-estimate-table"
+            aria-labelledby="table-heading"
+            className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8"
+          >
+            <StandardEstimateTable />
+          </section>
+
+          {/* 합지 vs 실크 비교 가이드 */}
+          <section
+            id="wallpaper-comparison"
+            aria-labelledby="comparison-heading"
+            className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8"
+          >
+            <WallpaperComparisonGuide />
+          </section>
+
+          {/* FAQ + 용어사전 */}
+          <section
+            id="faq-glossary"
+            aria-labelledby="faq-heading"
+            className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8"
+          >
+            <FaqAndGlossary />
+          </section>
+
+          {/* ===== 5-A. 사용 가이드 (HowTo 시각화) ===== */}
+          <section
+            id="how-to-use"
+            aria-labelledby="howto-heading"
+            className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8"
+          >
+            <h2 id="howto-heading" className="text-2xl font-bold text-white mb-2">
+              이렇게 사용하세요 — 4단계 사용 가이드
+            </h2>
+            <p className="text-slate-400 text-sm mb-8">
+              견적 계산기를 처음 사용하신다면 아래 4단계를 따라해 보세요.
+            </p>
+            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="list">
+              {HOW_TO_STEPS.map((step, i) => (
+                <li
+                  key={step.title}
+                  className="rounded-xl border border-slate-700 bg-slate-800/30 px-5 py-5"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600/30 border border-blue-500/50 text-blue-300 text-sm font-black flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <h3 className="font-semibold text-slate-100 text-sm">{step.title}</h3>
+                  </div>
+                  <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-6 text-xs text-slate-500">
+              계산 결과가 마음에 드셨다면{' '}
+              <Link href="/quote-request" className="text-blue-400 underline underline-offset-2 hover:text-blue-300">
+                실제 견적 신청
+              </Link>
+              {' '}으로 넘어가 전문가에게 정확한 현장 실측 견적을 받아보세요.
+            </p>
+          </section>
+
+          {/* ===== 5-B. 도배 견적 시 꼭 확인할 체크리스트 ===== */}
+          <section
+            id="checklist"
+            aria-labelledby="checklist-heading"
+            className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8"
+          >
+            <h2 id="checklist-heading" className="text-2xl font-bold text-white mb-2">
+              도배 견적 시 꼭 확인할 체크리스트
+            </h2>
+            <p className="text-slate-400 text-sm mb-6">
+              견적 오차를 줄이고 후회 없는 시공을 위해 아래 10가지를 사전에 확인하세요.
+            </p>
+            <ol className="space-y-4" role="list">
+              {CHECKLIST_ITEMS.map((item, i) => (
+                <li
+                  key={item.title}
+                  className="flex gap-4 rounded-xl border border-slate-700 bg-slate-800/30 px-5 py-4"
+                >
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-600/30 border border-purple-500/50 text-purple-300 text-xs font-black flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="font-semibold text-slate-100 text-sm mb-1">{item.title}</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-6 text-xs text-slate-500">
+              위 항목을 모두 확인한 후{' '}
+              <Link href="/quote-request-ai" className="text-blue-400 underline underline-offset-2 hover:text-blue-300">
+                AI 견적
+              </Link>
+              {' '}을 통해 더욱 정밀한 맞춤 견적을 받아보실 수 있습니다.
+            </p>
+          </section>
+
+          {/* ===== 4단계: 관련 페이지 내부 링크 ===== */}
+          <section
+            id="related-pages"
+            aria-labelledby="related-heading"
+            className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8"
+          >
+            <h2 id="related-heading" className="text-2xl font-bold text-white mb-4">
+              관련 페이지
+            </h2>
+            <nav aria-label="관련 페이지 링크">
+              <ul className="grid grid-cols-2 md:grid-cols-3 gap-3" role="list">
+                <li>
+                  <Link
+                    href="/quote-request"
+                    className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/30 px-4 py-3.5 text-sm font-medium text-slate-200 hover:border-blue-500/50 hover:bg-slate-800/60 hover:text-white transition-all"
+                  >
+                    <span aria-hidden="true">📝</span>
+                    실제 견적 신청하기
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/quote-request-ai"
+                    className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/30 px-4 py-3.5 text-sm font-medium text-slate-200 hover:border-blue-500/50 hover:bg-slate-800/60 hover:text-white transition-all"
+                  >
+                    <span aria-hidden="true">🤖</span>
+                    AI 견적 받기
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/quote-calculator#standard-estimate-table"
+                    className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/30 px-4 py-3.5 text-sm font-medium text-slate-200 hover:border-blue-500/50 hover:bg-slate-800/60 hover:text-white transition-all"
+                  >
+                    <span aria-hidden="true">💰</span>
+                    평형별 도배 가격표
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/quote-calculator#wallpaper-comparison"
+                    className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/30 px-4 py-3.5 text-sm font-medium text-slate-200 hover:border-blue-500/50 hover:bg-slate-800/60 hover:text-white transition-all"
+                  >
+                    <span aria-hidden="true">🎨</span>
+                    벽지 종류 비교 가이드
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/quote-calculator#checklist"
+                    className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/30 px-4 py-3.5 text-sm font-medium text-slate-200 hover:border-blue-500/50 hover:bg-slate-800/60 hover:text-white transition-all"
+                  >
+                    <span aria-hidden="true">🛠</span>
+                    도배 체크리스트
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/quote-calculator#faq-glossary"
+                    className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/30 px-4 py-3.5 text-sm font-medium text-slate-200 hover:border-blue-500/50 hover:bg-slate-800/60 hover:text-white transition-all"
+                  >
+                    <span aria-hidden="true">❓</span>
+                    자주 묻는 질문
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </section>
+
         </div>
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8">
-          <WallpaperComparisonGuide />
-        </div>
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 md:p-8">
-          <FaqAndGlossary />
-        </div>
-      </section>
+      </div>
     </>
   );
 }
+
+// ========== SEO 추가 컨텐츠 데이터 ==========
+
+const HOW_TO_STEPS = [
+  {
+    title: '기본 정보 입력',
+    desc: '주거 형태(아파트·빌라·주택), 전용 평형, 방 개수, 천장 높이를 선택합니다. 분양평수가 아닌 전용면적 기준으로 입력해야 정확한 견적이 산출됩니다.',
+  },
+  {
+    title: '벽지 종류 선택',
+    desc: '거실·방·천장 각각에 합지(소폭·광폭), 실크(보급·중급·고급), 친환경·방염, 수입벽지 중 원하는 벽지를 선택합니다. 공간별로 다른 벽지를 지정할 수 있습니다.',
+  },
+  {
+    title: '추가 옵션 설정',
+    desc: '철거 시공 여부, 곰팡이 제거, 벽 보수(퍼티), 몰딩 시공, 가구 이동, 폐기물 처리 등 추가 작업 항목을 체크합니다. 각 옵션은 비용에 자동 반영됩니다.',
+  },
+  {
+    title: '최종 견적 확인',
+    desc: '자재비·인건비·옵션 소계와 마진, 할인, VAT(10%), 카드 수수료가 모두 반영된 최종 청구 견적이 우측 결과 패널에 실시간으로 표시됩니다.',
+  },
+];
+
+const CHECKLIST_ITEMS = [
+  {
+    title: '전용면적(실평수) 기준으로 입력',
+    desc: '분양평수와 전용면적은 다릅니다. 등기부등본이나 관리비 고지서에 표기된 전용면적(㎡)을 0.3025로 나누면 평수가 됩니다.',
+  },
+  {
+    title: '천장 높이 확인',
+    desc: '표준 천장 높이는 2.3~2.5m입니다. 복층이나 인테리어 리모델링으로 2.7m 이상인 경우 시공 면적이 늘어나 추가 비용이 발생합니다.',
+  },
+  {
+    title: '베란다(발코니) 확장 여부',
+    desc: '발코니를 실내로 확장한 경우 해당 면적이 추가됩니다. 계산기의 "면적 보정(%)" 항목에 5~15% 범위에서 입력하세요.',
+  },
+  {
+    title: '거주 중 시공 여부',
+    desc: '입주자가 있는 상태에서 시공하면 가구 이동 비용과 인건비(약 5%) 가산이 발생합니다. 가능하면 이사 전후에 시공하는 것이 비용 절감에 유리합니다.',
+  },
+  {
+    title: '기존 벽지 종류 (실크면 철거 필수)',
+    desc: '현재 시공된 벽지가 실크인 경우 덧방이 불가해 철거가 필수입니다. 합지 위 합지 덧방은 가능하지만 시공 품질 저하 우려가 있습니다.',
+  },
+  {
+    title: '가구 이동 필요 여부',
+    desc: '대형 가구(소파·침대·장롱)를 이동해야 한다면 가구 이동 옵션을 선택하세요. 업체가 직접 이동하는 경우 별도 비용이 청구됩니다.',
+  },
+  {
+    title: '곰팡이·벽면 보수 상태',
+    desc: '벽면에 곰팡이가 있거나 균열이 심하다면 사전 방균 처리와 퍼티 작업이 필요합니다. 이를 생략하면 시공 후 재발 및 하자가 발생할 수 있습니다.',
+  },
+  {
+    title: '몰딩 시공 여부',
+    desc: '기존 몰딩이 파손됐거나 새로 설치하려는 경우 도배와 함께 진행하면 효율적입니다. 몰딩 교체 시 자재비와 시공비가 별도 추가됩니다.',
+  },
+  {
+    title: 'VAT 포함 여부 확인',
+    desc: '간이과세자 업체는 VAT를 별도 청구하지 않을 수 있습니다. 견적서에 VAT 포함·별도 여부가 명시되어 있는지 반드시 확인하세요.',
+  },
+  {
+    title: 'A/S 보증 기간 확인',
+    desc: '도배 후 들뜸·기포·이음새 벌어짐 등 하자에 대해 일반적으로 1년 무상 A/S를 제공합니다. 계약 전 보증 기간과 범위를 서면으로 확인하세요.',
+  },
+];
 
 // ========== 보조 컴포넌트 ==========
 
