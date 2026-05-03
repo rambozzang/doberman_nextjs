@@ -8,6 +8,19 @@ export interface AIMeta {
   hasImageAnalysis?: boolean;
 }
 
+const PACKAGE_LABEL: Record<'budget' | 'standard' | 'premium', string> = {
+  budget: '가성비',
+  standard: '표준',
+  premium: '프리미엄',
+};
+
+const VISIT_DATE_LABEL: Record<string, string> = {
+  'this-weekend': '이번 주말',
+  'next-week': '다음 주',
+  'this-month': '이번 달 안',
+  'flexible': '일정 협의 가능',
+};
+
 const REGION_NAME: Record<string, string> = {
   seoul: '서울특별시', busan: '부산광역시', daegu: '대구광역시', incheon: '인천광역시',
   gwangju: '광주광역시', daejeon: '대전광역시', ulsan: '울산광역시', sejong: '세종특별자치시',
@@ -21,7 +34,7 @@ function buildScopeLabel(slots: QuoteSlots): string {
     if (s === 'room' && slots.roomCount) return `[${SCOPE_LABEL[s]} ${slots.roomCount}개]`;
     return `[${SCOPE_LABEL[s]}]`;
   });
-  return list.join(',');
+  return list.join(', ');
 }
 
 function buildAdditionalLabel(slots: QuoteSlots): string {
@@ -30,7 +43,7 @@ function buildAdditionalLabel(slots: QuoteSlots): string {
 
 function buildAIMetaString(meta: AIMeta): string {
   const parts = [`AI매칭률:${meta.matchConfidence}%`];
-  if (meta.selectedPackage) parts.push(`패키지:${meta.selectedPackage}`);
+  if (meta.selectedPackage) parts.push(`패키지:${PACKAGE_LABEL[meta.selectedPackage]}`);
   if (meta.hasImageAnalysis) parts.push('이미지분석:있음');
   return parts.join('|');
 }
@@ -55,7 +68,7 @@ export function slotsToCustomerRequest(
     specialInfo: buildAdditionalLabel(slots),
     specialInfoDetail: '',
     hasItems: (slots.additionalRequest ?? []).includes('furniture-move') ? '짐이 있음' : '',
-    preferredDate: slots.visitDate ?? '',
+    preferredDate: slots.visitDate ? (VISIT_DATE_LABEL[slots.visitDate] ?? slots.visitDate) : '',
     preferredDateDetail: slots.visitDate ? '원하는 날짜가 있어요' : '',
     region: regionName,
     customerName: user.customerName,

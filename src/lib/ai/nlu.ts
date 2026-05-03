@@ -59,7 +59,8 @@ export function extractSlots(text: string, current: QuoteSlots): QuoteSlots {
   // 시공 범위 (다중 가능)
   const scopeMap: { pattern: RegExp; value: Scope }[] = [
     { pattern: /거실/, value: 'living-room' },
-    { pattern: /방/, value: 'room' },
+    // "주방"과 겹치지 않도록 음수 전방탐색
+    { pattern: /(?<!주)방/, value: 'room' },
     { pattern: /주방|부엌/, value: 'kitchen' },
     { pattern: /화장실|욕실/, value: 'bathroom' },
     { pattern: /전체|전부|싹\s*다|올\s*도배/, value: 'all-rooms' },
