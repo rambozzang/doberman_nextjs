@@ -102,7 +102,7 @@ export default function QuoteCalculatorPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 md:pt-24 pb-6 px-4">
         <div className="max-w-6xl mx-auto">
 
           {/* ===== 헤더 ===== */}
