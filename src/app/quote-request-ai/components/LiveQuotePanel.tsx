@@ -63,7 +63,18 @@ export default function LiveQuotePanel({
         {estimate && (
           <>
             <PriceGauge min={estimate.min} max={estimate.max} matchConfidence={estimate.matchConfidence} />
-            <PackageCards packages={estimate.packages} selectedId={selectedPackage} onSelect={onSelectPackage} />
+            {/*
+              추천 패키지는 일단 비공개. 실제 도배 사장님 견적을 받기 전 단계라 패키지로 단정지어 보여주기보다
+              사장님 견적 후 비교 단계에서 노출하는 것이 합리적.
+              <PackageCards packages={estimate.packages} selectedId={selectedPackage} onSelect={onSelectPackage} />
+            */}
+            <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-amber-100 text-xs leading-relaxed">
+              <p className="font-semibold mb-1">⚠️ 위 금액은 시장 평균 기반 예상 견적입니다.</p>
+              <p className="text-amber-100/90">
+                실제 시공 금액은 현장 실측, 벽 상태, 평형, 시공 옵션에 따라 달라질 수 있어요.
+                신청해 주시면 검증된 도배 사장님들의 정확한 견적을 받아보실 수 있습니다.
+              </p>
+            </div>
             <SimilarCases cases={estimate.similarCases} />
           </>
         )}
