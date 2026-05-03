@@ -64,7 +64,7 @@ function basePrice(effectivePyeong: number, wallpaper: WallpaperType, regionFact
   return (construction + extras + BASE_FEE) * regionFactor;
 }
 
-const MIN_QUOTE = 350000; // 최소 견적 보장 (출장만 와도 35만원)
+const MIN_QUOTE = 400000; // 최소 견적 보장 (출처: 방한칸 부분도배 270,000~350,000원, 출장 기본비 포함 최소 40만원)
 
 export function calculatePrice(slots: QuoteSlots): PriceEstimate {
   const effectivePyeong = calcEffectivePyeong(slots);
