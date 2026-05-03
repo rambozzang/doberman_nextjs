@@ -1,11 +1,11 @@
 import type { WallpaperType, AdditionalRequest } from '../types';
 
 export const PRICE_PER_PYEONG: Record<WallpaperType, number> = {
-  vinyl: 35000,
-  'silk-vinyl': 55000,
-  fabric: 75000,
-  natural: 95000,
-  premium: 130000,
+  vinyl: 30000,         // 합지 (시장가 25,000~35,000)
+  'silk-vinyl': 42000,  // 실크+합지 혼합
+  fabric: 50000,        // 실크 (시장가 40,000~60,000)
+  natural: 70000,       // 천연 (시장가 55,000~85,000)
+  premium: 110000,      // 수입/프리미엄 (시장가 90,000~150,000)
 };
 
 export const ADDITIONAL_FEE: Record<AdditionalRequest, number> = {
