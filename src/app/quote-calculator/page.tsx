@@ -531,7 +531,7 @@ export default function QuoteCalculatorPage() {
                 </tbody>
               </table>
 
-              {/* 계산식 보기 */}
+              {/* 계산식 보기 — 임시 비공개 (필요 시 주석 해제하여 노출)
               <details
                 className="mt-4"
                 open={formulaOpen}
@@ -544,6 +544,7 @@ export default function QuoteCalculatorPage() {
                   {formulaText}
                 </pre>
               </details>
+              */}
 
               {/* 빠른 견적표 */}
               <details
