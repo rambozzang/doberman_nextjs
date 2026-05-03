@@ -7,15 +7,20 @@ import { calculatePrice } from './priceCalculator';
 import {
   BUILDING_TYPE_REPLIES, AREA_REPLIES, SCOPE_REPLIES,
   WALLPAPER_REPLIES, ADDITIONAL_REPLIES, POPULAR_REGION_REPLIES,
+  ALL_REGION_REPLIES,
   VISIT_DATE_REPLIES,
+  ROOM_COUNT_REPLIES,
+  getDistrictReplies,
 } from './data/quickReplies';
 
 const QUESTION_BY_SLOT: Record<string, { text: string; replies: QuickReply[] }> = {
   buildingType: { text: '어떤 건물 도배를 계획하고 계세요?', replies: BUILDING_TYPE_REPLIES },
   area:         { text: '시공 면적은 어느 정도세요? (자유롭게 입력해도 됩니다)', replies: AREA_REPLIES },
   scope:        { text: '어느 공간을 시공하실 계획이에요? (여러 개 선택 가능)', replies: SCOPE_REPLIES },
+  roomCount:    { text: '방은 몇 개를 시공하실 계획이세요?', replies: ROOM_COUNT_REPLIES },
   wallpaperType:{ text: '벽지 종류 선호하는 게 있으세요?', replies: WALLPAPER_REPLIES },
-  region:       { text: '시공 지역 알려주세요. 텍스트로 직접 입력해도 좋아요.', replies: POPULAR_REGION_REPLIES },
+  region:       { text: '시공 지역(시·도) 알려주세요. 직접 입력해도 좋아요.', replies: ALL_REGION_REPLIES },
+  // district는 동적이므로 chat() 내에서 처리
   additionalRequest: { text: '추가로 필요하신 서비스가 있으세요?', replies: ADDITIONAL_REPLIES },
   visitDate:    { text: '방문 희망일이 있으세요?', replies: VISIT_DATE_REPLIES },
 };
@@ -56,8 +61,17 @@ function applyQuickReplyToSlots(slots: QuoteSlots, qr: QuickReply): QuoteSlots {
       next.additionalRequest = cur.includes(v) ? cur.filter((s) => s !== v) : [...cur, v];
       break;
     }
+    case 'roomCount':
+      next.roomCount = parseInt(qr.value, 10);
+      break;
     case 'region':
+      if (next.region !== qr.value) {
+        next.district = undefined; // 시도 변경 시 시군구 리셋
+      }
       next.region = qr.value;
+      break;
+    case 'district':
+      next.district = qr.value;
       break;
     case 'visitDate':
       next.visitDate = qr.value;
@@ -85,6 +99,18 @@ export class MockAIEngine implements AIQuoteEngine {
 
     const next = nextMissingSlot(slots);
     if (next) {
+      // district는 시도(region)에 따라 동적으로 빠른답변 생성
+      if (next === 'district' && slots.region) {
+        const districtReplies = getDistrictReplies(slots.region);
+        const aiMessage: ChatMessage = {
+          id: makeId(),
+          role: 'ai',
+          text: '시·군·구를 선택해주세요. 직접 입력해도 좋아요.',
+          quickReplies: districtReplies,
+          timestamp: Date.now(),
+        };
+        return { aiMessage, updatedSlots: slots, isComplete: false };
+      }
       const q = QUESTION_BY_SLOT[next];
       const aiMessage: ChatMessage = {
         id: makeId(),

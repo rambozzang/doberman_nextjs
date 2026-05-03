@@ -1,4 +1,5 @@
 import type { QuoteSlots, BuildingType, Scope, WallpaperType, AdditionalRequest } from './types';
+import { findDistrictByName } from './data/regions';
 
 // regionData는 quote-request 페이지에서 사용하는 것과 동일 형식이며,
 // NLU는 이 모듈에 자체 보유한 축약 매핑을 사용한다 (전체 지역은 page.tsx에서 import 가능).
@@ -112,6 +113,16 @@ export function extractSlots(text: string, current: QuoteSlots): QuoteSlots {
     if (next.region) break;
   }
 
+  // 시군구 추출 (예: "강남구", "수원시", "해운대구")
+  const districtMatch = text.match(/([가-힣]{2,4}(?:구|시|군))/);
+  if (districtMatch) {
+    const found = findDistrictByName(districtMatch[1]);
+    if (found) {
+      next.region = found.regionId;
+      next.district = found.districtId;
+    }
+  }
+
   // 방문 일자: "내일", "모레", "이번 주말"
   if (/내일/.test(text)) next.visitDate = '내일';
   else if (/모레|모래/.test(text)) next.visitDate = '모레';
@@ -130,8 +141,12 @@ export function nextMissingSlot(slots: QuoteSlots): keyof QuoteSlots | null {
   if (!slots.buildingType) return 'buildingType';
   if (!slots.area?.pyeong && !slots.area?.squareMeter) return 'area';
   if (!slots.scope || slots.scope.length === 0) return 'scope';
+  // 방 시공 포함 시 방 개수 확인
+  if (slots.scope.includes('room') && !slots.roomCount) return 'roomCount';
   if (!slots.wallpaperType) return 'wallpaperType';
   if (!slots.region) return 'region';
+  // 시도 선택 후 시군구 미정이면 시군구 질문
+  if (!slots.district) return 'district';
   if (slots.additionalRequest === undefined) return 'additionalRequest';
   if (!slots.visitDate) return 'visitDate';
   return null;
@@ -142,20 +157,21 @@ export function nextMissingSlot(slots: QuoteSlots): keyof QuoteSlots | null {
  */
 export function computeConfidence(slots: QuoteSlots): number {
   const weights: Record<keyof QuoteSlots, number> = {
-    buildingType: 15,
-    area: 25,
-    scope: 15,
-    wallpaperType: 20,
-    region: 10,
+    buildingType: 12,
+    area: 22,
+    scope: 12,
+    roomCount: 5,
+    wallpaperType: 18,
+    region: 8,
+    district: 8,
     additionalRequest: 5,
     visitDate: 5,
-    roomCount: 0,
-    district: 5,
   };
   let score = 0;
   if (slots.buildingType) score += weights.buildingType;
   if (slots.area?.pyeong || slots.area?.squareMeter) score += weights.area;
   if (slots.scope && slots.scope.length > 0) score += weights.scope;
+  if (slots.roomCount) score += weights.roomCount;
   if (slots.wallpaperType) score += weights.wallpaperType;
   if (slots.region) score += weights.region;
   if (slots.additionalRequest !== undefined) score += weights.additionalRequest;
