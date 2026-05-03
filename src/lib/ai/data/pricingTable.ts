@@ -1,12 +1,19 @@
 import type { WallpaperType, AdditionalRequest } from '../types';
 
+// 평당 시공비 (자재비 + 인건비 포함, 한국 도배 시장가 평균~상향 기준)
 export const PRICE_PER_PYEONG: Record<WallpaperType, number> = {
-  vinyl: 30000,         // 합지 (시장가 25,000~35,000)
-  'silk-vinyl': 42000,  // 실크+합지 혼합
-  fabric: 50000,        // 실크 (시장가 40,000~60,000)
-  natural: 70000,       // 천연 (시장가 55,000~85,000)
-  premium: 110000,      // 수입/프리미엄 (시장가 90,000~150,000)
+  vinyl: 50000,         // 합지 (시장가 35,000~60,000)
+  'silk-vinyl': 70000,  // 실크+합지 혼합
+  fabric: 90000,        // 실크 (시장가 60,000~100,000)
+  natural: 130000,      // 천연 (시장가 100,000~150,000)
+  premium: 200000,      // 수입/프리미엄 (시장가 150,000~250,000)
 };
+
+// 출장비 + 기본 부자재 (퍼티, 풀, 마감재 등)
+export const BASE_FEE = 120000;
+
+// 평당 추가 비용 (천장 보정, 코너 처리, 부자재 등)
+export const PER_PYEONG_EXTRA = 5000;
 
 export const ADDITIONAL_FEE: Record<AdditionalRequest, number> = {
   'furniture-move': 50000,
