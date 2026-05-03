@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatMessage, QuoteSlots, QuickReply, PriceEstimate, ImageAnalysis } from '@/lib/ai/types';
 import { getAIEngine } from '@/lib/ai/aiQuoteEngine';
 
@@ -43,6 +43,21 @@ export function useAIChat() {
   const [estimate, setEstimate] = useState<PriceEstimate | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [hasImageAnalysis, setHasImageAnalysis] = useState(false);
+
+  // 언마운트 시 최신 messages에 접근하기 위한 ref
+  const messagesRef = useRef(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  // 언마운트 시 모든 첨부 blob URL revoke (메모리 누수 방지)
+  useEffect(() => {
+    return () => {
+      messagesRef.current.forEach((m) => {
+        m.attachments?.forEach((a) => {
+          if (a.url.startsWith('blob:')) URL.revokeObjectURL(a.url);
+        });
+      });
+    };
+  }, []);
 
   // 로컬스토리지 복원
   useEffect(() => {
@@ -135,6 +150,12 @@ export function useAIChat() {
   }, [slots, isThinking]);
 
   const reset = useCallback(() => {
+    // reset 시 첨부 blob URL revoke (메모리 누수 방지)
+    messagesRef.current.forEach((m) => {
+      m.attachments?.forEach((a) => {
+        if (a.url.startsWith('blob:')) URL.revokeObjectURL(a.url);
+      });
+    });
     setMessages([INITIAL_AI_MESSAGE]);
     setSlots({});
     setEstimate(null);

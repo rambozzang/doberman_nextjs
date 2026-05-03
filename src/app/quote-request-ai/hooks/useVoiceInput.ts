@@ -26,8 +26,21 @@ export function useVoiceInput(onResult: (text: string) => void) {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
+  // stale closure 회피: onResult를 ref로 추적
+  const onResultRef = useRef(onResult);
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
+
   useEffect(() => {
     setIsSupported(getRecognitionCtor() !== null);
+  }, []);
+
+  // 언마운트 시 SpeechRecognition 정리 및 마이크 권한 해제
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
   }, []);
 
   const start = useCallback(() => {
@@ -40,14 +53,14 @@ export function useVoiceInput(onResult: (text: string) => void) {
     rec.onresult = (event) => {
       const last = event.results[event.results.length - 1];
       const text = last[0]?.transcript ?? '';
-      if (text) onResult(text);
+      if (text) onResultRef.current(text);
     };
     rec.onerror = () => setIsListening(false);
     rec.onend = () => setIsListening(false);
     rec.start();
     recognitionRef.current = rec;
     setIsListening(true);
-  }, [onResult]);
+  }, []);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();
