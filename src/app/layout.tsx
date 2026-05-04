@@ -3,8 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 import { GlobalProvider } from "@/providers/GlobalProvider";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import AdSense from "@/components/AdSense";
@@ -116,7 +115,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="scroll-smooth">
+    <html lang="ko" className="scroll-smooth" data-scroll-behavior="smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -254,11 +253,7 @@ export default function RootLayout({
         <QueryProvider>
           <GlobalProvider>
             <div className="flex flex-col min-h-screen">
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
+              <SiteChrome>{children}</SiteChrome>
             </div>
 
             <AdSense adSlot="1234567890" />

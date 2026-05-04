@@ -56,6 +56,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
   // 웹소켓 연결
   const {
     isConnected,
+    connectionError,
     sendMessage: sendWebSocketMessage,
     sendTypingStatus
   } = useChatWebSocket(
@@ -381,6 +382,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     partnerTyping,
     uploadingFile,
     isConnected,
+    connectionError,
     isLoading,
     messages,
     messagesEndRef,

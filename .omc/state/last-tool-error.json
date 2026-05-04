@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"npx tsc --noEmit && git add src/app/quote-calculator/page.tsx && git commit -m \\\"fix(calculator): 상단 헤더와 본문 겹침 해결 (pt-20 md:pt-24 추가)\\\" && git log --oneline -1\",\"description\":\"Validate and...",
+  "error": "Exit code 1\nOn branch feat/quote-request-ai\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   package-lock.json\n\tmodified:   package.json\n\tmodified:   src/app/layout.tsx\n\tmodified:   src/components/chat/useChatLogic.ts\n\tmodified:   src/hooks/useChatAuth.ts\n\tmodified:   src/lib/chatWebSocket.ts\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be commit...",
+  "timestamp": "2026-05-03T14:07:11.033Z",
+  "retry_count": 1
+}
