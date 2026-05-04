@@ -38,7 +38,7 @@ export class ChatWebSocketManager {
 
         // 네이티브 WebSocket URL 구성 (token은 URL 인코딩 적용)
         const wsUrl = new URL(`${this.baseURL}/ws/room/${roomId}`);
-        wsUrl.searchParams.set('token', encodeURIComponent(token));
+        wsUrl.searchParams.set('token', token);
         if (lastMessageId) {
           wsUrl.searchParams.set('lastMessageId', lastMessageId.toString());
         }
@@ -147,6 +147,7 @@ export class ChatWebSocketManager {
     }
 
     const messageData = {
+      type: 'message',
       roomId,
       senderType,
       senderId,
@@ -179,6 +180,7 @@ export class ChatWebSocketManager {
     }
 
     const messageData = {
+      type: 'message',
       roomId,
       senderType,
       senderId,
@@ -349,7 +351,7 @@ export class ChatWebSocketManager {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 5000); // 30초마다 ping
+    }, 30000); // 30초마다 ping
   }
 
   // Ping 간격 중지
