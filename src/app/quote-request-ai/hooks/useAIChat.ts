@@ -68,8 +68,18 @@ export function useAIChat() {
     }
   }, []);
 
-  // 슬롯 변할 때마다 가격 재계산
+  // 가격에 영향을 주는 핵심 슬롯이 모두 채워진 후에만 견적 계산.
+  // 빈 슬롯 상태에서 임의 기본값으로 가격이 노출되는 것을 방지.
   useEffect(() => {
+    const ready =
+      !!slots.buildingType &&
+      !!(slots.area?.pyeong || slots.area?.squareMeter) &&
+      !!(slots.scope && slots.scope.length > 0) &&
+      !!slots.wallpaperType;
+    if (!ready) {
+      setEstimate(null);
+      return;
+    }
     let cancelled = false;
     const engine = getAIEngine();
     engine.estimatePrice(slots).then((est) => {
