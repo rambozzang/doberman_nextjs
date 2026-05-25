@@ -63,8 +63,8 @@ export const useGlobalChatNotification = (
         const added = newTotal - prev;
         const message =
           newUnreadRooms.length === 1
-            ? `💬 ${newUnreadRooms[0].partnerName} 전문가에게서 새 메시지가 왔습니다`
-            : `💬 채팅 ${newUnreadRooms.length}개에서 새 메시지 ${added}건이 왔습니다`;
+            ? `${newUnreadRooms[0].partnerName} 전문가에게서 새 메시지가 왔습니다`
+            : `채팅 ${newUnreadRooms.length}개에서 새 메시지가 왔습니다`;
 
         toast(message, {
           duration: 5000,
