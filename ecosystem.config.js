@@ -4,7 +4,7 @@ module.exports = {
       name: 'doberman',
       script: 'npm',
       args: 'start',
-      cwd: '/path/to/doberman-deploy',
+      cwd: '/vdata/www/www.doberman.kr',
       instances: 1,
       exec_mode: 'fork',
       
