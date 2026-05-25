@@ -60,7 +60,6 @@ export const useGlobalChatNotification = (
 
       if (prev !== null && newTotal > prev && !isChatModalOpenRef.current) {
         // 새 메시지 알림 토스트
-        const added = newTotal - prev;
         const message =
           newUnreadRooms.length === 1
             ? `${newUnreadRooms[0].partnerName} 전문가에게서 새 메시지가 왔습니다`
@@ -78,7 +77,9 @@ export const useGlobalChatNotification = (
         });
       }
 
-      prevTotalRef.current = newTotal;
+      if (!isChatModalOpenRef.current) {
+        prevTotalRef.current = newTotal;
+      }
     } catch {
       // 조용히 실패 — 다음 폴링에서 재시도
     }
