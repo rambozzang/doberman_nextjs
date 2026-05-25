@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { chatApi } from '@/lib/chatApi';
 import { useChatAuth } from './useChatAuth';
@@ -65,16 +65,36 @@ export const useGlobalChatNotification = (
             ? `${newUnreadRooms[0].partnerName} 전문가에게서 새 메시지가 왔습니다`
             : `채팅 ${newUnreadRooms.length}개에서 새 메시지가 왔습니다`;
 
-        toast(message, {
-          duration: 5000,
-          style: {
-            background: '#1e40af',
-            color: '#fff',
-            border: '1px solid #3b82f6',
-            cursor: 'pointer',
-          },
-          icon: '💬',
-        });
+        toast.custom(
+          (t) =>
+            React.createElement(
+              'div',
+              {
+                onClick: () => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/quote-request/list';
+                  }
+                  toast.dismiss(t.id);
+                },
+                style: {
+                  background: '#1e40af',
+                  color: '#fff',
+                  border: '1px solid #3b82f6',
+                  cursor: 'pointer',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '14px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                },
+              },
+              React.createElement('span', null, '💬'),
+              React.createElement('span', null, message),
+            ),
+          { duration: 5000 },
+        );
       }
 
       if (!isChatModalOpenRef.current) {
