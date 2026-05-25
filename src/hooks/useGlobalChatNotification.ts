@@ -9,6 +9,8 @@ const POLL_INTERVAL = 30_000; // 30초
 interface UseGlobalChatNotificationOptions {
   /** 채팅 모달이 열려있으면 true — 토스트 알림을 억제한다 */
   isChatModalOpen?: boolean;
+  /** 토스트 클릭 시 실행할 콜백 (라우팅 등) */
+  onToastClick?: () => void;
 }
 
 interface UseGlobalChatNotificationReturn {
@@ -16,12 +18,16 @@ interface UseGlobalChatNotificationReturn {
   totalUnread: number;
   /** 미읽음이 1개 이상인 채팅방 목록 */
   unreadRooms: ChatRoom[];
+  /** 인증 여부 (useChatAuth 중복 호출 방지용) */
+  isAuthenticated: boolean;
+  /** 사용자 타입 (useChatAuth 중복 호출 방지용) */
+  userType: 'APP' | 'WEB' | null;
 }
 
 export const useGlobalChatNotification = (
   options: UseGlobalChatNotificationOptions = {}
 ): UseGlobalChatNotificationReturn => {
-  const { isChatModalOpen = false } = options;
+  const { isChatModalOpen = false, onToastClick } = options;
   const { chatAuth } = useChatAuth();
 
   const [totalUnread, setTotalUnread] = useState(0);
@@ -34,6 +40,11 @@ export const useGlobalChatNotification = (
   useEffect(() => {
     isChatModalOpenRef.current = isChatModalOpen;
   }, [isChatModalOpen]);
+  // 토스트 클릭 콜백을 ref 로 유지해 클로저 문제 방지
+  const onToastClickRef = useRef(onToastClick);
+  useEffect(() => {
+    onToastClickRef.current = onToastClick;
+  }, [onToastClick]);
 
   const fetchAndNotify = useCallback(async () => {
     if (!chatAuth.isAuthenticated || !chatAuth.token || !chatAuth.userId || !chatAuth.userType) {
@@ -71,9 +82,7 @@ export const useGlobalChatNotification = (
               'div',
               {
                 onClick: () => {
-                  if (typeof window !== 'undefined') {
-                    window.location.href = '/quote-request/list';
-                  }
+                  onToastClickRef.current?.();
                   toast.dismiss(t.id);
                 },
                 style: {
@@ -121,5 +130,10 @@ export const useGlobalChatNotification = (
     return () => clearInterval(interval);
   }, [chatAuth.isAuthenticated, fetchAndNotify]);
 
-  return { totalUnread, unreadRooms };
+  return {
+    totalUnread,
+    unreadRooms,
+    isAuthenticated: chatAuth.isAuthenticated,
+    userType: chatAuth.userType,
+  };
 };

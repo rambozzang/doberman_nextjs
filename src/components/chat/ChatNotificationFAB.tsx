@@ -3,15 +3,15 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useGlobalChatNotification } from '@/hooks/useGlobalChatNotification';
-import { useChatAuth } from '@/hooks/useChatAuth';
 
 export const ChatNotificationFAB: React.FC = () => {
   const router = useRouter();
-  const { chatAuth } = useChatAuth();
-  const { totalUnread } = useGlobalChatNotification();
+  const { totalUnread, isAuthenticated, userType } = useGlobalChatNotification({
+    onToastClick: () => router.push('/quote-request/list'),
+  });
 
   // 비로그인이거나 boss 유저(APP)이면 렌더링 안 함
-  if (!chatAuth.isAuthenticated || chatAuth.userType !== 'WEB') {
+  if (!isAuthenticated || userType !== 'WEB') {
     return null;
   }
 
