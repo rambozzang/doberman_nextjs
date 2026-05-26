@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        // Jenkins 관리 > Tools > NodeJS 에서 'NodeJS-22' 이름으로 추가 필요
-        nodejs 'NodeJS-22'
-    }
-
     environment {
         DEPLOY_DIR   = '/vdata/www/www.doberman.kr'
         PM2_APP_NAME = 'doberman'
