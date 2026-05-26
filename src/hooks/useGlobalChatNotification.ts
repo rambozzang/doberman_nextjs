@@ -46,6 +46,18 @@ export const useGlobalChatNotification = (
     onToastClickRef.current = onToastClick;
   }, [onToastClick]);
 
+  // 로그인 시 브라우저 알림 권한 요청
+  useEffect(() => {
+    if (
+      chatAuth.isAuthenticated &&
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'default'
+    ) {
+      Notification.requestPermission();
+    }
+  }, [chatAuth.isAuthenticated]);
+
   const fetchAndNotify = useCallback(async () => {
     if (!chatAuth.isAuthenticated || !chatAuth.token || !chatAuth.userId || !chatAuth.userType) {
       return;
@@ -104,6 +116,24 @@ export const useGlobalChatNotification = (
             ),
           { duration: 5000 },
         );
+
+        // 탭이 포커스 없을 때 브라우저(크롬) 알림 표시
+        if (
+          typeof window !== 'undefined' &&
+          'Notification' in window &&
+          Notification.permission === 'granted' &&
+          document.visibilityState !== 'visible'
+        ) {
+          const notif = new Notification('도배르만 새 메시지', {
+            body: message,
+            icon: '/logo.png',
+          });
+          notif.onclick = () => {
+            window.focus();
+            onToastClickRef.current?.();
+            notif.close();
+          };
+        }
       }
 
       if (!isChatModalOpenRef.current) {
