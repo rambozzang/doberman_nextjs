@@ -37,14 +37,11 @@ pipeline {
                     """
 
                     // ── 2. PM2 재시작 ──────────────────────────────────────────
+                    // startOrReload: 실행 중이면 무중단 reload, 없으면 start
                     // JENKINS_NODE_COOKIE=dontKillMe: 빌드 종료 시 pm2 프로세스 보존
                     sh """
-                        if JENKINS_NODE_COOKIE=dontKillMe pm2 describe ${PM2_APP_NAME} > /dev/null 2>&1; then
-                            JENKINS_NODE_COOKIE=dontKillMe pm2 reload ${PM2_APP_NAME} --update-env
-                        else
-                            JENKINS_NODE_COOKIE=dontKillMe pm2 start ${DEPLOY_DIR}/ecosystem.config.js
-                            JENKINS_NODE_COOKIE=dontKillMe pm2 save
-                        fi
+                        JENKINS_NODE_COOKIE=dontKillMe pm2 startOrReload ${DEPLOY_DIR}/ecosystem.config.js --update-env
+                        JENKINS_NODE_COOKIE=dontKillMe pm2 save
                     """
                 }
             }
