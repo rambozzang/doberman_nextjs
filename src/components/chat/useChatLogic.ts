@@ -276,6 +276,12 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     scrollToBottom();
   }, [chatAuth.isAuthenticated, chatPartner, requestId, findChatRoomByRequestId, createChatRoom]);
 
+  // roomId를 직접 알 때 채팅 열기 (FAB 등)
+  const openChatByRoomId = useCallback((roomId: number) => {
+    setCurrentRoomId(roomId);
+    setIsOpen(true);
+  }, []);
+
   // 채팅 모달 닫기
   const closeChat = useCallback(() => {
     setIsOpen(false);
@@ -389,6 +395,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
 
     // 액션
     openChat,
+    openChatByRoomId,
     closeChat,
     sendMessage,
     uploadFile,
