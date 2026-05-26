@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   
-  // 정적 최적화
-  output: 'standalone',
-  
   images: {
     remotePatterns: [
       {

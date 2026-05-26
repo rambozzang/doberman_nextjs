@@ -36,7 +36,13 @@ pipeline {
                             ./ ${DEPLOY_DIR}/
                     """
 
-                    // ── 2. PM2 재시작 ──────────────────────────────────────────
+                    // ── 2. 배포 디렉토리 소유권 opc로 변경 ────────────────────
+                    // jenkins → opc 소유권 변경 (pm2가 opc로 실행되므로 필수)
+                    // 사전 조건: /etc/sudoers.d/jenkins 에 아래 한 줄 추가 필요
+                    //   jenkins ALL=(root) NOPASSWD: /bin/chown -R opc\:opc /vdata/www/www.doberman.kr
+                    sh "sudo chown -R opc:opc ${DEPLOY_DIR}"
+
+                    // ── 3. PM2 재시작 ──────────────────────────────────────────
                     // startOrReload: 실행 중이면 무중단 reload, 없으면 start
                     // JENKINS_NODE_COOKIE=dontKillMe: 빌드 종료 시 pm2 프로세스 보존
                     sh """
