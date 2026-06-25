@@ -7,7 +7,7 @@
 // - 신규 파일을 base64 dataURL 또는 직접 입력한 URL 로 추가 후 POST /orders/files 일괄 저장
 // - 카테고리(방/사진유형) 변경, 단건 삭제 지원
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -94,7 +94,7 @@ function BossPhotoInner() {
   const [editType, setEditType] = useState<BossPhotoTypeCode>('before');
 
   // 목록 로드
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!customerId) {
       setError('customerId 가 필요합니다.');
       return;
@@ -115,12 +115,11 @@ function BossPhotoInner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [customerId]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId]);
+  }, [load]);
 
   // 필터링된 목록
   const filtered = useMemo(() => {

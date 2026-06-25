@@ -1,10 +1,15 @@
-import BossPlaceholder from '@/components/boss/BossPlaceholder';
+'use client';
 
-export default function Page() {
+import { Receipt } from 'lucide-react';
+import HistoryView from '../HistoryView';
+
+export default function BillingHistoryPage() {
   return (
-    <BossPlaceholder
+    <HistoryView
       title="결제 내역"
-      description="결제 내역을 확인하세요."
+      description="모든 결제 및 환불 내역을 확인하세요."
+      breadcrumbLabel="결제 내역"
+      icon={Receipt}
     />
   );
 }

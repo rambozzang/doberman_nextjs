@@ -2,8 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  
-  // 성능 최적화 설정
+
+  // Turbopack workspace root 를 현재 프로젝트로 고정
+  // (상위 디렉터리의 package-lock.json 을 잘못 잡는 경고 방지)
+  turbopack: {
+    root: __dirname,
+  },
   experimental: {
     // 메모리 사용량 최적화
     optimizePackageImports: ['lucide-react', 'framer-motion'],
@@ -67,8 +71,24 @@ const nextConfig: NextConfig = {
     ];
   },
   
+  async redirects() {
+    return [
+      // 플랜에 정의된 일부 라우트를 실제 구현 위치로 연결
+      { source: '/boss/home', destination: '/boss', permanent: false },
+      { source: '/boss/photo/camera', destination: '/boss/photo', permanent: false },
+      { source: '/boss/signatures', destination: '/boss/signature', permanent: false },
+      { source: '/boss/signatures/capture', destination: '/boss/signature/capture', permanent: false },
+      { source: '/boss/signatures/:id', destination: '/boss/signature/:id', permanent: false },
+    ];
+  },
+
   async rewrites() {
     return [
+      // 사장님 API 프록시 — 브라우저 CORS 회피
+      {
+        source: '/api/boss/:path*',
+        destination: 'https://www.tigerbk.com/api-doman/:path*',
+      },
       {
         source: '/api/chat/:path*',
         destination: 'https://www.tigerbk.com/chat-api/:path*',

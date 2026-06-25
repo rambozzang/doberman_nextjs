@@ -3,7 +3,7 @@
 // 사장님 권한 안내 페이지
 // Flutter 원본: lib/app/login/permission_page.dart
 // 모바일 권한 대신 브라우저 Permission API (Notification, Camera, Geolocation) 안내.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -52,12 +52,7 @@ export default function BossPermissionPage() {
     location: 'checking',
   });
 
-  // 마운트 시 현재 권한 상태 조회
-  useEffect(() => {
-    void checkAll();
-  }, []);
-
-  async function checkAll() {
+  const checkAll = useCallback(async () => {
     setStatuses({ notification: 'checking', camera: 'checking', location: 'checking' });
 
     // Notification
@@ -90,7 +85,12 @@ export default function BossPermissionPage() {
     }
 
     setStatuses({ notification: noti, camera: cam, location: loc });
-  }
+  }, []);
+
+  // 마운트 시 현재 권한 상태 조회
+  useEffect(() => {
+    void checkAll();
+  }, [checkAll]);
 
   async function requestPermission(key: PermItem['key']) {
     if (typeof window === 'undefined') return;

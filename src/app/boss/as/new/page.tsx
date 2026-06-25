@@ -2,7 +2,7 @@
 
 // AS 요청 등록/수정 페이지
 // Flutter: as_request_add_page.dart 포팅
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -46,9 +46,10 @@ function BossAsAddForm() {
   const [priority, setPriority] = useState<AsPriority>('보통');
   const [orderId, setOrderId] = useState<number | null>(null);
 
-  // 이미지(URL 입력 방식 - 웹은 Cloudflare 업로드 미구현)
+  // 이미지(URL 입력 + 로컬 파일 dataURL 방식)
   const [defectImages, setDefectImages] = useState<string[]>([]);
   const [imageInput, setImageInput] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 수정 모드 원본 보존(수리 사진 유지)
   const [original, setOriginal] = useState<AsRequestItem | null>(null);
@@ -106,6 +107,35 @@ function BossAsAddForm() {
 
   const removeImage = (idx: number) => {
     setDefectImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ''));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remaining = 10 - defectImages.length;
+    const targets = Array.from(files).slice(0, remaining);
+    if (targets.length < files.length) {
+      toast.error('최대 10장까지 등록할 수 있습니다');
+    }
+    setSaving(true);
+    try {
+      const urls = await Promise.all(targets.map((f) => fileToDataUrl(f)));
+      setDefectImages((prev) => [...prev, ...urls]);
+    } catch {
+      toast.error('이미지를 읽는 중 오류가 발생했습니다');
+    } finally {
+      setSaving(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSave = async () => {
@@ -228,7 +258,7 @@ function BossAsAddForm() {
           </h2>
         </div>
 
-        {/* URL 입력 */}
+        {/* URL / 파일 입력 */}
         <div className="flex items-center gap-2">
           <input
             type="url"
@@ -245,6 +275,22 @@ function BossAsAddForm() {
           >
             추가
           </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={defectImages.length >= 10}
+            className="h-9 rounded-lg border border-slate-700 bg-slate-800 px-3 text-xs font-bold text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-50"
+          >
+            파일
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
 
         {/* 썸네일 목록 */}

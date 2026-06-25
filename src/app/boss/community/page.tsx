@@ -80,7 +80,6 @@ export default function BossCommunityListPage() {
 
   useEffect(() => {
     load(page, keyword);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, keyword]);
 
   const onSearch = () => {

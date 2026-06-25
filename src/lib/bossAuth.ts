@@ -64,13 +64,13 @@ export class BossAuthManager {
     if (!token) return false;
     try {
       const payload = this.decodeToken(token);
-      // exp 클레임이 없으면 만료 검증을 서버에 위임하고 true 로 처리
+      // exp 클레임이 없으면 서버 판정에 위임하되, 디코딩은 정상이어야 함
       if (!payload.exp) return true;
       const now = Math.floor(Date.now() / 1000);
       return payload.exp > now;
     } catch {
-      // 디코딩 실패 시에도 토큰 존재만으로 인증된 것으로 취급 (서버 판정)
-      return true;
+      // 디코딩 실패 시 토큰을 폐기하고 비인증 처리
+      return false;
     }
   }
 

@@ -197,35 +197,35 @@ export default function BossMyCompanyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b]">
         <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#0a0a0b]">
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <Link
             href="/boss/me"
-            className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-emerald-600"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-300"
           >
             <ArrowLeft size={15} /> 뒤로
           </Link>
-          <h1 className="text-xl font-bold text-slate-900">{isEdit ? '회사 정보 수정' : '회사 등록'}</h1>
+          <h1 className="text-xl font-bold text-white">{isEdit ? '회사 정보 수정' : '회사 등록'}</h1>
           <div className="w-12" />
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+          className="space-y-6 rounded-2xl bg-slate-900/40 p-6 shadow-sm ring-1 ring-white/[0.06]"
         >
           {/* 로고 / 도장 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-600">회사 로고</label>
-              <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50">
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">회사 로고</label>
+              <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-700 bg-[#0a0a0b]">
                 {logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={logo} alt="logo" className="h-full w-full object-contain" />
@@ -240,15 +240,15 @@ export default function BossMyCompanyPage() {
                 <button
                   type="button"
                   onClick={handleDeleteLogo}
-                  className="mt-2 w-full rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100"
+                  className="mt-2 w-full rounded-lg border border-rose-500/20 bg-rose-500/10 py-1.5 text-[11px] font-medium text-rose-300 hover:bg-rose-500/20"
                 >
                   로고 삭제
                 </button>
               )}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-600">회사 도장</label>
-              <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50">
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">회사 도장</label>
+              <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-700 bg-[#0a0a0b]">
                 {stamp ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={stamp} alt="stamp" className="h-full w-full object-contain" />
@@ -263,7 +263,7 @@ export default function BossMyCompanyPage() {
                 <button
                   type="button"
                   onClick={handleDeleteStamp}
-                  className="mt-2 w-full rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100"
+                  className="mt-2 w-full rounded-lg border border-rose-500/20 bg-rose-500/10 py-1.5 text-[11px] font-medium text-rose-300 hover:bg-rose-500/20"
                 >
                   도장 삭제
                 </button>
@@ -396,7 +396,7 @@ export default function BossMyCompanyPage() {
               value={intro}
               onChange={(e) => setIntro(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-lg border border-white/[0.06] bg-slate-900/40 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               placeholder="회사를 소개해주세요"
             />
           </CompanyField>
@@ -405,7 +405,7 @@ export default function BossMyCompanyPage() {
               value={bigo}
               onChange={(e) => setBigo(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-lg border border-white/[0.06] bg-slate-900/40 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               placeholder="추가 메모"
             />
           </CompanyField>
@@ -413,7 +413,7 @@ export default function BossMyCompanyPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-emerald-500 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-emerald-500 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400"
           >
             {saving ? (
               <>
@@ -435,17 +435,20 @@ export default function BossMyCompanyPage() {
           height: 2.75rem;
           width: 100%;
           border-radius: 0.5rem;
-          border: 1px solid rgb(226 232 240);
-          background-color: white;
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          background-color: rgba(15, 23, 42, 0.4);
           padding-left: 2.5rem;
           padding-right: 0.75rem;
           font-size: 0.875rem;
-          color: rgb(15 23 42);
+          color: rgb(248 250 252);
+        }
+        :global(.company-input)::placeholder {
+          color: rgb(100 116 139);
         }
         :global(.company-input:focus) {
           border-color: rgb(52 211 153);
           outline: none;
-          box-shadow: 0 0 0 2px rgb(209 250 229);
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
         }
       `}</style>
     </div>
@@ -465,7 +468,7 @@ function CompanyField({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-600">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium text-slate-400">{label}</label>
       <div className="relative">
         {Icon && (
           <Icon size={15} className="pointer-events-none absolute left-3.5 top-[0.85rem] text-slate-400" />
