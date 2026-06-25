@@ -52,8 +52,7 @@ export default function BossPhoneAuthPage() {
       setError('휴대폰 번호를 정확히 입력해주세요.');
       return;
     }
-    // TODO: 백엔드 SMS 엔드포인트 확정 시 호출.
-    // 현재는 데모로 클라이언트에서만 인증번호 전송됨 처리.
+    // 백엔드 SMS 연동 전까지 데모 모드: 클라이언트에서 타이머만 시작
     setSent(true);
     setTimeLeft(TIMER_SECONDS);
     setCode('');
@@ -65,7 +64,7 @@ export default function BossPhoneAuthPage() {
       setError('인증번호 6자리를 입력해주세요.');
       return;
     }
-    // TODO: 백엔드 인증 확인 API 호출
+    // 백엔드 인증 확인 API 연동 전까지 데모 모드: 6자리 입력 시 통과
     setVerified(true);
   }
 

@@ -1,10 +1,15 @@
-import BossPlaceholder from '@/components/boss/BossPlaceholder';
+'use client';
 
-export default function Page() {
+import { RefreshCw } from 'lucide-react';
+import HistoryView from '../HistoryView';
+
+export default function BillingRenewalsPage() {
   return (
-    <BossPlaceholder
+    <HistoryView
       title="정기 갱신"
-      description="정기 갱신을 관리하세요."
+      description="구독 갱신 이력과 다음 갱신 정보를 확인하세요."
+      breadcrumbLabel="정기 갱신"
+      icon={RefreshCw}
     />
   );
 }

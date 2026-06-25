@@ -97,7 +97,6 @@ export default function BossPortfolioListPage() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sortedFiltered = useMemo(() => {

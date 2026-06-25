@@ -8,7 +8,7 @@
 //   - 순서 변경 (위/아래 이동) → PUT /orders/files 로 num 필드 갱신 후 저장은 갤러리 페이지에서
 // (자유 그리기/치수선/텍스트 같은 캔버스 편집은 웹 범위에서 제외)
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -50,7 +50,7 @@ function BossPhotoEditInner() {
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!customerId) {
       setError('customerId 가 필요합니다.');
       return;
@@ -70,12 +70,11 @@ function BossPhotoEditInner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [customerId]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId]);
+  }, [load]);
 
   const total = items.length;
   const active = useMemo(() => items[current], [items, current]);

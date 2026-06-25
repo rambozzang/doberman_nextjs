@@ -2,7 +2,7 @@
 
 // AS 요청 목록 페이지
 // Flutter: as_request_list_page.dart 포팅
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Wrench,
@@ -62,7 +62,7 @@ export default function BossAsListPage() {
   const [sortType, setSortType] = useState<SortType>('CREATED_DT');
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const custId = getBossCustId();
     if (!custId) {
       setError('로그인이 필요합니다.');
@@ -82,13 +82,12 @@ export default function BossAsListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   // 최초 로드 + 상태 필터 변경 시 재조회
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [load, statusFilter]);
 
   // 정렬된 목록
   const sortedItems = useMemo(() => {
