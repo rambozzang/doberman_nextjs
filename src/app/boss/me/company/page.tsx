@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState, useCallback } from 'react';
+import { FormEvent, useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -47,6 +47,8 @@ export default function BossMyCompanyPage() {
   const [bigo, setBigo] = useState('');
   const [logo, setLogo] = useState('');
   const [stamp, setStamp] = useState('');
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const stampInputRef = useRef<HTMLInputElement | null>(null);
 
   const fillFromData = (data: BossCompanyData) => {
     setCompanyId(data.id);
@@ -195,6 +197,48 @@ export default function BossMyCompanyPage() {
     }
   };
 
+  const readFile = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleLogoFile = async (file: File | undefined) => {
+    if (!file || !companyId) return;
+    try {
+      const dataUrl = await readFile(file);
+      const res = await bossCompanyApi.updateLogoPath(companyId, dataUrl);
+      if (res.success) {
+        setLogo(dataUrl);
+        toast.success('회사 로고가 변경되었습니다.');
+      } else {
+        toast.error(res.message || res.error || '로고 변경에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('update logo error', err);
+      toast.error('로고 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleStampFile = async (file: File | undefined) => {
+    if (!file || !companyId) return;
+    try {
+      const dataUrl = await readFile(file);
+      const res = await bossCompanyApi.updateStampPath(companyId, dataUrl);
+      if (res.success) {
+        setStamp(dataUrl);
+        toast.success('도장 이미지가 변경되었습니다.');
+      } else {
+        toast.error(res.message || res.error || '도장 변경에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('update stamp error', err);
+      toast.error('도장 변경 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b]">
@@ -225,17 +269,28 @@ export default function BossMyCompanyPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-slate-400">회사 로고</label>
-              <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-700 bg-[#0a0a0b]">
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-700 bg-[#0a0a0b] text-slate-400 transition-colors hover:border-slate-500 hover:text-slate-300"
+              >
                 {logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={logo} alt="logo" className="h-full w-full object-contain" />
                 ) : (
-                  <div className="flex flex-col items-center text-slate-400">
+                  <div className="flex flex-col items-center">
                     <ImageIcon size={24} />
                     <p className="mt-1 text-[11px]">로고 없음</p>
                   </div>
                 )}
-              </div>
+              </button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleLogoFile(e.target.files?.[0])}
+              />
               {logo && isEdit && (
                 <button
                   type="button"
@@ -248,17 +303,28 @@ export default function BossMyCompanyPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-slate-400">회사 도장</label>
-              <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-700 bg-[#0a0a0b]">
+              <button
+                type="button"
+                onClick={() => stampInputRef.current?.click()}
+                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-700 bg-[#0a0a0b] text-slate-400 transition-colors hover:border-slate-500 hover:text-slate-300"
+              >
                 {stamp ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={stamp} alt="stamp" className="h-full w-full object-contain" />
                 ) : (
-                  <div className="flex flex-col items-center text-slate-400">
+                  <div className="flex flex-col items-center">
                     <Stamp size={24} />
                     <p className="mt-1 text-[11px]">도장 없음</p>
                   </div>
                 )}
-              </div>
+              </button>
+              <input
+                ref={stampInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleStampFile(e.target.files?.[0])}
+              />
               {stamp && isEdit && (
                 <button
                   type="button"

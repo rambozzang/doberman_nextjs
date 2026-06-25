@@ -13,7 +13,9 @@ import {
   Phone,
   Calendar,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossSignatureItem } from '@/types/boss-signature';
@@ -44,6 +46,12 @@ export default function BossSignatureListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const getCustId = () => {
+    const userInfo = BossAuthManager.getUserInfo();
+    return userInfo?.userId ?? '';
+  };
 
   const load = async () => {
     const userInfo = BossAuthManager.getUserInfo();
@@ -89,6 +97,32 @@ export default function BossSignatureListPage() {
         .some((v) => String(v).toLowerCase().includes(k)),
     );
   }, [items, keyword]);
+
+  const handleDelete = async (e: React.MouseEvent, id?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!id) return;
+    const custId = getCustId();
+    if (!custId) {
+      toast.error('로그인이 필요합니다.');
+      return;
+    }
+    if (!confirm('이 서명 기록을 삭제하시겠습니까?')) return;
+    setDeletingId(id);
+    try {
+      const res = await bossSignatureApi.remove(id, custId);
+      if (res.success) {
+        toast.success('삭제되었습니다.');
+        setItems((prev) => prev.filter((it) => it.id !== id));
+      } else {
+        toast.error(res.message || '삭제에 실패했습니다.');
+      }
+    } catch {
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -213,7 +247,16 @@ export default function BossSignatureListPage() {
                       #{item.orderId}
                     </span>
                   ) : null}
-                  <span className="ml-auto text-slate-600 transition-colors group-hover:text-rose-400">
+                  <button
+                    type="button"
+                    onClick={(e) => handleDelete(e, item.id)}
+                    disabled={deletingId === item.id}
+                    className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50"
+                    aria-label="삭제"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <span className="text-slate-600 transition-colors group-hover:text-rose-400">
                     <ChevronRight size={16} />
                   </span>
                 </div>

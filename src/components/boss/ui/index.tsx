@@ -141,6 +141,7 @@ export function Button({
   icon: Icon,
   children,
   className = '',
+  type = 'button',
   ...rest
 }: {
   variant?: ButtonVariant;
@@ -150,7 +151,7 @@ export function Button({
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      type="button"
+      type={type}
       className={`inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:cursor-not-allowed ${BTN_VARIANTS[variant]} ${BTN_SIZES[size]} ${className}`}
       {...rest}
     >

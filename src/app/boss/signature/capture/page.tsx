@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Eraser, Save, PenLine, Info, Clock } from 'lucide-react';
+import { ArrowLeft, Eraser, Save, PenLine, Info, Clock, Undo2 } from 'lucide-react';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
 import { BossAuthManager } from '@/lib/bossAuth';
 
@@ -17,6 +17,7 @@ export default function BossSignatureCapturePage() {
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const hasStrokeRef = useRef(false);
+  const historyRef = useRef<ImageData[]>([]);
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -113,9 +114,38 @@ export default function BossSignatureCapturePage() {
     lastPointRef.current = p;
   };
 
+  const pushHistory = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    historyRef.current.push(snapshot);
+    if (historyRef.current.length > 20) historyRef.current.shift();
+  };
+
   const endDraw = () => {
+    if (!drawingRef.current) return;
     drawingRef.current = false;
     lastPointRef.current = null;
+    pushHistory();
+  };
+
+  const undoLast = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || historyRef.current.length === 0) return;
+    historyRef.current.pop();
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (historyRef.current.length > 0) {
+      ctx.putImageData(historyRef.current[historyRef.current.length - 1], 0, 0);
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+    }
+    ctx.scale(dpr, dpr);
+    hasStrokeRef.current = historyRef.current.length > 0;
   };
 
   const clearCanvas = () => {
@@ -126,6 +156,7 @@ export default function BossSignatureCapturePage() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, rect.width, rect.height);
     hasStrokeRef.current = false;
+    historyRef.current = [];
   };
 
   const handleSave = async () => {
@@ -190,6 +221,13 @@ export default function BossSignatureCapturePage() {
           <ArrowLeft size={16} /> 목록으로
         </Link>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={undoLast}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-slate-700 hover:text-white"
+          >
+            <Undo2 size={14} /> 되돌리기
+          </button>
           <button
             type="button"
             onClick={clearCanvas}

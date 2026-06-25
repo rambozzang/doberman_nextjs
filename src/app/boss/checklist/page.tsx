@@ -185,7 +185,7 @@ export default function BossChecklistPage() {
               <Printer size={14} /> 인쇄
             </Link>
             <Link
-              href="/boss/checklist/new"
+              href={`/boss/checklist/new?edit=1`}
               className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 hover:border-slate-700 hover:text-white"
             >
               수정

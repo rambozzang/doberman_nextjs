@@ -132,9 +132,11 @@ interface FormState {
 }
 
 // 폼 → 백엔드 등록/수정 페이로드
-function formToCreate(form: FormState): CalendarCreateRequest {
-  const startDateTime = `${form.startDate.replace(/-/g, '')}${form.startTime.replace(':', '')}`;
-  const endDateTime = `${form.endDate.replace(/-/g, '')}${form.endTime.replace(':', '')}`;
+function formToCreate(form: FormState, overrides?: { startTime?: string; endTime?: string }): CalendarCreateRequest {
+  const startTime = overrides?.startTime ?? form.startTime;
+  const endTime = overrides?.endTime ?? form.endTime;
+  const startDateTime = `${form.startDate.replace(/-/g, '')}${startTime.replace(':', '')}`;
+  const endDateTime = `${form.endDate.replace(/-/g, '')}${endTime.replace(':', '')}`;
   const repeat: RepeatData | null = form.isRepeat
     ? {
         type: form.repeatType,
@@ -150,14 +152,21 @@ function formToCreate(form: FormState): CalendarCreateRequest {
     eventType: form.eventType,
     startDate: startDateTime,
     endDate: endDateTime,
-    startTime: form.startTime,
-    endTime: form.endTime,
+    startTime,
+    endTime,
     isallday: form.isAllDay,
     isreminder: form.isReminder,
     isrepeat: form.isRepeat,
     color: eventColor(form.eventType),
     repeatData: repeat,
   };
+}
+
+function formToDates(form: FormState): { start: Date; end: Date } | null {
+  const start = parseBossDateTime(`${form.startDate.replace(/-/g, '')}${form.startTime.replace(':', '')}`);
+  const end = parseBossDateTime(`${form.endDate.replace(/-/g, '')}${form.endTime.replace(':', '')}`);
+  if (!start || !end) return null;
+  return { start, end };
 }
 
 // 응답 → 폼 (수정 모드)
@@ -281,9 +290,25 @@ export default function BossCalendarPage() {
       toast.error('제목을 입력해주세요.');
       return;
     }
+
+    const overrides = form.isAllDay ? { startTime: '00:00', endTime: '23:59' } : undefined;
+    const dates = formToDates(form);
+    if (dates) {
+      const start = form.isAllDay
+        ? new Date(dates.start.getFullYear(), dates.start.getMonth(), dates.start.getDate(), 0, 0)
+        : dates.start;
+      const end = form.isAllDay
+        ? new Date(dates.end.getFullYear(), dates.end.getMonth(), dates.end.getDate(), 23, 59)
+        : dates.end;
+      if (start.getTime() >= end.getTime()) {
+        toast.error('종료 일시는 시작 일시보다 늦어야 합니다.');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const payload = formToCreate(form);
+      const payload = formToCreate(form, overrides);
       if (form.id) {
         const res = await bossCalendarApi.update({ ...payload, id: form.id });
         if (res.success) {

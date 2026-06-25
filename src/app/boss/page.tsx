@@ -4,7 +4,7 @@
 // 원칙: 정보 밀도 우선, gradient orb 제거, 모노스페이스 숫자, 통일된 Card 프리미티브
 // 로직: GET /stats/monthly + GET /stats/monthly/current (기존 API 그대로)
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AreaChart,
   Area,
@@ -145,6 +145,26 @@ export default function BossDashboardPage() {
     [monthly]
   );
 
+  const handleExport = useCallback(() => {
+    if (revenueData.length === 0) {
+      toast.error('내보낼 데이터가 없습니다.');
+      return;
+    }
+    const header = '월,매출,건수';
+    const rows = revenueData.map((r) => `${r.month},${r.revenue},${r.count}`);
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `monthly-stats-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success('월별 실적 데이터를 내보냈습니다.');
+  }, [revenueData]);
+
   // 이전달 대비 변화율 (마지막/직전 월)
   const revenueDelta = useMemo(() => {
     if (revenueData.length < 2) return undefined;
@@ -199,14 +219,14 @@ export default function BossDashboardPage() {
             안녕하세요, {name} 사장님
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            이번 달 비즈니스 현황과 오늘 할 일을 한눈에 확인하세요.
+            이번 달 비즈니스 현황을 한눈에 확인하세요.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button icon={RefreshCw} onClick={() => void fetchData()} disabled={loading}>
             새로고침
           </Button>
-          <Button icon={Download} variant="secondary">
+          <Button icon={Download} variant="secondary" onClick={() => void handleExport()}>
             내보내기
           </Button>
         </div>
@@ -448,37 +468,22 @@ export default function BossDashboardPage() {
           </div>
         </Card>
 
-        {/* 활동 피드 */}
+        {/* 이번 달 핵심 지표 */}
         <Card>
           <SectionHeader
-            title="오늘의 할 일"
-            description="처리 대기 항목"
+            title="이번 달 핵심 지표"
+            description="현재 월 기준 주요 지표"
             actions={<Sparkles size={12} className="text-emerald-400" />}
           />
-          <ul className="space-y-2">
-            <ActivityItem
-              href="/boss/requests"
-              label="새 견적 요청 확인"
-              badge={monthlyEstimateCount > 0 ? `${monthlyEstimateCount}건` : undefined}
-              tone="emerald"
-            />
-            <ActivityItem
-              href="/boss/chat"
-              label="고객 채팅 응답"
-              badge="NEW"
-              tone="sky"
-            />
-            <ActivityItem
-              href="/boss/calendar"
-              label="오늘 시공 일정"
-              tone="amber"
-            />
-            <ActivityItem
-              href="/boss/as"
-              label="AS 요청 확인"
-              tone="rose"
-            />
-          </ul>
+          <div className="grid grid-cols-2 gap-2">
+            <MetricItem label="견적" value={current?.estimateCount ?? 0} tone="emerald" />
+            <MetricItem label="계약" value={current?.contractCount ?? 0} tone="sky" />
+            <MetricItem label="완료" value={current?.completeCount ?? 0} tone="violet" />
+            <MetricItem label="취소" value={current?.cancelCount ?? 0} tone="rose" />
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500">
+            이번 달 전체 통합된 진행 현황입니다.
+          </p>
         </Card>
       </section>
     </div>
@@ -512,34 +517,27 @@ function TabButton({
   );
 }
 
-function ActivityItem({
-  href,
+function MetricItem({
   label,
-  badge,
+  value,
   tone,
 }: {
-  href: string;
   label: string;
-  badge?: string;
-  tone: 'emerald' | 'sky' | 'amber' | 'rose';
+  value: number;
+  tone: 'emerald' | 'sky' | 'violet' | 'rose';
 }) {
-  const dotColors: Record<typeof tone, string> = {
-    emerald: 'bg-emerald-400',
-    sky: 'bg-sky-400',
-    amber: 'bg-amber-400',
-    rose: 'bg-rose-400',
+  const ringColors: Record<typeof tone, string> = {
+    emerald: 'ring-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    sky: 'ring-sky-500/30 bg-sky-500/10 text-sky-300',
+    violet: 'ring-violet-500/30 bg-violet-500/10 text-violet-300',
+    rose: 'ring-rose-500/30 bg-rose-500/10 text-rose-300',
   };
   return (
-    <li>
-      <Link
-        href={href}
-        className="flex items-center gap-2.5 rounded-md px-2 py-2 text-[12px] text-slate-300 transition-colors hover:bg-white/[0.03] hover:text-white"
-      >
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColors[tone]}`} />
-        <span className="flex-1 truncate">{label}</span>
-        {badge && <Badge tone={tone}>{badge}</Badge>}
-        <ChevronRight size={12} className="text-slate-700" />
-      </Link>
-    </li>
+    <div className={`rounded-lg p-3 ring-1 ring-inset ${ringColors[tone]}`}>
+      <p className="text-[11px] font-medium opacity-80">{label}</p>
+      <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
+        {value.toLocaleString('ko-KR')}
+      </p>
+    </div>
   );
 }

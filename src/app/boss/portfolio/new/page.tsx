@@ -4,7 +4,7 @@
 // Flutter `portfolio_add_page.dart` 폼을 단순화하여 핵심 필드 + 이미지 URL 입력 + 외부 링크 입력 지원.
 // 이미지 업로드(R2/Cloudflare)는 별도 작업으로 분리, 여기서는 URL 직접 입력 방식 사용.
 // 실제 API: POST /portfolios
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Save,
+  Upload,
 } from 'lucide-react';
 
 const BUILDING_TYPES = ['아파트', '빌라', '주택', '상가', '오피스텔', '기타'];
@@ -99,6 +100,18 @@ export default function BossPortfolioNewPage() {
       'afterImages',
       form.afterImages.filter((_, i) => i !== idx),
     );
+  };
+
+  const addBeforeFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const dataUrls = await Promise.all(Array.from(files).map(readFileAsDataURL));
+    update('beforeImages', [...form.beforeImages, ...dataUrls]);
+  };
+
+  const addAfterFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const dataUrls = await Promise.all(Array.from(files).map(readFileAsDataURL));
+    update('afterImages', [...form.afterImages, ...dataUrls]);
   };
 
   const addLink = () => {
@@ -310,7 +323,7 @@ export default function BossPortfolioNewPage() {
             <ImageIcon size={14} className="text-emerald-300" /> 시공 이미지
           </h2>
           <p className="mb-4 text-xs text-slate-500">
-            이미지 URL을 입력해 추가하세요. (업로드는 추후 지원)
+            이미지 파일을 업로드하거나 URL을 직접 입력해 추가하세요.
           </p>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -321,6 +334,7 @@ export default function BossPortfolioNewPage() {
               onAdd={addBefore}
               images={form.beforeImages}
               onRemove={removeBefore}
+              onAddFiles={addBeforeFiles}
             />
             <ImageGroup
               title={`시공 후 (${form.afterImages.length})`}
@@ -329,6 +343,7 @@ export default function BossPortfolioNewPage() {
               onAdd={addAfter}
               images={form.afterImages}
               onRemove={removeAfter}
+              onAddFiles={addAfterFiles}
             />
           </div>
         </section>
@@ -446,6 +461,15 @@ function Field({
   );
 }
 
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function ImageGroup({
   title,
   inputValue,
@@ -453,6 +477,7 @@ function ImageGroup({
   onAdd,
   images,
   onRemove,
+  onAddFiles,
 }: {
   title: string;
   inputValue: string;
@@ -460,7 +485,17 @@ function ImageGroup({
   onAdd: () => void;
   images: string[];
   onRemove: (idx: number) => void;
+  onAddFiles: (files: FileList | null) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    onAddFiles(e.dataTransfer.files);
+  };
+
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
       <p className="mb-2 text-xs font-semibold text-slate-300">{title}</p>
@@ -485,6 +520,33 @@ function ImageGroup({
           <Plus size={14} /> 추가
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        className={`mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs font-medium transition-colors ${
+          dragOver
+            ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
+            : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+        }`}
+      >
+        <Upload size={14} /> 파일 업로드 (또는 끌어다 놓기)
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => onAddFiles(e.target.files)}
+      />
+
       {images.length === 0 ? (
         <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-slate-800 text-xs text-slate-500">
           등록된 이미지가 없습니다

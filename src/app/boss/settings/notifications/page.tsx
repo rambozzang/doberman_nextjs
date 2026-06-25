@@ -33,8 +33,8 @@ function isValidTime(value: string): boolean {
 
 export default function BossNotificationsSettingPage() {
   const [alarmTime, setAlarmTime] = useState('09:00');
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [marketingEnabled, setMarketingEnabled] = useState(true);
+  const [pushEnabled] = useState(true);
+  const [marketingEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -73,12 +73,6 @@ export default function BossNotificationsSettingPage() {
   const handleSave = async () => {
     if (!isValidTime(alarmTime)) {
       toast.error('알림 시간은 HH:MM 형식으로 입력해주세요.');
-      return;
-    }
-    if (!pushEnabled) {
-      toast('PUSH 알림이 꺼져 있어 저장할 수 없습니다. 먼저 PUSH 알림을 켜주세요.', {
-        icon: 'ℹ️',
-      });
       return;
     }
     setSaving(true);
@@ -163,17 +157,20 @@ export default function BossNotificationsSettingPage() {
       <Card className="space-y-4">
         <ToggleRow
           label="PUSH 알림"
-          description="신규글, 좋아요, 댓글 등 활동 알림을 수신합니다."
+          description="신규글, 좋아요, 댓글 등 활동 알림을 수신합니다. (기기 설정에서 변경)"
           enabled={pushEnabled}
-          onChange={setPushEnabled}
+          onChange={() => {}}
         />
         <div className="border-t border-slate-800/70" />
         <ToggleRow
           label="마케팅 알림"
-          description="프로모션, 이벤트, 혜택 정보를 수신합니다."
+          description="프로모션, 이벤트, 혜택 정보를 수신합니다. (기기 설정에서 변경)"
           enabled={marketingEnabled}
-          onChange={setMarketingEnabled}
+          onChange={() => {}}
         />
+        <p className="text-xs text-slate-500">
+          PUSH/마케팅 수신 여부는 웹 브라우저/OS 기기 설정에서 변경할 수 있습니다.
+        </p>
       </Card>
 
       <Card className="space-y-4">

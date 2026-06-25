@@ -40,19 +40,19 @@ const STEPS: Step[] = [
   {
     key: 'estimateDate',
     label: '견적일',
-    sublabel: '견적일(선택)을 입력해주세요.',
+    sublabel: '견적일(선택)을 선택해주세요.',
     required: false,
-    placeholder: '12월26일 09시00분 → 1226 0900',
-    maxLength: 9, // "MMDD HHMM" includes space
+    placeholder: '날짜와 시간을 선택하세요',
+    maxLength: 16,
     icon: Calendar,
   },
   {
     key: 'workDate',
     label: '시공일',
-    sublabel: '시공일(선택)을 입력해주세요.',
+    sublabel: '시공일(선택)을 선택해주세요.',
     required: false,
-    placeholder: '12월26일 09시00분 → 1226 0900',
-    maxLength: 9,
+    placeholder: '날짜와 시간을 선택하세요',
+    maxLength: 16,
     icon: Wrench,
   },
 ];
@@ -68,46 +68,19 @@ function formatPhone(value: string): string {
   return digits;
 }
 
-function formatDateInput(value: string): string {
-  const digits = onlyDigits(value);
-  if (digits.length > 8) return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
-  if (digits.length > 4) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
-  return digits;
+function parseIsoLocal(iso: string): Date | null {
+  if (!iso) return null;
+  const [datePart, timePart] = iso.split('T');
+  if (!datePart || !timePart) return null;
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  if ([year, month, day, hour, minute].some((n) => Number.isNaN(n))) return null;
+  return new Date(year, month - 1, day, hour, minute);
 }
 
-function parseDate(raw: string): Date | null {
-  const digits = onlyDigits(raw);
-  if (digits.length !== 8) return null;
-
-  const month = parseInt(digits.slice(0, 2), 10);
-  const day = parseInt(digits.slice(2, 4), 10);
-  const hour = parseInt(digits.slice(4, 6), 10);
-  const minute = parseInt(digits.slice(6, 8), 10);
-
-  if (month < 1 || month > 12) return null;
-  if (day < 1 || day > 31) return null;
-  if (hour < 0 || hour > 23) return null;
-  if (minute < 0 || minute > 59) return null;
-
-  const now = new Date();
-  let year = now.getFullYear();
-  let date = new Date(year, month - 1, day, hour, minute);
-
-  // Match Flutter behavior: if the parsed date is before now, assume next year.
-  if (date.getTime() < now.getTime()) {
-    year += 1;
-    date = new Date(year, month - 1, day, hour, minute);
-  }
-
-  // Validate day against actual month length
-  if (date.getMonth() !== month - 1 || date.getDate() !== day) return null;
-
-  return date;
-}
-
-function formatDateDisplay(raw: string): string {
-  const date = parseDate(raw);
-  if (!date) return raw;
+function formatDateFriendly(iso: string): string {
+  const date = parseIsoLocal(iso);
+  if (!date) return iso;
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const hour = String(date.getHours()).padStart(2, '0');
@@ -115,8 +88,8 @@ function formatDateDisplay(raw: string): string {
   return `${month}월 ${day}일 ${hour}:${minute}`;
 }
 
-function toBackendDate(raw: string): string {
-  const date = parseDate(raw);
+function toBackendDate(iso: string): string {
+  const date = parseIsoLocal(iso);
   if (!date) return '';
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -143,7 +116,6 @@ export default function QuickOrderPage() {
   const rawValue = answers[currentStep.key];
   const displayValue = useMemo(() => {
     if (currentStep.key === 'phone') return formatPhone(rawValue);
-    if (currentStep.key === 'estimateDate' || currentStep.key === 'workDate') return formatDateInput(rawValue);
     return rawValue;
   }, [currentStep.key, rawValue]);
 
@@ -164,14 +136,18 @@ export default function QuickOrderPage() {
     }
     if (step.key === 'estimateDate' || step.key === 'workDate') {
       if (!value.trim()) return null;
-      const digits = onlyDigits(value);
-      if (digits.length !== 8) return '날짜와 시간을 올바른 형식으로 입력해주세요. (예: 1224 0900)';
-      const date = parseDate(value);
-      if (!date) return '날짜와 시간 형식이 올바르지 않습니다.';
+      const date = parseIsoLocal(value);
+      if (!date) return '날짜와 시간을 선택해주세요.';
+      if (step.key === 'workDate') {
+        const estimate = parseIsoLocal(answers.estimateDate);
+        if (estimate && date.getTime() < estimate.getTime()) {
+          return '시공일은 견적일보다 늦어야 합니다.';
+        }
+      }
       return null;
     }
     return null;
-  }, []);
+  }, [answers.estimateDate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -192,7 +168,13 @@ export default function QuickOrderPage() {
       displayAnswer = `010${digits}`;
     }
     if ((currentStep.key === 'estimateDate' || currentStep.key === 'workDate') && displayAnswer) {
-      displayAnswer = formatDateDisplay(displayAnswer);
+      const date = parseIsoLocal(displayAnswer);
+      if (date) {
+        if (date.getTime() < Date.now()) {
+          toast('선택한 일시가 과거입니다.', { icon: '⚠️' });
+        }
+        displayAnswer = formatDateFriendly(displayAnswer);
+      }
     }
 
     setCompletedLabels((prev) => {
@@ -326,24 +308,37 @@ export default function QuickOrderPage() {
             <span className="text-sm font-medium text-slate-300">{currentStep.sublabel}</span>
           </div>
 
-          <input
-            ref={inputRef}
-            type={currentStep.key === 'name' ? 'text' : 'tel'}
-            inputMode={currentStep.key === 'name' ? 'text' : 'numeric'}
-            value={displayValue}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            placeholder={currentStep.placeholder}
-            maxLength={currentStep.maxLength}
-            className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-4 text-lg text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
-            autoComplete="off"
-          />
+          {currentStep.key === 'estimateDate' || currentStep.key === 'workDate' ? (
+            <input
+              ref={inputRef}
+              type="datetime-local"
+              value={displayValue}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={currentStep.placeholder}
+              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-4 text-lg text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              autoComplete="off"
+            />
+          ) : (
+            <input
+              ref={inputRef}
+              type={currentStep.key === 'name' ? 'text' : 'tel'}
+              inputMode={currentStep.key === 'name' ? 'text' : 'numeric'}
+              value={displayValue}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={currentStep.placeholder}
+              maxLength={currentStep.maxLength}
+              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-4 text-lg text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              autoComplete="off"
+            />
+          )}
 
           {currentStep.key !== 'name' && (
             <p className="text-xs text-slate-500">
               {currentStep.key === 'phone'
                 ? '010을 제외한 8자리 숫자를 입력하세요.'
-                : '월일과 시간을 8자리 숫자로 입력하세요. 예) 12월 26일 09:00 → 1226 0900'}
+                : '날짜와 시간을 선택하세요.'}
             </p>
           )}
         </div>

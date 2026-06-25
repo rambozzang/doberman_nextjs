@@ -5,8 +5,8 @@
 // - 칩 선택(단일/멀티), 텍스트/금액 입력, 방 정보(4세트) 입력
 // - 도배+장판 합산 → 총액, 총액-선금 → 잔금 자동 계산
 // - 저장 시 POST /checklist
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { ChevronLeft, Save, Loader2 } from 'lucide-react';
@@ -130,8 +130,10 @@ const fmtMoney = (v: string): string => {
 };
 const stripMoney = (v: string): string => v.replace(/,/g, '');
 
-export default function BossChecklistNewPage() {
+function BossChecklistNewForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEdit = searchParams.get('edit') === '1';
   const [data, setData] = useState<CheckData>(createEmptyCheckData());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -237,7 +239,9 @@ export default function BossChecklistNewPage() {
           >
             <ChevronLeft size={16} />
           </Link>
-          <h1 className="text-xl font-bold tracking-tight text-white">체크리스트 작성</h1>
+          <h1 className="text-xl font-bold tracking-tight text-white">
+            {isEdit ? '체크리스트 수정' : '체크리스트 작성'}
+          </h1>
         </div>
         <button
           type="button"
@@ -513,5 +517,20 @@ export default function BossChecklistNewPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BossChecklistNewPage() {
+  // useSearchParams 사용 시 Suspense 경계 필요
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center text-slate-400">
+          <Loader2 size={24} className="animate-spin" />
+        </div>
+      }
+    >
+      <BossChecklistNewForm />
+    </Suspense>
   );
 }

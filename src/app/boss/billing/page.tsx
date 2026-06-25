@@ -27,6 +27,7 @@ import type {
   BossBillingPlan,
   BossCreateSubscriptionRequest,
 } from '@/types/boss-billing';
+import { EmptyState } from '@/components/boss/ui';
 
 const STATE_LABEL: Record<BossSubscriptionState, string> = {
   ACTIVE: '구독중',
@@ -92,31 +93,35 @@ export default function BossBillingPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const [statusRes, historyRes, plansRes] = await Promise.all([
-      bossBillingApi.getStatus(),
-      bossBillingApi.getHistory(),
-      bossBillingApi.getPlans(),
-    ]);
+    try {
+      const [statusRes, historyRes, plansRes] = await Promise.all([
+        bossBillingApi.getStatus(),
+        bossBillingApi.getHistory(),
+        bossBillingApi.getPlans(),
+      ]);
 
-    if (statusRes.success === false) {
-      setErrorMessage(statusRes.error ?? statusRes.message ?? '구독 정보를 불러오지 못했습니다.');
-    } else {
-      setStatus(statusRes.data ?? null);
+      if (statusRes.success === false) {
+        setErrorMessage(statusRes.error ?? statusRes.message ?? '구독 정보를 불러오지 못했습니다.');
+      } else {
+        setStatus(statusRes.data ?? null);
+      }
+
+      if (historyRes.success !== false && historyRes.data) {
+        setHistory(historyRes.data.items ?? []);
+      } else {
+        setHistory([]);
+      }
+
+      if (plansRes.success !== false && plansRes.data) {
+        setPlans(plansRes.data.plans ?? []);
+      } else {
+        setPlans([]);
+      }
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : '결제 정보를 불러오지 못했습니다.');
+    } finally {
+      setIsLoading(false);
     }
-
-    if (historyRes.success !== false && historyRes.data) {
-      setHistory(historyRes.data.items ?? []);
-    } else {
-      setHistory([]);
-    }
-
-    if (plansRes.success !== false && plansRes.data) {
-      setPlans(plansRes.data.plans ?? []);
-    } else {
-      setPlans([]);
-    }
-
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -216,6 +221,24 @@ export default function BossBillingPage() {
             <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <span>{actionMessage}</span>
           </div>
+        )}
+
+        {errorMessage && !isLoading && (
+          <EmptyState
+            icon={AlertCircle}
+            title="결제 정보를 불러오지 못했습니다"
+            description={errorMessage}
+            action={
+              <button
+                type="button"
+                onClick={() => void loadAll()}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
+              >
+                <RefreshCw className="h-4 w-4" />
+                다시 시도
+              </button>
+            }
+          />
         )}
 
         {/* 구독 상태 카드 */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import type { BossRequestListItem } from '@/types/boss';
@@ -72,17 +72,15 @@ export default function BossRequestListPage() {
   const [tab, setTab] = useState<StatusFilter>('all');
   const [keyword, setKeyword] = useState('');
 
-  const load = async (resetPage = false) => {
+  const load = useCallback(async (targetPage: number) => {
     setLoading(true);
     setError(null);
     try {
-      const targetPage = resetPage ? 1 : page;
       const res = await bossRequestsApi.list({ page: targetPage, size: 24 });
       if (res.success && res.data) {
         setItems(res.data.content ?? []);
         setTotalPages(res.data.totalPages ?? 1);
         setTotalCount(res.data.totalCount ?? 0);
-        if (resetPage) setPage(1);
       } else {
         setError(res.message || '목록을 불러오지 못했습니다.');
       }
@@ -91,33 +89,23 @@ export default function BossRequestListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    if (page === 1) {
+      void load(1);
+    } else {
+      setPage(1);
+    }
+  }, [load, page]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await bossRequestsApi.list({ page, size: 24 });
-        if (cancelled) return;
-        if (res.success && res.data) {
-          setItems(res.data.content ?? []);
-          setTotalPages(res.data.totalPages ?? 1);
-          setTotalCount(res.data.totalCount ?? 0);
-        } else {
-          setError(res.message || '목록을 불러오지 못했습니다.');
-        }
-      } catch {
-        if (!cancelled) setError('네트워크 오류로 목록을 불러오지 못했습니다.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [page]);
+    void load(page);
+  }, [load, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [tab, keyword]);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -152,6 +140,9 @@ export default function BossRequestListPage() {
     return c;
   }, [items]);
 
+  const isFiltering = tab !== 'all' || keyword.trim().length > 0;
+  const displayCount = isFiltering ? filtered.length : totalCount;
+
   return (
     <div className="space-y-5">
       {/* Toolbar header */}
@@ -160,7 +151,7 @@ export default function BossRequestListPage() {
           <div className="mb-1 flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-white">견적 요청</h1>
             <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
-              {totalCount.toLocaleString()}
+              {displayCount.toLocaleString()}
             </span>
           </div>
           <p className="text-sm text-slate-400">
@@ -186,7 +177,7 @@ export default function BossRequestListPage() {
           </button>
           <button
             type="button"
-            onClick={() => load(true)}
+            onClick={() => void handleRefresh()}
             disabled={loading}
             className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
           >
@@ -393,7 +384,7 @@ export default function BossRequestListPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!isFiltering && totalPages > 1 ? (
         <nav className="flex items-center justify-between border-t border-slate-800 pt-4">
           <p className="text-xs text-slate-500">
             페이지 {page} / {totalPages} · 총 {totalCount.toLocaleString()}건
@@ -417,7 +408,13 @@ export default function BossRequestListPage() {
             </button>
           </div>
         </nav>
-      )}
+      ) : isFiltering ? (
+        <div className="flex justify-end border-t border-slate-800 pt-4">
+          <span className="rounded-md bg-slate-800 px-2 py-1 text-[11px] text-slate-400">
+            현재 페이지 내 필터
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
