@@ -6,7 +6,13 @@ import { ensureDeviceId } from './bossDeviceId';
 // 사장님(boss) 전용 API 클라이언트
 // Flutter `UrlConfig.baseURL` 과 동일한 기본 백엔드(api-doman) 를 사용한다.
 // 엔드포인트별 prefix(`/auth`, `/web`, `/webapp`, `/customers` ...) 는 각 호출부에서 명시.
-const API_BASE_URL = process.env.NEXT_PUBLIC_BOSS_API_URL || 'https://www.tigerbk.com/api-doman';
+//
+// 브라우저에서는 /api/boss 프록시를 통해 Next.js 서버로 요청을 볼래 CORS 를 회피한다.
+// 서버 환경(SSR/edge 등)에서는 직접 원격 URL을 사용한다.
+const API_BASE_URL =
+  typeof window !== 'undefined'
+    ? '/api/boss'
+    : (process.env.NEXT_PUBLIC_BOSS_API_URL || 'https://www.tigerbk.com/api-doman');
 
 const commonConfig: AxiosRequestConfig = {
   baseURL: API_BASE_URL,

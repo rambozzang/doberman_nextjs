@@ -84,6 +84,11 @@ const nextConfig: NextConfig = {
 
   async rewrites() {
     return [
+      // 사장님 API 프록시 — 브라우저 CORS 회피
+      {
+        source: '/api/boss/:path*',
+        destination: 'https://www.tigerbk.com/api-doman/:path*',
+      },
       {
         source: '/api/chat/:path*',
         destination: 'https://www.tigerbk.com/chat-api/:path*',
