@@ -89,21 +89,21 @@ export default function BossSalesRealtimePage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/5 px-3 py-1">
-            <Activity size={11} className="text-rose-300" />
-            <span className="text-[11px] font-medium text-rose-300">실시간 매출 현황</span>
+          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-boss-error/20 bg-boss-error/100/5 px-3 py-1">
+            <Activity size={11} className="text-boss-error" />
+            <span className="text-[11px] font-medium text-boss-error">실시간 매출 현황</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">실시간 실적</h1>
-          <p className="mt-1 text-sm text-slate-400">선택한 월의 실시간 매출과 시공 건을 확인하세요.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-boss-text md:text-3xl">실시간 실적</h1>
+          <p className="mt-1 text-sm text-boss-text-muted">선택한 월의 실시간 매출과 시공 건을 확인하세요.</p>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={yearMonth}
             onChange={(e) => setYearMonth(e.target.value)}
-            className="rounded-xl border border-slate-800 bg-slate-900/50 px-3 py-2 text-xs font-medium text-slate-200 outline-none hover:text-white"
+            className="rounded-xl border border-boss-border bg-boss-surface/50 px-3 py-2 text-xs font-medium text-boss-text outline-none hover:text-boss-text"
           >
             {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-slate-900">
+              <option key={opt.value} value={opt.value} className="bg-boss-surface">
                 {opt.label}
               </option>
             ))}
@@ -111,7 +111,7 @@ export default function BossSalesRealtimePage() {
           <button
             type="button"
             onClick={() => fetchData(yearMonth)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/50 text-slate-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-boss-border bg-boss-surface/50 text-boss-text-secondary hover:text-boss-text"
             aria-label="새로고침"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -123,38 +123,38 @@ export default function BossSalesRealtimePage() {
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SummaryCard label="총 건수" value={`${totalCount.toLocaleString('ko-KR')}건`} icon={<Calendar size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
         <SummaryCard label="총 매출" value={fmtWon(totalAmount)} icon={<Activity size={18} />} accent="from-rose-500 to-rose-700" loading={loading} />
-        <SummaryCard label="수금 금액" value={fmtWon(paidAmount)} icon={<Wallet size={18} />} accent="from-emerald-500 to-emerald-700" loading={loading} />
+        <SummaryCard label="수금 금액" value={fmtWon(paidAmount)} icon={<Wallet size={18} />} accent="from-boss-primary to-emerald-700" loading={loading} />
       </section>
 
       {error && !loading && (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+        <div className="rounded-2xl border border-rose-500/30 bg-boss-error/10 p-4 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {/* 시공 리스트 */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-        <h2 className="mb-4 text-sm font-semibold text-white">매출 상세 목록</h2>
+      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+        <h2 className="mb-4 text-sm font-semibold text-boss-text">매출 상세 목록</h2>
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-800/40" />
+              <div key={i} className="h-16 animate-pulse rounded-lg bg-boss-elevated/40" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-500">표시할 매출이 없습니다.</p>
+          <p className="text-sm text-boss-text-muted">표시할 매출이 없습니다.</p>
         ) : (
           <ul className="divide-y divide-slate-800/60">
             {items.map((item, i) => (
               <li key={item.id ?? i} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">{item.name ?? '이름 없음'}</p>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                  <p className="truncate text-sm font-semibold text-boss-text">{item.name ?? '이름 없음'}</p>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-boss-text-muted">
                     <span>시공일: {fmtDate(item.workDate)}</span>
                     <span>수금일: {fmtDate(item.updatedDt)}</span>
                   </div>
                 </div>
-                <div className="text-right text-sm font-bold text-rose-300">
+                <div className="text-right text-sm font-bold text-boss-error">
                   {fmtWon(item.totalAmount)}
                 </div>
               </li>
@@ -180,19 +180,19 @@ function SummaryCard({
   loading: boolean;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
+    <div className="relative overflow-hidden rounded-2xl border border-boss-border bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
       <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-2xl`} />
       <div className="relative">
         <div className="mb-4 flex items-center justify-between">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white`}>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-boss-text`}>
             {icon}
           </div>
         </div>
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-boss-text-muted">{label}</p>
         {loading ? (
-          <div className="mt-1 h-7 w-32 animate-pulse rounded bg-slate-800/60" />
+          <div className="mt-1 h-7 w-32 animate-pulse rounded bg-boss-elevated/60" />
         ) : (
-          <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+          <p className="mt-1 text-2xl font-bold text-boss-text">{value}</p>
         )}
       </div>
     </div>

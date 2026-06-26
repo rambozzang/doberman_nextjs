@@ -130,39 +130,39 @@ export default function BossSignatureListPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <PenLine size={22} className="text-rose-400" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">고객 서명</h1>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+            <PenLine size={22} className="text-boss-error" />
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">고객 서명</h1>
+            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
               {items.length.toLocaleString()}
             </span>
           </div>
-          <p className="text-sm text-slate-400">시공 완료 후 받은 고객 서명을 관리하세요.</p>
+          <p className="text-sm text-boss-text-muted">시공 완료 후 받은 고객 서명을 관리하세요.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search
               size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted"
             />
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="고객명·연락처·메모 검색"
-              className="h-9 w-56 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
             />
           </div>
           <button
             type="button"
             onClick={load}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/signature/capture"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-rose-500 px-3 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 hover:bg-rose-400"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-error/100 px-3 text-sm font-semibold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400"
           >
             <Plus size={14} /> 서명 받기
           </Link>
@@ -170,7 +170,7 @@ export default function BossSignatureListPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -181,17 +181,17 @@ export default function BossSignatureListPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="h-24 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
             />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">서명 내역이 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">우측 상단의 ‘서명 받기’로 새 서명을 받아보세요.</p>
+          <p className="text-sm font-medium text-boss-text">서명 내역이 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">우측 상단의 ‘서명 받기’로 새 서명을 받아보세요.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -199,10 +199,10 @@ export default function BossSignatureListPage() {
             <Link
               key={item.id}
               href={`/boss/signature/${item.id}`}
-              className="group flex items-stretch gap-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-3 transition-all hover:-translate-y-0.5 hover:border-rose-500/40 hover:shadow-xl hover:shadow-rose-500/5"
+              className="group flex items-stretch gap-4 rounded-2xl border border-boss-border bg-boss-surface p-3 transition-all hover:-translate-y-0.5 hover:border-boss-error/20 hover:shadow-boss-lg hover:shadow-rose-500/5"
             >
               {/* 썸네일 */}
-              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-white">
+              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-boss-border bg-boss-surface">
                 {item.signatureImagePath && item.signatureImagePath.startsWith('http') ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -218,23 +218,23 @@ export default function BossSignatureListPage() {
                     className="h-full w-full object-contain"
                   />
                 ) : (
-                  <PenLine size={26} className="text-slate-400" />
+                  <PenLine size={26} className="text-boss-text-muted" />
                 )}
               </div>
 
               {/* 내용 */}
               <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="truncate text-base font-bold text-white">
+                  <h3 className="truncate text-base font-bold text-boss-text">
                     {item.customerName ?? '이름 없음'}
                   </h3>
-                  <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                  <span className="flex items-center gap-1 text-[11px] text-boss-text-muted">
                     <Calendar size={10} />
                     {formatDate(item.confirmedAt ?? item.createdDt)}
                   </span>
                 </div>
                 {item.memo ? (
-                  <p className="mt-1 line-clamp-2 text-xs text-slate-400">{item.memo}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-boss-text-muted">{item.memo}</p>
                 ) : null}
                 <div className="mt-2 flex items-center gap-2">
                   {item.customerPhone ? (
@@ -251,12 +251,12 @@ export default function BossSignatureListPage() {
                     type="button"
                     onClick={(e) => handleDelete(e, item.id)}
                     disabled={deletingId === item.id}
-                    className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50"
+                    className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-boss-text-muted hover:bg-boss-error/10 hover:text-boss-error disabled:opacity-50"
                     aria-label="삭제"
                   >
                     <Trash2 size={14} />
                   </button>
-                  <span className="text-slate-600 transition-colors group-hover:text-rose-400">
+                  <span className="text-boss-text-muted transition-colors group-hover:text-boss-error">
                     <ChevronRight size={16} />
                   </span>
                 </div>

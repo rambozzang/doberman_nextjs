@@ -52,22 +52,22 @@ export default function BossHelpPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 홈
         </Link>
-        <h1 className="text-xl font-bold text-white">도움말</h1>
+        <h1 className="text-xl font-bold text-boss-text">도움말</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-slate-900/40 p-6">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-emerald-500/20 p-2 text-emerald-300">
+          <div className="rounded-lg bg-boss-primary/20 p-2 text-boss-primary">
             <HelpCircle size={20} />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-bold text-white">무엇을 도와드릴까요?</h2>
-            <p className="mt-1 text-sm text-slate-300">
+            <h2 className="text-base font-bold text-boss-text">무엇을 도와드릴까요?</h2>
+            <p className="mt-1 text-sm text-boss-text-secondary">
               사용 방법, 결제, 계정 관련 문의 등 궁금하신 내용을 카테고리에서 찾아보세요.
             </p>
           </div>
@@ -79,35 +79,35 @@ export default function BossHelpPage() {
           <Link
             key={href}
             href={href}
-            className="group rounded-2xl border border-slate-800 bg-slate-900/40 p-5 transition hover:border-emerald-500/40 hover:bg-slate-900/60"
+            className="group rounded-2xl border border-boss-border bg-boss-surface p-5 transition hover:border-boss-primary/20 hover:bg-boss-surface"
           >
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-slate-800/80 p-2 text-emerald-300 transition group-hover:bg-emerald-500/20">
+              <div className="rounded-lg bg-boss-elevated/80 p-2 text-boss-primary transition group-hover:bg-boss-primary/20">
                 <Icon size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-white">{title}</div>
-                <p className="mt-1 text-xs leading-relaxed text-slate-400">{description}</p>
+                <div className="text-sm font-bold text-boss-text">{title}</div>
+                <p className="mt-1 text-xs leading-relaxed text-boss-text-muted">{description}</p>
               </div>
             </div>
           </Link>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+      <div className="rounded-2xl border border-boss-border bg-boss-surface p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-sm font-bold text-white">
-              <Phone size={16} className="text-emerald-300" />
+            <div className="flex items-center gap-2 text-sm font-bold text-boss-text">
+              <Phone size={16} className="text-boss-primary" />
               고객센터 안내
             </div>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-boss-text-muted">
               평일 09:00 ~ 18:00 (주말, 공휴일 휴무)
             </p>
           </div>
           <a
             href="tel:1600-0000"
-            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20"
+            className="rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 py-2 text-xs font-semibold text-boss-primary hover:bg-boss-primary/20"
           >
             1600-0000
           </a>

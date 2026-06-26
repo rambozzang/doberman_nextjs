@@ -1,6 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { BossThemeProvider } from '@/components/boss/BossThemeProvider';
+import '@/styles/boss-b2b.css';
 import BossHeader from './BossHeader';
 import BossSidebar from './BossSidebar';
 
@@ -21,16 +23,22 @@ export default function BossChrome({ children }: { children: React.ReactNode }) 
   const isAuth = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   if (isAuth) {
-    return <main className="min-h-screen">{children}</main>;
+    return (
+      <BossThemeProvider>
+        <main className="boss-page">{children}</main>
+      </BossThemeProvider>
+    );
   }
 
   return (
-    <>
-      <BossHeader />
-      <div className="flex">
-        <BossSidebar />
-        <main className="min-h-[calc(100vh-3.5rem)] flex-1 p-4 md:p-6">{children}</main>
+    <BossThemeProvider>
+      <div className="boss-page">
+        <BossHeader />
+        <div className="flex">
+          <BossSidebar />
+          <main className="min-h-[calc(100vh-3.5rem)] flex-1 p-4 md:p-6">{children}</main>
+        </div>
       </div>
-    </>
+    </BossThemeProvider>
   );
 }

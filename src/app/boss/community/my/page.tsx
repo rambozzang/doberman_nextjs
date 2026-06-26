@@ -69,16 +69,16 @@ export default function BossCommunityMyPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/community"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록으로
         </Link>
-        <h1 className="text-xl font-bold text-white">내가 쓴 글</h1>
+        <h1 className="text-xl font-bold text-boss-text">내가 쓴 글</h1>
         <div className="w-20" />
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -86,37 +86,37 @@ export default function BossCommunityMyPage() {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+            <div key={i} className="h-20 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">아직 작성한 글이 없습니다</p>
+          <p className="text-sm font-medium text-boss-text">아직 작성한 글이 없습니다</p>
         </div>
       ) : (
-        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
           {items.map((item) => (
             <li key={item.boardId}>
               <Link
                 href={`/boss/community/${item.boardId}`}
-                className="block p-4 transition-colors hover:bg-slate-800/40"
+                className="block p-4 transition-colors hover:bg-boss-elevated/40"
               >
-                <div className="mb-1 flex items-center gap-2 text-xs text-slate-500">
+                <div className="mb-1 flex items-center gap-2 text-xs text-boss-text-muted">
                   {item.typeDtNm && (
-                    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
+                    <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] text-boss-text-secondary">
                       {item.typeDtNm}
                     </span>
                   )}
                   <span>{relativeTime(item.crtDtm)}</span>
                 </div>
-                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-white">
+                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-boss-text">
                   {item.subject ?? '(제목 없음)'}
                 </h3>
-                <p className="mb-2 line-clamp-2 text-xs text-slate-400">{item.contents ?? ''}</p>
-                <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                <p className="mb-2 line-clamp-2 text-xs text-boss-text-muted">{item.contents ?? ''}</p>
+                <div className="flex items-center gap-3 text-[11px] text-boss-text-muted">
                   <span className="inline-flex items-center gap-1">
                     <Eye size={11} /> {item.viewCnt ?? 0}
                   </span>

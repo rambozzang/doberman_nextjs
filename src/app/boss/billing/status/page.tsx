@@ -107,23 +107,23 @@ export default function BillingStatusPage() {
       <LinkBack />
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div className="flex-1">{error}</div>
           <button
             type="button"
             onClick={() => void load()}
-            className="text-xs font-medium text-rose-300 hover:text-rose-200"
+            className="text-xs font-medium text-boss-error hover:text-boss-error"
           >
             다시 시도
           </button>
         </div>
       )}
 
-      <Card className="rounded-2xl border-slate-800 bg-slate-900/40">
+      <Card className="rounded-2xl border-boss-border bg-boss-surface">
         <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-100">
-            <Activity className="h-5 w-5 text-emerald-400" />
+          <div className="flex items-center gap-2 text-boss-text">
+            <Activity className="h-5 w-5 text-boss-primary" />
             <h2 className="text-base font-semibold">현재 구독 상태</h2>
           </div>
           {isLoading ? (
@@ -166,7 +166,7 @@ export default function BillingStatusPage() {
         )}
 
         {isActive && status?.subscriptionId && !isLoading && (
-          <div className="mt-6 flex justify-end border-t border-slate-800/70 pt-5">
+          <div className="mt-6 flex justify-end border-t border-boss-border/70 pt-5">
             <Button
               variant="danger"
               icon={isCancelling ? Loader2 : XCircle}
@@ -186,7 +186,7 @@ function LinkBack() {
   return (
     <Link
       href="/boss/billing"
-      className="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+      className="mb-6 inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
     >
       <ArrowLeft size={14} /> 결제 관리로 돌아가기
     </Link>
@@ -203,19 +203,19 @@ function InfoTile({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3">
-      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-slate-500">
+    <div className="rounded-xl border border-boss-border bg-boss-bg/60 px-4 py-3">
+      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-boss-text-muted">
         <Icon size={12} />
         {label}
       </div>
-      <div className="mt-1 truncate text-sm font-semibold text-slate-100">{value}</div>
+      <div className="mt-1 truncate text-sm font-semibold text-boss-text">{value}</div>
     </div>
   );
 }
 
 function SkeletonTile() {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3">
+    <div className="rounded-xl border border-boss-border bg-boss-bg/60 px-4 py-3">
       <Skeleton className="mb-2 h-3 w-16" />
       <Skeleton className="h-4 w-28" />
     </div>

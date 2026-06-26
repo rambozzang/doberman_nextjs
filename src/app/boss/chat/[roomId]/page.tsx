@@ -59,11 +59,11 @@ export default function BossChatRoomPage() {
         description={isConnected ? '연결됨' : connectionError ?? '연결 중...'}
       />
 
-      <div className="flex-1 space-y-2 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+      <div className="flex-1 space-y-2 overflow-y-auto rounded-lg border border-boss-border bg-boss-elevated/40 p-4">
         {isLoading && messages.length === 0 ? (
-          <div className="text-center text-sm text-slate-400">불러오는 중...</div>
+          <div className="text-center text-sm text-boss-text-muted">불러오는 중...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-sm text-slate-500">아직 메시지가 없습니다.</div>
+          <div className="text-center text-sm text-boss-text-muted">아직 메시지가 없습니다.</div>
         ) : (
           messages
             .filter((m) => m.message && m.message.trim() !== '')
@@ -77,12 +77,12 @@ export default function BossChatRoomPage() {
                   <div
                     className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
                       isMine
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-700 text-slate-100'
+                        ? 'bg-boss-primary-hover text-boss-text'
+                        : 'bg-boss-elevated text-boss-text'
                     }`}
                   >
                     <div className="whitespace-pre-wrap break-words">{m.message}</div>
-                    <div className={`mt-1 text-[10px] ${isMine ? 'text-emerald-100' : 'text-slate-400'}`}>
+                    <div className={`mt-1 text-[10px] ${isMine ? 'text-emerald-100' : 'text-boss-text-muted'}`}>
                       {m.timeAgo}
                     </div>
                   </div>
@@ -93,7 +93,7 @@ export default function BossChatRoomPage() {
         <div ref={endRef} />
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/60 p-2">
+      <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-elevated/60 p-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -105,13 +105,13 @@ export default function BossChatRoomPage() {
           }}
           placeholder={isConnected ? '메시지를 입력하세요' : '연결 중...'}
           disabled={!isConnected}
-          className="flex-1 rounded bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none disabled:opacity-50"
+          className="flex-1 rounded bg-boss-surface px-3 py-2 text-sm text-boss-text outline-none disabled:opacity-50"
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={!isConnected || !input.trim()}
-          className="flex items-center gap-1 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:bg-emerald-600/40"
+          className="flex items-center gap-1 rounded bg-boss-primary-hover px-3 py-2 text-sm font-semibold text-boss-text hover:bg-boss-primary disabled:bg-boss-primary-hover/40"
         >
           <Send size={14} /> 전송
         </button>

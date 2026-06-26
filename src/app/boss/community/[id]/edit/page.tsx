@@ -93,7 +93,7 @@ export default function BossCommunityEditPage() {
         actions={
           <Link
             href={`/boss/community/${boardId}`}
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+            className="inline-flex items-center gap-1 text-xs text-boss-text-muted hover:text-boss-text"
           >
             <ArrowLeft size={12} /> 돌아가기
           </Link>
@@ -101,28 +101,28 @@ export default function BossCommunityEditPage() {
       />
 
       {error && (
-        <div className="mb-4 rounded-md border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2 text-sm text-rose-200">
+        <div className="mb-4 rounded-md border border-boss-error/20 bg-boss-error/100/[0.06] px-3 py-2 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="h-96 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.02]" />
+        <div className="h-96 animate-pulse rounded-xl border border-boss-border bg-boss-elevated" />
       ) : (
         <Card padded>
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
                 제목
               </label>
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-10 w-full rounded-md border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-slate-100 focus:border-emerald-500/50 focus:bg-white/[0.05] focus:outline-none"
+                className="h-10 w-full rounded-md border border-boss-border bg-boss-elevated px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:bg-boss-elevated focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
                 내용
               </label>
               <RichEditor
@@ -132,7 +132,7 @@ export default function BossCommunityEditPage() {
                 minHeight={280}
               />
             </div>
-            <div className="flex justify-end border-t border-white/[0.06] pt-4">
+            <div className="flex justify-end border-t border-boss-border pt-4">
               <Button
                 variant="primary"
                 size="md"

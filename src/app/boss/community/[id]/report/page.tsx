@@ -60,22 +60,22 @@ export default function BossCommunityReportPage() {
       <div className="flex items-center justify-between">
         <Link
           href={`/boss/community/${boardId}`}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 돌아가기
         </Link>
-        <h1 className="text-xl font-bold text-white">게시글 신고</h1>
+        <h1 className="text-xl font-bold text-boss-text">게시글 신고</h1>
         <div className="w-20" />
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-5">
         <div>
-          <label className="mb-2 block text-xs font-semibold text-slate-400">신고 유형</label>
+          <label className="mb-2 block text-xs font-semibold text-boss-text-muted">신고 유형</label>
           <div className="space-y-2">
             {REASON_OPTIONS.map((opt) => (
               <label
                 key={opt.code}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 hover:border-slate-700"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-boss-border bg-boss-bg/40 px-3 py-2 text-sm text-boss-text hover:border-boss-border"
               >
                 <input
                   type="radio"
@@ -91,13 +91,13 @@ export default function BossCommunityReportPage() {
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-400">상세 사유</label>
+          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">상세 사유</label>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={6}
             placeholder="신고 사유를 자세히 작성해주세요"
-            className="w-full resize-y rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/10"
+            className="w-full resize-y rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/10"
           />
         </div>
         <div className="flex justify-end">
@@ -105,7 +105,7 @@ export default function BossCommunityReportPage() {
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-boss-text hover:bg-amber-400 disabled:opacity-50"
           >
             <Flag size={14} /> {submitting ? '신고 중…' : '신고하기'}
           </button>

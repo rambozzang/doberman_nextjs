@@ -100,21 +100,21 @@ export default function BossOnboardingCompanyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b]">
-        <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+      <div className="flex min-h-screen items-center justify-center bg-boss-bg">
+        <Loader2 className="h-6 w-6 animate-spin text-boss-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b]">
+    <div className="min-h-screen bg-boss-bg">
       <div className="mx-auto max-w-3xl px-4 py-8">
         <PageHeader
           title="사업자 정보 등록"
           description="견적 답변을 위해 사업자 정보를 등록해주세요."
         />
 
-        <Card className="rounded-2xl border-slate-800 bg-slate-900/40 p-6">
+        <Card className="rounded-2xl border-boss-border bg-boss-surface p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <CompanyField label="회사명" icon={Building2} required>
@@ -273,10 +273,10 @@ export default function BossOnboardingCompanyPage() {
 }
 
 const inputClass =
-  'h-11 w-full rounded-lg border border-slate-800 bg-slate-900/60 pl-10 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10';
+  'h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10';
 
 const textareaClass =
-  'w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10';
+  'w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10';
 
 type IconType = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -293,13 +293,13 @@ function CompanyField({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-400">
+      <label className="mb-1.5 block text-xs font-medium text-boss-text-muted">
         {label}
-        {required && <span className="ml-0.5 text-rose-400">*</span>}
+        {required && <span className="ml-0.5 text-boss-error">*</span>}
       </label>
       <div className="relative">
         {Icon && (
-          <Icon size={15} className="pointer-events-none absolute left-3.5 top-3 text-slate-500" />
+          <Icon size={15} className="pointer-events-none absolute left-3.5 top-3 text-boss-text-muted" />
         )}
         {children}
       </div>

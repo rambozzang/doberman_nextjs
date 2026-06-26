@@ -105,13 +105,13 @@ export default function BossHelpFaqPage() {
         <div className="relative">
           <Search
             size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted"
           />
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="궁금한 것을 빠르게 검색해보세요."
-            className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+            className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
           />
         </div>
 
@@ -123,8 +123,8 @@ export default function BossHelpFaqPage() {
               onClick={() => setSelected(cat)}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                 selected === cat
-                  ? 'bg-emerald-500 text-white'
-                  : 'border border-slate-800 bg-slate-900/60 text-slate-300 hover:bg-slate-800/60'
+                  ? 'bg-boss-primary text-boss-text'
+                  : 'border border-boss-border bg-boss-surface text-boss-text-secondary hover:bg-boss-elevated/60'
               }`}
             >
               {cat}
@@ -135,28 +135,28 @@ export default function BossHelpFaqPage() {
 
       <Card padded={false}>
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-400">검색 결과가 없습니다.</div>
+          <div className="p-8 text-center text-sm text-boss-text-muted">검색 결과가 없습니다.</div>
         ) : (
           filtered.map((item, idx) => {
             const open = openIdx === idx;
             return (
-              <div key={`${item.q}-${idx}`} className="border-b border-slate-800/70 last:border-b-0">
+              <div key={`${item.q}-${idx}`} className="border-b border-boss-border/70 last:border-b-0">
                 <button
                   type="button"
                   onClick={() => setOpenIdx(open ? null : idx)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-slate-800/40"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-boss-elevated/40"
                 >
                   <div className="min-w-0 flex-1">
                     <Badge tone="emerald">{item.category}</Badge>
-                    <div className="mt-1.5 text-sm font-semibold text-white">{item.q}</div>
+                    <div className="mt-1.5 text-sm font-semibold text-boss-text">{item.q}</div>
                   </div>
                   <ChevronDown
                     size={16}
-                    className={`shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`}
+                    className={`shrink-0 text-boss-text-muted transition ${open ? 'rotate-180' : ''}`}
                   />
                 </button>
                 {open && (
-                  <div className="border-t border-slate-800/70 bg-slate-950/40 px-4 py-4 text-sm leading-relaxed text-slate-300">
+                  <div className="border-t border-boss-border/70 bg-boss-bg/40 px-4 py-4 text-sm leading-relaxed text-boss-text-secondary">
                     {item.a}
                   </div>
                 )}

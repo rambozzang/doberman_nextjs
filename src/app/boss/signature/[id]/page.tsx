@@ -112,7 +112,7 @@ export default function BossSignatureDetailPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/signature"
-          className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white"
+          className="inline-flex items-center gap-2 text-sm text-boss-text-secondary hover:text-boss-text"
         >
           <ArrowLeft size={16} /> 목록으로
         </Link>
@@ -121,7 +121,7 @@ export default function BossSignatureDetailPage() {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-700/50 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-900/40 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-boss-error/30 bg-boss-error/10 px-3 py-1.5 text-xs font-semibold text-boss-error hover:bg-boss-error/10 disabled:opacity-50"
           >
             <Trash2 size={14} /> {deleting ? '삭제 중…' : '삭제'}
           </button>
@@ -129,15 +129,15 @@ export default function BossSignatureDetailPage() {
       </div>
 
       {loading ? (
-        <div className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+        <div className="h-64 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
       ) : error || !item ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
+        <div className="rounded-2xl border border-boss-border bg-boss-surface p-10 text-center text-sm text-boss-text-muted">
           {error ?? '정보를 찾을 수 없습니다.'}
         </div>
       ) : (
         <div className="space-y-5">
           {/* 서명 이미지 (Hero) */}
-          <div className="flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-white p-6">
+          <div className="flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-boss-border bg-boss-surface p-6">
             {item.signatureImagePath && (item.signatureImagePath.startsWith('http') || item.signatureImagePath.startsWith('data:')) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -146,18 +146,18 @@ export default function BossSignatureDetailPage() {
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
-              <PenLine size={80} className="text-slate-300" />
+              <PenLine size={80} className="text-boss-text-secondary" />
             )}
           </div>
 
           {/* 정보 카드 */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="rounded-2xl border border-boss-border bg-boss-surface p-6">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-rose-300">{item.customerName ?? '이름 없음'}</h2>
+              <h2 className="text-2xl font-bold text-boss-error">{item.customerName ?? '이름 없음'}</h2>
               {item.orderId ? (
                 <Link
                   href={`/boss/orders`}
-                  className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-400"
+                  className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-bold text-boss-text hover:bg-indigo-400"
                 >
                   주문 이동
                 </Link>
@@ -183,9 +183,9 @@ export default function BossSignatureDetailPage() {
             </dl>
 
             {item.memo ? (
-              <div className="mt-5 border-t border-slate-800 pt-4">
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">메모</p>
-                <p className="text-sm leading-relaxed text-slate-300">{item.memo}</p>
+              <div className="mt-5 border-t border-boss-border pt-4">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">메모</p>
+                <p className="text-sm leading-relaxed text-boss-text-secondary">{item.memo}</p>
               </div>
             ) : null}
           </div>
@@ -206,11 +206,11 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-800 text-rose-300">
+      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-boss-elevated text-boss-error">
         {icon}
       </span>
-      <span className="w-16 text-xs text-slate-500">{label}</span>
-      <span className="font-semibold text-slate-100">{value}</span>
+      <span className="w-16 text-xs text-boss-text-muted">{label}</span>
+      <span className="font-semibold text-boss-text">{value}</span>
     </div>
   );
 }

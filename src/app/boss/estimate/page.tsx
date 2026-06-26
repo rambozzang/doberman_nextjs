@@ -299,13 +299,13 @@ export default function BossEstimatePage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <Receipt size={20} className="text-emerald-400" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">견적서 품목 관리</h1>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+            <Receipt size={20} className="text-boss-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">견적서 품목 관리</h1>
+            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
               {totals.totalItems.toLocaleString()}건
             </span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-boss-text-muted">
             고객 ID 별로 견적 품목을 등록·수정·삭제하고 합계를 확인하세요.
           </p>
         </div>
@@ -315,19 +315,19 @@ export default function BossEstimatePage() {
             <div className="relative">
               <Search
                 size={14}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted"
               />
               <input
                 value={customerIdInput}
                 onChange={(e) => setCustomerIdInput(e.target.value)}
                 placeholder="고객 ID 입력"
                 inputMode="numeric"
-                className="h-9 w-44 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                className="h-9 w-44 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
               />
             </div>
             <button
               type="submit"
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
             >
               조회
             </button>
@@ -337,7 +337,7 @@ export default function BossEstimatePage() {
             type="button"
             onClick={() => customerId && loadItems(customerId)}
             disabled={!customerId || loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
@@ -345,7 +345,7 @@ export default function BossEstimatePage() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-emerald-950 hover:bg-emerald-400"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 품목 추가
           </button>
@@ -362,7 +362,7 @@ export default function BossEstimatePage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -376,7 +376,7 @@ export default function BossEstimatePage() {
       ) : loading && items.length === 0 ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded-xl border border-slate-800 bg-slate-900/40" />
+            <div key={i} className="h-12 animate-pulse rounded-xl border border-boss-border bg-boss-surface" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -385,9 +385,9 @@ export default function BossEstimatePage() {
           description="우측 상단 ‘품목 추가’ 버튼으로 새 품목을 등록하세요."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+        <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-800 bg-slate-900/60 text-xs uppercase tracking-wider text-slate-500">
+            <thead className="border-b border-boss-border bg-boss-surface text-xs uppercase tracking-wider text-boss-text-muted">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">#</th>
                 <th className="px-4 py-3 text-left font-medium">품목명</th>
@@ -404,31 +404,31 @@ export default function BossEstimatePage() {
             </thead>
             <tbody className="divide-y divide-slate-800">
               {items.map((it, idx) => (
-                <tr key={it.id ?? idx} className="group transition-colors hover:bg-slate-800/40">
-                  <td className="px-4 py-3 text-xs text-slate-500">{idx + 1}</td>
-                  <td className="px-4 py-3 font-medium text-slate-100">{it.itemName ?? '-'}</td>
-                  <td className="px-4 py-3 text-slate-300">{it.itemSpec || '-'}</td>
-                  <td className="px-4 py-3 text-slate-300">{it.unit || '-'}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">
+                <tr key={it.id ?? idx} className="group transition-colors hover:bg-boss-elevated/40">
+                  <td className="px-4 py-3 text-xs text-boss-text-muted">{idx + 1}</td>
+                  <td className="px-4 py-3 font-medium text-boss-text">{it.itemName ?? '-'}</td>
+                  <td className="px-4 py-3 text-boss-text-secondary">{it.itemSpec || '-'}</td>
+                  <td className="px-4 py-3 text-boss-text-secondary">{it.unit || '-'}</td>
+                  <td className="px-4 py-3 text-right text-boss-text-secondary">
                     {(it.quantity ?? 0).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-300">{fmtMoney(it.unitPrice)}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{fmtMoney(it.supplyAmount)}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{fmtMoney(it.vatAmount)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-emerald-300">
+                  <td className="px-4 py-3 text-right text-boss-text-secondary">{fmtMoney(it.unitPrice)}</td>
+                  <td className="px-4 py-3 text-right text-boss-text-secondary">{fmtMoney(it.supplyAmount)}</td>
+                  <td className="px-4 py-3 text-right text-boss-text-secondary">{fmtMoney(it.vatAmount)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-boss-primary">
                     {fmtMoney(it.totalAmount)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {it.isTaxFree === 'Y' ? (
-                      <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300 ring-1 ring-inset ring-amber-500/30">
+                      <span className="inline-flex items-center rounded-full bg-boss-warning/10 px-2 py-0.5 text-[10px] font-semibold text-boss-warning ring-1 ring-inset ring-amber-500/30">
                         비과세
                       </span>
                     ) : it.isVat === 'Y' ? (
-                      <span className="inline-flex items-center rounded-full bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300 ring-1 ring-inset ring-sky-500/30">
+                      <span className="inline-flex items-center rounded-full bg-boss-info/10 px-2 py-0.5 text-[10px] font-semibold text-boss-info ring-1 ring-inset ring-boss-info/30">
                         부가세+
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-slate-700/40 px-2 py-0.5 text-[10px] font-semibold text-slate-300 ring-1 ring-inset ring-slate-600/30">
+                      <span className="inline-flex items-center rounded-full bg-boss-elevated/40 px-2 py-0.5 text-[10px] font-semibold text-boss-text-secondary ring-1 ring-inset ring-boss-border/30">
                         포함
                       </span>
                     )}
@@ -438,7 +438,7 @@ export default function BossEstimatePage() {
                       <button
                         type="button"
                         onClick={() => openEditModal(it)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-800 bg-slate-900/60 text-slate-300 hover:border-emerald-500/40 hover:text-emerald-300"
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-primary/20 hover:text-boss-primary"
                         aria-label="수정"
                       >
                         <Pencil size={12} />
@@ -446,7 +446,7 @@ export default function BossEstimatePage() {
                       <button
                         type="button"
                         onClick={() => onDelete(it.id)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-800 bg-slate-900/60 text-slate-300 hover:border-rose-500/40 hover:text-rose-300"
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-error/20 hover:text-boss-error"
                         aria-label="삭제"
                       >
                         <Trash2 size={12} />
@@ -462,20 +462,20 @@ export default function BossEstimatePage() {
 
       {/* 등록/수정 모달 */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boss-bg/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-boss-border bg-boss-surface shadow-2xl">
             {/* 모달 헤더 */}
-            <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-boss-border px-5 py-4">
               <div className="flex items-center gap-2">
-                <Receipt size={16} className="text-emerald-400" />
-                <h2 className="text-base font-semibold text-white">
+                <Receipt size={16} className="text-boss-primary" />
+                <h2 className="text-base font-semibold text-boss-text">
                   {modalMode === 'create' ? '견적 품목 추가' : '견적 품목 수정'}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
                 aria-label="닫기"
               >
                 <X size={16} />
@@ -493,8 +493,8 @@ export default function BossEstimatePage() {
                     onClick={() => onPickChip(chip)}
                     className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                       form.itemName === chip
-                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                        : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700 hover:text-white'
+                        ? 'border-boss-primary/20 bg-boss-primary/10 text-boss-primary'
+                        : 'border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-border hover:text-boss-text'
                     }`}
                   >
                     {chip}
@@ -509,7 +509,7 @@ export default function BossEstimatePage() {
                   onChange={(e) => setForm({ ...form, itemName: e.target.value })}
                   maxLength={20}
                   placeholder="자재비, 인건비 등"
-                  className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                  className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                 />
               </Field>
 
@@ -523,7 +523,7 @@ export default function BossEstimatePage() {
                     }
                     inputMode="numeric"
                     placeholder="갯수"
-                    className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-right text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-right text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                   />
                 </Field>
                 <Field label="단가" required>
@@ -535,7 +535,7 @@ export default function BossEstimatePage() {
                     }}
                     inputMode="numeric"
                     placeholder="금액"
-                    className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-right text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-right text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                   />
                 </Field>
               </div>
@@ -565,7 +565,7 @@ export default function BossEstimatePage() {
                     onChange={(e) => setForm({ ...form, itemSpec: e.target.value })}
                     maxLength={20}
                     placeholder="규격"
-                    className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                   />
                 </Field>
                 <Field label="단위">
@@ -574,7 +574,7 @@ export default function BossEstimatePage() {
                     onChange={(e) => setForm({ ...form, unit: e.target.value })}
                     maxLength={20}
                     placeholder="ex) EA, m, kg"
-                    className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                   />
                 </Field>
               </div>
@@ -584,23 +584,23 @@ export default function BossEstimatePage() {
                   value={form.memo}
                   onChange={(e) => setForm({ ...form, memo: e.target.value })}
                   placeholder="메모 사항"
-                  className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                  className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                 />
               </Field>
 
               {/* 계산 미리보기 */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="rounded-xl border border-boss-border bg-boss-bg/40 p-3">
+                <div className="flex items-center justify-between text-xs text-boss-text-muted">
                   <span>공급가</span>
-                  <span className="font-semibold text-slate-200">{fmtMoney(calcPreview.supply)}</span>
+                  <span className="font-semibold text-boss-text">{fmtMoney(calcPreview.supply)}</span>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+                <div className="mt-1 flex items-center justify-between text-xs text-boss-text-muted">
                   <span>부가세</span>
-                  <span className="font-semibold text-slate-200">{fmtMoney(calcPreview.vat)}</span>
+                  <span className="font-semibold text-boss-text">{fmtMoney(calcPreview.vat)}</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between border-t border-slate-800 pt-2 text-sm">
-                  <span className="text-slate-300">합계</span>
-                  <span className="text-base font-bold text-emerald-300">
+                <div className="mt-2 flex items-center justify-between border-t border-boss-border pt-2 text-sm">
+                  <span className="text-boss-text-secondary">합계</span>
+                  <span className="text-base font-bold text-boss-primary">
                     {fmtMoney(calcPreview.total)}
                   </span>
                 </div>
@@ -608,11 +608,11 @@ export default function BossEstimatePage() {
             </div>
 
             {/* 모달 푸터 */}
-            <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-5 py-4">
+            <div className="flex items-center justify-end gap-2 border-t border-boss-border px-5 py-4">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-4 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-4 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
               >
                 취소
               </button>
@@ -622,7 +622,7 @@ export default function BossEstimatePage() {
                     type="button"
                     onClick={() => onCreate(true)}
                     disabled={submitting}
-                    className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50"
+                    className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-4 text-sm font-semibold text-boss-primary hover:bg-boss-primary/20 disabled:opacity-50"
                   >
                     <Plus size={14} /> 연속 저장
                   </button>
@@ -630,7 +630,7 @@ export default function BossEstimatePage() {
                     type="button"
                     onClick={() => onCreate(false)}
                     disabled={submitting}
-                    className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 disabled:opacity-50"
+                    className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-50"
                   >
                     <Save size={14} /> 저장
                   </button>
@@ -640,7 +640,7 @@ export default function BossEstimatePage() {
                   type="button"
                   onClick={onUpdate}
                   disabled={submitting}
-                  className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 disabled:opacity-50"
+                  className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-50"
                 >
                   <Save size={14} /> 수정 저장
                 </button>
@@ -670,17 +670,17 @@ function SummaryCard({
     <div
       className={`rounded-2xl border p-4 ${
         highlight
-          ? 'border-emerald-500/30 bg-emerald-500/5'
-          : 'border-slate-800 bg-slate-900/40'
+          ? 'border-boss-primary/30 bg-boss-primary/5'
+          : 'border-boss-border bg-boss-surface'
       }`}
     >
-      <div className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-500">
+      <div className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-boss-text-muted">
         {icon}
         <span>{label}</span>
       </div>
       <p
         className={`text-lg font-bold ${
-          highlight ? 'text-emerald-300' : 'text-white'
+          highlight ? 'text-boss-primary' : 'text-boss-text'
         }`}
       >
         {value}
@@ -691,12 +691,12 @@ function SummaryCard({
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
         <Inbox size={20} />
       </div>
-      <p className="text-sm font-medium text-slate-200">{title}</p>
-      <p className="mt-1 text-xs text-slate-500">{description}</p>
+      <p className="text-sm font-medium text-boss-text">{title}</p>
+      <p className="mt-1 text-xs text-boss-text-muted">{description}</p>
     </div>
   );
 }
@@ -712,9 +712,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-300">
+      <label className="mb-1 block text-xs font-semibold text-boss-text-secondary">
         {label}
-        {required && <span className="ml-0.5 text-rose-400">*</span>}
+        {required && <span className="ml-0.5 text-boss-error">*</span>}
       </label>
       {children}
     </div>
@@ -736,13 +736,13 @@ function CheckChip({
       onClick={() => onChange(!checked)}
       className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
         checked
-          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-          : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+          ? 'border-boss-primary/20 bg-boss-primary/10 text-boss-primary'
+          : 'border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text'
       }`}
     >
       <span
         className={`h-3 w-3 rounded-sm border ${
-          checked ? 'border-emerald-400 bg-emerald-400' : 'border-slate-600'
+          checked ? 'border-emerald-400 bg-boss-primary' : 'border-boss-border'
         }`}
       />
       {label}

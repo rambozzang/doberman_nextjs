@@ -89,10 +89,10 @@ export default function BossChecklistPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <ClipboardCheck size={22} className="text-emerald-400" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">체크리스트</h1>
+            <ClipboardCheck size={22} className="text-boss-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">체크리스트</h1>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-boss-text-muted">
             현장 실측 체크리스트를 작성하고 인쇄용으로 출력하세요.
           </p>
         </div>
@@ -101,13 +101,13 @@ export default function BossChecklistPage() {
             type="button"
             onClick={load}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/checklist/new"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-medium text-white hover:bg-emerald-600"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-medium text-boss-text hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 새 체크리스트
           </Link>
@@ -115,85 +115,85 @@ export default function BossChecklistPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {/* 컨텐츠 */}
       {loading && !data ? (
-        <div className="h-40 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+        <div className="h-40 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
       ) : !data ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">등록된 체크리스트가 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">새 체크리스트를 작성해 보세요.</p>
+          <p className="text-sm font-medium text-boss-text">등록된 체크리스트가 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">새 체크리스트를 작성해 보세요.</p>
           <Link
             href="/boss/checklist/new"
-            className="mt-4 flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"
+            className="mt-4 flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-medium text-boss-text hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 새 체크리스트
           </Link>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
           <div className="mb-4 flex items-center gap-2">
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
+            <span className="rounded-full bg-boss-primary/10 px-2 py-0.5 text-[10px] font-semibold text-boss-primary ring-1 ring-inset ring-boss-primary/30">
               작성됨
             </span>
-            <span className="text-xs text-slate-500">고객 ID: {data.customerId || customerId}</span>
+            <span className="text-xs text-boss-text-muted">고객 ID: {data.customerId || customerId}</span>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-              <Home size={14} className="text-slate-500" />
-              <div className="text-xs text-slate-400">주거형태</div>
-              <div className="ml-auto text-sm text-slate-100">
+            <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-bg/40 p-3">
+              <Home size={14} className="text-boss-text-muted" />
+              <div className="text-xs text-boss-text-muted">주거형태</div>
+              <div className="ml-auto text-sm text-boss-text">
                 {data.housingType || '-'}
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-              <Ruler size={14} className="text-slate-500" />
-              <div className="text-xs text-slate-400">면적</div>
-              <div className="ml-auto text-sm text-slate-100">
+            <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-bg/40 p-3">
+              <Ruler size={14} className="text-boss-text-muted" />
+              <div className="text-xs text-boss-text-muted">면적</div>
+              <div className="ml-auto text-sm text-boss-text">
                 {data.areaText ? `${data.areaText}㎡` : '-'}
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-              <Wallet size={14} className="text-slate-500" />
-              <div className="text-xs text-slate-400">총액</div>
-              <div className="ml-auto text-sm font-semibold text-emerald-300">
+            <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-bg/40 p-3">
+              <Wallet size={14} className="text-boss-text-muted" />
+              <div className="text-xs text-boss-text-muted">총액</div>
+              <div className="ml-auto text-sm font-semibold text-boss-primary">
                 {fmtMoney(data.totalPrice)}원
               </div>
             </div>
           </div>
 
           {data.bigo && (
-            <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-              <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">비고</div>
+            <div className="mt-4 rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text-secondary">
+              <div className="mb-1 text-[10px] font-semibold uppercase text-boss-text-muted">비고</div>
               {data.bigo}
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-4">
+          <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-boss-border pt-4">
             <Link
               href={`/boss/checklist/${encodeURIComponent(data.customerId || customerId)}/print`}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 hover:border-emerald-500/40 hover:text-emerald-300"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text hover:border-boss-primary/20 hover:text-boss-primary"
             >
               <Printer size={14} /> 인쇄
             </Link>
             <Link
               href={`/boss/checklist/new?edit=1`}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 hover:border-slate-700 hover:text-white"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text hover:border-boss-border hover:text-boss-text"
             >
               수정
             </Link>
             <button
               type="button"
               onClick={handleDelete}
-              className="ml-auto flex h-9 items-center gap-1.5 rounded-lg border border-rose-800/60 bg-rose-950/30 px-3 text-sm text-rose-300 hover:bg-rose-950/60"
+              className="ml-auto flex h-9 items-center gap-1.5 rounded-lg border border-rose-800/60 bg-rose-950/30 px-3 text-sm text-boss-error hover:bg-rose-950/60"
             >
               <Trash2 size={14} /> 삭제
             </button>

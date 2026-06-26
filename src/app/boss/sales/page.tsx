@@ -109,11 +109,11 @@ export default function BossSalesPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1">
-            <TrendingUp size={11} className="text-violet-300" />
-            <span className="text-[11px] font-medium text-violet-300">매출 분석</span>
+            <TrendingUp size={11} className="text-violet-400" />
+            <span className="text-[11px] font-medium text-violet-400">매출 분석</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">월별 매출 통계</h1>
-          <p className="mt-1 text-sm text-slate-400">기간을 선택해 매출 추이를 확인하세요.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-boss-text md:text-3xl">월별 매출 통계</h1>
+          <p className="mt-1 text-sm text-boss-text-muted">기간을 선택해 매출 추이를 확인하세요.</p>
         </div>
         <div className="flex items-center gap-2">
           {PERIOD_OPTIONS.map((opt) => (
@@ -123,8 +123,8 @@ export default function BossSalesPage() {
               onClick={() => setMonths(opt.value)}
               className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
                 months === opt.value
-                  ? 'border-violet-500/40 bg-violet-500/10 text-violet-200'
-                  : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:text-slate-200'
+                  ? 'border-violet-500/40 bg-violet-500/10 text-violet-400'
+                  : 'border-boss-border bg-boss-surface/50 text-boss-text-muted hover:text-boss-text'
               }`}
             >
               {opt.label}
@@ -133,7 +133,7 @@ export default function BossSalesPage() {
           <button
             type="button"
             onClick={() => fetchData(months)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/50 text-slate-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-boss-border bg-boss-surface/50 text-boss-text-secondary hover:text-boss-text"
             aria-label="새로고침"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -144,29 +144,29 @@ export default function BossSalesPage() {
       {/* 합계 카드 */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SummaryCard label="총 매출" value={fmtWon(totals.amount)} icon={<TrendingUp size={18} />} accent="from-violet-500 to-violet-700" loading={loading} />
-        <SummaryCard label="총 건수" value={`${totals.count.toLocaleString('ko-KR')}건`} icon={<BarChart3 size={18} />} accent="from-emerald-500 to-emerald-700" loading={loading} />
+        <SummaryCard label="총 건수" value={`${totals.count.toLocaleString('ko-KR')}건`} icon={<BarChart3 size={18} />} accent="from-boss-primary to-emerald-700" loading={loading} />
         <SummaryCard label="수금 금액" value={fmtWon(totals.paid)} icon={<Calendar size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
       </section>
 
       {/* 에러 메시지 */}
       {error && !loading && (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+        <div className="rounded-2xl border border-rose-500/30 bg-boss-error/10 p-4 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {/* 매출 추이 차트 */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-white">매출 추이</h2>
-            <p className="text-xs text-slate-500">최근 {months}개월 매출액</p>
+            <h2 className="text-sm font-semibold text-boss-text">매출 추이</h2>
+            <p className="text-xs text-boss-text-muted">최근 {months}개월 매출액</p>
           </div>
         </div>
         {loading ? (
-          <div className="h-64 animate-pulse rounded-xl bg-slate-800/40" />
+          <div className="h-64 animate-pulse rounded-xl bg-boss-elevated/40" />
         ) : chartData.length === 0 ? (
-          <div className="flex h-64 items-center justify-center text-sm text-slate-500">
+          <div className="flex h-64 items-center justify-center text-sm text-boss-text-muted">
             표시할 데이터가 없습니다.
           </div>
         ) : (
@@ -193,17 +193,17 @@ export default function BossSalesPage() {
       </section>
 
       {/* 건수 차트 */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-white">건수 추이</h2>
-            <p className="text-xs text-slate-500">최근 {months}개월 시공 건수</p>
+            <h2 className="text-sm font-semibold text-boss-text">건수 추이</h2>
+            <p className="text-xs text-boss-text-muted">최근 {months}개월 시공 건수</p>
           </div>
         </div>
         {loading ? (
-          <div className="h-56 animate-pulse rounded-xl bg-slate-800/40" />
+          <div className="h-56 animate-pulse rounded-xl bg-boss-elevated/40" />
         ) : chartData.length === 0 ? (
-          <div className="flex h-56 items-center justify-center text-sm text-slate-500">표시할 데이터가 없습니다.</div>
+          <div className="flex h-56 items-center justify-center text-sm text-boss-text-muted">표시할 데이터가 없습니다.</div>
         ) : (
           <ResponsiveContainer width="100%" height={224}>
             <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -221,20 +221,20 @@ export default function BossSalesPage() {
       </section>
 
       {/* 월별 표 */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-        <h2 className="mb-4 text-sm font-semibold text-white">월별 상세</h2>
+      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+        <h2 className="mb-4 text-sm font-semibold text-boss-text">월별 상세</h2>
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-lg bg-slate-800/40" />
+              <div key={i} className="h-10 animate-pulse rounded-lg bg-boss-elevated/40" />
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-slate-500">데이터가 없습니다.</p>
+          <p className="text-sm text-boss-text-muted">데이터가 없습니다.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs text-slate-500">
+              <thead className="text-xs text-boss-text-muted">
                 <tr>
                   <th className="px-2 py-2 font-medium">월</th>
                   <th className="px-2 py-2 font-medium">건수</th>
@@ -244,7 +244,7 @@ export default function BossSalesPage() {
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={`${r.yearMonth ?? i}`} className="border-t border-slate-800/60 text-slate-200">
+                  <tr key={`${r.yearMonth ?? i}`} className="border-t border-boss-border/60 text-boss-text">
                     <td className="px-2 py-2">{rowLabel(r)}</td>
                     <td className="px-2 py-2">{(r.totalCount ?? 0).toLocaleString('ko-KR')}건</td>
                     <td className="px-2 py-2">{fmtWon(r.totalAmount)}</td>
@@ -274,19 +274,19 @@ function SummaryCard({
   loading: boolean;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
+    <div className="relative overflow-hidden rounded-2xl border border-boss-border bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
       <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-2xl`} />
       <div className="relative">
         <div className="mb-4 flex items-center justify-between">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white`}>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-boss-text`}>
             {icon}
           </div>
         </div>
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-boss-text-muted">{label}</p>
         {loading ? (
-          <div className="mt-1 h-7 w-32 animate-pulse rounded bg-slate-800/60" />
+          <div className="mt-1 h-7 w-32 animate-pulse rounded bg-boss-elevated/60" />
         ) : (
-          <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+          <p className="mt-1 text-2xl font-bold text-boss-text">{value}</p>
         )}
       </div>
     </div>

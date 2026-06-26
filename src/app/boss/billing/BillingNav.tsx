@@ -26,8 +26,8 @@ export default function BillingNav() {
             href={tab.href}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
               isActive
-                ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-                : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                ? 'border-boss-primary/20 bg-boss-primary/15 text-boss-primary'
+                : 'border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text'
             }`}
           >
             <Icon size={13} />

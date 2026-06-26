@@ -69,22 +69,22 @@ export default function BossEventsPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 홈
         </Link>
-        <h1 className="text-xl font-bold text-white">이벤트</h1>
+        <h1 className="text-xl font-bold text-boss-text">이벤트</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-slate-900/40 p-5">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-emerald-500/20 p-2 text-emerald-300">
+          <div className="rounded-lg bg-boss-primary/20 p-2 text-boss-primary">
             <Sparkles size={18} />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-bold text-white">진행 중인 이벤트</h2>
-            <p className="mt-1 text-sm text-slate-300">
+            <h2 className="text-base font-bold text-boss-text">진행 중인 이벤트</h2>
+            <p className="mt-1 text-sm text-boss-text-secondary">
               도베르만이 준비한 다양한 프로모션과 이벤트를 확인해보세요.
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function BossEventsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/40 py-12 text-sm text-slate-400">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-boss-border bg-boss-surface py-12 text-sm text-boss-text-muted">
           <Loader2 size={16} className="animate-spin" /> 이벤트를 불러오는 중...
         </div>
       ) : error ? (
@@ -101,10 +101,10 @@ export default function BossEventsPage() {
           <div>{error}</div>
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 py-16 text-center">
-          <Sparkles size={32} className="mx-auto text-slate-600" />
-          <p className="mt-3 text-sm text-slate-400">진행 중인 이벤트가 없습니다.</p>
-          <p className="mt-1 text-xs text-slate-500">새로운 이벤트가 등록되면 알려드릴게요.</p>
+        <div className="rounded-2xl border border-boss-border bg-boss-surface py-16 text-center">
+          <Sparkles size={32} className="mx-auto text-boss-text-muted" />
+          <p className="mt-3 text-sm text-boss-text-muted">진행 중인 이벤트가 없습니다.</p>
+          <p className="mt-1 text-xs text-boss-text-muted">새로운 이벤트가 등록되면 알려드릴게요.</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -112,22 +112,22 @@ export default function BossEventsPage() {
             <li key={item.boardId ?? item.subject}>
               <Link
                 href={`/boss/notifications/${item.boardId ?? ''}`}
-                className="group block rounded-2xl border border-slate-800 bg-slate-900/40 p-5 transition hover:border-emerald-500/40 hover:bg-slate-900/60"
+                className="group block rounded-2xl border border-boss-border bg-boss-surface p-5 transition hover:border-boss-primary/20 hover:bg-boss-surface"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                    <div className="inline-flex items-center gap-1 rounded-full bg-boss-primary/15 px-2 py-0.5 text-[10px] font-bold text-boss-primary">
                       <Sparkles size={10} /> EVENT
                     </div>
-                    <h3 className="mt-2 truncate text-sm font-bold text-white">
+                    <h3 className="mt-2 truncate text-sm font-bold text-boss-text">
                       {item.subject ?? '제목 없음'}
                     </h3>
                     {item.contents && (
-                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-400">
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-boss-text-muted">
                         {item.contents.replace(/<[^>]+>/g, '')}
                       </p>
                     )}
-                    <div className="mt-3 inline-flex items-center gap-1 text-[11px] text-slate-500">
+                    <div className="mt-3 inline-flex items-center gap-1 text-[11px] text-boss-text-muted">
                       <Calendar size={11} />
                       {formatDate(item.crtDtm)}
                     </div>

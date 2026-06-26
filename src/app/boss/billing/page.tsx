@@ -38,11 +38,11 @@ const STATE_LABEL: Record<BossSubscriptionState, string> = {
 };
 
 const STATE_BADGE: Record<BossSubscriptionState, string> = {
-  ACTIVE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  GRACE_PERIOD: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  EXPIRED: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  NONE: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
-  ERROR: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  ACTIVE: 'bg-boss-primary/15 text-boss-primary border-boss-primary/30',
+  GRACE_PERIOD: 'bg-amber-500/15 text-boss-warning border-amber-500/30',
+  EXPIRED: 'bg-boss-error/100/15 text-boss-error border-rose-500/30',
+  NONE: 'bg-boss-elevated/40 text-boss-text-secondary border-boss-border/40',
+  ERROR: 'bg-boss-error/100/15 text-boss-error border-rose-500/30',
 };
 
 function formatDate(value?: string | null): string {
@@ -180,17 +180,17 @@ export default function BossBillingPage() {
   }, [status?.subscriptionId, loadAll]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-boss-bg text-boss-text">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {/* 헤더 */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-emerald-400">
+            <div className="flex items-center gap-2 text-boss-primary">
               <CreditCard className="h-5 w-5" />
               <span className="text-xs font-semibold uppercase tracking-wider">Billing</span>
             </div>
-            <h1 className="mt-1 text-2xl font-bold text-slate-100 sm:text-3xl">결제 관리</h1>
-            <p className="mt-1 text-sm text-slate-400">
+            <h1 className="mt-1 text-2xl font-bold text-boss-text sm:text-3xl">결제 관리</h1>
+            <p className="mt-1 text-sm text-boss-text-muted">
               구독 상태, 결제 이력, 이용 가능한 플랜을 한곳에서 관리합니다.
             </p>
           </div>
@@ -198,7 +198,7 @@ export default function BossBillingPage() {
             type="button"
             onClick={() => void loadAll()}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-4 py-2 text-sm font-medium text-boss-text transition hover:border-boss-primary/20 hover:text-boss-primary disabled:opacity-50"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -210,14 +210,14 @@ export default function BossBillingPage() {
         </div>
 
         {errorMessage && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
             <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {actionMessage && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-primary/30 bg-boss-primary/10 px-4 py-3 text-sm text-boss-primary">
             <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <span>{actionMessage}</span>
           </div>
@@ -232,7 +232,7 @@ export default function BossBillingPage() {
               <button
                 type="button"
                 onClick={() => void loadAll()}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
+                className="inline-flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-4 py-2 text-sm font-medium text-boss-text transition hover:border-boss-primary/20 hover:text-boss-primary"
               >
                 <RefreshCw className="h-4 w-4" />
                 다시 시도
@@ -242,10 +242,10 @@ export default function BossBillingPage() {
         )}
 
         {/* 구독 상태 카드 */}
-        <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
+        <section className="mb-8 rounded-2xl border border-boss-border bg-boss-surface p-6 shadow-boss-md">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-slate-300">
-              <ShieldCheck className="h-5 w-5 text-emerald-400" />
+            <div className="flex items-center gap-2 text-boss-text-secondary">
+              <ShieldCheck className="h-5 w-5 text-boss-primary" />
               <h2 className="text-base font-semibold">현재 구독 상태</h2>
             </div>
             <span
@@ -256,7 +256,7 @@ export default function BossBillingPage() {
           </div>
 
           {isLoading ? (
-            <div className="mt-6 flex items-center gap-2 text-sm text-slate-400">
+            <div className="mt-6 flex items-center gap-2 text-sm text-boss-text-muted">
               <Loader2 className="h-4 w-4 animate-spin" />
               구독 정보를 불러오는 중...
             </div>
@@ -291,7 +291,7 @@ export default function BossBillingPage() {
                 type="button"
                 onClick={() => void handleCancel()}
                 disabled={isCancelling}
-                className="inline-flex items-center gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-boss-error/20 bg-boss-error/10 px-4 py-2 text-sm font-semibold text-boss-error transition hover:bg-boss-error/20 disabled:opacity-50"
               >
                 {isCancelling ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -306,17 +306,17 @@ export default function BossBillingPage() {
 
         {/* 플랜 목록 */}
         <section className="mb-8">
-          <div className="mb-4 flex items-center gap-2 text-slate-300">
-            <Sparkles className="h-5 w-5 text-emerald-400" />
+          <div className="mb-4 flex items-center gap-2 text-boss-text-secondary">
+            <Sparkles className="h-5 w-5 text-boss-primary" />
             <h2 className="text-base font-semibold">이용 가능한 플랜</h2>
           </div>
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-boss-text-muted">
               <Loader2 className="h-4 w-4 animate-spin" />
               플랜 정보를 불러오는 중...
             </div>
           ) : plans.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-sm text-slate-400">
+            <div className="rounded-xl border border-dashed border-boss-border bg-boss-surface p-8 text-center text-sm text-boss-text-muted">
               현재 이용 가능한 플랜이 없습니다.
             </div>
           ) : (
@@ -326,36 +326,36 @@ export default function BossBillingPage() {
                 return (
                   <div
                     key={plan.planId}
-                    className={`flex flex-col rounded-2xl border bg-slate-900/60 p-6 transition ${
+                    className={`flex flex-col rounded-2xl border bg-boss-surface p-6 transition ${
                       plan.isPopular
-                        ? 'border-emerald-500/50 shadow-emerald-500/10 shadow-lg'
-                        : 'border-slate-800 hover:border-slate-700'
+                        ? 'border-boss-primary/30 shadow-emerald-500/10 shadow-boss-md'
+                        : 'border-boss-border hover:border-boss-border'
                     }`}
                   >
                     {plan.isPopular && (
-                      <span className="mb-3 self-start rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+                      <span className="mb-3 self-start rounded-full border border-boss-primary/20 bg-boss-primary/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-boss-primary">
                         Popular
                       </span>
                     )}
-                    <h3 className="text-lg font-bold text-slate-100">{plan.title}</h3>
+                    <h3 className="text-lg font-bold text-boss-text">{plan.title}</h3>
                     {plan.description && (
-                      <p className="mt-1 text-sm text-slate-400">{plan.description}</p>
+                      <p className="mt-1 text-sm text-boss-text-muted">{plan.description}</p>
                     )}
                     <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-emerald-400">
+                      <span className="text-2xl font-bold text-boss-primary">
                         {formatPrice(plan)}
                       </span>
                       {plan.periodUnit && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-boss-text-muted">
                           / {plan.periodLength ?? 1} {plan.periodUnit.toLowerCase()}
                         </span>
                       )}
                     </div>
                     {plan.features && plan.features.length > 0 && (
-                      <ul className="mt-4 space-y-2 text-sm text-slate-300">
+                      <ul className="mt-4 space-y-2 text-sm text-boss-text-secondary">
                         {plan.features.map((feature) => (
                           <li key={feature} className="flex items-start gap-2">
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-boss-primary" />
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -365,7 +365,7 @@ export default function BossBillingPage() {
                       type="button"
                       onClick={() => void handleSubscribe(plan)}
                       disabled={purchasing || isActive}
-                      className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:bg-slate-700 disabled:text-slate-400"
+                      className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-boss-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-boss-primary-hover disabled:bg-boss-elevated disabled:text-boss-text-muted"
                     >
                       {purchasing ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -383,23 +383,23 @@ export default function BossBillingPage() {
 
         {/* 구매 이력 */}
         <section>
-          <div className="mb-4 flex items-center gap-2 text-slate-300">
-            <Receipt className="h-5 w-5 text-emerald-400" />
+          <div className="mb-4 flex items-center gap-2 text-boss-text-secondary">
+            <Receipt className="h-5 w-5 text-boss-primary" />
             <h2 className="text-base font-semibold">구매 이력</h2>
           </div>
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-boss-text-muted">
               <Loader2 className="h-4 w-4 animate-spin" />
               구매 이력을 불러오는 중...
             </div>
           ) : history.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-sm text-slate-400">
+            <div className="rounded-xl border border-dashed border-boss-border bg-boss-surface p-8 text-center text-sm text-boss-text-muted">
               구매 이력이 없습니다.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
+            <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
               <table className="min-w-full divide-y divide-slate-800 text-sm">
-                <thead className="bg-slate-900/80 text-xs uppercase tracking-wider text-slate-400">
+                <thead className="bg-boss-surface/80 text-xs uppercase tracking-wider text-boss-text-muted">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold">상품</th>
                     <th className="px-4 py-3 text-left font-semibold">결제일</th>
@@ -408,31 +408,31 @@ export default function BossBillingPage() {
                     <th className="px-4 py-3 text-left font-semibold">상태</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/70 text-slate-200">
+                <tbody className="divide-y divide-slate-800/70 text-boss-text">
                   {history.map((item, idx) => (
                     <tr key={item.transactionId ?? `${item.productId}-${idx}`}>
                       <td className="px-4 py-3">
                         <div className="font-medium">{item.productName ?? item.productId ?? '-'}</div>
                         {item.store && (
-                          <div className="mt-0.5 text-xs text-slate-500">{item.store}</div>
+                          <div className="mt-0.5 text-xs text-boss-text-muted">{item.store}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-300">
+                      <td className="px-4 py-3 text-boss-text-secondary">
                         <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-slate-500" />
+                          <Clock className="h-3.5 w-3.5 text-boss-text-muted" />
                           {formatDate(item.purchaseDate)}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-300">
+                      <td className="px-4 py-3 text-boss-text-secondary">
                         {formatDate(item.expirationDate)}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-slate-100">
+                      <td className="px-4 py-3 text-right font-medium text-boss-text">
                         {item.amount != null
                           ? `${item.amount.toLocaleString('ko-KR')} ${item.currency ?? ''}`.trim()
                           : '-'}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-0.5 text-xs text-slate-300">
+                        <span className="rounded-full border border-boss-border bg-boss-elevated/60 px-2.5 py-0.5 text-xs text-boss-text-secondary">
                           {item.status ?? '-'}
                         </span>
                       </td>
@@ -450,9 +450,9 @@ export default function BossBillingPage() {
 
 function InfoTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3">
-      <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
-      <div className="mt-1 truncate text-sm font-semibold text-slate-100">{value}</div>
+    <div className="rounded-xl border border-boss-border bg-boss-bg/60 px-4 py-3">
+      <div className="text-xs uppercase tracking-wider text-boss-text-muted">{label}</div>
+      <div className="mt-1 truncate text-sm font-semibold text-boss-text">{value}</div>
     </div>
   );
 }

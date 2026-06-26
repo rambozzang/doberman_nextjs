@@ -207,18 +207,18 @@ export default function BossDashboardPage() {
   return (
     <div>
       {/* ───── PageHeader ───── */}
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.06] pb-5">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-boss-border pb-5">
         <div>
           <div className="mb-1.5 flex items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-emerald-400">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-boss-primary">
               Dashboard
             </span>
             <Badge tone="default">{today}</Badge>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white md:text-[26px]">
+          <h1 className="text-2xl font-semibold tracking-tight text-boss-text md:text-[26px]">
             안녕하세요, {name} 사장님
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-boss-text-muted">
             이번 달 비즈니스 현황을 한눈에 확인하세요.
           </p>
         </div>
@@ -233,7 +233,7 @@ export default function BossDashboardPage() {
       </header>
 
       {error && !loading && (
-        <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2 text-sm text-rose-200">
+        <div className="mb-4 rounded-lg border border-boss-error/20 bg-boss-error/100/[0.06] px-3 py-2 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -278,10 +278,10 @@ export default function BossDashboardPage() {
         <Card className="lg:col-span-2">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-white">실적 트렌드</h2>
-              <p className="mt-0.5 text-xs text-slate-500">최근 7개월 실시간 데이터</p>
+              <h2 className="text-sm font-semibold text-boss-text">실적 트렌드</h2>
+              <p className="mt-0.5 text-xs text-boss-text-muted">최근 7개월 실시간 데이터</p>
             </div>
-            <div className="flex rounded-md border border-white/[0.06] bg-white/[0.02] p-0.5">
+            <div className="flex rounded-md border border-boss-border bg-boss-elevated p-0.5">
               <TabButton active={chartTab === 'revenue'} onClick={() => setChartTab('revenue')}>
                 매출
               </TabButton>
@@ -292,7 +292,7 @@ export default function BossDashboardPage() {
           </div>
 
           {loading ? (
-            <div className="h-64 animate-pulse rounded-lg bg-white/[0.03]" />
+            <div className="h-64 animate-pulse rounded-lg bg-boss-elevated" />
           ) : revenueData.length === 0 ? (
             <EmptyState icon={TrendingUp} title="데이터가 없습니다" description="통계가 집계되면 여기에 표시됩니다." />
           ) : chartTab === 'revenue' ? (
@@ -376,9 +376,9 @@ export default function BossDashboardPage() {
             description={statusTotal > 0 ? `총 ${statusTotal}건` : '이번 달 기준'}
           />
           {loading ? (
-            <div className="h-44 animate-pulse rounded-lg bg-white/[0.03]" />
+            <div className="h-44 animate-pulse rounded-lg bg-boss-elevated" />
           ) : statusTotal === 0 ? (
-            <div className="flex h-44 items-center justify-center text-xs text-slate-600">
+            <div className="flex h-44 items-center justify-center text-xs text-boss-text-muted">
               데이터가 없습니다
             </div>
           ) : (
@@ -408,17 +408,17 @@ export default function BossDashboardPage() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <ul className="mt-3 space-y-1.5 border-t border-white/[0.06] pt-3">
+              <ul className="mt-3 space-y-1.5 border-t border-boss-border pt-3">
                 {statusData.map((s) => (
                   <li key={s.name} className="flex items-center justify-between text-[12px]">
-                    <span className="flex items-center gap-2 text-slate-400">
+                    <span className="flex items-center gap-2 text-boss-text-muted">
                       <span
                         className="h-1.5 w-1.5 rounded-full"
                         style={{ background: s.color }}
                       />
                       {s.name}
                     </span>
-                    <span className="font-mono font-semibold tabular-nums text-slate-200">
+                    <span className="font-mono font-semibold tabular-nums text-boss-text">
                       {s.value}
                     </span>
                   </li>
@@ -439,7 +439,7 @@ export default function BossDashboardPage() {
             actions={
               <Link
                 href="/boss/statistics"
-                className="flex items-center gap-0.5 text-[11px] font-medium text-emerald-400 hover:text-emerald-300"
+                className="flex items-center gap-0.5 text-[11px] font-medium text-boss-primary hover:text-boss-primary"
               >
                 종합 통계 <ArrowRight size={11} />
               </Link>
@@ -450,18 +450,18 @@ export default function BossDashboardPage() {
               <Link
                 key={href}
                 href={href}
-                className="group flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:border-white/10 hover:bg-white/[0.04]"
+                className="group flex items-center gap-3 rounded-lg border border-boss-border bg-boss-elevated p-3 transition-colors hover:border-boss-border hover:bg-boss-elevated"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-slate-400 transition-colors group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-boss-elevated text-boss-text-muted transition-colors group-hover:bg-boss-primary/10 group-hover:text-boss-primary">
                   <Icon size={15} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] font-medium text-slate-100">{label}</p>
-                  <p className="truncate text-[10px] text-slate-500">{desc}</p>
+                  <p className="truncate text-[12px] font-medium text-boss-text">{label}</p>
+                  <p className="truncate text-[10px] text-boss-text-muted">{desc}</p>
                 </div>
                 <ChevronRight
                   size={13}
-                  className="text-slate-700 transition-colors group-hover:text-slate-400"
+                  className="text-boss-text-muted transition-colors group-hover:text-boss-text-muted"
                 />
               </Link>
             ))}
@@ -473,7 +473,7 @@ export default function BossDashboardPage() {
           <SectionHeader
             title="이번 달 핵심 지표"
             description="현재 월 기준 주요 지표"
-            actions={<Sparkles size={12} className="text-emerald-400" />}
+            actions={<Sparkles size={12} className="text-boss-primary" />}
           />
           <div className="grid grid-cols-2 gap-2">
             <MetricItem label="견적" value={current?.estimateCount ?? 0} tone="emerald" />
@@ -481,7 +481,7 @@ export default function BossDashboardPage() {
             <MetricItem label="완료" value={current?.completeCount ?? 0} tone="violet" />
             <MetricItem label="취소" value={current?.cancelCount ?? 0} tone="rose" />
           </div>
-          <p className="mt-3 text-[11px] text-slate-500">
+          <p className="mt-3 text-[11px] text-boss-text-muted">
             이번 달 전체 통합된 진행 현황입니다.
           </p>
         </Card>
@@ -508,8 +508,8 @@ function TabButton({
       onClick={onClick}
       className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
         active
-          ? 'bg-white/[0.08] text-white'
-          : 'text-slate-500 hover:text-slate-300'
+          ? 'bg-boss-elevated text-boss-text'
+          : 'text-boss-text-muted hover:text-boss-text-secondary'
       }`}
     >
       {children}
@@ -527,10 +527,10 @@ function MetricItem({
   tone: 'emerald' | 'sky' | 'violet' | 'rose';
 }) {
   const ringColors: Record<typeof tone, string> = {
-    emerald: 'ring-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-    sky: 'ring-sky-500/30 bg-sky-500/10 text-sky-300',
-    violet: 'ring-violet-500/30 bg-violet-500/10 text-violet-300',
-    rose: 'ring-rose-500/30 bg-rose-500/10 text-rose-300',
+    emerald: 'ring-boss-primary/30 bg-boss-primary/10 text-boss-primary',
+    sky: 'ring-boss-info/30 bg-boss-info/10 text-boss-info',
+    violet: 'ring-violet-500/30 bg-violet-500/10 text-violet-400',
+    rose: 'ring-boss-error/30 bg-boss-error/10 text-boss-error',
   };
   return (
     <div className={`rounded-lg p-3 ring-1 ring-inset ${ringColors[tone]}`}>

@@ -35,18 +35,18 @@ export default function BossEventsCoffeePage() {
         ]}
       />
 
-      <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-slate-900/40 p-6">
+      <div className="rounded-2xl border border-boss-warning/20 bg-gradient-to-br from-amber-500/10 to-slate-900/40 p-6">
         <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-amber-500/20 p-3 text-amber-300">
+          <div className="rounded-xl bg-boss-warning/20 p-3 text-boss-warning">
             <Coffee size={28} />
           </div>
           <div className="min-w-0 flex-1">
             <Badge tone="amber">진행 중인 이벤트</Badge>
-            <h2 className="mt-2 text-lg font-bold text-white">도베른 사장님, 커피 한 잔 드려요!</h2>
-            <p className="mt-1 text-sm text-slate-300">
+            <h2 className="mt-2 text-lg font-bold text-boss-text">도베른 사장님, 커피 한 잔 드려요!</h2>
+            <p className="mt-1 text-sm text-boss-text-secondary">
               이벤트에 참여하신 모든 사장님께 추첨을 통해 스타벅스 아메리칸노 쿠폰을 드립니다.
             </p>
-            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-400">
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-boss-text-muted">
               <Calendar size={12} />
               참여 기간: 2024.01.01 ~ 2024.12.31
             </div>
@@ -56,13 +56,13 @@ export default function BossEventsCoffeePage() {
 
       <Card>
         <div className="flex items-center gap-2">
-          <Gift size={18} className="text-emerald-300" />
-          <h2 className="text-sm font-bold text-white">참여 방법</h2>
+          <Gift size={18} className="text-boss-primary" />
+          <h2 className="text-sm font-bold text-boss-text">참여 방법</h2>
         </div>
         <ol className="mt-3 space-y-2.5">
           {HOW_TO.map((text, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-slate-300">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-300">
+            <li key={idx} className="flex items-start gap-2 text-sm text-boss-text-secondary">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-boss-primary/20 text-[10px] font-bold text-boss-primary">
                 {idx + 1}
               </span>
               <span>{text}</span>
@@ -73,13 +73,13 @@ export default function BossEventsCoffeePage() {
 
       <Card>
         <div className="flex items-center gap-2">
-          <AlertCircle size={18} className="text-amber-400" />
-          <h2 className="text-sm font-bold text-white">유의사항</h2>
+          <AlertCircle size={18} className="text-boss-warning" />
+          <h2 className="text-sm font-bold text-boss-text">유의사항</h2>
         </div>
         <ul className="mt-3 space-y-2">
           {NOTICES.map((text, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-slate-400">
-              <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-slate-500" />
+            <li key={idx} className="flex items-start gap-2 text-sm text-boss-text-muted">
+              <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-boss-text-muted" />
               <span>{text}</span>
             </li>
           ))}

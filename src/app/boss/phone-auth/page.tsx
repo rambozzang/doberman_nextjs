@@ -73,32 +73,32 @@ export default function BossPhoneAuthPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/login"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 로그인
         </Link>
-        <h1 className="text-xl font-bold text-white">휴대폰 본인인증</h1>
+        <h1 className="text-xl font-bold text-boss-text">휴대폰 본인인증</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-slate-900/40 p-5">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
         <div className="flex items-start gap-3">
-          <ShieldCheck size={20} className="mt-0.5 shrink-0 text-emerald-300" />
-          <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-300">
+          <ShieldCheck size={20} className="mt-0.5 shrink-0 text-boss-primary" />
+          <div className="min-w-0 flex-1 text-sm leading-relaxed text-boss-text-secondary">
             안전한 서비스 이용을 위해 휴대폰 본인인증이 필요합니다. 입력하신 정보는 인증 목적
             외에 사용되지 않습니다.
           </div>
         </div>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-6">
         <Field label="이름">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="실명을 입력해주세요"
-            className="h-11 w-full rounded-lg border border-slate-700 bg-slate-950/40 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/60 focus:outline-none"
+            className="h-11 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none"
           />
         </Field>
 
@@ -111,7 +111,7 @@ export default function BossPhoneAuthPage() {
               maxLength={8}
               onChange={(e) => setBirth(e.target.value.replace(/\D/g, ''))}
               placeholder="예) 19900101"
-              className="h-11 w-full rounded-lg border border-slate-700 bg-slate-950/40 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/60 focus:outline-none"
+              className="h-11 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none"
             />
           </Field>
         )}
@@ -127,13 +127,13 @@ export default function BossPhoneAuthPage() {
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                 placeholder="- 없이 숫자만 입력"
                 disabled={verified}
-                className="h-11 flex-1 rounded-lg border border-slate-700 bg-slate-950/40 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/60 focus:outline-none disabled:opacity-60"
+                className="h-11 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={sendCode}
                 disabled={verified || phone.length < 10}
-                className="shrink-0 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg border border-boss-primary/20 bg-boss-primary/15 px-3 text-xs font-bold text-boss-primary hover:bg-boss-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Phone size={14} className="mr-1 inline" />
                 {sent ? '재전송' : '인증번호 전송'}
@@ -154,10 +154,10 @@ export default function BossPhoneAuthPage() {
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                   placeholder="6자리 인증번호"
                   disabled={verified}
-                  className="h-11 w-full rounded-lg border border-slate-700 bg-slate-950/40 px-3 pr-16 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/60 focus:outline-none disabled:opacity-60"
+                  className="h-11 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 pr-16 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none disabled:opacity-60"
                 />
                 {!verified && timeLeft > 0 && (
-                  <span className="pointer-events-none absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 text-xs text-emerald-300">
+                  <span className="pointer-events-none absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 text-xs text-boss-primary">
                     <Clock size={12} />
                     {timerText}
                   </span>
@@ -167,7 +167,7 @@ export default function BossPhoneAuthPage() {
                 type="button"
                 onClick={verifyCode}
                 disabled={verified || code.length !== 6}
-                className="shrink-0 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg border border-boss-primary/20 bg-boss-primary/15 px-4 text-xs font-bold text-boss-primary hover:bg-boss-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {verified ? '인증완료' : '확인'}
               </button>
@@ -182,7 +182,7 @@ export default function BossPhoneAuthPage() {
         )}
 
         {verified && (
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+          <div className="flex items-center gap-2 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 py-2 text-xs text-boss-primary">
             <CheckCircle2 size={14} /> 본인인증이 완료되었습니다.
           </div>
         )}
@@ -190,13 +190,13 @@ export default function BossPhoneAuthPage() {
         <button
           type="button"
           disabled={!verified}
-          className="mt-2 h-12 w-full rounded-xl bg-emerald-500 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          className="mt-2 h-12 w-full rounded-xl bg-boss-primary text-sm font-bold text-boss-text transition hover:bg-boss-primary-hover disabled:cursor-not-allowed disabled:bg-boss-elevated disabled:text-boss-text-muted"
         >
           다음 단계로
         </button>
       </div>
 
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-boss-text-muted">
         ※ SMS 발송 연동 전 단계로 입력하신 인증번호는 서버 검증 없이 통과 처리됩니다.
       </p>
     </div>
@@ -206,7 +206,7 @@ export default function BossPhoneAuthPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-slate-300">{label}</label>
+      <label className="text-xs font-semibold text-boss-text-secondary">{label}</label>
       {children}
     </div>
   );

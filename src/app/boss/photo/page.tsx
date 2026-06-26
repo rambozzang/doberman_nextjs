@@ -39,11 +39,11 @@ import {
 function photoTypeBadgeClass(code?: string) {
   switch (code) {
     case 'before':
-      return 'bg-amber-500/20 text-amber-300 ring-amber-500/30';
+      return 'bg-boss-warning/20 text-boss-warning ring-amber-500/30';
     case 'after':
-      return 'bg-emerald-500/20 text-emerald-300 ring-emerald-500/30';
+      return 'bg-boss-primary/20 text-boss-primary ring-boss-primary/30';
     default:
-      return 'bg-sky-500/20 text-sky-300 ring-sky-500/30';
+      return 'bg-boss-info/20 text-boss-info ring-boss-info/30';
   }
 }
 
@@ -59,7 +59,7 @@ function fileToDataUrl(file: File): Promise<string> {
 
 export default function BossPhotoPage() {
   return (
-    <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-white/[0.04]" />}>
+    <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-boss-elevated" />}>
       <BossPhotoInner />
     </Suspense>
   );
@@ -262,17 +262,17 @@ function BossPhotoInner() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="rounded-lg border border-slate-800 bg-slate-900/60 p-1.5 text-slate-300 hover:border-slate-700 hover:text-white"
+              className="rounded-lg border border-boss-border bg-boss-surface p-1.5 text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
               aria-label="뒤로"
             >
               <ArrowLeft size={14} />
             </button>
-            <h1 className="text-2xl font-bold tracking-tight text-white">사진 갤러리</h1>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">사진 갤러리</h1>
+            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
               {items.length}
             </span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-boss-text-muted">
             {customerName ? `${customerName} · ` : ''}
             {customerId ? `고객ID ${customerId}` : 'customerId 쿼리스트링이 필요합니다.'}
           </p>
@@ -280,26 +280,26 @@ function BossPhotoInner() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="파일명·경로 검색"
-              className="h-9 w-56 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
           <button
             type="button"
             onClick={load}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-sm text-emerald-200 hover:bg-emerald-500/20"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-sm text-boss-primary hover:bg-boss-primary/20"
           >
             <Plus size={14} /> 이미지 추가
           </button>
@@ -307,13 +307,13 @@ function BossPhotoInner() {
             type="button"
             onClick={handleSave}
             disabled={saving || !customerId}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/60 bg-emerald-500/20 px-3 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/30 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/60 bg-boss-primary/20 px-3 text-sm font-semibold text-emerald-100 hover:bg-boss-primary/30 disabled:opacity-50"
           >
             <Save size={14} /> {saving ? '저장 중...' : '저장'}
           </button>
           <Link
             href={`/boss/photo/edit?customerId=${encodeURIComponent(customerId)}`}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <Pencil size={14} /> 편집 모드
           </Link>
@@ -321,16 +321,16 @@ function BossPhotoInner() {
       </div>
 
       {/* 필터 탭 (방 카테고리) */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-800">
+      <div className="flex flex-wrap items-center gap-1 border-b border-boss-border">
         <button
           type="button"
           onClick={() => setRoomFilter('all')}
           className={`flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
-            roomFilter === 'all' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+            roomFilter === 'all' ? 'text-boss-text' : 'text-boss-text-muted hover:text-boss-text'
           }`}
         >
           전체
-          <span className="rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300">
+          <span className="rounded-full bg-boss-elevated px-1.5 py-0.5 text-[10px] font-semibold text-boss-text-secondary">
             {counts.all ?? 0}
           </span>
         </button>
@@ -342,13 +342,13 @@ function BossPhotoInner() {
               type="button"
               onClick={() => setRoomFilter(r.code)}
               className={`flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
-                active ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                active ? 'text-boss-text' : 'text-boss-text-muted hover:text-boss-text'
               }`}
             >
               {r.displayName}
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                  active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                  active ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated text-boss-text-muted'
                 }`}
               >
                 {counts[r.code] ?? 0}
@@ -360,14 +360,14 @@ function BossPhotoInner() {
 
       {/* 사진 유형 필터 */}
       <div className="flex flex-wrap items-center gap-2">
-        <Filter size={14} className="text-slate-500" />
+        <Filter size={14} className="text-boss-text-muted" />
         <button
           type="button"
           onClick={() => setTypeFilter('all')}
           className={`rounded-full border px-3 py-1 text-xs ${
             typeFilter === 'all'
-              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
-              : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:text-slate-200'
+              ? 'border-boss-primary/20 bg-boss-primary/10 text-boss-primary'
+              : 'border-boss-border bg-boss-surface text-boss-text-muted hover:text-boss-text'
           }`}
         >
           전체
@@ -379,8 +379,8 @@ function BossPhotoInner() {
             onClick={() => setTypeFilter(t.code)}
             className={`rounded-full border px-3 py-1 text-xs ${
               typeFilter === t.code
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
-                : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:text-slate-200'
+                ? 'border-boss-primary/20 bg-boss-primary/10 text-boss-primary'
+                : 'border-boss-border bg-boss-surface text-boss-text-muted hover:text-boss-text'
             }`}
           >
             {t.displayName}
@@ -389,7 +389,7 @@ function BossPhotoInner() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -400,17 +400,17 @@ function BossPhotoInner() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="aspect-[3/4] animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="aspect-[3/4] animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
             />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">표시할 이미지가 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">상단 &quot;이미지 추가&quot; 로 등록해보세요.</p>
+          <p className="text-sm font-medium text-boss-text">표시할 이미지가 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">상단 &quot;이미지 추가&quot; 로 등록해보세요.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -422,9 +422,9 @@ function BossPhotoInner() {
             return (
               <div
                 key={`${path}-${originIndex}`}
-                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50"
+                className="group relative overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50"
               >
-                <div className="relative aspect-[3/4] w-full bg-slate-950">
+                <div className="relative aspect-[3/4] w-full bg-boss-bg">
                   {isImg ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -433,7 +433,7 @@ function BossPhotoInner() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-slate-600">
+                    <div className="flex h-full w-full items-center justify-center text-boss-text-muted">
                       <ImageIcon size={32} />
                     </div>
                   )}
@@ -444,7 +444,7 @@ function BossPhotoInner() {
                     onClick={() => openEdit(originIndex)}
                     className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-1 text-left backdrop-blur"
                   >
-                    <div className="text-[10px] font-medium text-white">
+                    <div className="text-[10px] font-medium text-boss-text">
                       {getRoomDisplayName(it.roomCategory)}
                     </div>
                     <div
@@ -456,7 +456,7 @@ function BossPhotoInner() {
 
                   {/* 작성일 */}
                   {it.crtDtm && (
-                    <div className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                    <div className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-boss-text">
                       {it.crtDtm.replace('T', ' ').slice(0, 16)}
                     </div>
                   )}
@@ -465,7 +465,7 @@ function BossPhotoInner() {
                   <button
                     type="button"
                     onClick={() => handleDelete(originIndex)}
-                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-rose-500/80"
+                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-boss-text opacity-0 transition-opacity group-hover:opacity-100 hover:bg-boss-error/100/80"
                     aria-label="삭제"
                   >
                     <Trash2 size={14} />
@@ -484,15 +484,15 @@ function BossPhotoInner() {
           onClick={() => setAddOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-boss-border bg-boss-bg p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">이미지 추가</h2>
+              <h2 className="text-lg font-semibold text-boss-text">이미지 추가</h2>
               <button
                 type="button"
                 onClick={() => setAddOpen(false)}
-                className="rounded-md p-1 text-slate-400 hover:text-white"
+                className="rounded-md p-1 text-boss-text-muted hover:text-boss-text"
                 aria-label="닫기"
               >
                 <X size={18} />
@@ -501,11 +501,11 @@ function BossPhotoInner() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">방</label>
+                <label className="mb-1 block text-xs font-medium text-boss-text-muted">방</label>
                 <select
                   value={addRoom}
                   onChange={(e) => setAddRoom(e.target.value as BossRoomCategoryCode)}
-                  className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200"
+                  className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text"
                 >
                   {BOSS_ROOM_CATEGORIES.map((r) => (
                     <option key={r.code} value={r.code}>
@@ -515,11 +515,11 @@ function BossPhotoInner() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">사진 유형</label>
+                <label className="mb-1 block text-xs font-medium text-boss-text-muted">사진 유형</label>
                 <select
                   value={addType}
                   onChange={(e) => setAddType(e.target.value as BossPhotoTypeCode)}
-                  className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200"
+                  className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text"
                 >
                   {BOSS_PHOTO_TYPES.map((t) => (
                     <option key={t.code} value={t.code}>
@@ -529,29 +529,29 @@ function BossPhotoInner() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">파일 선택 (다중)</label>
+                <label className="mb-1 block text-xs font-medium text-boss-text-muted">파일 선택 (다중)</label>
                 <input
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={(e) => handleAddByFile(e.target.files)}
-                  className="block w-full text-xs text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500/20 file:px-3 file:py-1.5 file:text-xs file:text-emerald-200 hover:file:bg-emerald-500/30"
+                  className="block w-full text-xs text-boss-text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-boss-primary/20 file:px-3 file:py-1.5 file:text-xs file:text-boss-primary hover:file:bg-boss-primary/30"
                 />
-                <p className="mt-1 text-[10px] text-slate-500">선택한 파일은 base64 dataURL 로 임시 저장됩니다.</p>
+                <p className="mt-1 text-[10px] text-boss-text-muted">선택한 파일은 base64 dataURL 로 임시 저장됩니다.</p>
               </div>
-              <div className="border-t border-slate-800 pt-3">
-                <label className="mb-1 block text-xs font-medium text-slate-400">또는 이미지 URL 직접 입력</label>
+              <div className="border-t border-boss-border pt-3">
+                <label className="mb-1 block text-xs font-medium text-boss-text-muted">또는 이미지 URL 직접 입력</label>
                 <div className="flex gap-2">
                   <input
                     value={addUrl}
                     onChange={(e) => setAddUrl(e.target.value)}
                     placeholder="https://..."
-                    className="h-9 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200 placeholder:text-slate-500"
+                    className="h-9 flex-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted"
                   />
                   <button
                     type="button"
                     onClick={handleAddByUrl}
-                    className="h-9 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-sm text-emerald-200 hover:bg-emerald-500/20"
+                    className="h-9 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-sm text-boss-primary hover:bg-boss-primary/20"
                   >
                     추가
                   </button>
@@ -569,15 +569,15 @@ function BossPhotoInner() {
           onClick={() => setEditIndex(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-boss-border bg-boss-bg p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">카테고리 변경</h2>
+              <h2 className="text-lg font-semibold text-boss-text">카테고리 변경</h2>
               <button
                 type="button"
                 onClick={() => setEditIndex(null)}
-                className="rounded-md p-1 text-slate-400 hover:text-white"
+                className="rounded-md p-1 text-boss-text-muted hover:text-boss-text"
                 aria-label="닫기"
               >
                 <X size={18} />
@@ -585,11 +585,11 @@ function BossPhotoInner() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">방</label>
+                <label className="mb-1 block text-xs font-medium text-boss-text-muted">방</label>
                 <select
                   value={editRoom}
                   onChange={(e) => setEditRoom(e.target.value as BossRoomCategoryCode)}
-                  className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200"
+                  className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text"
                 >
                   {BOSS_ROOM_CATEGORIES.map((r) => (
                     <option key={r.code} value={r.code}>
@@ -599,11 +599,11 @@ function BossPhotoInner() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">사진 유형</label>
+                <label className="mb-1 block text-xs font-medium text-boss-text-muted">사진 유형</label>
                 <select
                   value={editType}
                   onChange={(e) => setEditType(e.target.value as BossPhotoTypeCode)}
-                  className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200"
+                  className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text"
                 >
                   {BOSS_PHOTO_TYPES.map((t) => (
                     <option key={t.code} value={t.code}>
@@ -616,14 +616,14 @@ function BossPhotoInner() {
                 <button
                   type="button"
                   onClick={() => setEditIndex(null)}
-                  className="h-9 rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-300 hover:text-white"
+                  className="h-9 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
                 >
                   취소
                 </button>
                 <button
                   type="button"
                   onClick={handleApplyEdit}
-                  className="h-9 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/30"
+                  className="h-9 rounded-lg border border-boss-primary/20 bg-boss-primary/20 px-3 text-sm font-semibold text-emerald-100 hover:bg-boss-primary/30"
                 >
                   적용
                 </button>

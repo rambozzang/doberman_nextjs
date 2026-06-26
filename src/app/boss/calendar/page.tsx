@@ -358,53 +358,53 @@ export default function BossCalendarPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">일정 캘린더</h1>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">일정 캘린더</h1>
+            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
               {events.length.toLocaleString()}건
             </span>
           </div>
-          <p className="text-sm text-slate-400">월별 견적/시공/일정을 한눈에 관리하세요.</p>
+          <p className="text-sm text-boss-text-muted">월별 견적/시공/일정을 한눈에 관리하세요.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="제목 검색"
-              className="h-9 w-48 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-9 w-48 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
           <button
             type="button"
             onClick={() => void load()}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/calendar/week"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             주간
           </Link>
           <Link
             href="/boss/calendar/day"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             일간
           </Link>
           <Link
             href="/boss/calendar/alarm"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <Bell size={14} /> 알람
           </Link>
           <button
             type="button"
             onClick={() => openCreate(selectedDate)}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-white hover:bg-emerald-400"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 일정 등록
           </button>
@@ -412,34 +412,34 @@ export default function BossCalendarPage() {
       </div>
 
       {/* 월 네비게이션 */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/40 px-4 py-3">
+      <div className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface px-4 py-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handlePrev}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <ChevronLeft size={16} />
           </button>
-          <h2 className="min-w-[140px] text-center text-lg font-semibold text-white">
+          <h2 className="min-w-[140px] text-center text-lg font-semibold text-boss-text">
             {cursor.getFullYear()}년 {cursor.getMonth() + 1}월
           </h2>
           <button
             type="button"
             onClick={handleNext}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <ChevronRight size={16} />
           </button>
           <button
             type="button"
             onClick={handleToday}
-            className="ml-2 rounded-md border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-700 hover:text-white"
+            className="ml-2 rounded-md border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             오늘
           </button>
         </div>
-        <div className="hidden items-center gap-3 text-xs text-slate-400 md:flex">
+        <div className="hidden items-center gap-3 text-xs text-boss-text-muted md:flex">
           {EVENT_TYPES.map((t) => (
             <span key={t.value} className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
@@ -450,7 +450,7 @@ export default function BossCalendarPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -458,14 +458,14 @@ export default function BossCalendarPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* 캘린더 그리드 */}
         <div className="lg:col-span-2">
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+          <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
             {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-900/60 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="grid grid-cols-7 border-b border-boss-border bg-boss-surface text-xs font-semibold uppercase tracking-wider text-boss-text-muted">
               {WEEK_LABELS.map((w, i) => (
                 <div
                   key={w}
                   className={`px-2 py-2 text-center ${
-                    i === 0 ? 'text-rose-300' : i === 6 ? 'text-sky-300' : ''
+                    i === 0 ? 'text-boss-error' : i === 6 ? 'text-boss-info' : ''
                   }`}
                 >
                   {w}
@@ -488,35 +488,35 @@ export default function BossCalendarPage() {
                     type="button"
                     onClick={() => setSelectedDate(d)}
                     onDoubleClick={() => openCreate(d)}
-                    className={`group relative flex min-h-[96px] flex-col border-b border-r border-slate-800 p-1.5 text-left transition-colors ${
-                      inMonth ? 'bg-slate-900/30' : 'bg-slate-950/40'
-                    } ${isSelected ? 'ring-2 ring-inset ring-emerald-500/60' : ''} hover:bg-slate-800/40`}
+                    className={`group relative flex min-h-[96px] flex-col border-b border-r border-boss-border p-1.5 text-left transition-colors ${
+                      inMonth ? 'bg-boss-surface/30' : 'bg-boss-bg/40'
+                    } ${isSelected ? 'ring-2 ring-inset ring-emerald-500/60' : ''} hover:bg-boss-elevated/40`}
                   >
                     <div className="mb-1 flex items-center justify-between">
                       <span
                         className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ${
                           isToday
-                            ? 'bg-emerald-500 text-white'
+                            ? 'bg-boss-primary text-boss-text'
                             : inMonth
                               ? dow === 0
-                                ? 'text-rose-300'
+                                ? 'text-boss-error'
                                 : dow === 6
-                                  ? 'text-sky-300'
-                                  : 'text-slate-200'
-                              : 'text-slate-600'
+                                  ? 'text-boss-info'
+                                  : 'text-boss-text'
+                              : 'text-boss-text-muted'
                         }`}
                       >
                         {d.getDate()}
                       </span>
                       {dayEvents.length > 0 && (
-                        <span className="text-[10px] text-slate-500">{dayEvents.length}</span>
+                        <span className="text-[10px] text-boss-text-muted">{dayEvents.length}</span>
                       )}
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
                       {dayEvents.slice(0, 3).map((ev) => (
                         <div
                           key={ev.id}
-                          className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white"
+                          className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-boss-text"
                           style={{ backgroundColor: eventColor(ev.eventType) + 'cc' }}
                           title={ev.title ?? ''}
                         >
@@ -524,7 +524,7 @@ export default function BossCalendarPage() {
                         </div>
                       ))}
                       {dayEvents.length > 3 && (
-                        <div className="text-[10px] text-slate-500">+{dayEvents.length - 3}건</div>
+                        <div className="text-[10px] text-boss-text-muted">+{dayEvents.length - 3}건</div>
                       )}
                     </div>
                   </button>
@@ -535,22 +535,22 @@ export default function BossCalendarPage() {
         </div>
 
         {/* 우측 패널: 선택한 날짜 일정 */}
-        <aside className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+        <aside className="rounded-2xl border border-boss-border bg-boss-surface p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
-              <CalendarDays size={14} className="text-emerald-300" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-boss-text">
+              <CalendarDays size={14} className="text-boss-primary" />
               {selectedDate.getFullYear()}.{selectedDate.getMonth() + 1}.{selectedDate.getDate()} 일정
             </h3>
             <button
               type="button"
               onClick={() => openCreate(selectedDate)}
-              className="flex h-7 items-center gap-1 rounded-md border border-slate-800 bg-slate-900 px-2 text-xs text-slate-300 hover:border-emerald-500/40 hover:text-white"
+              className="flex h-7 items-center gap-1 rounded-md border border-boss-border bg-boss-surface px-2 text-xs text-boss-text-secondary hover:border-boss-primary/20 hover:text-boss-text"
             >
               <Plus size={12} /> 추가
             </button>
           </div>
           {selectedEvents.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-800 bg-slate-950/40 px-3 py-6 text-center text-xs text-slate-500">
+            <p className="rounded-lg border border-dashed border-boss-border bg-boss-bg/40 px-3 py-6 text-center text-xs text-boss-text-muted">
               등록된 일정이 없습니다.
             </p>
           ) : (
@@ -566,21 +566,21 @@ export default function BossCalendarPage() {
                 return (
                   <li
                     key={ev.id}
-                    className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 transition-colors hover:border-emerald-500/40"
+                    className="rounded-xl border border-boss-border bg-boss-bg/40 p-3 transition-colors hover:border-boss-primary/20"
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <span
                         className="h-2 w-2 rounded-full"
                         style={{ backgroundColor: eventColor(ev.eventType) }}
                       />
-                      <span className="text-[10px] font-semibold text-slate-400">
+                      <span className="text-[10px] font-semibold text-boss-text-muted">
                         {eventLabel(ev.eventType)}
                       </span>
-                      {ev.isrepeat && <Repeat size={10} className="text-slate-500" />}
-                      {ev.isreminder && <Bell size={10} className="text-amber-300" />}
+                      {ev.isrepeat && <Repeat size={10} className="text-boss-text-muted" />}
+                      {ev.isreminder && <Bell size={10} className="text-boss-warning" />}
                     </div>
-                    <h4 className="mb-1 truncate text-sm font-semibold text-white">{ev.title || '제목 없음'}</h4>
-                    <div className="space-y-1 text-[11px] text-slate-400">
+                    <h4 className="mb-1 truncate text-sm font-semibold text-boss-text">{ev.title || '제목 없음'}</h4>
+                    <div className="space-y-1 text-[11px] text-boss-text-muted">
                       <div className="flex items-center gap-1">
                         <Clock size={10} /> {timeStr}
                       </div>
@@ -599,21 +599,21 @@ export default function BossCalendarPage() {
                       <button
                         type="button"
                         onClick={() => openEdit(ev)}
-                        className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-[10px] text-slate-300 hover:text-white"
+                        className="rounded-md border border-boss-border bg-boss-surface px-2 py-1 text-[10px] text-boss-text-secondary hover:text-boss-text"
                       >
                         수정
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowShare(ev)}
-                        className="flex items-center gap-1 rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-[10px] text-slate-300 hover:text-white"
+                        className="flex items-center gap-1 rounded-md border border-boss-border bg-boss-surface px-2 py-1 text-[10px] text-boss-text-secondary hover:text-boss-text"
                       >
                         <Share2 size={10} /> 공유
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(ev, false)}
-                        className="ml-auto flex items-center gap-1 rounded-md border border-rose-800/40 bg-rose-950/40 px-2 py-1 text-[10px] text-rose-200 hover:bg-rose-900/40"
+                        className="ml-auto flex items-center gap-1 rounded-md border border-rose-800/40 bg-boss-error/10 px-2 py-1 text-[10px] text-boss-error hover:bg-boss-error/10"
                       >
                         <Trash2 size={10} /> 삭제
                       </button>
@@ -621,7 +621,7 @@ export default function BossCalendarPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(ev, true)}
-                          className="rounded-md border border-rose-800/40 bg-rose-950/40 px-2 py-1 text-[10px] text-rose-200 hover:bg-rose-900/40"
+                          className="rounded-md border border-rose-800/40 bg-boss-error/10 px-2 py-1 text-[10px] text-boss-error hover:bg-boss-error/10"
                         >
                           반복전체삭제
                         </button>
@@ -670,15 +670,15 @@ function EventFormModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h3 className="text-base font-semibold text-white">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-boss-border bg-boss-bg shadow-2xl">
+        <div className="flex items-center justify-between border-b border-boss-border px-5 py-4">
+          <h3 className="text-base font-semibold text-boss-text">
             {form.id ? '일정 수정' : '일정 등록'}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-900 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-surface hover:text-boss-text"
           >
             <X size={16} />
           </button>
@@ -687,7 +687,7 @@ function EventFormModal({
         <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {/* 종류 */}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-400">종류</label>
+            <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">종류</label>
             <div className="flex gap-2">
               {EVENT_TYPES.map((t) => (
                 <button
@@ -696,8 +696,8 @@ function EventFormModal({
                   onClick={() => onChange({ ...form, eventType: t.value })}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${
                     form.eventType === t.value
-                      ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-300'
-                      : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                      ? 'border-emerald-500/60 bg-boss-primary/10 text-boss-primary'
+                      : 'border-boss-border bg-boss-surface text-boss-text-muted hover:text-boss-text'
                   }`}
                 >
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
@@ -709,17 +709,17 @@ function EventFormModal({
 
           {/* 제목 */}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-400">제목 *</label>
+            <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">제목 *</label>
             <input
               value={form.title}
               onChange={(e) => onChange({ ...form, title: e.target.value })}
               placeholder="일정 제목"
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
             />
           </div>
 
           {/* 종일 */}
-          <label className="flex items-center gap-2 text-xs text-slate-300">
+          <label className="flex items-center gap-2 text-xs text-boss-text-secondary">
             <input
               type="checkbox"
               checked={form.isAllDay}
@@ -732,72 +732,72 @@ function EventFormModal({
           {/* 시작 / 종료 */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-400">시작일</label>
+              <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">시작일</label>
               <input
                 type="date"
                 value={form.startDate}
                 onChange={(e) => onChange({ ...form, startDate: e.target.value })}
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-400">시작시간</label>
+              <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">시작시간</label>
               <input
                 type="time"
                 value={form.startTime}
                 disabled={form.isAllDay}
                 onChange={(e) => onChange({ ...form, startTime: e.target.value })}
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none disabled:opacity-40"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none disabled:opacity-40"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-400">종료일</label>
+              <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">종료일</label>
               <input
                 type="date"
                 value={form.endDate}
                 onChange={(e) => onChange({ ...form, endDate: e.target.value })}
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-400">종료시간</label>
+              <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">종료시간</label>
               <input
                 type="time"
                 value={form.endTime}
                 disabled={form.isAllDay}
                 onChange={(e) => onChange({ ...form, endTime: e.target.value })}
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none disabled:opacity-40"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none disabled:opacity-40"
               />
             </div>
           </div>
 
           {/* 위치 / 전화 */}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-400">
+            <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">
               <MapPin size={12} className="-mt-0.5 mr-1 inline" /> 장소
             </label>
             <input
               value={form.location}
               onChange={(e) => onChange({ ...form, location: e.target.value })}
               placeholder="장소"
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-400">
+            <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">
               <Phone size={12} className="-mt-0.5 mr-1 inline" /> 전화
             </label>
             <input
               value={form.phone}
               onChange={(e) => onChange({ ...form, phone: e.target.value })}
               placeholder="010-0000-0000"
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
             />
           </div>
 
           {/* 메모 */}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-400">
+            <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">
               <AlignLeft size={12} className="-mt-0.5 mr-1 inline" /> 메모
             </label>
             <textarea
@@ -805,13 +805,13 @@ function EventFormModal({
               onChange={(e) => onChange({ ...form, description: e.target.value })}
               rows={3}
               placeholder="설명"
-              className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+              className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
             />
           </div>
 
           {/* 반복 / 알람 */}
           <div className="grid grid-cols-2 gap-3">
-            <label className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 p-3 text-xs text-slate-300">
+            <label className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface p-3 text-xs text-boss-text-secondary">
               <input
                 type="checkbox"
                 checked={form.isRepeat}
@@ -820,7 +820,7 @@ function EventFormModal({
               />
               <Repeat size={12} /> 반복
             </label>
-            <label className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 p-3 text-xs text-slate-300">
+            <label className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface p-3 text-xs text-boss-text-secondary">
               <input
                 type="checkbox"
                 checked={form.isReminder}
@@ -832,11 +832,11 @@ function EventFormModal({
           </div>
           {form.isRepeat && (
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-400">반복 종류</label>
+              <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">반복 종류</label>
               <select
                 value={form.repeatType}
                 onChange={(e) => onChange({ ...form, repeatType: e.target.value as RepeatType })}
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               >
                 {REPEAT_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -848,11 +848,11 @@ function EventFormModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-5 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-boss-border px-5 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white"
+            className="rounded-lg border border-boss-border bg-boss-surface px-4 py-2 text-xs font-semibold text-boss-text-secondary hover:text-boss-text"
           >
             취소
           </button>
@@ -860,7 +860,7 @@ function EventFormModal({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-boss-primary px-4 py-2 text-xs font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-50"
           >
             <Save size={12} /> {saving ? '저장 중...' : '저장'}
           </button>
@@ -939,49 +939,49 @@ function ShareModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h3 className="flex items-center gap-2 text-base font-semibold text-white">
-            <Share2 size={16} className="text-emerald-300" /> 일정 공유
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-boss-border bg-boss-bg shadow-2xl">
+        <div className="flex items-center justify-between border-b border-boss-border px-5 py-4">
+          <h3 className="flex items-center gap-2 text-base font-semibold text-boss-text">
+            <Share2 size={16} className="text-boss-primary" /> 일정 공유
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-900 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-surface hover:text-boss-text"
           >
             <X size={16} />
           </button>
         </div>
         <div className="space-y-4 px-5 py-4">
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
-            <p className="text-xs text-slate-500">대상 일정</p>
-            <p className="text-sm font-semibold text-white">{event.title || '제목 없음'}</p>
+          <div className="rounded-lg border border-boss-border bg-boss-surface p-3">
+            <p className="text-xs text-boss-text-muted">대상 일정</p>
+            <p className="text-sm font-semibold text-boss-text">{event.title || '제목 없음'}</p>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-400">공유할 사용자 ID</label>
+            <label className="mb-1.5 block text-xs font-semibold text-boss-text-muted">공유할 사용자 ID</label>
             <div className="flex gap-2">
               <input
                 value={receiveUserId}
                 onChange={(e) => setReceiveUserId(e.target.value)}
                 placeholder="userId"
-                className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleShare}
                 disabled={submitting}
-                className="rounded-lg bg-emerald-500 px-4 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+                className="rounded-lg bg-boss-primary px-4 text-xs font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-50"
               >
                 공유
               </button>
             </div>
           </div>
           <div>
-            <p className="mb-2 text-xs font-semibold text-slate-400">공유된 사용자</p>
+            <p className="mb-2 text-xs font-semibold text-boss-text-muted">공유된 사용자</p>
             {loading ? (
-              <p className="text-xs text-slate-500">불러오는 중...</p>
+              <p className="text-xs text-boss-text-muted">불러오는 중...</p>
             ) : users.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-slate-800 bg-slate-950/40 px-3 py-4 text-center text-xs text-slate-500">
+              <p className="rounded-lg border border-dashed border-boss-border bg-boss-bg/40 px-3 py-4 text-center text-xs text-boss-text-muted">
                 공유된 사용자가 없습니다.
               </p>
             ) : (
@@ -989,14 +989,14 @@ function ShareModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
                 {users.map((u, idx) => (
                   <li
                     key={`${u.userId ?? u.id ?? idx}`}
-                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-300"
+                    className="flex items-center justify-between rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-xs text-boss-text-secondary"
                   >
                     <span>{u.userName ?? u.userId ?? u.receiveUserId ?? '-'}</span>
                     {(u.userId ?? u.receiveUserId) && (
                       <button
                         type="button"
                         onClick={() => handleRemove(u.userId ?? u.receiveUserId ?? '')}
-                        className="rounded-md border border-rose-800/40 bg-rose-950/40 px-2 py-1 text-[10px] text-rose-200 hover:bg-rose-900/40"
+                        className="rounded-md border border-rose-800/40 bg-boss-error/10 px-2 py-1 text-[10px] text-boss-error hover:bg-boss-error/10"
                       >
                         해제
                       </button>

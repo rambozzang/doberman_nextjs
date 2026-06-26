@@ -219,7 +219,7 @@ function BossAsAddForm() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center text-slate-400">
+      <div className="flex h-64 items-center justify-center text-boss-text-muted">
         <Loader2 size={24} className="animate-spin" />
       </div>
     );
@@ -232,17 +232,17 @@ function BossAsAddForm() {
         <div className="flex items-center gap-2">
           <Link
             href={isEditMode ? `/boss/as/${editId}` : '/boss/as'}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ArrowLeft size={16} />
           </Link>
-          <h1 className="text-xl font-bold text-white">{isEditMode ? 'AS 요청 수정' : 'AS 요청 등록'}</h1>
+          <h1 className="text-xl font-bold text-boss-text">{isEditMode ? 'AS 요청 수정' : 'AS 요청 등록'}</h1>
         </div>
         <button
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-200 hover:border-emerald-400 hover:text-white disabled:opacity-50"
+          className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-emerald-400 hover:text-boss-text disabled:opacity-50"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           저장
@@ -250,11 +250,11 @@ function BossAsAddForm() {
       </div>
 
       {/* 하자 사진 섹션 */}
-      <section className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="space-y-2 rounded-2xl border border-boss-border bg-boss-surface p-4">
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-1.5 text-sm font-bold text-rose-300">
+          <h2 className="flex items-center gap-1.5 text-sm font-bold text-boss-error">
             <ImageIcon size={14} /> 하자 사진
-            <span className="text-xs text-slate-500">{defectImages.length}/10</span>
+            <span className="text-xs text-boss-text-muted">{defectImages.length}/10</span>
           </h2>
         </div>
 
@@ -265,13 +265,13 @@ function BossAsAddForm() {
             value={imageInput}
             onChange={(e) => setImageInput(e.target.value)}
             placeholder="이미지 URL 추가 (https://...)"
-            className="h-9 flex-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="h-9 flex-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
           <button
             type="button"
             onClick={addImageUrl}
             disabled={defectImages.length >= 10}
-            className="h-9 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-200 hover:border-emerald-400 disabled:opacity-50"
+            className="h-9 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-emerald-400 disabled:opacity-50"
           >
             추가
           </button>
@@ -279,7 +279,7 @@ function BossAsAddForm() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={defectImages.length >= 10}
-            className="h-9 rounded-lg border border-slate-700 bg-slate-800 px-3 text-xs font-bold text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-50"
+            className="h-9 rounded-lg border border-boss-border bg-boss-elevated px-3 text-xs font-bold text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             파일
           </button>
@@ -302,12 +302,12 @@ function BossAsAddForm() {
                 <img
                   src={url}
                   alt={`하자 ${idx + 1}`}
-                  className="h-full w-full rounded-lg border border-slate-800 object-cover"
+                  className="h-full w-full rounded-lg border border-boss-border object-cover"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}
-                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white shadow"
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-boss-error/100 text-boss-text shadow"
                   aria-label="삭제"
                 >
                   <X size={12} />
@@ -319,7 +319,7 @@ function BossAsAddForm() {
       </section>
 
       {/* 메인 폼 */}
-      <section className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="space-y-3 rounded-2xl border border-boss-border bg-boss-surface p-4">
         {/* 주문 ID 연결 */}
         <div>
           <label className="mb-1 block text-xs font-semibold text-pink-300">주문 ID 연결 (선택)</label>
@@ -328,7 +328,7 @@ function BossAsAddForm() {
             value={orderId ?? ''}
             onChange={(e) => setOrderId(e.target.value ? Number(e.target.value) : null)}
             placeholder="연결할 주문 ID"
-            className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
         </div>
 
@@ -342,11 +342,11 @@ function BossAsAddForm() {
               type="date"
               value={requestDate}
               onChange={(e) => setRequestDate(e.target.value)}
-              className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 focus:border-emerald-500/50 focus:outline-none"
+              className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-400">우선순위</label>
+            <label className="mb-1 block text-xs font-semibold text-boss-text-muted">우선순위</label>
             <div className="flex gap-1">
               {PRIORITIES.map((p) => (
                 <button
@@ -355,8 +355,8 @@ function BossAsAddForm() {
                   onClick={() => setPriority(p)}
                   className={`h-9 rounded-md px-3 text-xs font-bold ${
                     priority === p
-                      ? 'bg-white text-black'
-                      : 'border border-slate-700 bg-slate-900 text-slate-300 hover:text-white'
+                      ? 'bg-boss-surface text-boss-text'
+                      : 'border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text'
                   }`}
                 >
                   {p}
@@ -368,65 +368,65 @@ function BossAsAddForm() {
 
         {/* 제목 */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-400">
-            제목 <span className="text-rose-400">*</span>
+          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">
+            제목 <span className="text-boss-error">*</span>
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="AS 요청 제목"
-            className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-base font-bold text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-base font-bold text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
         </div>
 
         {/* 고객명 */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-400">
-            고객명 <span className="text-rose-400">*</span>
+          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">
+            고객명 <span className="text-boss-error">*</span>
           </label>
           <input
             type="text"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="고객명"
-            className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
         </div>
 
         {/* 전화 */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-400">전화번호</label>
+          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">전화번호</label>
           <input
             type="tel"
             value={customerPhone}
             onChange={(e) => setCustomerPhone(e.target.value)}
             placeholder="010-0000-0000"
-            className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
         </div>
 
         {/* 주소 */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-400">주소</label>
+          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">주소</label>
           <input
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="주소 입력"
-            className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
         </div>
 
         {/* 하자 설명 */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-400">하자 설명</label>
+          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">하자 설명</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             placeholder="하자 내용을 자세히 설명해주세요"
-            className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none"
+            className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
           />
         </div>
       </section>
@@ -439,7 +439,7 @@ export default function BossAsAddPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-64 items-center justify-center text-slate-400">
+        <div className="flex h-64 items-center justify-center text-boss-text-muted">
           <Loader2 size={24} className="animate-spin" />
         </div>
       }

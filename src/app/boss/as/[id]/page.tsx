@@ -38,28 +38,28 @@ function formatDate(input?: string | null): string {
 function statusColor(status: string): string {
   switch (status) {
     case '접수':
-      return 'bg-sky-500/10 text-sky-300 ring-sky-500/30';
+      return 'bg-boss-info/10 text-boss-info ring-boss-info/30';
     case '진행중':
-      return 'bg-amber-500/10 text-amber-300 ring-amber-500/30';
+      return 'bg-boss-warning/10 text-boss-warning ring-amber-500/30';
     case '완료':
-      return 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30';
+      return 'bg-boss-primary/10 text-boss-primary ring-boss-primary/30';
     case '취소':
-      return 'bg-slate-700/40 text-slate-300 ring-slate-600/30';
+      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
     default:
-      return 'bg-slate-700/40 text-slate-300 ring-slate-600/30';
+      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
   }
 }
 
 function priorityColor(priority: string): string {
   switch (priority) {
     case '긴급':
-      return 'bg-rose-500/15 text-rose-300 ring-rose-500/30';
+      return 'bg-boss-error/100/15 text-boss-error ring-boss-error/30';
     case '보통':
-      return 'bg-slate-700/40 text-slate-300 ring-slate-600/30';
+      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
     case '낮음':
-      return 'bg-slate-700/30 text-slate-400 ring-slate-700/30';
+      return 'bg-boss-elevated/30 text-boss-text-muted ring-boss-border/30';
     default:
-      return 'bg-slate-700/40 text-slate-300 ring-slate-600/30';
+      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
   }
 }
 
@@ -153,7 +153,7 @@ export default function BossAsDetailPage() {
 
   if (loading && !item) {
     return (
-      <div className="flex h-64 items-center justify-center text-slate-400">
+      <div className="flex h-64 items-center justify-center text-boss-text-muted">
         <Loader2 size={24} className="animate-spin" />
       </div>
     );
@@ -162,10 +162,10 @@ export default function BossAsDetailPage() {
   if (error || !item) {
     return (
       <div className="space-y-3">
-        <Link href="/boss/as" className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white">
+        <Link href="/boss/as" className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text">
           <ArrowLeft size={14} /> 목록으로
         </Link>
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-4 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-4 text-sm text-boss-error">
           {error || '데이터를 찾을 수 없습니다.'}
         </div>
       </div>
@@ -184,11 +184,11 @@ export default function BossAsDetailPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/boss/as"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ArrowLeft size={16} />
           </Link>
-          <h1 className="text-xl font-bold text-white">AS 요청 내용</h1>
+          <h1 className="text-xl font-bold text-boss-text">AS 요청 내용</h1>
         </div>
         <div className="flex items-center gap-2">
           {!isClosed && next && (
@@ -196,7 +196,7 @@ export default function BossAsDetailPage() {
               type="button"
               onClick={() => handleChangeStatus(next.next)}
               disabled={statusChanging}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-200 hover:border-emerald-400 hover:text-white disabled:opacity-50"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-emerald-400 hover:text-boss-text disabled:opacity-50"
             >
               {statusChanging ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
               {next.label}
@@ -204,7 +204,7 @@ export default function BossAsDetailPage() {
           )}
           <Link
             href={`/boss/as/new?id=${encodeURIComponent(item.id)}`}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-3 text-xs font-bold text-indigo-200 hover:border-indigo-400 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-3 text-xs font-bold text-indigo-200 hover:border-indigo-400 hover:text-boss-text"
           >
             <Pencil size={12} /> 수정
           </Link>
@@ -212,7 +212,7 @@ export default function BossAsDetailPage() {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-rose-700/50 bg-rose-950/40 px-3 text-xs font-bold text-rose-200 hover:border-rose-500 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-error/30 bg-boss-error/10 px-3 text-xs font-bold text-boss-error hover:border-rose-500 disabled:opacity-50"
           >
             {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} 삭제
           </button>
@@ -235,63 +235,63 @@ export default function BossAsDetailPage() {
       </div>
 
       {/* 메인 정보 카드 */}
-      <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+      <div className="space-y-2 rounded-2xl border border-boss-border bg-boss-surface p-4">
         {/* 요청일 */}
-        <div className="flex items-center gap-2 rounded-lg bg-slate-900/60 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg bg-boss-surface px-3 py-2">
           <span className="text-xs font-bold text-indigo-300">요청</span>
-          <span className="text-sm font-bold text-slate-100">{formatDate(item.requestDate)}</span>
-          <span className="ml-auto text-xs font-bold text-slate-300">{item.status}</span>
+          <span className="text-sm font-bold text-boss-text">{formatDate(item.requestDate)}</span>
+          <span className="ml-auto text-xs font-bold text-boss-text-secondary">{item.status}</span>
         </div>
 
         {/* 완료일 */}
         {item.completedDate && (
-          <div className="flex items-center gap-2 rounded-lg bg-slate-900/60 px-3 py-2">
-            <span className="text-xs font-bold text-emerald-300">완료</span>
-            <span className="text-sm font-bold text-slate-100">{formatDate(item.completedDate)}</span>
+          <div className="flex items-center gap-2 rounded-lg bg-boss-surface px-3 py-2">
+            <span className="text-xs font-bold text-boss-primary">완료</span>
+            <span className="text-sm font-bold text-boss-text">{formatDate(item.completedDate)}</span>
           </div>
         )}
 
         {/* 제목 */}
-        <div className="rounded-lg bg-slate-900/60 px-3 py-2">
-          <h2 className="text-base font-bold text-white">{item.title}</h2>
+        <div className="rounded-lg bg-boss-surface px-3 py-2">
+          <h2 className="text-base font-bold text-boss-text">{item.title}</h2>
         </div>
 
         {/* 고객 정보 */}
-        <div className="space-y-1.5 rounded-lg bg-slate-900/60 px-3 py-2 text-sm">
+        <div className="space-y-1.5 rounded-lg bg-boss-surface px-3 py-2 text-sm">
           <div className="flex items-center gap-2">
-            <User size={12} className="text-slate-500" />
-            <span className="w-12 text-xs text-slate-500">고객명</span>
-            <span className="font-medium text-slate-100">{item.customerName}</span>
+            <User size={12} className="text-boss-text-muted" />
+            <span className="w-12 text-xs text-boss-text-muted">고객명</span>
+            <span className="font-medium text-boss-text">{item.customerName}</span>
           </div>
           {item.customerPhone && (
             <div className="flex items-center gap-2">
-              <Phone size={12} className="text-slate-500" />
-              <span className="w-12 text-xs text-slate-500">전화</span>
-              <a href={`tel:${item.customerPhone}`} className="font-medium text-slate-100 hover:text-emerald-300">
+              <Phone size={12} className="text-boss-text-muted" />
+              <span className="w-12 text-xs text-boss-text-muted">전화</span>
+              <a href={`tel:${item.customerPhone}`} className="font-medium text-boss-text hover:text-boss-primary">
                 {item.customerPhone}
               </a>
             </div>
           )}
           {item.address && (
             <div className="flex items-start gap-2">
-              <MapPin size={12} className="mt-1 text-slate-500" />
-              <span className="w-12 text-xs text-slate-500">주소</span>
-              <span className="font-medium text-slate-100">{item.address}</span>
+              <MapPin size={12} className="mt-1 text-boss-text-muted" />
+              <span className="w-12 text-xs text-boss-text-muted">주소</span>
+              <span className="font-medium text-boss-text">{item.address}</span>
             </div>
           )}
         </div>
 
         {/* 설명 */}
         {item.description && (
-          <div className="rounded-lg bg-slate-900/60 px-3 py-2">
-            <p className="mb-1 text-xs text-slate-500">하자 설명</p>
-            <p className="whitespace-pre-line text-sm text-slate-200">{item.description}</p>
+          <div className="rounded-lg bg-boss-surface px-3 py-2">
+            <p className="mb-1 text-xs text-boss-text-muted">하자 설명</p>
+            <p className="whitespace-pre-line text-sm text-boss-text">{item.description}</p>
           </div>
         )}
 
         {/* 주문 연결 */}
         {item.orderId != null && (
-          <div className="flex items-center gap-2 rounded-lg bg-slate-900/60 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-lg bg-boss-surface px-3 py-2">
             <Receipt size={14} className="text-indigo-300" />
             <span className="text-sm font-semibold text-indigo-300">주문 #{item.orderId} 연결됨</span>
           </div>
@@ -299,13 +299,13 @@ export default function BossAsDetailPage() {
       </div>
 
       {/* 이미지 탭 */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-2">
+      <div className="rounded-2xl border border-boss-border bg-boss-surface p-2">
         <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
             onClick={() => setTab('defect')}
             className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-              tab === 'defect' ? 'bg-white text-black' : 'text-slate-300 hover:text-white'
+              tab === 'defect' ? 'bg-boss-surface text-boss-text' : 'text-boss-text-secondary hover:text-boss-text'
             }`}
           >
             <ImageIcon size={12} /> 하자 {defectImages.length}
@@ -314,7 +314,7 @@ export default function BossAsDetailPage() {
             type="button"
             onClick={() => setTab('repair')}
             className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-              tab === 'repair' ? 'bg-white text-black' : 'text-slate-300 hover:text-white'
+              tab === 'repair' ? 'bg-boss-surface text-boss-text' : 'text-boss-text-secondary hover:text-boss-text'
             }`}
           >
             <Wrench size={12} /> 수리 {repairImages.length}
@@ -334,9 +334,9 @@ export default function BossAsDetailPage() {
 function ImageGrid({ images, emptyMessage }: { images: string[]; emptyMessage: string }) {
   if (images.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-12 text-center">
-        <ImageIcon size={28} className="mb-2 text-slate-600" />
-        <p className="text-sm text-slate-500">{emptyMessage}</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-12 text-center">
+        <ImageIcon size={28} className="mb-2 text-boss-text-muted" />
+        <p className="text-sm text-boss-text-muted">{emptyMessage}</p>
       </div>
     );
   }
@@ -349,7 +349,7 @@ function ImageGrid({ images, emptyMessage }: { images: string[]; emptyMessage: s
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block aspect-square overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40"
+          className="block aspect-square overflow-hidden rounded-lg border border-boss-border bg-boss-surface"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={url} alt={`AS 이미지 ${idx + 1}`} className="h-full w-full object-cover" />

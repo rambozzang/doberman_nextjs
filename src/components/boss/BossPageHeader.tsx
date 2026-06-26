@@ -15,15 +15,15 @@ export default function BossPageHeader({ title, description, backHref, actions }
         {backHref && (
           <Link
             href={backHref}
-            className="mt-1 rounded p-1 text-slate-300 hover:bg-slate-800 hover:text-white"
+            className="mt-1 rounded p-1 text-boss-text-secondary hover:bg-boss-elevated hover:text-boss-text"
             aria-label="뒤로"
           >
             <ChevronLeft size={20} />
           </Link>
         )}
         <div>
-          <h1 className="text-2xl font-bold text-white">{title}</h1>
-          {description && <p className="mt-1 text-sm text-slate-400">{description}</p>}
+          <h1 className="text-2xl font-bold text-boss-text">{title}</h1>
+          {description && <p className="mt-1 text-sm text-boss-text-muted">{description}</p>}
         </div>
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

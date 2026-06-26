@@ -73,22 +73,22 @@ export default function BossOnboardingPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 홈
         </Link>
-        <h1 className="text-xl font-bold text-white">시작 가이드</h1>
+        <h1 className="text-xl font-bold text-boss-text">시작 가이드</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-slate-900/40 p-6">
-        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-6">
+        <div className="flex items-center gap-2 text-xs font-semibold text-boss-primary">
           <CheckCircle2 size={14} /> WELCOME
         </div>
-        <h2 className="mt-2 text-lg font-bold text-white">
+        <h2 className="mt-2 text-lg font-bold text-boss-text">
           도베르만에 오신 것을 환영합니다!
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+        <p className="mt-2 text-sm leading-relaxed text-boss-text-secondary">
           아래 6단계만 따라하시면 견적, 일정, 결제, 고객 관리를 한 번에 시작하실 수 있어요.
         </p>
       </div>
@@ -98,34 +98,34 @@ export default function BossOnboardingPage() {
           <li key={no}>
             <Link
               href={href ?? '#'}
-              className="group flex items-start gap-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-5 transition hover:border-emerald-500/40 hover:bg-slate-900/60"
+              className="group flex items-start gap-4 rounded-2xl border border-boss-border bg-boss-surface p-5 transition hover:border-boss-primary/20 hover:bg-boss-surface"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-boss-primary/15 text-sm font-bold text-boss-primary">
                 {no}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-sm font-bold text-white">
-                  <Icon size={16} className="text-emerald-300" />
+                <div className="flex items-center gap-2 text-sm font-bold text-boss-text">
+                  <Icon size={16} className="text-boss-primary" />
                   {title}
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-slate-400">{description}</p>
+                <p className="mt-1 text-xs leading-relaxed text-boss-text-muted">{description}</p>
               </div>
               <ArrowRight
                 size={16}
-                className="mt-1 shrink-0 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-300"
+                className="mt-1 shrink-0 text-boss-text-muted transition group-hover:translate-x-0.5 group-hover:text-boss-primary"
               />
             </Link>
           </li>
         ))}
       </ol>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 text-center">
-        <p className="text-xs text-slate-400">
+      <div className="rounded-2xl border border-boss-border bg-boss-surface p-5 text-center">
+        <p className="text-xs text-boss-text-muted">
           이미 가이드를 완료하셨나요? 도움말에서 더 많은 팁을 확인하세요.
         </p>
         <Link
           href="/boss/help"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-4 py-2 text-xs font-semibold text-boss-primary hover:bg-boss-primary/20"
         >
           도움말로 이동 <ArrowRight size={12} />
         </Link>

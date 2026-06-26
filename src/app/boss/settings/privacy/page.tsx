@@ -54,22 +54,22 @@ export default function BossPrivacyPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/settings"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 설정
         </Link>
-        <h1 className="text-xl font-bold text-white">개인정보 처리방침</h1>
+        <h1 className="text-xl font-bold text-boss-text">개인정보 처리방침</h1>
         <div className="w-10" />
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-        <div className="border-b border-slate-800 pb-3 text-xs text-slate-400">
+      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-6">
+        <div className="border-b border-boss-border pb-3 text-xs text-boss-text-muted">
           시행일: 2024년 1월 1일
         </div>
         {PRIVACY_SECTIONS.map((sec) => (
           <section key={sec.title} className="space-y-2">
-            <h2 className="text-sm font-bold text-emerald-300">{sec.title}</h2>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">
+            <h2 className="text-sm font-bold text-boss-primary">{sec.title}</h2>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-boss-text-secondary">
               {sec.body}
             </p>
           </section>

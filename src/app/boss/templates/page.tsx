@@ -227,10 +227,10 @@ export default function BossTemplatesPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <FileText size={22} className="text-emerald-400" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">답변 템플릿</h1>
+            <FileText size={22} className="text-boss-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">답변 템플릿</h1>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-boss-text-muted">
             웹 견적서 답변에 자주 사용하는 문구를 템플릿으로 저장해 두고 한 번에 불러오세요.
           </p>
         </div>
@@ -239,14 +239,14 @@ export default function BossTemplatesPage() {
             type="button"
             onClick={load}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <button
             type="button"
             onClick={() => openCreate()}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-medium text-white hover:bg-emerald-600"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-medium text-boss-text hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 템플릿 추가
           </button>
@@ -255,22 +255,22 @@ export default function BossTemplatesPage() {
 
       {/* 안내 + 통계 */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-          <div className="text-[11px] font-semibold uppercase text-slate-500">전체</div>
-          <div className="mt-1 text-2xl font-bold text-white">{stats.total}</div>
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-4">
+          <div className="text-[11px] font-semibold uppercase text-boss-text-muted">전체</div>
+          <div className="mt-1 text-2xl font-bold text-boss-text">{stats.total}</div>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-          <div className="text-[11px] font-semibold uppercase text-slate-500">기본 템플릿</div>
-          <div className="mt-1 text-2xl font-bold text-slate-200">{stats.def}</div>
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-4">
+          <div className="text-[11px] font-semibold uppercase text-boss-text-muted">기본 템플릿</div>
+          <div className="mt-1 text-2xl font-bold text-boss-text">{stats.def}</div>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-          <div className="text-[11px] font-semibold uppercase text-slate-500">사용자 템플릿</div>
-          <div className="mt-1 text-2xl font-bold text-emerald-300">{stats.user}</div>
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-4">
+          <div className="text-[11px] font-semibold uppercase text-boss-text-muted">사용자 템플릿</div>
+          <div className="mt-1 text-2xl font-bold text-boss-primary">{stats.user}</div>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -281,21 +281,21 @@ export default function BossTemplatesPage() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="h-24 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
             />
           ))}
         </div>
       ) : templates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">등록된 템플릿이 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">새 템플릿을 추가해 보세요.</p>
+          <p className="text-sm font-medium text-boss-text">등록된 템플릿이 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">새 템플릿을 추가해 보세요.</p>
           <button
             type="button"
             onClick={() => openCreate()}
-            className="mt-4 flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"
+            className="mt-4 flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-medium text-boss-text hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 템플릿 추가
           </button>
@@ -305,15 +305,15 @@ export default function BossTemplatesPage() {
           {templates.map((t, idx) => (
             <li
               key={String(t.id) || `tpl-${idx}`}
-              className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 transition hover:border-emerald-500/40"
+              className="rounded-2xl border border-boss-border bg-boss-surface/50 p-4 transition hover:border-boss-primary/20"
             >
               <div className="flex items-start gap-3">
                 {/* 인덱스 / 잠금 아이콘 */}
                 <div
                   className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${
                     t.isDefault
-                      ? 'border-slate-700 bg-slate-800/70 text-slate-400'
-                      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                      ? 'border-boss-border bg-boss-elevated/70 text-boss-text-muted'
+                      : 'border-boss-primary/30 bg-boss-primary/10 text-boss-primary'
                   }`}
                 >
                   {t.isDefault ? <Lock size={14} /> : idx + 1}
@@ -326,15 +326,15 @@ export default function BossTemplatesPage() {
                   className="flex-1 min-w-0 text-left"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-semibold text-white">{t.name}</span>
+                    <span className="truncate text-sm font-semibold text-boss-text">{t.name}</span>
                     {t.isDefault && (
-                      <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
+                      <span className="rounded bg-boss-elevated px-1.5 py-0.5 text-[10px] text-boss-text-muted">
                         기본
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 truncate text-xs text-slate-400">{t.title}</div>
-                  <div className="mt-2 line-clamp-2 whitespace-pre-wrap text-xs text-slate-500">
+                  <div className="mt-1 truncate text-xs text-boss-text-muted">{t.title}</div>
+                  <div className="mt-2 line-clamp-2 whitespace-pre-wrap text-xs text-boss-text-muted">
                     {t.content ? t.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : ''}
                   </div>
                 </button>
@@ -345,7 +345,7 @@ export default function BossTemplatesPage() {
                     type="button"
                     title="미리보기"
                     onClick={() => setPreviewTarget(t)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text"
                   >
                     <Eye size={14} />
                   </button>
@@ -353,7 +353,7 @@ export default function BossTemplatesPage() {
                     type="button"
                     title="복제"
                     onClick={() => duplicate(t)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-emerald-300 hover:border-emerald-500/40"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-primary hover:border-boss-primary/20"
                   >
                     <Copy size={14} />
                   </button>
@@ -362,7 +362,7 @@ export default function BossTemplatesPage() {
                       type="button"
                       title="수정"
                       onClick={() => openEdit(t)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-sky-300 hover:border-sky-500/40"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-info hover:border-sky-500/40"
                     >
                       <Pencil size={14} />
                     </button>
@@ -372,7 +372,7 @@ export default function BossTemplatesPage() {
                       type="button"
                       title="삭제"
                       onClick={() => handleDelete(t)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-800/60 bg-rose-950/30 text-rose-300 hover:bg-rose-950/60"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-800/60 bg-rose-950/30 text-boss-error hover:bg-rose-950/60"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -391,23 +391,23 @@ export default function BossTemplatesPage() {
           onClick={() => setPreviewTarget(null)}
         >
           <div
-            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl"
+            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-boss-border bg-boss-bg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 border-b border-slate-800 px-5 py-4">
-              <Eye size={18} className="text-emerald-400" />
-              <h2 className="flex-1 truncate text-base font-semibold text-white">
+            <div className="flex items-center gap-2 border-b border-boss-border px-5 py-4">
+              <Eye size={18} className="text-boss-primary" />
+              <h2 className="flex-1 truncate text-base font-semibold text-boss-text">
                 {previewTarget.name}
               </h2>
               {previewTarget.isDefault && (
-                <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
+                <span className="rounded bg-boss-elevated px-1.5 py-0.5 text-[10px] text-boss-text-muted">
                   기본
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => setPreviewTarget(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
               >
                 <X size={16} />
               </button>
@@ -415,35 +415,35 @@ export default function BossTemplatesPage() {
 
             <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5">
               <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase text-slate-500">
+                <div className="mb-1.5 text-[11px] font-semibold uppercase text-boss-text-muted">
                   제목
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100">
+                <div className="rounded-lg border border-boss-border bg-boss-surface px-3 py-2.5 text-sm text-boss-text">
                   {previewTarget.title}
                 </div>
               </div>
               <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase text-slate-500">
+                <div className="mb-1.5 text-[11px] font-semibold uppercase text-boss-text-muted">
                   내용
                 </div>
                 {looksLikePlainText(previewTarget.content) ? (
-                  <div className="whitespace-pre-wrap rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5 text-sm leading-relaxed text-slate-200">
+                  <div className="whitespace-pre-wrap rounded-lg border border-boss-border bg-boss-surface px-3 py-2.5 text-sm leading-relaxed text-boss-text">
                     {previewTarget.content}
                   </div>
                 ) : (
                   <div
-                    className="prose prose-invert prose-sm max-w-none rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5 leading-relaxed prose-headings:text-white prose-strong:text-white prose-blockquote:border-l-emerald-500"
+                    className="prose prose-invert prose-sm max-w-none rounded-lg border border-boss-border bg-boss-surface px-3 py-2.5 leading-relaxed prose-headings:text-boss-text prose-strong:text-boss-text prose-blockquote:border-l-emerald-500"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewTarget.content) }}
                   />
                 )}
               </div>
             </div>
 
-            <div className="flex justify-end border-t border-slate-800 px-5 py-3">
+            <div className="flex justify-end border-t border-boss-border px-5 py-3">
               <button
                 type="button"
                 onClick={() => setPreviewTarget(null)}
-                className="h-9 rounded-lg border border-slate-800 bg-slate-900/60 px-4 text-sm text-slate-200 hover:border-slate-700 hover:text-white"
+                className="h-9 rounded-lg border border-boss-border bg-boss-surface px-4 text-sm text-boss-text hover:border-boss-border hover:text-boss-text"
               >
                 닫기
               </button>
@@ -459,18 +459,18 @@ export default function BossTemplatesPage() {
           onClick={closeEditor}
         >
           <div
-            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl"
+            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-boss-border bg-boss-bg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 border-b border-slate-800 px-5 py-4">
-              <FileText size={18} className="text-emerald-400" />
-              <h2 className="flex-1 text-base font-semibold text-white">
+            <div className="flex items-center gap-2 border-b border-boss-border px-5 py-4">
+              <FileText size={18} className="text-boss-primary" />
+              <h2 className="flex-1 text-base font-semibold text-boss-text">
                 {editor.mode === 'edit' ? '템플릿 수정' : '템플릿 추가'}
               </h2>
               <button
                 type="button"
                 onClick={closeEditor}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
               >
                 <X size={16} />
               </button>
@@ -478,7 +478,7 @@ export default function BossTemplatesPage() {
 
             <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase text-slate-500">
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase text-boss-text-muted">
                   템플릿 이름 *
                 </label>
                 <input
@@ -488,11 +488,11 @@ export default function BossTemplatesPage() {
                     setEditor((s) => ({ ...s, value: { ...s.value, name: e.target.value } }))
                   }
                   placeholder="예: 도배 공사용, 인테리어용"
-                  className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-emerald-500/50 focus:outline-none"
+                  className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2.5 text-sm text-boss-text placeholder-slate-600 focus:border-boss-primary/50 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase text-slate-500">
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase text-boss-text-muted">
                   견적서 제목 *
                 </label>
                 <input
@@ -502,11 +502,11 @@ export default function BossTemplatesPage() {
                     setEditor((s) => ({ ...s, value: { ...s.value, title: e.target.value } }))
                   }
                   placeholder="예: 견적서 보내드립니다."
-                  className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-emerald-500/50 focus:outline-none"
+                  className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2.5 text-sm text-boss-text placeholder-slate-600 focus:border-boss-primary/50 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase text-slate-500">
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase text-boss-text-muted">
                   견적서 내용 *
                 </label>
                 <RichEditor
@@ -520,12 +520,12 @@ export default function BossTemplatesPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-5 py-3">
+            <div className="flex items-center justify-end gap-2 border-t border-boss-border px-5 py-3">
               <button
                 type="button"
                 onClick={closeEditor}
                 disabled={saving}
-                className="h-9 rounded-lg border border-slate-800 bg-slate-900/60 px-4 text-sm text-slate-200 hover:border-slate-700 hover:text-white disabled:opacity-50"
+                className="h-9 rounded-lg border border-boss-border bg-boss-surface px-4 text-sm text-boss-text hover:border-boss-border hover:text-boss-text disabled:opacity-50"
               >
                 취소
               </button>
@@ -533,7 +533,7 @@ export default function BossTemplatesPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+                className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-medium text-boss-text hover:bg-boss-primary-hover disabled:opacity-50"
               >
                 {saving ? (
                   <RefreshCw size={14} className="animate-spin" />

@@ -54,7 +54,7 @@ const initialForm: BossPortfolioForm = {
 
 // 다크 톤 인풋 공통 클래스
 const inputDark =
-  'h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10';
+  'h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10';
 
 export default function BossPortfolioNewPage() {
   const router = useRouter();
@@ -206,18 +206,18 @@ export default function BossPortfolioNewPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/portfolio"
-          className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록
         </Link>
-        <h1 className="text-lg font-bold text-white">포트폴리오 신규 등록</h1>
+        <h1 className="text-lg font-bold text-boss-text">포트폴리오 신규 등록</h1>
         <div className="w-12" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* 기본 정보 */}
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="mb-4 text-sm font-semibold text-white">기본 정보</h2>
+        <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+          <h2 className="mb-4 text-sm font-semibold text-boss-text">기본 정보</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="제목" required>
               <input
@@ -229,8 +229,8 @@ export default function BossPortfolioNewPage() {
               />
             </Field>
             <Field label="공개 여부">
-              <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-3">
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+              <div className="flex h-10 items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-3">
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-boss-text-secondary">
                   <input
                     type="checkbox"
                     checked={form.isPublic}
@@ -310,7 +310,7 @@ export default function BossPortfolioNewPage() {
                   onChange={(e) => update('description', e.target.value)}
                   placeholder="작업 내용, 특이사항을 자유롭게 적어주세요."
                   rows={4}
-                  className="min-h-[100px] w-full resize-y rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                  className="min-h-[100px] w-full resize-y rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                 />
               </Field>
             </div>
@@ -318,11 +318,11 @@ export default function BossPortfolioNewPage() {
         </section>
 
         {/* 이미지 */}
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white">
-            <ImageIcon size={14} className="text-emerald-300" /> 시공 이미지
+        <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-boss-text">
+            <ImageIcon size={14} className="text-boss-primary" /> 시공 이미지
           </h2>
-          <p className="mb-4 text-xs text-slate-500">
+          <p className="mb-4 text-xs text-boss-text-muted">
             이미지 파일을 업로드하거나 URL을 직접 입력해 추가하세요.
           </p>
 
@@ -349,9 +349,9 @@ export default function BossPortfolioNewPage() {
         </section>
 
         {/* 외부 링크 */}
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <LinkIcon size={14} className="text-emerald-300" /> 외부 포트폴리오 링크
+        <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
+            <LinkIcon size={14} className="text-boss-primary" /> 외부 포트폴리오 링크
           </h2>
 
           <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -377,7 +377,7 @@ export default function BossPortfolioNewPage() {
               <button
                 type="button"
                 onClick={addLink}
-                className="flex h-10 flex-shrink-0 items-center gap-1 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+                className="flex h-10 flex-shrink-0 items-center gap-1 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover"
               >
                 <Plus size={14} /> 추가
               </button>
@@ -389,9 +389,9 @@ export default function BossPortfolioNewPage() {
               {form.externalLinks.map((link, idx) => (
                 <li
                   key={`${link.url}-${idx}`}
-                  className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3"
+                  className="flex items-center gap-3 rounded-xl border border-boss-border bg-boss-surface p-3"
                 >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-slate-500">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-boss-elevated text-boss-text-muted">
                     {link.thumbnailUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={link.thumbnailUrl} alt="" className="h-full w-full object-cover" />
@@ -400,15 +400,15 @@ export default function BossPortfolioNewPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="line-clamp-1 text-sm font-medium text-slate-100">
+                    <p className="line-clamp-1 text-sm font-medium text-boss-text">
                       {link.title || '외부 링크'}
                     </p>
-                    <p className="line-clamp-1 text-xs text-slate-500">{link.url}</p>
+                    <p className="line-clamp-1 text-xs text-boss-text-muted">{link.url}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeLink(idx)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-800 hover:text-rose-300"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-boss-text-muted hover:bg-boss-elevated hover:text-boss-error"
                     aria-label="삭제"
                   >
                     <X size={14} />
@@ -423,14 +423,14 @@ export default function BossPortfolioNewPage() {
         <div className="flex items-center justify-end gap-2 pb-4">
           <Link
             href="/boss/portfolio"
-            className="flex h-10 items-center rounded-lg border border-slate-800 bg-slate-900/60 px-4 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-10 items-center rounded-lg border border-boss-border bg-boss-surface px-4 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             취소
           </Link>
           <button
             type="submit"
             disabled={submitting}
-            className="flex h-10 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+            className="flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover disabled:opacity-50"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             등록
@@ -452,9 +452,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-slate-400">
+      <span className="mb-1 block text-xs font-medium text-boss-text-muted">
         {label}
-        {required && <span className="ml-0.5 text-rose-400">*</span>}
+        {required && <span className="ml-0.5 text-boss-error">*</span>}
       </span>
       {children}
     </label>
@@ -497,14 +497,14 @@ function ImageGroup({
   };
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-      <p className="mb-2 text-xs font-semibold text-slate-300">{title}</p>
+    <div className="rounded-xl border border-boss-border bg-boss-surface p-3">
+      <p className="mb-2 text-xs font-semibold text-boss-text-secondary">{title}</p>
       <div className="mb-3 flex gap-2">
         <input
           value={inputValue}
           onChange={(e) => onInputChange(e.target.value)}
           placeholder="이미지 URL"
-          className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+          className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -515,7 +515,7 @@ function ImageGroup({
         <button
           type="button"
           onClick={onAdd}
-          className="flex h-10 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-emerald-500/40 hover:text-emerald-300"
+          className="flex h-10 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-primary/20 hover:text-boss-primary"
         >
           <Plus size={14} /> 추가
         </button>
@@ -532,8 +532,8 @@ function ImageGroup({
         onDrop={handleDrop}
         className={`mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs font-medium transition-colors ${
           dragOver
-            ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-            : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+            ? 'border-boss-primary/30 bg-boss-primary/10 text-boss-primary'
+            : 'border-boss-border text-boss-text-muted hover:border-boss-border hover:text-boss-text-secondary'
         }`}
       >
         <Upload size={14} /> 파일 업로드 (또는 끌어다 놓기)
@@ -548,7 +548,7 @@ function ImageGroup({
       />
 
       {images.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-slate-800 text-xs text-slate-500">
+        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-boss-border text-xs text-boss-text-muted">
           등록된 이미지가 없습니다
         </div>
       ) : (
@@ -556,14 +556,14 @@ function ImageGroup({
           {images.map((src, idx) => (
             <div
               key={`${src}-${idx}`}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-slate-800 bg-slate-950"
+              className="group relative aspect-square overflow-hidden rounded-lg border border-boss-border bg-boss-bg"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={src} alt={`img-${idx}`} className="h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => onRemove(idx)}
-                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-950/80 text-slate-300 opacity-0 transition-opacity hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-boss-bg/80 text-boss-text-secondary opacity-0 transition-opacity hover:bg-boss-error/100 hover:text-boss-text group-hover:opacity-100"
                 aria-label="삭제"
               >
                 <X size={12} />

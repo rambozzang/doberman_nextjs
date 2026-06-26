@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function BossLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-slate-100">
+    <div className="min-h-screen bg-boss-bg text-boss-text">
       <BossAuthGuard>
         <BossChrome>{children}</BossChrome>
       </BossAuthGuard>

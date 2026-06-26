@@ -1,10 +1,9 @@
 'use client';
 
-// 사장님 영역 공용 UI 프리미티브
-// 디자인 원칙:
-// - 다크 배경 위에서 hairline 보더(white/5 ~ white/10) + 모노스페이스 숫자
-// - gradient orb, blur 남발 금지. accent(emerald)는 활성/강조에만
-// - 정보 밀도 우선: 간격은 gap-2/3, 큰 여백은 섹션 사이에만
+// 사장님 영역 공용 UI 프리미티브 — B2B 디자인 시스템 토큰 기반
+// - light/dark 모두 지원
+// - 정보 밀도 우선, 간격은 gap-2/3, 큰 여백은 섹션 사이에만
+// - accent(emerald)는 활성/강조에만
 
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -25,9 +24,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   return (
     <div
       ref={ref}
-      className={`rounded-xl border border-white/[0.06] bg-white/[0.02] ${
+      className={`rounded-xl border border-boss-border bg-boss-surface shadow-boss ${
         padded ? 'p-5' : ''
-      } ${interactive ? 'transition-colors hover:border-white/10 hover:bg-white/[0.04]' : ''} ${className}`}
+      } ${interactive ? 'transition-colors hover:border-boss-border-strong hover:bg-boss-elevated/50' : ''} ${className}`}
       {...rest}
     >
       {children}
@@ -53,13 +52,13 @@ export function SectionHeader({
     <div className="mb-4 flex items-start justify-between gap-3">
       <div>
         <h2
-          className={`font-semibold text-white ${
+          className={`font-semibold text-boss-text ${
             size === 'md' ? 'text-base' : 'text-sm'
           }`}
         >
           {title}
         </h2>
-        {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+        {description && <p className="mt-0.5 text-xs text-boss-text-muted">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -67,7 +66,7 @@ export function SectionHeader({
 }
 
 // ───────────────────────────────────────────
-// PageHeader — 상단 타이틀 영역 (기존 BossPageHeader 대체)
+// PageHeader — 상단 타이틀 영역
 // ───────────────────────────────────────────
 export function PageHeader({
   eyebrow,
@@ -83,14 +82,14 @@ export function PageHeader({
   breadcrumbs?: { label: string; href?: string }[];
 }) {
   return (
-    <header className="mb-6 border-b border-white/[0.06] pb-5">
+    <header className="mb-6 border-b border-boss-border pb-5">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="mb-2 flex items-center gap-1 text-[11px] text-slate-500">
+        <nav className="mb-2 flex items-center gap-1 text-[11px] text-boss-text-muted">
           {breadcrumbs.map((b, i) => (
             <span key={i} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight size={11} className="text-slate-700" />}
+              {i > 0 && <ChevronRight size={11} className="text-boss-border-strong" />}
               {b.href ? (
-                <Link href={b.href} className="hover:text-slate-300">
+                <Link href={b.href} className="hover:text-boss-text-secondary">
                   {b.label}
                 </Link>
               ) : (
@@ -103,12 +102,12 @@ export function PageHeader({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           {eyebrow && (
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-emerald-400">
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-boss-primary">
               {eyebrow}
             </p>
           )}
-          <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">{title}</h1>
-          {description && <p className="mt-1 text-sm text-slate-400">{description}</p>}
+          <h1 className="text-xl font-semibold tracking-tight text-boss-text md:text-2xl">{title}</h1>
+          {description && <p className="mt-1 text-sm text-boss-text-secondary">{description}</p>}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
@@ -124,11 +123,11 @@ type ButtonSize = 'sm' | 'md';
 
 const BTN_VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-emerald-500 text-white hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-500',
+    'bg-boss-primary text-boss-primary-foreground hover:bg-boss-primary-hover disabled:bg-boss-elevated disabled:text-boss-text-muted',
   secondary:
-    'border border-white/10 bg-white/[0.03] text-slate-200 hover:border-white/20 hover:bg-white/[0.06]',
-  ghost: 'text-slate-400 hover:bg-white/[0.04] hover:text-white',
-  danger: 'bg-rose-500/10 text-rose-300 hover:bg-rose-500/20',
+    'border border-boss-border bg-boss-elevated text-boss-text-secondary hover:border-boss-border-strong hover:bg-boss-surface hover:text-boss-text',
+  ghost: 'text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text',
+  danger: 'bg-boss-error text-white hover:bg-red-600',
 };
 const BTN_SIZES: Record<ButtonSize, string> = {
   sm: 'h-8 px-3 text-xs',
@@ -152,7 +151,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:cursor-not-allowed ${BTN_VARIANTS[variant]} ${BTN_SIZES[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-boss-primary/20 disabled:cursor-not-allowed ${BTN_VARIANTS[variant]} ${BTN_SIZES[size]} ${className}`}
       {...rest}
     >
       {Icon && <Icon size={size === 'sm' ? 13 : 15} />}
@@ -181,28 +180,28 @@ export function StatCard({
 }) {
   const positive = (delta ?? 0) >= 0;
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-colors hover:border-white/10">
+    <div className="rounded-xl border border-boss-border bg-boss-surface p-4 shadow-boss transition-colors hover:border-boss-border-strong">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-500">{label}</p>
-        {Icon && <Icon size={14} className="text-slate-600" />}
+        <p className="text-xs font-medium text-boss-text-muted">{label}</p>
+        {Icon && <Icon size={14} className="text-boss-text-muted" />}
       </div>
       {loading ? (
-        <div className="h-7 w-24 animate-pulse rounded bg-white/5" />
+        <div className="h-7 w-24 animate-pulse rounded bg-boss-elevated" />
       ) : (
-        <p className="font-mono text-2xl font-semibold tabular-nums text-white">{value}</p>
+        <p className="font-mono text-2xl font-semibold tabular-nums text-boss-text">{value}</p>
       )}
       <div className="mt-2 flex items-center gap-2 text-[11px]">
         {delta !== undefined && !loading && (
           <span
             className={`flex items-center gap-0.5 font-medium ${
-              positive ? 'text-emerald-400' : 'text-rose-400'
+              positive ? 'text-boss-success' : 'text-boss-error'
             }`}
           >
             {positive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
             {Math.abs(delta).toFixed(1)}%
           </span>
         )}
-        {hint && <span className="text-slate-600">{hint}</span>}
+        {hint && <span className="text-boss-text-muted">{hint}</span>}
       </div>
     </div>
   );
@@ -223,14 +222,14 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.01] py-12 text-center">
+    <div className="boss-empty text-center">
       {Icon && (
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.03] text-slate-500">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-boss-elevated text-boss-text-muted">
           <Icon size={18} />
         </div>
       )}
-      <p className="text-sm font-medium text-slate-200">{title}</p>
-      {description && <p className="mt-1 max-w-sm text-xs text-slate-500">{description}</p>}
+      <p className="text-sm font-medium text-boss-text-secondary">{title}</p>
+      {description && <p className="mt-1 max-w-sm text-xs text-boss-text-muted">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -241,12 +240,12 @@ export function EmptyState({
 // ───────────────────────────────────────────
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
 const BADGE_TONES: Record<BadgeTone, string> = {
-  default: 'bg-white/[0.06] text-slate-300 ring-white/10',
-  emerald: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
-  sky: 'bg-sky-500/10 text-sky-300 ring-sky-500/20',
-  amber: 'bg-amber-500/10 text-amber-300 ring-amber-500/20',
-  rose: 'bg-rose-500/10 text-rose-300 ring-rose-500/20',
-  violet: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
+  default: 'bg-boss-elevated text-boss-text-secondary ring-boss-border',
+  emerald: 'bg-boss-primary/10 text-boss-primary ring-boss-primary/20',
+  sky: 'bg-boss-info/10 text-boss-info ring-boss-info/20',
+  amber: 'bg-boss-warning/10 text-boss-warning ring-boss-warning/20',
+  rose: 'bg-boss-error/10 text-boss-error ring-boss-error/20',
+  violet: 'bg-violet-500/10 text-violet-400 ring-violet-500/20',
 };
 
 export function Badge({
@@ -279,7 +278,7 @@ export function Toolbar({
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 ${className}`}
+      className={`flex flex-wrap items-center gap-2 rounded-xl border border-boss-border bg-boss-surface px-3 py-2 shadow-boss ${className}`}
     >
       {children}
     </div>
@@ -290,5 +289,5 @@ export function Toolbar({
 // Skeleton
 // ───────────────────────────────────────────
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.04] ${className}`} />;
+  return <div className={`animate-pulse rounded bg-boss-elevated ${className}`} />;
 }

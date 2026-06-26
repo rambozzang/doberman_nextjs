@@ -103,19 +103,19 @@ export default function BossNotificationsSettingPage() {
   }) => (
     <div className="flex items-center justify-between gap-3 py-1">
       <div>
-        <div className="text-sm font-semibold text-white">{label}</div>
-        <div className="text-xs text-slate-400">{description}</div>
+        <div className="text-sm font-semibold text-boss-text">{label}</div>
+        <div className="text-xs text-boss-text-muted">{description}</div>
       </div>
       <button
         type="button"
         onClick={() => onChange(!enabled)}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-          enabled ? 'bg-emerald-500' : 'bg-slate-700'
+          enabled ? 'bg-boss-primary' : 'bg-boss-elevated'
         }`}
         aria-pressed={enabled}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+          className={`inline-block h-4 w-4 transform rounded-full bg-boss-surface transition ${
             enabled ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
@@ -138,16 +138,16 @@ export default function BossNotificationsSettingPage() {
         <div className="flex items-center gap-3">
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-              pushEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/40 text-slate-400'
+              pushEnabled ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated/40 text-boss-text-muted'
             }`}
           >
             {pushEnabled ? <Bell size={20} /> : <BellOff size={20} />}
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-white">
+            <div className="text-sm font-semibold text-boss-text">
               {pushEnabled ? 'PUSH 알림이 켜져있습니다.' : 'PUSH 알림이 꺼져있습니다.'}
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-boss-text-muted">
               신규 견적, 댓글, 공지사항 등 중요한 소식을 PUSH로 받아보세요.
             </div>
           </div>
@@ -161,28 +161,28 @@ export default function BossNotificationsSettingPage() {
           enabled={pushEnabled}
           onChange={() => {}}
         />
-        <div className="border-t border-slate-800/70" />
+        <div className="border-t border-boss-border/70" />
         <ToggleRow
           label="마케팅 알림"
           description="프로모션, 이벤트, 혜택 정보를 수신합니다. (기기 설정에서 변경)"
           enabled={marketingEnabled}
           onChange={() => {}}
         />
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-boss-text-muted">
           PUSH/마케팅 수신 여부는 웹 브라우저/OS 기기 설정에서 변경할 수 있습니다.
         </p>
       </Card>
 
       <Card className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">알림 수신 시간</h2>
-          <p className="mt-1 text-xs text-slate-400">
+          <h2 className="text-sm font-semibold text-boss-text">알림 수신 시간</h2>
+          <p className="mt-1 text-xs text-boss-text-muted">
             설정한 시간에 맞춰 알림을 수신합니다. HH:MM 형식으로 입력해주세요.
           </p>
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-boss-text-muted">
             <Loader2 size={16} className="animate-spin" />
             알림 설정을 불러오는 중...
           </div>
@@ -192,9 +192,9 @@ export default function BossNotificationsSettingPage() {
               type="time"
               value={alarmTime}
               onChange={(e) => setAlarmTime(e.target.value)}
-              className="h-10 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-200 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-10 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
-            <span className="text-sm text-slate-400">에 알림 수신</span>
+            <span className="text-sm text-boss-text-muted">에 알림 수신</span>
           </div>
         )}
 

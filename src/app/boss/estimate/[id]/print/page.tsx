@@ -125,7 +125,7 @@ export default function BossEstimatePrintPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/boss/estimate"
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs font-medium text-slate-200 hover:border-white/20 hover:bg-white/[0.06]"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-boss-border bg-boss-elevated px-3 text-xs font-medium text-boss-text hover:border-boss-border hover:bg-boss-elevated"
             >
               <ChevronLeft size={13} /> 뒤로
             </Link>
@@ -137,7 +137,7 @@ export default function BossEstimatePrintPage() {
       />
 
       {error && (
-        <div className="no-print rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="no-print rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -145,7 +145,7 @@ export default function BossEstimatePrintPage() {
       {loading && items.length === 0 ? (
         <div className="no-print space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded-xl border border-slate-800 bg-slate-900/40" />
+            <div key={i} className="h-12 animate-pulse rounded-xl border border-boss-border bg-boss-surface" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -155,57 +155,57 @@ export default function BossEstimatePrintPage() {
           description="해당 고객의 견적 품목이 없어 인쇄할 내용이 없습니다."
         />
       ) : (
-        <div className="print-area mx-auto max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl print:max-w-full print:rounded-none print:bg-white print:p-0 print:text-black print:shadow-none">
+        <div className="print-area mx-auto max-w-4xl rounded-2xl border border-boss-border bg-boss-surface p-8 shadow-boss-lg print:max-w-full print:rounded-none print:bg-white print:p-0 print:text-black print:shadow-none">
           {/* 인쇄용 헤더 */}
           <div className="mb-6 border-b-2 border-slate-100 pb-4 text-center print:border-black">
-            <h2 className="text-2xl font-bold text-white print:text-black">견 적 서</h2>
-            <p className="mt-1 text-xs text-slate-400 print:text-black">견적일: {today}</p>
+            <h2 className="text-2xl font-bold text-boss-text print:text-black">견 적 서</h2>
+            <p className="mt-1 text-xs text-boss-text-muted print:text-black">견적일: {today}</p>
           </div>
 
           {/* 회사 / 고객 정보 */}
           <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
-            <div className="space-y-1 rounded-lg border border-slate-700 p-3 print:border-black print:bg-white">
-              <p className="font-semibold text-white print:text-black">공급받는자 (고객)</p>
-              <p className="text-slate-300 print:text-black">고객 ID: {customerId}</p>
-              <p className="text-slate-400 print:text-black">상호 / 성명: </p>
-              <p className="text-slate-400 print:text-black">주소: </p>
-              <p className="text-slate-400 print:text-black">연락처: </p>
+            <div className="space-y-1 rounded-lg border border-boss-border p-3 print:border-black print:bg-white">
+              <p className="font-semibold text-boss-text print:text-black">공급받는자 (고객)</p>
+              <p className="text-boss-text-secondary print:text-black">고객 ID: {customerId}</p>
+              <p className="text-boss-text-muted print:text-black">상호 / 성명: </p>
+              <p className="text-boss-text-muted print:text-black">주소: </p>
+              <p className="text-boss-text-muted print:text-black">연락처: </p>
             </div>
-            <div className="space-y-1 rounded-lg border border-slate-700 p-3 print:border-black print:bg-white">
-              <p className="font-semibold text-white print:text-black">공급자 (회사)</p>
-              <p className="text-slate-400 print:text-black">상호: </p>
-              <p className="text-slate-400 print:text-black">사업자등록번호: </p>
-              <p className="text-slate-400 print:text-black">주소: </p>
-              <p className="text-slate-400 print:text-black">연락처 / 이메일: </p>
+            <div className="space-y-1 rounded-lg border border-boss-border p-3 print:border-black print:bg-white">
+              <p className="font-semibold text-boss-text print:text-black">공급자 (회사)</p>
+              <p className="text-boss-text-muted print:text-black">상호: </p>
+              <p className="text-boss-text-muted print:text-black">사업자등록번호: </p>
+              <p className="text-boss-text-muted print:text-black">주소: </p>
+              <p className="text-boss-text-muted print:text-black">연락처 / 이메일: </p>
             </div>
           </div>
 
           {/* 품목 테이블 */}
-          <table className="print-table mb-6 w-full border-collapse border border-slate-700 text-sm print:border-black">
+          <table className="print-table mb-6 w-full border-collapse border border-boss-border text-sm print:border-black">
             <thead>
-              <tr className="bg-slate-800/60 print:bg-white">
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+              <tr className="bg-boss-elevated/60 print:bg-white">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   품목명
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   규격
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   단위
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   수량
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   단가
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   공급가액
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   세액
                 </th>
-                <th className="border border-slate-700 px-2 py-2 text-xs font-semibold text-slate-300 print:border-black print:text-black">
+                <th className="border border-boss-border px-2 py-2 text-xs font-semibold text-boss-text-secondary print:border-black print:text-black">
                   합계액
                 </th>
               </tr>
@@ -213,28 +213,28 @@ export default function BossEstimatePrintPage() {
             <tbody>
               {items.map((it, idx) => (
                 <tr key={it.id ?? idx}>
-                  <td className="border border-slate-700 px-2 py-2 text-slate-200 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-boss-text print:border-black print:text-black">
                     {it.itemName || '-'}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-center text-slate-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-center text-boss-text-secondary print:border-black print:text-black">
                     {it.itemSpec || '-'}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-center text-slate-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-center text-boss-text-secondary print:border-black print:text-black">
                     {it.unit || '-'}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-right text-slate-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-right text-boss-text-secondary print:border-black print:text-black">
                     {(it.quantity ?? 0).toLocaleString('ko-KR')}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-right text-slate-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-right text-boss-text-secondary print:border-black print:text-black">
                     {fmtMoney(it.unitPrice)}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-right text-slate-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-right text-boss-text-secondary print:border-black print:text-black">
                     {fmtMoney(it.supplyAmount)}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-right text-slate-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-right text-boss-text-secondary print:border-black print:text-black">
                     {fmtMoney(it.vatAmount)}
                   </td>
-                  <td className="border border-slate-700 px-2 py-2 text-right font-semibold text-emerald-300 print:border-black print:text-black">
+                  <td className="border border-boss-border px-2 py-2 text-right font-semibold text-boss-primary print:border-black print:text-black">
                     {fmtMoney(it.totalAmount)}
                   </td>
                 </tr>
@@ -243,25 +243,25 @@ export default function BossEstimatePrintPage() {
           </table>
 
           {/* 합계 */}
-          <div className="mb-6 ml-auto w-full max-w-sm rounded-lg border border-slate-700 p-4 text-sm print:border-black print:bg-white">
-            <div className="flex justify-between py-1 text-slate-300 print:text-black">
+          <div className="mb-6 ml-auto w-full max-w-sm rounded-lg border border-boss-border p-4 text-sm print:border-black print:bg-white">
+            <div className="flex justify-between py-1 text-boss-text-secondary print:text-black">
               <span>공급가액 합계</span>
-              <span className="font-semibold text-white print:text-black">{fmtMoney(totals.supplyAmount)} 원</span>
+              <span className="font-semibold text-boss-text print:text-black">{fmtMoney(totals.supplyAmount)} 원</span>
             </div>
-            <div className="flex justify-between py-1 text-slate-300 print:text-black">
+            <div className="flex justify-between py-1 text-boss-text-secondary print:text-black">
               <span>세액 합계</span>
-              <span className="font-semibold text-white print:text-black">{fmtMoney(totals.vatAmount)} 원</span>
+              <span className="font-semibold text-boss-text print:text-black">{fmtMoney(totals.vatAmount)} 원</span>
             </div>
-            <div className="mt-2 flex justify-between border-t border-slate-700 py-2 text-base font-bold text-emerald-300 print:border-black print:text-black">
+            <div className="mt-2 flex justify-between border-t border-boss-border py-2 text-base font-bold text-boss-primary print:border-black print:text-black">
               <span>총 합계</span>
               <span>{fmtMoney(totals.totalAmount)} 원</span>
             </div>
           </div>
 
           {/* 비고 */}
-          <div className="rounded-lg border border-slate-700 p-4 text-sm print:border-black print:bg-white">
-            <p className="mb-2 font-semibold text-white print:text-black">비고</p>
-            <p className="min-h-[60px] whitespace-pre-wrap text-slate-400 print:text-black">
+          <div className="rounded-lg border border-boss-border p-4 text-sm print:border-black print:bg-white">
+            <p className="mb-2 font-semibold text-boss-text print:text-black">비고</p>
+            <p className="min-h-[60px] whitespace-pre-wrap text-boss-text-muted print:text-black">
               본 견적서는 견적일로부터 30일간 유효합니다.
               자세한 사항은 담당자에게 문의해 주세요.
             </p>

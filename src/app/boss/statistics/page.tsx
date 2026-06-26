@@ -117,17 +117,17 @@ export default function BossStatisticsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1">
-            <BarChart3 size={11} className="text-emerald-300" />
-            <span className="text-[11px] font-medium text-emerald-300">종합 통계</span>
+          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-boss-primary/20 bg-boss-primary/5 px-3 py-1">
+            <BarChart3 size={11} className="text-boss-primary" />
+            <span className="text-[11px] font-medium text-boss-primary">종합 통계</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">통계 대시보드</h1>
-          <p className="mt-1 text-sm text-slate-400">최근 12개월의 매출 추이와 현재월 상태를 한눈에 확인하세요.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-boss-text md:text-3xl">통계 대시보드</h1>
+          <p className="mt-1 text-sm text-boss-text-muted">최근 12개월의 매출 추이와 현재월 상태를 한눈에 확인하세요.</p>
         </div>
         <button
           type="button"
           onClick={() => fetchAll()}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/50 text-slate-300 hover:text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-boss-border bg-boss-surface/50 text-boss-text-secondary hover:text-boss-text"
           aria-label="새로고침"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -137,28 +137,28 @@ export default function BossStatisticsPage() {
       {/* 상단 카드 (현재월) */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="이번달 매출" value={fmtWon(current?.totalAmount)} icon={<TrendingUp size={18} />} accent="from-violet-500 to-violet-700" loading={loading} />
-        <StatCard label="이번달 건수" value={`${(current?.totalCount ?? 0).toLocaleString('ko-KR')}건`} icon={<FileText size={18} />} accent="from-emerald-500 to-emerald-700" loading={loading} />
+        <StatCard label="이번달 건수" value={`${(current?.totalCount ?? 0).toLocaleString('ko-KR')}건`} icon={<FileText size={18} />} accent="from-boss-primary to-emerald-700" loading={loading} />
         <StatCard label="진행 중(계약)" value={`${(current?.contractCount ?? 0).toLocaleString('ko-KR')}건`} icon={<Hammer size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
         <StatCard label="완료" value={`${(current?.completeCount ?? 0).toLocaleString('ko-KR')}건`} icon={<CheckCircle2 size={18} />} accent="from-amber-500 to-amber-700" loading={loading} />
       </section>
 
       {error && !loading && (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+        <div className="rounded-2xl border border-rose-500/30 bg-boss-error/10 p-4 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* 매출 트렌드 */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5 lg:col-span-2">
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5 lg:col-span-2">
           <div className="mb-4">
-            <h2 className="text-sm font-semibold text-white">매출 트렌드 (최근 12개월)</h2>
-            <p className="text-xs text-slate-500">월별 매출 합계</p>
+            <h2 className="text-sm font-semibold text-boss-text">매출 트렌드 (최근 12개월)</h2>
+            <p className="text-xs text-boss-text-muted">월별 매출 합계</p>
           </div>
           {loading ? (
-            <div className="h-64 animate-pulse rounded-xl bg-slate-800/40" />
+            <div className="h-64 animate-pulse rounded-xl bg-boss-elevated/40" />
           ) : chartData.length === 0 ? (
-            <div className="flex h-64 items-center justify-center text-sm text-slate-500">데이터가 없습니다.</div>
+            <div className="flex h-64 items-center justify-center text-sm text-boss-text-muted">데이터가 없습니다.</div>
           ) : (
             <ResponsiveContainer width="100%" height={256}>
               <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
@@ -183,13 +183,13 @@ export default function BossStatisticsPage() {
         </div>
 
         {/* 상태 분포 */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="mb-1 text-sm font-semibold text-white">현재월 상태 분포</h2>
-          <p className="mb-4 text-xs text-slate-500">전체 {statusTotal}건</p>
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+          <h2 className="mb-1 text-sm font-semibold text-boss-text">현재월 상태 분포</h2>
+          <p className="mb-4 text-xs text-boss-text-muted">전체 {statusTotal}건</p>
           {loading ? (
-            <div className="h-44 animate-pulse rounded-xl bg-slate-800/40" />
+            <div className="h-44 animate-pulse rounded-xl bg-boss-elevated/40" />
           ) : statusTotal === 0 ? (
-            <div className="flex h-44 items-center justify-center text-sm text-slate-500">데이터가 없습니다.</div>
+            <div className="flex h-44 items-center justify-center text-sm text-boss-text-muted">데이터가 없습니다.</div>
           ) : (
             <ResponsiveContainer width="100%" height={176}>
               <PieChart>
@@ -207,11 +207,11 @@ export default function BossStatisticsPage() {
           <ul className="mt-3 space-y-1.5">
             {statusData.map((s) => (
               <li key={s.name} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2 text-slate-300">
+                <span className="flex items-center gap-2 text-boss-text-secondary">
                   <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
                   {s.name}
                 </span>
-                <span className="font-semibold text-white">{s.value}</span>
+                <span className="font-semibold text-boss-text">{s.value}</span>
               </li>
             ))}
           </ul>
@@ -219,15 +219,15 @@ export default function BossStatisticsPage() {
       </section>
 
       {/* 월별 건수 막대 */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
         <div className="mb-4">
-          <h2 className="text-sm font-semibold text-white">월별 건수</h2>
-          <p className="text-xs text-slate-500">최근 12개월 시공 건수</p>
+          <h2 className="text-sm font-semibold text-boss-text">월별 건수</h2>
+          <p className="text-xs text-boss-text-muted">최근 12개월 시공 건수</p>
         </div>
         {loading ? (
-          <div className="h-56 animate-pulse rounded-xl bg-slate-800/40" />
+          <div className="h-56 animate-pulse rounded-xl bg-boss-elevated/40" />
         ) : chartData.length === 0 ? (
-          <div className="flex h-56 items-center justify-center text-sm text-slate-500">데이터가 없습니다.</div>
+          <div className="flex h-56 items-center justify-center text-sm text-boss-text-muted">데이터가 없습니다.</div>
         ) : (
           <ResponsiveContainer width="100%" height={224}>
             <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -261,19 +261,19 @@ function StatCard({
   loading: boolean;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
+    <div className="relative overflow-hidden rounded-2xl border border-boss-border bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
       <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-2xl`} />
       <div className="relative">
         <div className="mb-4 flex items-center justify-between">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white`}>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-boss-text`}>
             {icon}
           </div>
         </div>
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-boss-text-muted">{label}</p>
         {loading ? (
-          <div className="mt-1 h-7 w-24 animate-pulse rounded bg-slate-800/60" />
+          <div className="mt-1 h-7 w-24 animate-pulse rounded bg-boss-elevated/60" />
         ) : (
-          <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+          <p className="mt-1 text-2xl font-bold text-boss-text">{value}</p>
         )}
       </div>
     </div>

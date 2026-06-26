@@ -112,7 +112,7 @@ export default function BossSidebar() {
 
   return (
     <aside
-      className={`hidden shrink-0 border-r border-white/[0.06] bg-[#0a0a0b] transition-[width] duration-200 md:block ${
+      className={`hidden shrink-0 border-r border-boss-border bg-boss-bg transition-[width] duration-200 md:block ${
         collapsed ? 'w-[56px]' : 'w-56'
       }`}
     >
@@ -121,7 +121,7 @@ export default function BossSidebar() {
           {SECTIONS.map((section, idx) => (
             <div key={section.title} className={idx > 0 ? 'mt-4' : ''}>
               {!collapsed && (
-                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-boss-text-muted">
                   {section.title}
                 </p>
               )}
@@ -135,27 +135,27 @@ export default function BossSidebar() {
                         title={collapsed ? label : undefined}
                         className={`group relative flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors ${
                           active
-                            ? 'bg-white/[0.06] text-white'
-                            : 'text-slate-400 hover:bg-white/[0.03] hover:text-slate-100'
+                            ? 'bg-boss-elevated text-boss-text'
+                            : 'text-boss-text-secondary hover:bg-boss-elevated/50 hover:text-boss-text'
                         }`}
                       >
                         {active && (
-                          <span className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-emerald-400" />
+                          <span className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-boss-primary" />
                         )}
                         <Icon
                           size={15}
-                          className={active ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'}
+                          className={active ? 'text-boss-primary' : 'text-boss-text-muted group-hover:text-boss-text-secondary'}
                         />
                         {!collapsed && (
                           <>
                             <span className="flex-1 truncate font-medium">{label}</span>
                             {badge && (
-                              <span className="rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] font-semibold uppercase text-emerald-300 ring-1 ring-inset ring-emerald-500/25">
+                              <span className="rounded bg-boss-primary/10 px-1 py-0.5 text-[9px] font-semibold uppercase text-boss-primary ring-1 ring-inset ring-boss-primary/20">
                                 {badge}
                               </span>
                             )}
                             {shortcut && !badge && (
-                              <kbd className="hidden font-mono text-[10px] text-slate-600 group-hover:inline">
+                              <kbd className="hidden font-mono text-[10px] text-boss-text-muted group-hover:inline">
                                 {shortcut}
                               </kbd>
                             )}
@@ -170,18 +170,18 @@ export default function BossSidebar() {
           ))}
         </div>
 
-        <div className="border-t border-white/[0.06] p-2">
+        <div className="border-t border-boss-border p-2">
           {!collapsed && (
             <Link
               href="/boss/billing/plans"
-              className="mb-2 flex items-center gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/[0.04] px-2.5 py-2 transition-colors hover:bg-emerald-500/[0.08]"
+              className="mb-2 flex items-center gap-2 rounded-md border border-boss-primary/20 bg-boss-primary/5 px-2.5 py-2 transition-colors hover:bg-boss-primary/10"
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-300">
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-boss-primary/15 text-boss-primary">
                 <TrendingUp size={12} />
               </div>
               <div className="flex-1 leading-tight">
-                <p className="text-[11px] font-semibold text-emerald-200">PRO 업그레이드</p>
-                <p className="text-[10px] text-slate-500">무제한 견적·고급 리포트</p>
+                <p className="text-[11px] font-semibold text-boss-primary">PRO 업그레이드</p>
+                <p className="text-[10px] text-boss-text-muted">무제한 견적·고급 리포트</p>
               </div>
             </Link>
           )}
@@ -190,7 +190,7 @@ export default function BossSidebar() {
             type="button"
             onClick={toggle}
             aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
-            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md text-slate-500 hover:bg-white/[0.03] hover:text-slate-300"
+            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
           >
             {collapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
             {!collapsed && <span className="text-[11px]">접기</span>}

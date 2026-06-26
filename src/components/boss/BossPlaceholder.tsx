@@ -11,14 +11,14 @@ interface BossPlaceholderProps {
 export default function BossPlaceholder({ title, description, children }: BossPlaceholderProps) {
   return (
     <div>
-      <header className="mb-6 border-b border-white/[0.06] pb-5">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
-        {description && <p className="mt-1 text-sm text-slate-400">{description}</p>}
+      <header className="mb-6 border-b border-boss-border pb-5">
+        <h1 className="text-2xl font-semibold tracking-tight text-boss-text">{title}</h1>
+        {description && <p className="mt-1 text-sm text-boss-text-muted">{description}</p>}
       </header>
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
+      <div className="rounded-xl border border-boss-border bg-boss-elevated p-6">
         {children ?? (
-          <div className="space-y-2 text-sm text-slate-500">
+          <div className="space-y-2 text-sm text-boss-text-muted">
             <p>이 페이지는 백엔드 API 명세 확정 후 본 구현이 들어갑니다.</p>
             <p>현재는 라우팅과 레이아웃이 정상 작동하는지 확인하기 위한 스캐폴딩 상태입니다.</p>
           </div>

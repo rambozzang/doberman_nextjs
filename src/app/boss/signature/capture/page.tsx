@@ -216,7 +216,7 @@ export default function BossSignatureCapturePage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/signature"
-          className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white"
+          className="inline-flex items-center gap-2 text-sm text-boss-text-secondary hover:text-boss-text"
         >
           <ArrowLeft size={16} /> 목록으로
         </Link>
@@ -224,14 +224,14 @@ export default function BossSignatureCapturePage() {
           <button
             type="button"
             onClick={undoLast}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-slate-700 hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs font-semibold text-boss-text hover:border-boss-border hover:text-boss-text"
           >
             <Undo2 size={14} /> 되돌리기
           </button>
           <button
             type="button"
             onClick={clearCanvas}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-slate-700 hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs font-semibold text-boss-text hover:border-boss-border hover:text-boss-text"
           >
             <Eraser size={14} /> 지우기
           </button>
@@ -239,7 +239,7 @@ export default function BossSignatureCapturePage() {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-rose-500/20 hover:bg-rose-400 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-error/100 px-3 py-1.5 text-xs font-bold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400 disabled:opacity-50"
           >
             <Save size={14} /> {isSaving ? '저장 중…' : '저장'}
           </button>
@@ -255,69 +255,69 @@ export default function BossSignatureCapturePage() {
         {/* 폼 */}
         <div className="space-y-4 lg:col-span-1">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-300">
-              고객 이름 <span className="text-rose-400">*</span>
+            <label className="mb-1 block text-xs font-semibold text-boss-text-secondary">
+              고객 이름 <span className="text-boss-error">*</span>
             </label>
             <input
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="고객 이름을 입력하세요"
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-300">전화번호</label>
+            <label className="mb-1 block text-xs font-semibold text-boss-text-secondary">전화번호</label>
             <input
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="전화번호 (선택)"
               inputMode="tel"
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-300">주문 ID</label>
+              <label className="mb-1 block text-xs font-semibold text-boss-text-secondary">주문 ID</label>
               <input
                 value={orderIdInput}
                 onChange={(e) => setOrderIdInput(e.target.value)}
                 placeholder="(선택)"
                 inputMode="numeric"
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-300">시공기록 ID</label>
+              <label className="mb-1 block text-xs font-semibold text-boss-text-secondary">시공기록 ID</label>
               <input
                 value={recordIdInput}
                 onChange={(e) => setRecordIdInput(e.target.value)}
                 placeholder="(선택)"
                 inputMode="numeric"
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
               />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-300">메모</label>
+            <label className="mb-1 block text-xs font-semibold text-boss-text-secondary">메모</label>
             <textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder="메모 (선택)"
               rows={3}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
             />
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-xs text-boss-text-muted">
             <Clock size={12} /> 확인 일시: {now}
           </div>
         </div>
 
         {/* 서명 패드 */}
         <div className="lg:col-span-2">
-          <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-            <PenLine size={12} /> 고객 서명 <span className="text-rose-400">*</span>
+          <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-boss-text-secondary">
+            <PenLine size={12} /> 고객 서명 <span className="text-boss-error">*</span>
           </label>
-          <div className="relative h-80 w-full overflow-hidden rounded-2xl border-2 border-dashed border-slate-700 bg-white">
+          <div className="relative h-80 w-full overflow-hidden rounded-2xl border-2 border-dashed border-boss-border bg-boss-surface">
             <canvas
               ref={canvasRef}
               className="absolute inset-0 h-full w-full touch-none"
@@ -331,7 +331,7 @@ export default function BossSignatureCapturePage() {
               onTouchCancel={endDraw}
             />
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">
+          <p className="mt-2 text-[11px] text-boss-text-muted">
             마우스 또는 손가락으로 서명해 주세요. 우측 상단의 ‘지우기’로 다시 그릴 수 있습니다.
           </p>
         </div>

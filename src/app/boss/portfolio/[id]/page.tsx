@@ -172,7 +172,7 @@ export default function BossPortfolioDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center text-slate-400">
+      <div className="flex h-96 items-center justify-center text-boss-text-muted">
         <Loader2 size={20} className="mr-2 animate-spin" /> 불러오는 중...
       </div>
     );
@@ -183,11 +183,11 @@ export default function BossPortfolioDetailPage() {
       <div className="space-y-4">
         <Link
           href="/boss/portfolio"
-          className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 포트폴리오로 돌아가기
         </Link>
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error || '포트폴리오를 찾을 수 없습니다.'}
         </div>
       </div>
@@ -202,7 +202,7 @@ export default function BossPortfolioDetailPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/portfolio"
-          className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록
         </Link>
@@ -211,7 +211,7 @@ export default function BossPortfolioDetailPage() {
             type="button"
             onClick={handleToggle}
             disabled={toggling}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             {toggling ? (
               <Loader2 size={14} className="animate-spin" />
@@ -226,7 +226,7 @@ export default function BossPortfolioDetailPage() {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-rose-800/50 bg-rose-950/30 px-3 text-sm text-rose-300 hover:border-rose-700 hover:text-rose-200 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-rose-800/50 bg-rose-950/30 px-3 text-sm text-boss-error hover:border-rose-700 hover:text-boss-error disabled:opacity-50"
           >
             {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
             삭제
@@ -235,8 +235,8 @@ export default function BossPortfolioDetailPage() {
       </div>
 
       {/* 헤더 카드 */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
-        <div className="relative aspect-[21/9] w-full bg-slate-950">
+      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50">
+        <div className="relative aspect-[21/9] w-full bg-boss-bg">
           {after[0] || before[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -245,7 +245,7 @@ export default function BossPortfolioDetailPage() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-slate-700">
+            <div className="flex h-full w-full items-center justify-center text-boss-text-muted">
               <ImageIcon size={64} />
             </div>
           )}
@@ -253,8 +253,8 @@ export default function BossPortfolioDetailPage() {
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
                 isPublic
-                  ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30'
-                  : 'bg-slate-800/80 text-slate-300 ring-slate-600/40'
+                  ? 'bg-boss-primary/15 text-boss-primary ring-boss-primary/30'
+                  : 'bg-boss-elevated/80 text-boss-text-secondary ring-boss-border/40'
               }`}
             >
               {isPublic ? <Eye size={12} /> : <EyeOff size={12} />}
@@ -264,14 +264,14 @@ export default function BossPortfolioDetailPage() {
         </div>
 
         <div className="p-6">
-          <h1 className="mb-2 text-2xl font-bold text-white">{item.title}</h1>
+          <h1 className="mb-2 text-2xl font-bold text-boss-text">{item.title}</h1>
           {item.description && (
-            <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-slate-400">
+            <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-boss-text-muted">
               {item.description}
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 border-t border-boss-border pt-4 text-sm md:grid-cols-3 lg:grid-cols-6">
             <InfoCell icon={<Building2 size={14} />} label="건물 유형" value={item.buildingType} />
             <InfoCell icon={<MapPin size={14} />} label="지역" value={item.region} />
             <InfoCell
@@ -287,8 +287,8 @@ export default function BossPortfolioDetailPage() {
       </div>
 
       {/* 이미지 탭 */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/50">
-        <div className="flex items-center gap-1 border-b border-slate-800 px-3">
+      <div className="rounded-2xl border border-boss-border bg-boss-surface/50">
+        <div className="flex items-center gap-1 border-b border-boss-border px-3">
           <TabButton
             active={tab === 'before'}
             onClick={() => setTab('before')}
@@ -302,7 +302,7 @@ export default function BossPortfolioDetailPage() {
         </div>
         <div className="p-4">
           {images.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center text-slate-500">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center text-boss-text-muted">
               <ImageIcon size={36} className="mb-2" />
               <p className="text-sm">등록된 사진이 없습니다</p>
             </div>
@@ -314,7 +314,7 @@ export default function BossPortfolioDetailPage() {
                   href={src}
                   target="_blank"
                   rel="noreferrer"
-                  className="group relative aspect-square overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-boss-border bg-boss-bg"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -331,11 +331,11 @@ export default function BossPortfolioDetailPage() {
 
       {/* 외부 링크 */}
       {links.length > 0 && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-            <ExternalLink size={14} className="text-emerald-300" />
+        <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-boss-text">
+            <ExternalLink size={14} className="text-boss-primary" />
             외부 포트폴리오 링크
-            <span className="text-xs font-normal text-slate-500">({links.length})</span>
+            <span className="text-xs font-normal text-boss-text-muted">({links.length})</span>
           </h2>
           <ul className="space-y-2">
             {links.map((link, idx) => (
@@ -344,9 +344,9 @@ export default function BossPortfolioDetailPage() {
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3 transition-colors hover:border-emerald-500/40"
+                  className="flex items-center gap-3 rounded-xl border border-boss-border bg-boss-surface p-3 transition-colors hover:border-boss-primary/20"
                 >
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-slate-500">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-boss-elevated text-boss-text-muted">
                     {link.thumbnailUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={link.thumbnailUrl} alt="thumb" className="h-full w-full object-cover" />
@@ -355,12 +355,12 @@ export default function BossPortfolioDetailPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="line-clamp-1 text-sm font-medium text-slate-100">
+                    <p className="line-clamp-1 text-sm font-medium text-boss-text">
                       {link.title || '외부 링크'}
                     </p>
-                    <p className="line-clamp-1 text-xs text-slate-500">{link.url}</p>
+                    <p className="line-clamp-1 text-xs text-boss-text-muted">{link.url}</p>
                   </div>
-                  <ExternalLink size={14} className="text-slate-500" />
+                  <ExternalLink size={14} className="text-boss-text-muted" />
                 </a>
               </li>
             ))}
@@ -372,7 +372,7 @@ export default function BossPortfolioDetailPage() {
       <div className="flex items-center justify-end gap-2">
         <Link
           href="/boss/portfolio/new"
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
         >
           <Pencil size={14} /> 새 포트폴리오 등록
         </Link>
@@ -391,12 +391,12 @@ function InfoCell({
   value?: string | null;
 }) {
   return (
-    <div className="rounded-xl bg-slate-900/60 p-3 ring-1 ring-inset ring-slate-800">
-      <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
+    <div className="rounded-xl bg-boss-surface p-3 ring-1 ring-inset ring-slate-800">
+      <div className="mb-1 flex items-center gap-1 text-[11px] text-boss-text-muted">
         {icon}
         <span>{label}</span>
       </div>
-      <p className="truncate text-sm font-medium text-slate-200">{value || '-'}</p>
+      <p className="truncate text-sm font-medium text-boss-text">{value || '-'}</p>
     </div>
   );
 }
@@ -415,11 +415,11 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`relative px-4 py-3 text-sm transition-colors ${
-        active ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+        active ? 'text-boss-text' : 'text-boss-text-muted hover:text-boss-text'
       }`}
     >
       {label}
-      {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-emerald-400" />}
+      {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-boss-primary" />}
     </button>
   );
 }

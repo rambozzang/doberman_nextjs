@@ -85,28 +85,28 @@ export default function BossAlarmSettingPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/settings"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 설정
         </Link>
-        <h1 className="text-xl font-bold text-white">알림 설정</h1>
+        <h1 className="text-xl font-bold text-boss-text">알림 설정</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+      <div className="rounded-2xl border border-boss-border bg-boss-surface p-5">
         <div className="flex items-center gap-3">
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-              enabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/40 text-slate-400'
+              enabled ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated/40 text-boss-text-muted'
             }`}
           >
             {enabled ? <BellRing size={20} /> : <BellOff size={20} />}
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-white">
+            <div className="text-sm font-semibold text-boss-text">
               {enabled ? '알림이 켜져있습니다.' : '알림이 꺼져있습니다.'}
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-boss-text-muted">
               브라우저 알림 권한 및 알림 수신 시간을 설정할 수 있습니다.
             </div>
           </div>
@@ -115,8 +115,8 @@ export default function BossAlarmSettingPage() {
             onClick={() => setEnabled((v) => !v)}
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold transition ${
               enabled
-                ? 'bg-emerald-500 text-white hover:bg-emerald-400'
-                : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                ? 'bg-boss-primary text-boss-text hover:bg-boss-primary-hover'
+                : 'bg-boss-elevated text-boss-text hover:bg-slate-600'
             }`}
           >
             {enabled ? '끄기' : '켜기'}
@@ -124,22 +124,22 @@ export default function BossAlarmSettingPage() {
         </div>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-5">
         <div>
-          <h2 className="text-sm font-semibold text-white">알림 수신 시간</h2>
-          <p className="mt-1 text-xs text-slate-400">
+          <h2 className="text-sm font-semibold text-boss-text">알림 수신 시간</h2>
+          <p className="mt-1 text-xs text-boss-text-muted">
             아래 시간 동안에만 알림을 수신합니다. 형식: HHmm-HHmm
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-400">시작 시간</label>
+            <label className="mb-1 block text-xs font-semibold text-boss-text-muted">시작 시간</label>
             <div className="flex gap-2">
               <select
                 value={startHour}
                 onChange={(e) => setStartHour(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-2 text-sm text-slate-100 focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               >
                 {HOURS.map((h) => (
                   <option key={h} value={h}>
@@ -150,7 +150,7 @@ export default function BossAlarmSettingPage() {
               <select
                 value={startMin}
                 onChange={(e) => setStartMin(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-2 text-sm text-slate-100 focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               >
                 {MINUTES.map((m) => (
                   <option key={m} value={m}>
@@ -162,12 +162,12 @@ export default function BossAlarmSettingPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-400">종료 시간</label>
+            <label className="mb-1 block text-xs font-semibold text-boss-text-muted">종료 시간</label>
             <div className="flex gap-2">
               <select
                 value={endHour}
                 onChange={(e) => setEndHour(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-2 text-sm text-slate-100 focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               >
                 {HOURS.map((h) => (
                   <option key={h} value={h}>
@@ -178,7 +178,7 @@ export default function BossAlarmSettingPage() {
               <select
                 value={endMin}
                 onChange={(e) => setEndMin(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-2 text-sm text-slate-100 focus:border-emerald-500/50 focus:outline-none"
+                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
               >
                 {MINUTES.map((m) => (
                   <option key={m} value={m}>
@@ -190,9 +190,9 @@ export default function BossAlarmSettingPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
+        <div className="rounded-lg border border-boss-border/60 bg-boss-bg/40 px-3 py-2 text-xs text-boss-text-muted">
           현재 설정:
-          <span className="ml-2 font-mono text-emerald-300">
+          <span className="ml-2 font-mono text-boss-primary">
             {startHour}
             {startMin} - {endHour}
             {endMin}
@@ -204,7 +204,7 @@ export default function BossAlarmSettingPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-primary px-4 py-2 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-50"
           >
             <Save size={14} /> {saving ? '저장 중…' : '저장'}
           </button>

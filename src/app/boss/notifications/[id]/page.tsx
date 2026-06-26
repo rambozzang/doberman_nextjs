@@ -44,21 +44,21 @@ const CATEGORY_META: Record<
     tone: 'amber',
     Icon: Megaphone,
     iconClass:
-      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300',
+      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-boss-warning/10 text-boss-warning',
   },
   NOTI: {
     label: '공지',
     tone: 'emerald',
     Icon: BellRing,
     iconClass:
-      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-boss-primary/30 bg-boss-primary/10 text-boss-primary',
   },
   UPDATE: {
     label: '업데이트',
     tone: 'sky',
     Icon: Sparkles,
     iconClass:
-      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/10 text-sky-300',
+      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-boss-info/30 bg-boss-info/10 text-boss-info',
   },
 };
 
@@ -187,13 +187,13 @@ export default function BossNotificationDetailPage() {
             { label: '상세' },
           ]}
         />
-        <div className="flex items-start gap-2 rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <span>{error || '알림을 찾을 수 없습니다.'}</span>
         </div>
         <Link
           href="/boss/notifications"
-          className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 알림 목록으로 돌아가기
         </Link>
@@ -244,20 +244,20 @@ export default function BossNotificationDetailPage() {
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge tone={tone}>{label}</Badge>
             </div>
-            <h1 className="text-xl font-bold text-white md:text-2xl">
+            <h1 className="text-xl font-bold text-boss-text md:text-2xl">
               {item.subject ?? '(제목 없음)'}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-boss-text-muted">
               <span className="inline-flex items-center gap-1.5">
-                <User size={14} className="text-slate-500" />
+                <User size={14} className="text-boss-text-muted" />
                 {authorName(item)}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Calendar size={14} className="text-slate-500" />
+                <Calendar size={14} className="text-boss-text-muted" />
                 {formatDateTime(item.crtDtm)}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Eye size={14} className="text-slate-500" />
+                <Eye size={14} className="text-boss-text-muted" />
                 {item.viewCnt ?? 0}
               </span>
             </div>
@@ -269,13 +269,13 @@ export default function BossNotificationDetailPage() {
       {isHtml ? (
         <Card>
           <div
-            className="prose prose-invert max-w-none text-sm leading-relaxed text-slate-200"
+            className="prose prose-invert max-w-none text-sm leading-relaxed text-boss-text"
             dangerouslySetInnerHTML={{ __html: item.contents ?? '' }}
           />
         </Card>
       ) : (
         <Card>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-boss-text-secondary">
             {item.contents ?? '내용이 없습니다.'}
           </p>
         </Card>

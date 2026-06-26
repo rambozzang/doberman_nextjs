@@ -128,35 +128,35 @@ export default function BossPortfolioListPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">시공 포트폴리오</h1>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">시공 포트폴리오</h1>
+            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
               {items.length.toLocaleString()}
             </span>
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
+            <span className="rounded-full bg-boss-primary/10 px-2 py-0.5 text-xs font-semibold text-boss-primary ring-1 ring-inset ring-boss-primary/30">
               공개 {publicCount}
             </span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-boss-text-muted">
             완료한 시공 사례를 모아 고객에게 전문성을 어필하세요.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="제목·지역·유형 검색"
-              className="h-9 w-56 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
-          <div className="flex h-9 items-center rounded-lg border border-slate-800 bg-slate-900/60 p-0.5 text-xs">
+          <div className="flex h-9 items-center rounded-lg border border-boss-border bg-boss-surface p-0.5 text-xs">
             <button
               type="button"
               onClick={() => setSort('CREATED_DT')}
               className={`h-8 rounded-md px-3 ${
-                sort === 'CREATED_DT' ? 'bg-slate-800 text-emerald-300' : 'text-slate-500 hover:text-slate-300'
+                sort === 'CREATED_DT' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
               }`}
             >
               등록일순
@@ -165,7 +165,7 @@ export default function BossPortfolioListPage() {
               type="button"
               onClick={() => setSort('WORK_DATE')}
               className={`h-8 rounded-md px-3 ${
-                sort === 'WORK_DATE' ? 'bg-slate-800 text-emerald-300' : 'text-slate-500 hover:text-slate-300'
+                sort === 'WORK_DATE' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
               }`}
             >
               시공일순
@@ -175,13 +175,13 @@ export default function BossPortfolioListPage() {
             type="button"
             onClick={load}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/portfolio/new"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 신규 등록
           </Link>
@@ -189,7 +189,7 @@ export default function BossPortfolioListPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -200,20 +200,20 @@ export default function BossPortfolioListPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-72 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="h-72 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
             />
           ))}
         </div>
       ) : sortedFiltered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">등록된 포트폴리오가 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">새 시공 사례를 등록해 갤러리를 채워보세요.</p>
+          <p className="text-sm font-medium text-boss-text">등록된 포트폴리오가 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">새 시공 사례를 등록해 갤러리를 채워보세요.</p>
           <Link
             href="/boss/portfolio/new"
-            className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+            className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover"
           >
             <Plus size={14} /> 포트폴리오 등록
           </Link>
@@ -229,10 +229,10 @@ export default function BossPortfolioListPage() {
               <Link
                 key={item.id}
                 href={`/boss/portfolio/${item.id}`}
-                className="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5"
+                className="group overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50 transition-all hover:-translate-y-0.5 hover:border-boss-primary/20 hover:shadow-boss-lg hover:shadow-emerald-500/5"
               >
                 {/* 썸네일 */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
+                <div className="relative aspect-[16/10] overflow-hidden bg-boss-surface">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -241,7 +241,7 @@ export default function BossPortfolioListPage() {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-slate-700">
+                    <div className="flex h-full w-full items-center justify-center text-boss-text-muted">
                       <ImageIcon size={48} />
                     </div>
                   )}
@@ -249,8 +249,8 @@ export default function BossPortfolioListPage() {
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
                         isPublic
-                          ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30'
-                          : 'bg-slate-700/50 text-slate-300 ring-slate-600/40'
+                          ? 'bg-boss-primary/15 text-boss-primary ring-boss-primary/30'
+                          : 'bg-boss-elevated/50 text-boss-text-secondary ring-boss-border/40'
                       }`}
                     >
                       {isPublic ? <Eye size={10} /> : <EyeOff size={10} />}
@@ -258,40 +258,40 @@ export default function BossPortfolioListPage() {
                     </span>
                   </div>
                   <div className="absolute left-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
-                    <ArrowUpRight size={16} className="text-emerald-300" />
+                    <ArrowUpRight size={16} className="text-boss-primary" />
                   </div>
                 </div>
 
                 {/* 본문 */}
                 <div className="p-4">
-                  <h3 className="mb-1 line-clamp-1 text-base font-semibold text-white">
+                  <h3 className="mb-1 line-clamp-1 text-base font-semibold text-boss-text">
                     {item.title || '제목 없음'}
                   </h3>
-                  <p className="mb-3 line-clamp-1 text-xs text-slate-400">
+                  <p className="mb-3 line-clamp-1 text-xs text-boss-text-muted">
                     {item.description || '설명 없음'}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2 border-t border-slate-800 pt-3 text-xs">
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <MapPin size={12} className="text-slate-500" />
+                  <div className="grid grid-cols-2 gap-2 border-t border-boss-border pt-3 text-xs">
+                    <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                      <MapPin size={12} className="text-boss-text-muted" />
                       <span className="truncate">{item.region ?? '-'}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <Ruler size={12} className="text-slate-500" />
+                    <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                      <Ruler size={12} className="text-boss-text-muted" />
                       <span className="truncate">
                         {item.area != null ? `${Math.round(item.area)}평` : '-'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <Calendar size={12} className="text-slate-500" />
+                    <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                      <Calendar size={12} className="text-boss-text-muted" />
                       <span className="truncate">{formatDate(item.workDate)}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <ImageIcon size={12} className="text-slate-500" />
+                    <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                      <ImageIcon size={12} className="text-boss-text-muted" />
                       <span className="truncate">
                         전 {before.length} / 후 {after.length}
                         {linkCount > 0 && (
-                          <span className="ml-1 inline-flex items-center gap-0.5 text-slate-500">
+                          <span className="ml-1 inline-flex items-center gap-0.5 text-boss-text-muted">
                             <LinkIcon size={10} /> {linkCount}
                           </span>
                         )}

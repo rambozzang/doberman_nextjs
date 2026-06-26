@@ -52,11 +52,11 @@ const fmtMoney = (v?: string) => {
 // 라벨/값 행
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex border-b border-slate-300 print:border-black">
-      <div className="w-40 shrink-0 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 print:bg-white">
+    <div className="flex border-b border-boss-border print:border-black">
+      <div className="w-40 shrink-0 bg-boss-elevated px-3 py-2 text-xs font-semibold text-boss-text-muted print:bg-white">
         {label}
       </div>
-      <div className="flex-1 px-3 py-2 text-sm text-slate-900">{value || '-'}</div>
+      <div className="flex-1 px-3 py-2 text-sm text-boss-text">{value || '-'}</div>
     </div>
   );
 }
@@ -136,40 +136,40 @@ export default function BossChecklistPrintPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronLeft size={16} />
           </button>
-          <h1 className="text-xl font-bold tracking-tight text-white">체크리스트 인쇄</h1>
+          <h1 className="text-xl font-bold tracking-tight text-boss-text">체크리스트 인쇄</h1>
         </div>
         <button
           type="button"
           onClick={handlePrint}
-          className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"
+          className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-medium text-boss-text hover:bg-boss-primary-hover"
         >
           <Printer size={14} /> 인쇄하기
         </button>
       </div>
 
       {error && (
-        <div className="no-print rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="no-print rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {loading && !data ? (
-        <div className="no-print h-40 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+        <div className="no-print h-40 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
       ) : data ? (
-        <div className="print-area mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-8 shadow-xl print:max-w-full print:rounded-none print:p-0 print:shadow-none">
+        <div className="print-area mx-auto max-w-4xl rounded-2xl border border-boss-border bg-white p-8 shadow-boss-lg print:max-w-full print:rounded-none print:p-0 print:shadow-none">
           {/* 인쇄용 타이틀 */}
           <div className="mb-6 border-b-2 border-slate-900 pb-4 text-center">
-            <h2 className="text-2xl font-bold text-slate-900">시공 체크리스트</h2>
-            <p className="mt-1 text-xs text-slate-600">고객 ID: {data.customerId || customerId}</p>
+            <h2 className="text-2xl font-bold text-boss-text">시공 체크리스트</h2>
+            <p className="mt-1 text-xs text-boss-text-muted">고객 ID: {data.customerId || customerId}</p>
           </div>
 
           {/* 기본 정보 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 기본 정보</h3>
-          <div className="mb-4 border-t border-slate-300">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 기본 정보</h3>
+          <div className="mb-4 border-t border-boss-border">
             <Row label="주거 형태" value={labelOfSingle(CHIP_HOUSING_TYPE, data.housingType)} />
             <Row label="면적 기준" value={labelOfSingle(CHIP_AREA, data.areaType)} />
             <Row label="면적" value={data.areaText ? `${data.areaText} ㎡` : '-'} />
@@ -178,38 +178,38 @@ export default function BossChecklistPrintPage() {
           </div>
 
           {/* 방 정보 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 방 정보</h3>
-          <table className="mb-4 w-full border-collapse border border-slate-300 text-sm">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 방 정보</h3>
+          <table className="mb-4 w-full border-collapse border border-boss-border text-sm">
             <thead>
-              <tr className="bg-slate-100 print:bg-white">
-                <th className="border border-slate-300 px-2 py-1 text-xs font-semibold">구분</th>
-                <th className="border border-slate-300 px-2 py-1 text-xs font-semibold">정사이즈</th>
-                <th className="border border-slate-300 px-2 py-1 text-xs font-semibold">천장</th>
-                <th className="border border-slate-300 px-2 py-1 text-xs font-semibold">벽</th>
+              <tr className="bg-boss-elevated print:bg-white">
+                <th className="border border-boss-border px-2 py-1 text-xs font-semibold">구분</th>
+                <th className="border border-boss-border px-2 py-1 text-xs font-semibold">정사이즈</th>
+                <th className="border border-boss-border px-2 py-1 text-xs font-semibold">천장</th>
+                <th className="border border-boss-border px-2 py-1 text-xs font-semibold">벽</th>
               </tr>
             </thead>
             <tbody>
               {data.roomsInfo.map((r, i) => (
                 <tr key={i}>
-                  <td className="border border-slate-300 px-2 py-1 text-center text-xs">
+                  <td className="border border-boss-border px-2 py-1 text-center text-xs">
                     {i === 0 ? '거실' : `방 ${i}`}
                   </td>
-                  <td className="border border-slate-300 px-2 py-1 text-center">{r.defSize || '-'}</td>
-                  <td className="border border-slate-300 px-2 py-1 text-center">{r.skySize || '-'}</td>
-                  <td className="border border-slate-300 px-2 py-1 text-center">{r.wallSize || '-'}</td>
+                  <td className="border border-boss-border px-2 py-1 text-center">{r.defSize || '-'}</td>
+                  <td className="border border-boss-border px-2 py-1 text-center">{r.skySize || '-'}</td>
+                  <td className="border border-boss-border px-2 py-1 text-center">{r.wallSize || '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <div className="mb-4 border-t border-slate-300">
+          <div className="mb-4 border-t border-boss-border">
             <Row label="층고(방)" value={data.roomHeight} />
             <Row label="층고(거실)" value={data.livingRoomHeight} />
           </div>
 
           {/* 벽지 / 확장 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 벽지 / 확장</h3>
-          <div className="mb-4 border-t border-slate-300">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 벽지 / 확장</h3>
+          <div className="mb-4 border-t border-boss-border">
             <Row label="기존 벽지" value={labelOfMulti(CHIP_OLD_WALL_PAGE, data.oldWallPage)} />
             <Row label="확장 종류" value={labelOfMulti(CHIP_EXTEND_TYPE, data.extendTypes)} />
             <Row label="아트월" value={labelOfSingle(CHIP_ART_WALL_TYPE, data.artWallType)} />
@@ -222,8 +222,8 @@ export default function BossChecklistPrintPage() {
           </div>
 
           {/* 상태 점검 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 상태 점검</h3>
-          <div className="mb-4 border-t border-slate-300">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 상태 점검</h3>
+          <div className="mb-4 border-t border-boss-border">
             <Row
               label="곰팡이/결로/누수"
               value={`${labelOfSingle(CHIP_VIRUS, data.virusStatus)} ${data.virusText || ''}`.trim()}
@@ -243,15 +243,15 @@ export default function BossChecklistPrintPage() {
           </div>
 
           {/* 장판 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 장판</h3>
-          <div className="mb-4 border-t border-slate-300">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 장판</h3>
+          <div className="mb-4 border-t border-boss-border">
             <Row label="장판 품번" value={data.floorPage} />
             <Row label="장판 총길이" value={data.floorPageLength} />
           </div>
 
           {/* 금액 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 금액</h3>
-          <div className="mb-4 border-t border-slate-300">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 금액</h3>
+          <div className="mb-4 border-t border-boss-border">
             <Row label="도배 금액" value={`${fmtMoney(data.artWallPrice)} 원`} />
             <Row label="장판 금액" value={`${fmtMoney(data.floorPrice)} 원`} />
             <Row label="총액" value={`${fmtMoney(data.totalPrice)} 원`} />
@@ -260,14 +260,14 @@ export default function BossChecklistPrintPage() {
           </div>
 
           {/* 비고 */}
-          <h3 className="mb-2 text-sm font-bold text-slate-900">■ 비고</h3>
-          <div className="min-h-[80px] whitespace-pre-wrap rounded border border-slate-300 p-3 text-sm text-slate-900">
+          <h3 className="mb-2 text-sm font-bold text-boss-text">■ 비고</h3>
+          <div className="min-h-[80px] whitespace-pre-wrap rounded border border-boss-border p-3 text-sm text-boss-text">
             {data.bigo || '-'}
           </div>
         </div>
       ) : (
         !loading && (
-          <div className="no-print rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center text-sm text-slate-400">
+          <div className="no-print rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 p-10 text-center text-sm text-boss-text-muted">
             데이터가 없습니다.
           </div>
         )

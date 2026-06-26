@@ -43,8 +43,8 @@ function ToolButton({ onClick, active, disabled, label, children }: ToolButtonPr
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 ${
-        active ? 'bg-emerald-500/20 text-emerald-300' : ''
+      className={`flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted transition-colors hover:bg-boss-elevated hover:text-boss-text disabled:cursor-not-allowed disabled:opacity-40 ${
+        active ? 'bg-boss-primary/20 text-boss-primary' : ''
       }`}
     >
       {children}
@@ -57,14 +57,14 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder: placeholder ?? '내용을 입력하세요...' }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-emerald-400 underline' } }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-boss-primary underline' } }),
     ],
     content: value,
     immediatelyRender: false,
     editorProps: {
       attributes: {
         class:
-          'prose prose-invert prose-sm max-w-none px-4 py-3 focus:outline-none prose-p:my-2 prose-headings:text-white prose-strong:text-white prose-blockquote:border-l-emerald-500',
+          'prose prose-invert prose-sm max-w-none px-4 py-3 focus:outline-none prose-p:my-2 prose-headings:text-boss-text prose-strong:text-boss-text prose-blockquote:border-l-emerald-500',
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -82,7 +82,7 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
   if (!editor) {
     return (
       <div
-        className="rounded-lg border border-slate-700 bg-slate-900"
+        className="rounded-lg border border-boss-border bg-boss-surface"
         style={{ minHeight: minHeight + 44 }}
       />
     );
@@ -100,8 +100,8 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-900 focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/10">
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-slate-700 bg-slate-800/60 px-2 py-1.5">
+    <div className="overflow-hidden rounded-lg border border-boss-border bg-boss-surface focus-within:border-boss-primary/30 focus-within:ring-2 focus-within:ring-emerald-500/10">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-boss-border bg-boss-elevated/60 px-2 py-1.5">
         <ToolButton
           label="실행 취소"
           onClick={() => editor.chain().focus().undo().run()}
@@ -117,7 +117,7 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
           <Redo2 size={15} />
         </ToolButton>
 
-        <span className="mx-1 h-5 w-px bg-slate-700" />
+        <span className="mx-1 h-5 w-px bg-boss-elevated" />
 
         <ToolButton
           label="제목 2"
@@ -134,7 +134,7 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
           <Heading3 size={15} />
         </ToolButton>
 
-        <span className="mx-1 h-5 w-px bg-slate-700" />
+        <span className="mx-1 h-5 w-px bg-boss-elevated" />
 
         <ToolButton
           label="굵게"
@@ -165,7 +165,7 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
           <Code size={15} />
         </ToolButton>
 
-        <span className="mx-1 h-5 w-px bg-slate-700" />
+        <span className="mx-1 h-5 w-px bg-boss-elevated" />
 
         <ToolButton
           label="순서 없는 목록"
@@ -189,7 +189,7 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
           <Quote size={15} />
         </ToolButton>
 
-        <span className="mx-1 h-5 w-px bg-slate-700" />
+        <span className="mx-1 h-5 w-px bg-boss-elevated" />
 
         <ToolButton label="링크" onClick={setLink} active={editor.isActive('link')}>
           <LinkIcon size={15} />

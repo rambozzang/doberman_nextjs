@@ -78,33 +78,33 @@ export default function BossAgreePage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/login"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 로그인
         </Link>
-        <h1 className="text-xl font-bold text-white">약관 동의</h1>
+        <h1 className="text-xl font-bold text-boss-text">약관 동의</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-slate-900/40 p-5">
-        <h2 className="text-base font-bold text-white">도베르만 서비스 가입</h2>
-        <p className="mt-1 text-sm leading-relaxed text-slate-300">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
+        <h2 className="text-base font-bold text-boss-text">도베르만 서비스 가입</h2>
+        <p className="mt-1 text-sm leading-relaxed text-boss-text-secondary">
           서비스 시작 및 가입을 위해 먼저 가입 및 정보 제공에 동의해 주세요.
         </p>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+      <div className="space-y-3 rounded-2xl border border-boss-border bg-boss-surface p-5">
         <button
           type="button"
           onClick={toggleAll}
-          className="flex w-full items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/15"
+          className="flex w-full items-center gap-3 rounded-xl border border-boss-primary/30 bg-boss-primary/10 p-4 text-left hover:bg-boss-primary/15"
         >
           {allChecked ? (
-            <CheckSquare size={20} className="text-emerald-300" />
+            <CheckSquare size={20} className="text-boss-primary" />
           ) : (
-            <Square size={20} className="text-slate-400" />
+            <Square size={20} className="text-boss-text-muted" />
           )}
-          <span className="text-sm font-bold text-white">전체 동의</span>
+          <span className="text-sm font-bold text-boss-text">전체 동의</span>
         </button>
 
         <div className="divide-y divide-slate-800/70">
@@ -119,15 +119,15 @@ export default function BossAgreePage() {
                   aria-label={a.title}
                 >
                   {isOn ? (
-                    <CheckSquare size={18} className="text-emerald-300" />
+                    <CheckSquare size={18} className="text-boss-primary" />
                   ) : (
-                    <Square size={18} className="text-slate-500" />
+                    <Square size={18} className="text-boss-text-muted" />
                   )}
                 </button>
-                <div className="min-w-0 flex-1 text-sm text-slate-200">
+                <div className="min-w-0 flex-1 text-sm text-boss-text">
                   <span
                     className={
-                      a.required ? 'text-emerald-300 font-semibold' : 'text-slate-400 font-semibold'
+                      a.required ? 'text-boss-primary font-semibold' : 'text-boss-text-muted font-semibold'
                     }
                   >
                     ({a.required ? '필수' : '선택'})
@@ -137,7 +137,7 @@ export default function BossAgreePage() {
                 {a.href && (
                   <Link
                     href={a.href}
-                    className="inline-flex items-center gap-0.5 text-xs text-slate-400 hover:text-emerald-300"
+                    className="inline-flex items-center gap-0.5 text-xs text-boss-text-muted hover:text-boss-primary"
                   >
                     보기 <ChevronRight size={12} />
                   </Link>
@@ -152,7 +152,7 @@ export default function BossAgreePage() {
         type="button"
         onClick={submit}
         disabled={!requiredChecked}
-        className="h-12 w-full rounded-xl bg-emerald-500 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+        className="h-12 w-full rounded-xl bg-boss-primary text-sm font-bold text-boss-text transition hover:bg-boss-primary-hover disabled:cursor-not-allowed disabled:bg-boss-elevated disabled:text-boss-text-muted"
       >
         동의하고 계속하기
       </button>

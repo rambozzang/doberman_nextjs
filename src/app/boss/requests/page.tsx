@@ -35,15 +35,15 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
 function statusBadge(status?: string) {
   const s = (status ?? '').toLowerCase();
   if (s.includes('new') || s.includes('신규') || s.includes('대기')) {
-    return { label: status || '신규', cls: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30' };
+    return { label: status || '신규', cls: 'bg-boss-primary/10 text-boss-primary ring-boss-primary/30' };
   }
   if (s.includes('progress') || s.includes('진행')) {
-    return { label: status || '진행', cls: 'bg-sky-500/10 text-sky-300 ring-sky-500/30' };
+    return { label: status || '진행', cls: 'bg-boss-info/10 text-boss-info ring-boss-info/30' };
   }
   if (s.includes('done') || s.includes('완료')) {
-    return { label: status || '완료', cls: 'bg-violet-500/10 text-violet-300 ring-violet-500/30' };
+    return { label: status || '완료', cls: 'bg-violet-500/10 text-violet-400 ring-violet-500/30' };
   }
-  return { label: status || '신규', cls: 'bg-slate-700/40 text-slate-300 ring-slate-600/30' };
+  return { label: status || '신규', cls: 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30' };
 }
 
 function relativeTime(input?: string): string {
@@ -149,29 +149,29 @@ export default function BossRequestListPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">견적 요청</h1>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">견적 요청</h1>
+            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
               {displayCount.toLocaleString()}
             </span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-boss-text-muted">
             새로 들어온 견적 요청을 빠르게 확인하고 답변하세요.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="지역·건물·고객 검색"
-              className="h-9 w-56 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
           <button
             type="button"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <SlidersHorizontal size={14} /> 필터
           </button>
@@ -179,16 +179,16 @@ export default function BossRequestListPage() {
             type="button"
             onClick={() => void handleRefresh()}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
-          <div className="flex h-9 items-center rounded-lg border border-slate-800 bg-slate-900/60 p-0.5">
+          <div className="flex h-9 items-center rounded-lg border border-boss-border bg-boss-surface p-0.5">
             <button
               type="button"
               onClick={() => setView('grid')}
               className={`flex h-8 w-8 items-center justify-center rounded-md ${
-                view === 'grid' ? 'bg-slate-800 text-emerald-300' : 'text-slate-500 hover:text-slate-300'
+                view === 'grid' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
               }`}
               aria-label="그리드 보기"
             >
@@ -198,7 +198,7 @@ export default function BossRequestListPage() {
               type="button"
               onClick={() => setView('list')}
               className={`flex h-8 w-8 items-center justify-center rounded-md ${
-                view === 'list' ? 'bg-slate-800 text-emerald-300' : 'text-slate-500 hover:text-slate-300'
+                view === 'list' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
               }`}
               aria-label="리스트 보기"
             >
@@ -209,7 +209,7 @@ export default function BossRequestListPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-800">
+      <div className="flex flex-wrap items-center gap-1 border-b border-boss-border">
         {STATUS_TABS.map(({ key, label }) => {
           const active = tab === key;
           const count = counts[key];
@@ -219,25 +219,25 @@ export default function BossRequestListPage() {
               type="button"
               onClick={() => setTab(key)}
               className={`relative flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${
-                active ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                active ? 'text-boss-text' : 'text-boss-text-muted hover:text-boss-text'
               }`}
             >
               <span>{label}</span>
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                  active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                  active ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated text-boss-text-muted'
                 }`}
               >
                 {count}
               </span>
-              {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-emerald-400" />}
+              {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-boss-primary" />}
             </button>
           );
         })}
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -248,17 +248,17 @@ export default function BossRequestListPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-36 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="h-36 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
             />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">표시할 견적 요청이 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">필터 조건을 변경하거나 새로고침해보세요.</p>
+          <p className="text-sm font-medium text-boss-text">표시할 견적 요청이 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">필터 조건을 변경하거나 새로고침해보세요.</p>
         </div>
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -268,10 +268,10 @@ export default function BossRequestListPage() {
               <Link
                 key={item.id}
                 href={`/boss/requests/${item.id}`}
-                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5"
+                className="group relative overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50 p-4 transition-all hover:-translate-y-0.5 hover:border-boss-primary/20 hover:shadow-boss-lg hover:shadow-emerald-500/5"
               >
                 <div className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
-                  <ArrowUpRight size={16} className="text-emerald-400" />
+                  <ArrowUpRight size={16} className="text-boss-primary" />
                 </div>
 
                 <div className="mb-3 flex items-center gap-2">
@@ -281,36 +281,36 @@ export default function BossRequestListPage() {
                     {badge.label}
                   </span>
                   {typeof item.answerCount === 'number' && item.answerCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] text-boss-text-secondary">
                       <MessageCircle size={10} /> {item.answerCount}
                     </span>
                   )}
-                  <span className="ml-auto text-[11px] text-slate-500">#{item.id}</span>
+                  <span className="ml-auto text-[11px] text-boss-text-muted">#{item.id}</span>
                 </div>
 
-                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-white">
+                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-boss-text">
                   {item.buildingType ?? '견적 요청'}
-                  {item.areaSize ? <span className="ml-1 text-emerald-300">· {item.areaSize}㎡</span> : null}
+                  {item.areaSize ? <span className="ml-1 text-boss-primary">· {item.areaSize}㎡</span> : null}
                 </h3>
-                <p className="mb-3 line-clamp-1 text-xs text-slate-400">
+                <p className="mb-3 line-clamp-1 text-xs text-boss-text-muted">
                   {item.constructionLocation ?? item.wallpaper ?? '시공 위치 정보 없음'}
                 </p>
 
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-800 pt-3 text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <MapPin size={12} className="text-slate-500" />
+                <div className="grid grid-cols-2 gap-2 border-t border-boss-border pt-3 text-xs">
+                  <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                    <MapPin size={12} className="text-boss-text-muted" />
                     <span className="truncate">{item.region ?? '-'}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <Home size={12} className="text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                    <Home size={12} className="text-boss-text-muted" />
                     <span className="truncate">{item.roomCount ? `방 ${item.roomCount}개` : '-'}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <Calendar size={12} className="text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                    <Calendar size={12} className="text-boss-text-muted" />
                     <span className="truncate">{item.preferredDate ?? '-'}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <Clock size={12} className="text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-boss-text-secondary">
+                    <Clock size={12} className="text-boss-text-muted" />
                     <span className="truncate">{relativeTime(item.createdDt ?? item.requestDate)}</span>
                   </div>
                 </div>
@@ -319,9 +319,9 @@ export default function BossRequestListPage() {
           })}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+        <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-800 bg-slate-900/60 text-xs uppercase tracking-wider text-slate-500">
+            <thead className="border-b border-boss-border bg-boss-surface text-xs uppercase tracking-wider text-boss-text-muted">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">#</th>
                 <th className="px-4 py-3 text-left font-medium">유형</th>
@@ -339,24 +339,24 @@ export default function BossRequestListPage() {
                 return (
                   <tr
                     key={item.id}
-                    className="group cursor-pointer transition-colors hover:bg-slate-800/40"
+                    className="group cursor-pointer transition-colors hover:bg-boss-elevated/40"
                   >
-                    <td className="px-4 py-3 text-xs text-slate-500">
+                    <td className="px-4 py-3 text-xs text-boss-text-muted">
                       <Link href={`/boss/requests/${item.id}`}>#{item.id}</Link>
                     </td>
                     <td className="px-4 py-3">
-                      <Link href={`/boss/requests/${item.id}`} className="font-medium text-slate-100">
+                      <Link href={`/boss/requests/${item.id}`} className="font-medium text-boss-text">
                         {item.buildingType ?? '견적 요청'}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{item.region ?? '-'}</td>
-                    <td className="px-4 py-3 text-slate-300">
+                    <td className="px-4 py-3 text-boss-text-secondary">{item.region ?? '-'}</td>
+                    <td className="px-4 py-3 text-boss-text-secondary">
                       <span className="inline-flex items-center gap-1">
-                        <Ruler size={11} className="text-slate-500" />
+                        <Ruler size={11} className="text-boss-text-muted" />
                         {item.areaSize ? `${item.areaSize}㎡` : '-'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{item.preferredDate ?? '-'}</td>
+                    <td className="px-4 py-3 text-boss-text-secondary">{item.preferredDate ?? '-'}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${badge.cls}`}
@@ -364,13 +364,13 @@ export default function BossRequestListPage() {
                         {badge.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400">
+                    <td className="px-4 py-3 text-xs text-boss-text-muted">
                       {relativeTime(item.createdDt ?? item.requestDate)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/boss/requests/${item.id}`}
-                        className="inline-flex items-center gap-1 text-xs text-emerald-300 opacity-0 transition-opacity group-hover:opacity-100"
+                        className="inline-flex items-center gap-1 text-xs text-boss-primary opacity-0 transition-opacity group-hover:opacity-100"
                       >
                         보기 <ArrowUpRight size={12} />
                       </Link>
@@ -385,8 +385,8 @@ export default function BossRequestListPage() {
 
       {/* Pagination */}
       {!isFiltering && totalPages > 1 ? (
-        <nav className="flex items-center justify-between border-t border-slate-800 pt-4">
-          <p className="text-xs text-slate-500">
+        <nav className="flex items-center justify-between border-t border-boss-border pt-4">
+          <p className="text-xs text-boss-text-muted">
             페이지 {page} / {totalPages} · 총 {totalCount.toLocaleString()}건
           </p>
           <div className="flex items-center gap-1">
@@ -394,7 +394,7 @@ export default function BossRequestListPage() {
               type="button"
               disabled={page <= 1 || loading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="flex h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-xs text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+              className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
             >
               <ChevronLeft size={12} /> 이전
             </button>
@@ -402,15 +402,15 @@ export default function BossRequestListPage() {
               type="button"
               disabled={page >= totalPages || loading}
               onClick={() => setPage((p) => p + 1)}
-              className="flex h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-xs text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+              className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
             >
               다음 <ChevronRight size={12} />
             </button>
           </div>
         </nav>
       ) : isFiltering ? (
-        <div className="flex justify-end border-t border-slate-800 pt-4">
-          <span className="rounded-md bg-slate-800 px-2 py-1 text-[11px] text-slate-400">
+        <div className="flex justify-end border-t border-boss-border pt-4">
+          <span className="rounded-md bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-muted">
             현재 페이지 내 필터
           </span>
         </div>

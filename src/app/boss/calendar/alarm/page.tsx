@@ -98,22 +98,22 @@ export default function BossCalendarAlarmPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
-            <Bell size={20} className="text-amber-300" /> 일정 알람
+          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-boss-text">
+            <Bell size={20} className="text-boss-warning" /> 일정 알람
           </h1>
-          <p className="text-sm text-slate-400">알람이 설정된 일정 목록입니다.</p>
+          <p className="text-sm text-boss-text-muted">알람이 설정된 일정 목록입니다.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => void load()}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/calendar"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
           >
             <CalendarDays size={14} /> 캘린더
           </Link>
@@ -121,44 +121,44 @@ export default function BossCalendarAlarmPage() {
       </div>
 
       {/* 월 네비 */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/40 px-4 py-3">
+      <div className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface px-4 py-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={goPrev}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronLeft size={16} />
           </button>
-          <h2 className="min-w-[140px] text-center text-lg font-semibold text-white">
+          <h2 className="min-w-[140px] text-center text-lg font-semibold text-boss-text">
             {cursor.getFullYear()}년 {cursor.getMonth() + 1}월
           </h2>
           <button
             type="button"
             onClick={goNext}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronRight size={16} />
           </button>
         </div>
-        <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+        <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
           알람 {alarms.length}건
         </span>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {alarms.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">등록된 알람이 없습니다.</p>
-          <p className="mt-1 text-xs text-slate-500">캘린더에서 일정을 등록할 때 알람을 켜보세요.</p>
+          <p className="text-sm font-medium text-boss-text">등록된 알람이 없습니다.</p>
+          <p className="mt-1 text-xs text-boss-text-muted">캘린더에서 일정을 등록할 때 알람을 켜보세요.</p>
         </div>
       ) : (
         <ul className="space-y-2">
@@ -172,10 +172,10 @@ export default function BossCalendarAlarmPage() {
             return (
               <li
                 key={ev.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 transition-colors hover:border-amber-500/40"
+                className="rounded-2xl border border-boss-border bg-boss-surface p-4 transition-colors hover:border-amber-500/40"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-300">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-boss-warning/10 text-boss-warning">
                     <Bell size={16} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -184,15 +184,15 @@ export default function BossCalendarAlarmPage() {
                         className="h-2 w-2 rounded-full"
                         style={{ backgroundColor: eventColor(ev.eventType) }}
                       />
-                      <span className="text-[10px] font-semibold text-slate-400">
+                      <span className="text-[10px] font-semibold text-boss-text-muted">
                         {eventLabel(ev.eventType)}
                       </span>
-                      <span className="text-[10px] text-slate-500">#{ev.id}</span>
+                      <span className="text-[10px] text-boss-text-muted">#{ev.id}</span>
                     </div>
-                    <h3 className="mb-1 truncate text-sm font-semibold text-white">
+                    <h3 className="mb-1 truncate text-sm font-semibold text-boss-text">
                       {ev.title || '제목 없음'}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-boss-text-muted">
                       <span className="flex items-center gap-1">
                         <CalendarDays size={11} /> {dateStr}
                       </span>
@@ -209,7 +209,7 @@ export default function BossCalendarAlarmPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(ev)}
-                    className="rounded-md border border-rose-800/40 bg-rose-950/40 px-3 py-1.5 text-[11px] text-rose-200 hover:bg-rose-900/40"
+                    className="rounded-md border border-rose-800/40 bg-boss-error/10 px-3 py-1.5 text-[11px] text-boss-error hover:bg-boss-error/10"
                   >
                     삭제
                   </button>

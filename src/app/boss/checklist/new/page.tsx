@@ -66,7 +66,7 @@ function ChipGroup({
 
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold text-slate-400">{label}</div>
+      <div className="text-xs font-semibold text-boss-text-muted">{label}</div>
       <div className="flex flex-wrap gap-2">
         {items.map((it) => {
           const active = selected.includes(it.type);
@@ -77,8 +77,8 @@ function ChipGroup({
               onClick={() => toggle(it.type)}
               className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                 active
-                  ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300'
-                  : 'border-slate-700 bg-slate-900/40 text-slate-300 hover:border-slate-600'
+                  ? 'border-emerald-500/60 bg-boss-primary/15 text-boss-primary'
+                  : 'border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-border'
               }`}
             >
               {it.title}
@@ -106,7 +106,7 @@ function TextField({
 }) {
   return (
     <div className="space-y-1">
-      {label && <div className="text-xs text-slate-400">{label}</div>}
+      {label && <div className="text-xs text-boss-text-muted">{label}</div>}
       <input
         value={value}
         onChange={(e) => {
@@ -115,7 +115,7 @@ function TextField({
         }}
         placeholder={placeholder}
         inputMode={numeric ? 'numeric' : 'text'}
-        className="h-9 w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+        className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
       />
     </div>
   );
@@ -235,11 +235,11 @@ function BossChecklistNewForm() {
         <div className="flex items-center gap-2">
           <Link
             href="/boss/checklist"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronLeft size={16} />
           </Link>
-          <h1 className="text-xl font-bold tracking-tight text-white">
+          <h1 className="text-xl font-bold tracking-tight text-boss-text">
             {isEdit ? '체크리스트 수정' : '체크리스트 작성'}
           </h1>
         </div>
@@ -247,7 +247,7 @@ function BossChecklistNewForm() {
           type="button"
           onClick={handleSave}
           disabled={saving || loading}
-          className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
+          className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-medium text-boss-text hover:bg-boss-primary-hover disabled:opacity-60"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           저장
@@ -255,12 +255,12 @@ function BossChecklistNewForm() {
       </div>
 
       {loading ? (
-        <div className="h-40 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+        <div className="h-40 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
       ) : (
         <div className="space-y-6">
           {/* 기본 정보 */}
-          <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">기본 정보</h2>
+          <section className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">기본 정보</h2>
             <ChipGroup
               label="주거 형태"
               items={CHIP_HOUSING_TYPE}
@@ -296,12 +296,12 @@ function BossChecklistNewForm() {
           </section>
 
           {/* 방 정보 */}
-          <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">방 정보 (정사이즈 / 천장 / 벽)</h2>
+          <section className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">방 정보 (정사이즈 / 천장 / 벽)</h2>
             <div className="space-y-2">
               {data.roomsInfo.map((room, i) => (
                 <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-                  <div className="flex items-center text-xs font-semibold text-slate-400">
+                  <div className="flex items-center text-xs font-semibold text-boss-text-muted">
                     {i === 0 ? '거실' : `방 ${i}`}
                   </div>
                   <TextField
@@ -342,8 +342,8 @@ function BossChecklistNewForm() {
           </section>
 
           {/* 벽지/확장 */}
-          <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">벽지 / 확장</h2>
+          <section className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">벽지 / 확장</h2>
             <ChipGroup
               label="기존 벽지"
               items={CHIP_OLD_WALL_PAGE}
@@ -405,8 +405,8 @@ function BossChecklistNewForm() {
           </section>
 
           {/* 상태 점검 */}
-          <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">상태 점검</h2>
+          <section className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">상태 점검</h2>
             <ChipGroup
               label="곰팡이/결로/누수"
               items={CHIP_VIRUS}
@@ -450,8 +450,8 @@ function BossChecklistNewForm() {
           </section>
 
           {/* 장판 */}
-          <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">장판</h2>
+          <section className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">장판</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <TextField
                 label="장판 품번"
@@ -467,8 +467,8 @@ function BossChecklistNewForm() {
           </section>
 
           {/* 금액 */}
-          <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">금액</h2>
+          <section className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">금액</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <TextField
                 label="도배 금액"
@@ -483,8 +483,8 @@ function BossChecklistNewForm() {
                 numeric
               />
               <div className="space-y-1">
-                <div className="text-xs text-slate-400">총액 (자동)</div>
-                <div className="flex h-9 items-center rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm font-semibold text-emerald-300">
+                <div className="text-xs text-boss-text-muted">총액 (자동)</div>
+                <div className="flex h-9 items-center rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm font-semibold text-boss-primary">
                   {totalPriceCalc.toLocaleString('ko-KR')} 원
                 </div>
               </div>
@@ -495,8 +495,8 @@ function BossChecklistNewForm() {
                 numeric
               />
               <div className="space-y-1 sm:col-span-2">
-                <div className="text-xs text-slate-400">잔금 (자동)</div>
-                <div className="flex h-9 items-center rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm font-semibold text-emerald-300">
+                <div className="text-xs text-boss-text-muted">잔금 (자동)</div>
+                <div className="flex h-9 items-center rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm font-semibold text-boss-primary">
                   {balanceCalc.toLocaleString('ko-KR')} 원
                 </div>
               </div>
@@ -504,13 +504,13 @@ function BossChecklistNewForm() {
           </section>
 
           {/* 비고 */}
-          <section className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 className="text-sm font-bold text-white">비고</h2>
+          <section className="space-y-2 rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+            <h2 className="text-sm font-bold text-boss-text">비고</h2>
             <textarea
               value={data.bigo}
               onChange={(e) => patch({ bigo: e.target.value })}
               rows={4}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="w-full rounded-lg border border-boss-border bg-boss-surface p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
               placeholder="추가 메모를 입력하세요"
             />
           </section>
@@ -525,7 +525,7 @@ export default function BossChecklistNewPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-64 items-center justify-center text-slate-400">
+        <div className="flex h-64 items-center justify-center text-boss-text-muted">
           <Loader2 size={24} className="animate-spin" />
         </div>
       }

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -22,6 +23,24 @@ module.exports = {
     },
     extend: {
       colors: {
+        boss: {
+          bg: 'rgb(var(--boss-bg) / <alpha-value>)',
+          surface: 'rgb(var(--boss-surface) / <alpha-value>)',
+          elevated: 'rgb(var(--boss-elevated) / <alpha-value>)',
+          border: 'rgb(var(--boss-border) / <alpha-value>)',
+          'border-strong': 'rgb(var(--boss-border-strong) / <alpha-value>)',
+          text: 'rgb(var(--boss-text) / <alpha-value>)',
+          'text-secondary': 'rgb(var(--boss-text-secondary) / <alpha-value>)',
+          'text-muted': 'rgb(var(--boss-text-muted) / <alpha-value>)',
+          primary: 'rgb(var(--boss-primary) / <alpha-value>)',
+          'primary-hover': 'rgb(var(--boss-primary-hover) / <alpha-value>)',
+          'primary-foreground': 'rgb(var(--boss-primary-foreground) / <alpha-value>)',
+          success: 'rgb(var(--boss-success) / <alpha-value>)',
+          warning: 'rgb(var(--boss-warning) / <alpha-value>)',
+          error: 'rgb(var(--boss-error) / <alpha-value>)',
+          info: 'rgb(var(--boss-info) / <alpha-value>)',
+          ring: 'rgb(var(--boss-ring) / <alpha-value>)',
+        },
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',

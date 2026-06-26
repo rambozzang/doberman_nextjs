@@ -60,16 +60,16 @@ export default function BossCommunityBlocksPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/community"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록으로
         </Link>
-        <h1 className="text-xl font-bold text-white">차단 관리</h1>
+        <h1 className="text-xl font-bold text-boss-text">차단 관리</h1>
         <div className="w-20" />
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -77,25 +77,25 @@ export default function BossCommunityBlocksPage() {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+            <div key={i} className="h-16 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <ShieldOff size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">차단한 사용자가 없습니다</p>
+          <p className="text-sm font-medium text-boss-text">차단한 사용자가 없습니다</p>
         </div>
       ) : (
-        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
           {items.map((item) => (
             <li key={item.denyCustId} className="flex items-center justify-between p-4">
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-boss-text">
                   {item.nickNm ?? item.name ?? item.denyCustId}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-boss-text-muted">
                   차단일 {item.crtDtm ? new Date(item.crtDtm).toLocaleDateString('ko-KR') : '-'}
                 </p>
               </div>
@@ -103,7 +103,7 @@ export default function BossCommunityBlocksPage() {
                 type="button"
                 disabled={unblocking === item.denyCustId}
                 onClick={() => onUnblock(item.denyCustId)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:border-rose-700 hover:text-rose-300 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:border-rose-700 hover:text-boss-error disabled:opacity-50"
               >
                 <UserX size={12} /> 차단 해제
               </button>

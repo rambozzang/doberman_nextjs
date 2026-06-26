@@ -12,11 +12,11 @@ export const STATE_LABEL: Record<BossSubscriptionState, string> = {
 };
 
 export const STATE_BADGE_CLASS: Record<BossSubscriptionState, string> = {
-  ACTIVE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  GRACE_PERIOD: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  EXPIRED: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  NONE: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
-  ERROR: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  ACTIVE: 'bg-boss-primary/15 text-boss-primary border-boss-primary/30',
+  GRACE_PERIOD: 'bg-amber-500/15 text-boss-warning border-amber-500/30',
+  EXPIRED: 'bg-boss-error/100/15 text-boss-error border-rose-500/30',
+  NONE: 'bg-boss-elevated/40 text-boss-text-secondary border-boss-border/40',
+  ERROR: 'bg-boss-error/100/15 text-boss-error border-rose-500/30',
 };
 
 export function formatDate(value?: string | null): string {

@@ -139,9 +139,9 @@ export default function BossConstructionDetailPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-9 w-40 animate-pulse rounded-lg bg-slate-800/60" />
-        <div className="h-64 animate-pulse rounded-2xl bg-slate-800/40" />
-        <div className="h-96 animate-pulse rounded-2xl bg-slate-800/40" />
+        <div className="h-9 w-40 animate-pulse rounded-lg bg-boss-elevated/60" />
+        <div className="h-64 animate-pulse rounded-2xl bg-boss-elevated/40" />
+        <div className="h-96 animate-pulse rounded-2xl bg-boss-elevated/40" />
       </div>
     );
   }
@@ -151,11 +151,11 @@ export default function BossConstructionDetailPage() {
       <div className="space-y-4">
         <Link
           href="/boss/construction"
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록
         </Link>
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-4 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-4 text-sm text-boss-error">
           {error || '시공 기록을 찾을 수 없습니다.'}
         </div>
       </div>
@@ -170,14 +170,14 @@ export default function BossConstructionDetailPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/boss/construction"
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록
         </Link>
         <div className="flex items-center gap-2">
           <Link
             href={`/boss/construction/new?edit=${item.id}`}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <Pencil size={14} /> 수정
           </Link>
@@ -185,7 +185,7 @@ export default function BossConstructionDetailPage() {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-800/70 bg-rose-950/40 px-3 text-sm text-rose-200 hover:border-rose-700 hover:text-white disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-800/70 bg-boss-error/10 px-3 text-sm text-boss-error hover:border-rose-700 hover:text-boss-text disabled:opacity-50"
           >
             <Trash2 size={14} /> 삭제
           </button>
@@ -193,62 +193,62 @@ export default function BossConstructionDetailPage() {
       </div>
 
       {/* 헤더 카드 */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-800 bg-slate-900/70 px-5 py-4">
-          <Hammer size={18} className="text-emerald-300" />
+      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50">
+        <div className="flex flex-wrap items-center gap-3 border-b border-boss-border bg-boss-surface/70 px-5 py-4">
+          <Hammer size={18} className="text-boss-primary" />
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
                   isDone
-                    ? 'bg-emerald-500/20 text-emerald-300 ring-emerald-500/30'
-                    : 'bg-amber-500/20 text-amber-300 ring-amber-500/30'
+                    ? 'bg-boss-primary/20 text-boss-primary ring-boss-primary/30'
+                    : 'bg-boss-warning/20 text-boss-warning ring-amber-500/30'
                 }`}
               >
                 {isDone ? <CheckCircle2 size={10} /> : <Clock3 size={10} />}
                 {item.status}
               </span>
-              <span className="text-[11px] text-slate-500">#{String(item.id)}</span>
+              <span className="text-[11px] text-boss-text-muted">#{String(item.id)}</span>
             </div>
-            <h1 className="truncate text-xl font-bold text-white">{item.title || '제목 없음'}</h1>
+            <h1 className="truncate text-xl font-bold text-boss-text">{item.title || '제목 없음'}</h1>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 px-5 py-4 sm:grid-cols-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Calendar size={14} className="text-slate-500" />
+          <div className="flex items-center gap-2 text-sm text-boss-text-secondary">
+            <Calendar size={14} className="text-boss-text-muted" />
             <div>
-              <p className="text-[10px] text-slate-500">시공일</p>
+              <p className="text-[10px] text-boss-text-muted">시공일</p>
               <p className="font-semibold">{formatDate(item.constructionDate)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <ImageIcon size={14} className="text-slate-500" />
+          <div className="flex items-center gap-2 text-sm text-boss-text-secondary">
+            <ImageIcon size={14} className="text-boss-text-muted" />
             <div>
-              <p className="text-[10px] text-slate-500">전체 사진</p>
+              <p className="text-[10px] text-boss-text-muted">전체 사진</p>
               <p className="font-semibold">{totalImages}장</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Link2 size={14} className="text-slate-500" />
+          <div className="flex items-center gap-2 text-sm text-boss-text-secondary">
+            <Link2 size={14} className="text-boss-text-muted" />
             <div>
-              <p className="text-[10px] text-slate-500">연결된 주문</p>
+              <p className="text-[10px] text-boss-text-muted">연결된 주문</p>
               <p className="font-semibold">{item.orderId ? `#${item.orderId}` : '연결 없음'}</p>
             </div>
           </div>
         </div>
 
         {item.description && (
-          <div className="border-t border-slate-800 px-5 py-4">
-            <p className="text-[10px] text-slate-500">시공 설명</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-slate-200">{item.description}</p>
+          <div className="border-t border-boss-border px-5 py-4">
+            <p className="text-[10px] text-boss-text-muted">시공 설명</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-boss-text">{item.description}</p>
           </div>
         )}
       </div>
 
       {/* 이미지 탭 */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
-        <div className="flex items-center gap-1 border-b border-slate-800 bg-slate-900/60 p-2">
+      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
+        <div className="flex items-center gap-1 border-b border-boss-border bg-boss-surface p-2">
           {TABS.map(({ key, label }) => {
             const count =
               key === 'BEFORE'
@@ -264,14 +264,14 @@ export default function BossConstructionDetailPage() {
                 onClick={() => setTab(key)}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                   active
-                    ? 'bg-slate-950 text-emerald-300 ring-1 ring-emerald-500/30'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    ? 'bg-boss-bg text-boss-primary ring-1 ring-boss-primary/30'
+                    : 'text-boss-text-muted hover:bg-boss-elevated/60 hover:text-boss-text'
                 }`}
               >
                 <span>{label}</span>
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                    active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                    active ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated text-boss-text-muted'
                   }`}
                 >
                   {count}
@@ -284,11 +284,11 @@ export default function BossConstructionDetailPage() {
         <div className="p-4">
           {currentImages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
                 <ImageIcon size={20} />
               </div>
-              <p className="text-sm text-slate-300">등록된 사진이 없습니다</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="text-sm text-boss-text-secondary">등록된 사진이 없습니다</p>
+              <p className="mt-1 text-xs text-boss-text-muted">
                 수정 화면에서 {TABS.find((t) => t.key === tab)?.label} 사진을 추가하세요.
               </p>
             </div>
@@ -299,7 +299,7 @@ export default function BossConstructionDetailPage() {
                   key={`${tab}-${idx}-${src}`}
                   type="button"
                   onClick={() => openLightbox(currentImages, idx)}
-                  className="group relative aspect-square overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-boss-border bg-boss-bg"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -308,7 +308,7 @@ export default function BossConstructionDetailPage() {
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" />
-                  <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
+                  <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-boss-text">
                     {idx + 1}
                   </span>
                 </button>
@@ -330,7 +330,7 @@ export default function BossConstructionDetailPage() {
               e.stopPropagation();
               closeLightbox();
             }}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-white hover:bg-slate-800"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-boss-surface/80 text-boss-text hover:bg-boss-elevated"
             aria-label="닫기"
           >
             <X size={18} />
@@ -343,7 +343,7 @@ export default function BossConstructionDetailPage() {
                   e.stopPropagation();
                   prevLightbox();
                 }}
-                className="absolute left-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-900/80 text-white hover:bg-slate-800"
+                className="absolute left-4 flex h-12 w-12 items-center justify-center rounded-full bg-boss-surface/80 text-boss-text hover:bg-boss-elevated"
                 aria-label="이전"
               >
                 <ChevronLeft size={20} />
@@ -354,7 +354,7 @@ export default function BossConstructionDetailPage() {
                   e.stopPropagation();
                   nextLightbox();
                 }}
-                className="absolute right-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-900/80 text-white hover:bg-slate-800"
+                className="absolute right-4 flex h-12 w-12 items-center justify-center rounded-full bg-boss-surface/80 text-boss-text hover:bg-boss-elevated"
                 aria-label="다음"
               >
                 <ChevronRight size={20} />
@@ -368,7 +368,7 @@ export default function BossConstructionDetailPage() {
             className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain"
             onClick={(e) => e.stopPropagation()}
           />
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/80 px-3 py-1 text-xs text-white">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-boss-surface/80 px-3 py-1 text-xs text-boss-text">
             {lightbox.index + 1} / {lightbox.images.length}
           </div>
         </div>

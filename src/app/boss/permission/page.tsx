@@ -130,15 +130,15 @@ export default function BossPermissionPage() {
   function statusLabel(s: PermStatus): { label: string; tone: string } {
     switch (s) {
       case 'granted':
-        return { label: '허용됨', tone: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30' };
+        return { label: '허용됨', tone: 'text-boss-primary bg-boss-primary/15 border-boss-primary/30' };
       case 'denied':
         return { label: '거부됨', tone: 'text-red-300 bg-red-500/15 border-red-500/30' };
       case 'prompt':
-        return { label: '미설정', tone: 'text-amber-300 bg-amber-500/15 border-amber-500/30' };
+        return { label: '미설정', tone: 'text-boss-warning bg-amber-500/15 border-amber-500/30' };
       case 'unsupported':
-        return { label: '지원안함', tone: 'text-slate-400 bg-slate-700/30 border-slate-700' };
+        return { label: '지원안함', tone: 'text-boss-text-muted bg-boss-elevated/30 border-boss-border' };
       default:
-        return { label: '확인중', tone: 'text-slate-400 bg-slate-700/30 border-slate-700' };
+        return { label: '확인중', tone: 'text-boss-text-muted bg-boss-elevated/30 border-boss-border' };
     }
   }
 
@@ -147,18 +147,18 @@ export default function BossPermissionPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 홈
         </Link>
-        <h1 className="text-xl font-bold text-white">앱 사용을 위한 권한</h1>
+        <h1 className="text-xl font-bold text-boss-text">앱 사용을 위한 권한</h1>
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-slate-900/40 p-5">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
         <div className="flex items-start gap-3">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-emerald-300" />
-          <div className="text-sm leading-relaxed text-slate-300">
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-boss-primary" />
+          <div className="text-sm leading-relaxed text-boss-text-secondary">
             도베르만의 모든 기능을 원활히 사용하려면 아래 권한을 허용해 주세요. 권한은 브라우저
             설정에서 언제든지 변경할 수 있습니다.
           </div>
@@ -173,15 +173,15 @@ export default function BossPermissionPage() {
           return (
             <div
               key={key}
-              className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5"
+              className="rounded-2xl border border-boss-border bg-boss-surface p-5"
             >
               <div className="flex items-start gap-4">
-                <div className="rounded-lg bg-emerald-500/15 p-2 text-emerald-300">
+                <div className="rounded-lg bg-boss-primary/15 p-2 text-boss-primary">
                   <Icon size={20} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-bold text-white">{title}</div>
+                    <div className="text-sm font-bold text-boss-text">{title}</div>
                     <span
                       className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.tone}`}
                     >
@@ -194,13 +194,13 @@ export default function BossPermissionPage() {
                       )}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{description}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-boss-text-muted">{description}</p>
                   <div className="mt-3">
                     <button
                       type="button"
                       disabled={granted || s === 'unsupported' || s === 'checking'}
                       onClick={() => void requestPermission(key)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 py-1.5 text-xs font-semibold text-boss-primary hover:bg-boss-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {granted ? (
                         <>
@@ -221,7 +221,7 @@ export default function BossPermissionPage() {
       <button
         type="button"
         onClick={() => void checkAll()}
-        className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+        className="w-full rounded-xl border border-boss-border bg-boss-elevated/50 py-3 text-sm font-semibold text-boss-text hover:bg-boss-elevated"
       >
         권한 상태 새로고침
       </button>

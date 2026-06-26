@@ -227,7 +227,7 @@ function ConstructionFormInner() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={isEditMode && editId ? `/boss/construction/${editId}` : '/boss/construction'}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 취소
         </Link>
@@ -235,7 +235,7 @@ function ConstructionFormInner() {
           type="button"
           onClick={handleSave}
           disabled={saving || loadingDetail}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-50"
         >
           <Save size={14} /> {isEditMode ? '수정 저장' : '시공 기록 등록'}
         </button>
@@ -243,14 +243,14 @@ function ConstructionFormInner() {
 
       {/* 헤더 */}
       <div className="flex items-center gap-2">
-        <Hammer size={20} className="text-emerald-300" />
-        <h1 className="text-2xl font-bold tracking-tight text-white">
+        <Hammer size={20} className="text-boss-primary" />
+        <h1 className="text-2xl font-bold tracking-tight text-boss-text">
           {isEditMode ? '시공 기록 수정' : '시공 기록 등록'}
         </h1>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -262,13 +262,13 @@ function ConstructionFormInner() {
           return (
             <div
               key={section.key}
-              className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface"
             >
-              <div className="flex items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/60 px-5 py-3">
+              <div className="flex items-center justify-between gap-2 border-b border-boss-border bg-boss-surface px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <ImageIcon size={16} className="text-emerald-300" />
-                  <h2 className="text-sm font-semibold text-white">{section.label}</h2>
-                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+                  <ImageIcon size={16} className="text-boss-primary" />
+                  <h2 className="text-sm font-semibold text-boss-text">{section.label}</h2>
+                  <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] font-semibold text-boss-text-secondary">
                     {list.length}/10
                   </span>
                 </div>
@@ -289,12 +289,12 @@ function ConstructionFormInner() {
                       }
                     }}
                     placeholder="https://... 이미지 URL 입력 후 추가"
-                    className="h-10 flex-1 rounded-lg border border-slate-800 bg-slate-950/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                   />
                   <button
                     type="button"
                     onClick={() => addImageUrl(section.key)}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-emerald-950 hover:bg-emerald-400"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover"
                   >
                     <Plus size={14} /> 추가
                   </button>
@@ -302,16 +302,16 @@ function ConstructionFormInner() {
 
                 {/* 이미지 그리드 */}
                 {list.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-950/40 py-10 text-center">
-                    <ImageIcon size={28} className="mb-2 text-slate-700" />
-                    <p className="text-xs text-slate-500">아직 등록된 사진이 없습니다</p>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-boss-border bg-boss-bg/40 py-10 text-center">
+                    <ImageIcon size={28} className="mb-2 text-boss-text-muted" />
+                    <p className="text-xs text-boss-text-muted">아직 등록된 사진이 없습니다</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {list.map((url, idx) => (
                       <div
                         key={`${section.key}-${idx}-${url}`}
-                        className="group relative aspect-square overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+                        className="group relative aspect-square overflow-hidden rounded-xl border border-boss-border bg-boss-bg"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -322,12 +322,12 @@ function ConstructionFormInner() {
                         <button
                           type="button"
                           onClick={() => removeImage(section.key, idx)}
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-rose-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-boss-error/100 text-boss-text opacity-0 transition-opacity group-hover:opacity-100"
                           aria-label="삭제"
                         >
                           <Trash2 size={12} />
                         </button>
-                        <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-boss-text">
                           {idx + 1}
                         </span>
                       </div>
@@ -341,54 +341,54 @@ function ConstructionFormInner() {
       </div>
 
       {/* 메타 정보 */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
-        <div className="border-b border-slate-800 bg-slate-900/60 px-5 py-3">
-          <h2 className="text-sm font-semibold text-white">시공 정보</h2>
+      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
+        <div className="border-b border-boss-border bg-boss-surface px-5 py-3">
+          <h2 className="text-sm font-semibold text-boss-text">시공 정보</h2>
         </div>
         <div className="space-y-4 p-5">
           {/* 제목 */}
           <div>
-            <label className="mb-1 block text-xs text-slate-400">
-              제목 <span className="text-rose-400">*</span>
+            <label className="mb-1 block text-xs text-boss-text-muted">
+              제목 <span className="text-boss-error">*</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 신촌 OO아파트 거실 도배 시공"
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
 
           {/* 설명 */}
           <div>
-            <label className="mb-1 block text-xs text-slate-400">설명</label>
+            <label className="mb-1 block text-xs text-boss-text-muted">설명</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="시공 내용을 자유롭게 작성하세요"
-              className="w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* 시공일 */}
             <div>
-              <label className="mb-1 flex items-center gap-1 text-xs text-slate-400">
-                <Calendar size={11} /> 시공일 <span className="text-rose-400">*</span>
+              <label className="mb-1 flex items-center gap-1 text-xs text-boss-text-muted">
+                <Calendar size={11} /> 시공일 <span className="text-boss-error">*</span>
               </label>
               <input
                 type="date"
                 value={constructionDate}
                 onChange={(e) => setConstructionDate(e.target.value)}
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 text-sm text-slate-200 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
               />
             </div>
 
             {/* 주문 ID */}
             <div>
-              <label className="mb-1 flex items-center gap-1 text-xs text-slate-400">
+              <label className="mb-1 flex items-center gap-1 text-xs text-boss-text-muted">
                 <Link2 size={11} /> 연결할 주문 ID (선택)
               </label>
               <input
@@ -396,22 +396,22 @@ function ConstructionFormInner() {
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 placeholder="예: 1234"
-                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
               />
             </div>
           </div>
 
           {/* 상태 */}
           <div>
-            <label className="mb-1 block text-xs text-slate-400">상태</label>
+            <label className="mb-1 block text-xs text-boss-text-muted">상태</label>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setStatus('진행중')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ring-1 ring-inset ${
                   status === '진행중'
-                    ? 'bg-amber-500/20 text-amber-300 ring-amber-500/40'
-                    : 'bg-slate-800/60 text-slate-400 ring-slate-700'
+                    ? 'bg-boss-warning/20 text-boss-warning ring-amber-500/40'
+                    : 'bg-boss-elevated/60 text-boss-text-muted ring-boss-border'
                 }`}
               >
                 <Clock3 size={12} /> 진행중
@@ -421,8 +421,8 @@ function ConstructionFormInner() {
                 onClick={() => setStatus('완료')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ring-1 ring-inset ${
                   status === '완료'
-                    ? 'bg-emerald-500/20 text-emerald-300 ring-emerald-500/40'
-                    : 'bg-slate-800/60 text-slate-400 ring-slate-700'
+                    ? 'bg-boss-primary/20 text-boss-primary ring-emerald-500/40'
+                    : 'bg-boss-elevated/60 text-boss-text-muted ring-boss-border'
                 }`}
               >
                 <CheckCircle2 size={12} /> 완료
@@ -438,7 +438,7 @@ function ConstructionFormInner() {
           type="button"
           onClick={handleSave}
           disabled={saving || loadingDetail}
-          className="inline-flex h-11 items-center gap-2 rounded-lg bg-emerald-500 px-6 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 disabled:opacity-50"
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-boss-primary px-6 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-50"
         >
           <Save size={16} /> {saving ? '저장 중...' : isEditMode ? '수정 저장' : '시공 기록 등록'}
         </button>
@@ -452,8 +452,8 @@ export default function BossConstructionFormPage() {
     <Suspense
       fallback={
         <div className="space-y-4">
-          <div className="h-9 w-40 animate-pulse rounded-lg bg-slate-800/60" />
-          <div className="h-96 animate-pulse rounded-2xl bg-slate-800/40" />
+          <div className="h-9 w-40 animate-pulse rounded-lg bg-boss-elevated/60" />
+          <div className="h-96 animate-pulse rounded-2xl bg-boss-elevated/40" />
         </div>
       }
     >

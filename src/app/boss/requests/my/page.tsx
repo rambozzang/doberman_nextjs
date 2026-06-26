@@ -35,23 +35,23 @@ export default function BossMyRequestsPage() {
   return (
     <div className="space-y-4">
       <BossPageHeader title="내가 답변한 견적" description="제출한 견적 답변과 진행 상황을 확인하세요." backHref="/boss/requests" />
-      {error && <div className="rounded border border-rose-700 bg-rose-900/30 p-3 text-sm text-rose-200">{error}</div>}
+      {error && <div className="rounded border border-rose-700 bg-rose-900/30 p-3 text-sm text-boss-error">{error}</div>}
       {loading ? (
-        <div className="rounded border border-slate-700 bg-slate-800/40 p-6 text-center text-sm text-slate-400">불러오는 중...</div>
+        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">불러오는 중...</div>
       ) : items.length === 0 ? (
-        <div className="rounded border border-slate-700 bg-slate-800/40 p-6 text-center text-sm text-slate-400">아직 답변한 견적이 없습니다.</div>
+        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">아직 답변한 견적이 없습니다.</div>
       ) : (
         <ul className="space-y-2">
           {items.map((item) => (
             <li key={item.id}>
               <Link
                 href={`/boss/requests/${item.id}`}
-                className="block rounded-lg border border-slate-700 bg-slate-800/60 p-4 hover:border-emerald-500/60"
+                className="block rounded-lg border border-boss-border bg-boss-elevated/60 p-4 hover:border-emerald-500/60"
               >
-                <div className="text-sm font-semibold text-white">
+                <div className="text-sm font-semibold text-boss-text">
                   {item.buildingType ?? '견적'} · {item.region ?? ''}
                 </div>
-                <div className="mt-1 text-xs text-slate-400">{item.preferredDate ?? ''}</div>
+                <div className="mt-1 text-xs text-boss-text-muted">{item.preferredDate ?? ''}</div>
               </Link>
             </li>
           ))}

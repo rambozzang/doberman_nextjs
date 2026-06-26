@@ -133,58 +133,58 @@ export default function BossCalendarWeekPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
-            <CalendarRange size={20} className="text-emerald-300" /> 주간 일정
+          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-boss-text">
+            <CalendarRange size={20} className="text-boss-primary" /> 주간 일정
           </h1>
-          <p className="text-sm text-slate-400">한 주간의 일정을 시간대별로 확인하세요.</p>
+          <p className="text-sm text-boss-text-muted">한 주간의 일정을 시간대별로 확인하세요.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => void load()}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/calendar"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
           >
             월간
           </Link>
           <Link
             href="/boss/calendar/day"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
           >
             일간
           </Link>
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/40 px-4 py-3">
+      <div className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface px-4 py-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={goPrev}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronLeft size={16} />
           </button>
-          <h2 className="min-w-[220px] text-center text-lg font-semibold text-white">
+          <h2 className="min-w-[220px] text-center text-lg font-semibold text-boss-text">
             {weekStart.getFullYear()}.{weekStart.getMonth() + 1}.{weekStart.getDate()} ~{' '}
             {weekDays[6].getMonth() + 1}.{weekDays[6].getDate()}
           </h2>
           <button
             type="button"
             onClick={goNext}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronRight size={16} />
           </button>
           <button
             type="button"
             onClick={goToday}
-            className="ml-2 rounded-md border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 hover:text-white"
+            className="ml-2 rounded-md border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:text-boss-text"
           >
             이번주
           </button>
@@ -192,15 +192,15 @@ export default function BossCalendarWeekPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {/* 주간 그리드 */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
         {/* 요일 헤더 */}
-        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-slate-800 bg-slate-900/60">
+        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-boss-border bg-boss-surface">
           <div />
           {weekDays.map((d, i) => {
             const isToday = isSameDay(d, today);
@@ -208,13 +208,13 @@ export default function BossCalendarWeekPage() {
               <div
                 key={i}
                 className={`px-2 py-2 text-center text-xs font-semibold ${
-                  i === 0 ? 'text-rose-300' : i === 6 ? 'text-sky-300' : 'text-slate-300'
+                  i === 0 ? 'text-boss-error' : i === 6 ? 'text-boss-info' : 'text-boss-text-secondary'
                 }`}
               >
                 <div>{WEEK_LABELS[i]}</div>
                 <div
                   className={`mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full ${
-                    isToday ? 'bg-emerald-500 text-white' : 'text-slate-200'
+                    isToday ? 'bg-boss-primary text-boss-text' : 'text-boss-text'
                   }`}
                 >
                   {d.getDate()}
@@ -226,7 +226,7 @@ export default function BossCalendarWeekPage() {
 
         {/* 시간 + 일자 컬럼 */}
         <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
-          <div className="border-r border-slate-800 bg-slate-900/60 text-[10px] text-slate-500">
+          <div className="border-r border-boss-border bg-boss-surface text-[10px] text-boss-text-muted">
             {HOURS.map((h) => (
               <div
                 key={h}
@@ -238,12 +238,12 @@ export default function BossCalendarWeekPage() {
             ))}
           </div>
           {weekDays.map((d, i) => (
-            <div key={i} className="relative border-r border-slate-800/60">
+            <div key={i} className="relative border-r border-boss-border/60">
               {HOURS.map((h) => (
                 <div
                   key={h}
                   style={{ height: `${HOUR_HEIGHT}px` }}
-                  className="border-b border-slate-800/40"
+                  className="border-b border-boss-border/40"
                 />
               ))}
               {eventsByDay[i].map(({ ev, top, height }, idx) => (
@@ -255,13 +255,13 @@ export default function BossCalendarWeekPage() {
                     backgroundColor: eventColor(ev.eventType) + '33',
                     borderLeftColor: eventColor(ev.eventType),
                   }}
-                  className="absolute left-1 right-1 overflow-hidden rounded border-l-2 bg-slate-900 px-1 py-0.5 text-[10px]"
+                  className="absolute left-1 right-1 overflow-hidden rounded border-l-2 bg-boss-surface px-1 py-0.5 text-[10px]"
                   title={ev.title ?? ''}
                 >
                   <div className="flex items-center gap-1">
-                    {ev.isrepeat && <Repeat size={8} className="text-slate-500" />}
-                    {ev.isreminder && <Bell size={8} className="text-amber-300" />}
-                    <span className="truncate font-semibold text-white">
+                    {ev.isrepeat && <Repeat size={8} className="text-boss-text-muted" />}
+                    {ev.isreminder && <Bell size={8} className="text-boss-warning" />}
+                    <span className="truncate font-semibold text-boss-text">
                       {ev.title || '제목 없음'}
                     </span>
                   </div>

@@ -180,7 +180,7 @@ export default function BossCommunityDetailPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss/community"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 목록으로
         </Link>
@@ -189,14 +189,14 @@ export default function BossCommunityDetailPage() {
             <>
               <Link
                 href={`/boss/community/${boardId}/edit`}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-700 hover:text-white"
+                className="inline-flex items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
               >
                 <Pencil size={12} /> 수정
               </Link>
               <button
                 type="button"
                 onClick={onDelete}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:border-rose-700 hover:text-rose-300"
+                className="inline-flex items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:border-rose-700 hover:text-boss-error"
               >
                 <Trash2 size={12} /> 삭제
               </button>
@@ -205,7 +205,7 @@ export default function BossCommunityDetailPage() {
           {!isMine && post && (
             <Link
               href={`/boss/community/${boardId}/report`}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:border-amber-700 hover:text-amber-300"
+              className="inline-flex items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:border-amber-700 hover:text-boss-warning"
             >
               <Flag size={12} /> 신고
             </Link>
@@ -214,18 +214,18 @@ export default function BossCommunityDetailPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {loading || !post ? (
-        <div className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+        <div className="h-64 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
       ) : (
-        <article className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-          <div className="mb-3 flex items-center gap-2 text-xs text-slate-500">
+        <article className="rounded-2xl border border-boss-border bg-boss-surface p-5">
+          <div className="mb-3 flex items-center gap-2 text-xs text-boss-text-muted">
             {post.typeDtNm && (
-              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
+              <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] text-boss-text-secondary">
                 {post.typeDtNm}
               </span>
             )}
@@ -233,14 +233,14 @@ export default function BossCommunityDetailPage() {
             <span>·</span>
             <span>{formatDate(post.crtDtm)}</span>
           </div>
-          <h1 className="mb-3 text-xl font-bold text-white">{post.subject ?? '(제목 없음)'}</h1>
+          <h1 className="mb-3 text-xl font-bold text-boss-text">{post.subject ?? '(제목 없음)'}</h1>
           {looksLikePlainText(post.contents) ? (
-            <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-200">
+            <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-boss-text">
               {post.contents ?? ''}
             </div>
           ) : (
             <div
-              className="prose prose-invert prose-sm mb-4 max-w-none prose-p:my-2 prose-headings:text-white prose-strong:text-white prose-a:text-emerald-400 prose-blockquote:border-l-emerald-500"
+              className="prose prose-invert prose-sm mb-4 max-w-none prose-p:my-2 prose-headings:text-boss-text prose-strong:text-boss-text prose-a:text-boss-primary prose-blockquote:border-l-emerald-500"
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.contents) }}
             />
           )}
@@ -253,21 +253,21 @@ export default function BossCommunityDetailPage() {
                   key={f.id}
                   src={f.filePath ?? ''}
                   alt={f.fileNm ?? ''}
-                  className="h-32 w-full rounded-lg border border-slate-800 object-cover"
+                  className="h-32 w-full rounded-lg border border-boss-border object-cover"
                 />
               ))}
             </div>
           )}
 
-          <div className="flex items-center gap-3 border-t border-slate-800 pt-3 text-xs text-slate-400">
+          <div className="flex items-center gap-3 border-t border-boss-border pt-3 text-xs text-boss-text-muted">
             <button
               type="button"
               onClick={onToggleLike}
               disabled={likePending}
               className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 ${
                 post.likeYn === 'Y'
-                  ? 'bg-rose-500/20 text-rose-300'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-boss-error/20 text-boss-error'
+                  : 'bg-boss-elevated text-boss-text-secondary hover:bg-boss-elevated'
               }`}
             >
               <Heart size={12} className={post.likeYn === 'Y' ? 'fill-rose-300' : ''} />
@@ -284,8 +284,8 @@ export default function BossCommunityDetailPage() {
       )}
 
       {/* 댓글 영역 */}
-      <section className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
-        <h2 className="text-sm font-semibold text-white">댓글 {comments.length}</h2>
+      <section className="space-y-3 rounded-2xl border border-boss-border bg-boss-surface/30 p-5">
+        <h2 className="text-sm font-semibold text-boss-text">댓글 {comments.length}</h2>
 
         <div className="flex items-start gap-2">
           <textarea
@@ -293,20 +293,20 @@ export default function BossCommunityDetailPage() {
             onChange={(e) => setCommentInput(e.target.value)}
             placeholder="댓글을 입력하세요"
             rows={2}
-            className="flex-1 resize-none rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+            className="flex-1 resize-none rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
           />
           <button
             type="button"
             onClick={onSubmitComment}
             disabled={submittingComment}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-50"
           >
             <Send size={14} /> 등록
           </button>
         </div>
 
         {comments.length === 0 ? (
-          <p className="py-6 text-center text-xs text-slate-500">아직 댓글이 없습니다.</p>
+          <p className="py-6 text-center text-xs text-boss-text-muted">아직 댓글이 없습니다.</p>
         ) : (
           <ul className="divide-y divide-slate-800">
             {comments.map((c) => {
@@ -314,8 +314,8 @@ export default function BossCommunityDetailPage() {
               return (
                 <li key={c.boardId} className="py-3">
                   <div className="mb-1 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <span className="font-semibold text-slate-300">
+                    <div className="flex items-center gap-2 text-xs text-boss-text-muted">
+                      <span className="font-semibold text-boss-text-secondary">
                         {c.anonyYn === 'Y' ? '익명' : c.nickNm ?? c.userNm ?? '사용자'}
                       </span>
                       <span>·</span>
@@ -325,13 +325,13 @@ export default function BossCommunityDetailPage() {
                       <button
                         type="button"
                         onClick={() => onDeleteComment(c.boardId)}
-                        className="text-xs text-slate-500 hover:text-rose-300"
+                        className="text-xs text-boss-text-muted hover:text-boss-error"
                       >
                         삭제
                       </button>
                     )}
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-slate-200">{c.contents ?? ''}</p>
+                  <p className="whitespace-pre-wrap text-sm text-boss-text">{c.contents ?? ''}</p>
                 </li>
               );
             })}

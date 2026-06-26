@@ -111,28 +111,28 @@ export default function BossCalendarDayPage() {
       {/* 헤더 */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
-            <CalendarDays size={20} className="text-emerald-300" /> 일간 일정
+          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-boss-text">
+            <CalendarDays size={20} className="text-boss-primary" /> 일간 일정
           </h1>
-          <p className="text-sm text-slate-400">하루 단위로 시간대별 일정을 확인하세요.</p>
+          <p className="text-sm text-boss-text-muted">하루 단위로 시간대별 일정을 확인하세요.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => void load()}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/calendar"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             월간
           </Link>
           <Link
             href="/boss/calendar/week"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             주간
           </Link>
@@ -140,30 +140,30 @@ export default function BossCalendarDayPage() {
       </div>
 
       {/* 날짜 네비게이션 */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/40 px-4 py-3">
+      <div className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface px-4 py-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={goPrev}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronLeft size={16} />
           </button>
-          <h2 className="min-w-[180px] text-center text-lg font-semibold text-white">
+          <h2 className="min-w-[180px] text-center text-lg font-semibold text-boss-text">
             {date.getFullYear()}.{date.getMonth() + 1}.{date.getDate()} (
             {['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})
           </h2>
           <button
             type="button"
             onClick={goNext}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
           >
             <ChevronRight size={16} />
           </button>
           <button
             type="button"
             onClick={goToday}
-            className="ml-2 rounded-md border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 hover:text-white"
+            className="ml-2 rounded-md border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:text-boss-text"
           >
             오늘
           </button>
@@ -175,21 +175,21 @@ export default function BossCalendarDayPage() {
             const [y, m, d] = e.target.value.split('-').map(Number);
             setDate(new Date(y, (m ?? 1) - 1, d ?? 1));
           }}
-          className="h-9 rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none"
+          className="h-9 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
         />
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
       {/* 24시간 타임라인 */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
         <div className="relative flex">
           {/* 시간 컬럼 */}
-          <div className="w-14 shrink-0 border-r border-slate-800 bg-slate-900/60 text-xs text-slate-500">
+          <div className="w-14 shrink-0 border-r border-boss-border bg-boss-surface text-xs text-boss-text-muted">
             {HOURS.map((h) => (
               <div
                 key={h}
@@ -206,7 +206,7 @@ export default function BossCalendarDayPage() {
               <div
                 key={h}
                 style={{ height: `${HOUR_HEIGHT}px` }}
-                className="border-b border-slate-800/60"
+                className="border-b border-boss-border/60"
               />
             ))}
             {positioned.map(({ ev, top, height, start, end }, idx) => {
@@ -224,19 +224,19 @@ export default function BossCalendarDayPage() {
                     backgroundColor: eventColor(ev.eventType) + '20',
                     borderLeftColor: eventColor(ev.eventType),
                   }}
-                  className="absolute left-2 right-2 overflow-hidden rounded-lg border-l-4 border-slate-800 bg-slate-900 p-2 text-xs"
+                  className="absolute left-2 right-2 overflow-hidden rounded-lg border-l-4 border-boss-border bg-boss-surface p-2 text-xs"
                 >
                   <div className="mb-0.5 flex items-center gap-1.5">
-                    <span className="text-[10px] font-semibold text-slate-400">
+                    <span className="text-[10px] font-semibold text-boss-text-muted">
                       {eventLabel(ev.eventType)}
                     </span>
-                    {ev.isrepeat && <Repeat size={10} className="text-slate-500" />}
-                    {ev.isreminder && <Bell size={10} className="text-amber-300" />}
+                    {ev.isrepeat && <Repeat size={10} className="text-boss-text-muted" />}
+                    {ev.isreminder && <Bell size={10} className="text-boss-warning" />}
                   </div>
-                  <div className="truncate text-sm font-semibold text-white">
+                  <div className="truncate text-sm font-semibold text-boss-text">
                     {ev.title || '제목 없음'}
                   </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-400">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-boss-text-muted">
                     <span className="flex items-center gap-1">
                       <Clock size={9} /> {timeStr}
                     </span>
@@ -255,7 +255,7 @@ export default function BossCalendarDayPage() {
               );
             })}
             {positioned.length === 0 && !loading && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-boss-text-muted">
                 등록된 일정이 없습니다.
               </div>
             )}

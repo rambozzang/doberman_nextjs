@@ -76,28 +76,28 @@ export default function HistoryView({
 
       <Link
         href="/boss/billing"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
       >
         <ArrowLeft size={14} /> 결제 관리로 돌아가기
       </Link>
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div className="flex-1">{error}</div>
           <button
             type="button"
             onClick={() => void load()}
-            className="text-xs font-medium text-rose-300 hover:text-rose-200"
+            className="text-xs font-medium text-boss-error hover:text-boss-error"
           >
             다시 시도
           </button>
         </div>
       )}
 
-      <Card className="rounded-2xl border-slate-800 bg-slate-900/40 p-0">
-        <div className="flex items-center gap-2 border-b border-slate-800/70 px-5 py-4 text-slate-100">
-          <HeaderIcon className="h-5 w-5 text-emerald-400" />
+      <Card className="rounded-2xl border-boss-border bg-boss-surface p-0">
+        <div className="flex items-center gap-2 border-b border-boss-border/70 px-5 py-4 text-boss-text">
+          <HeaderIcon className="h-5 w-5 text-boss-primary" />
           <h2 className="text-base font-semibold">{title}</h2>
         </div>
 
@@ -124,7 +124,7 @@ export default function HistoryView({
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-800/70 text-sm">
-              <thead className="bg-slate-900/80 text-xs uppercase tracking-wider text-slate-400">
+              <thead className="bg-boss-surface/80 text-xs uppercase tracking-wider text-boss-text-muted">
                 <tr>
                   <th className="px-5 py-3 text-left font-semibold">거래 ID</th>
                   <th className="px-5 py-3 text-left font-semibold">상품</th>
@@ -135,36 +135,36 @@ export default function HistoryView({
                   <th className="px-5 py-3 text-left font-semibold">상태</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/70 text-slate-200">
+              <tbody className="divide-y divide-slate-800/70 text-boss-text">
                 {items.map((item, idx) => (
                   <tr
                     key={item.transactionId ?? `${item.productId ?? 'item'}-${idx}`}
-                    className="hover:bg-white/[0.02]"
+                    className="hover:bg-boss-elevated"
                   >
-                    <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-slate-400">
+                    <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-boss-text-muted">
                       {item.transactionId ?? '-'}
                     </td>
                     <td className="px-5 py-3">
-                      <div className="font-medium text-slate-100">
+                      <div className="font-medium text-boss-text">
                         {item.productName ?? item.productId ?? '-'}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-slate-300">
+                    <td className="whitespace-nowrap px-5 py-3 text-boss-text-secondary">
                       <div className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-slate-500" />
+                        <Clock size={13} className="text-boss-text-muted" />
                         {formatDate(item.purchaseDate)}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-slate-300">
+                    <td className="whitespace-nowrap px-5 py-3 text-boss-text-secondary">
                       {formatDate(item.expirationDate)}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-right font-medium text-slate-100">
+                    <td className="whitespace-nowrap px-5 py-3 text-right font-medium text-boss-text">
                       {item.amount != null
                         ? `${item.amount.toLocaleString('ko-KR')} ${item.currency ?? ''}`.trim()
                         : '-'}
                     </td>
                     <td className="whitespace-nowrap px-5 py-3">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <div className="flex items-center gap-1.5 text-xs text-boss-text-muted">
                         <Store size={13} />
                         {item.store ?? '-'}
                       </div>

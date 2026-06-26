@@ -54,21 +54,21 @@ function categoryStyle(code?: string) {
     case 'AD':
       return {
         Icon: Megaphone,
-        badge: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-        accent: 'text-amber-300',
+        badge: 'bg-boss-warning/10 text-boss-warning border-amber-500/30',
+        accent: 'text-boss-warning',
       };
     case 'UPDATE':
       return {
         Icon: Sparkles,
-        badge: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
-        accent: 'text-sky-300',
+        badge: 'bg-boss-info/10 text-boss-info border-boss-info/30',
+        accent: 'text-boss-info',
       };
     case 'NOTI':
     default:
       return {
         Icon: BellRing,
-        badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-        accent: 'text-emerald-300',
+        badge: 'bg-boss-primary/10 text-boss-primary border-boss-primary/30',
+        accent: 'text-boss-primary',
       };
   }
 }
@@ -241,15 +241,15 @@ export default function BossNotificationsPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <Bell size={20} className="text-emerald-400" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">알림</h1>
+            <Bell size={20} className="text-boss-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-boss-text">알림</h1>
             {unreadCount > 0 && (
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+              <span className="rounded-full bg-boss-primary/15 px-2 py-0.5 text-xs font-semibold text-boss-primary">
                 {unreadCount} 새 알림
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-boss-text-muted">
             공지·광고·업데이트 등 받은 모든 알림을 확인하세요.
           </p>
         </div>
@@ -258,7 +258,7 @@ export default function BossNotificationsPage() {
           <div className="relative">
             <Search
               size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted"
             />
             <input
               value={searchInput}
@@ -267,13 +267,13 @@ export default function BossNotificationsPage() {
                 if (e.key === 'Enter') onSearch();
               }}
               placeholder="제목·내용 검색"
-              className="h-9 w-56 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
           <button
             type="button"
             onClick={onSearch}
-            className="h-9 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="h-9 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             검색
           </button>
@@ -281,7 +281,7 @@ export default function BossNotificationsPage() {
             type="button"
             onClick={onRefresh}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
@@ -289,7 +289,7 @@ export default function BossNotificationsPage() {
             type="button"
             onClick={markAllRead}
             disabled={items.length === 0}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-40"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-40"
           >
             <CheckCheck size={14} /> 모두 읽음
           </button>
@@ -308,8 +308,8 @@ export default function BossNotificationsPage() {
               className={
                 'h-9 rounded-full border px-4 text-xs font-semibold transition-colors ' +
                 (active
-                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200'
-                  : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200')
+                  ? 'border-boss-primary/20 bg-boss-primary/15 text-boss-primary'
+                  : 'border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text')
               }
             >
               {c.label}
@@ -319,7 +319,7 @@ export default function BossNotificationsPage() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -331,22 +331,22 @@ export default function BossNotificationsPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-20 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40"
+              className="h-20 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
             />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">표시할 알림이 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="text-sm font-medium text-boss-text">표시할 알림이 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">
             새로운 공지·광고·업데이트가 오면 여기에 표시됩니다.
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
           {items.map((item) => {
             const { Icon, badge, accent } = categoryStyle(item.typeDtCd);
             const isRead = bossNotificationsReadStore.isRead(item.boardId);
@@ -354,7 +354,7 @@ export default function BossNotificationsPage() {
             void readVersion;
             return (
               <li key={item.boardId ?? Math.random()}>
-                <div className="group flex items-start gap-3 p-4 transition-colors hover:bg-slate-800/40">
+                <div className="group flex items-start gap-3 p-4 transition-colors hover:bg-boss-elevated/40">
                   <button
                     type="button"
                     onClick={() => openDetail(item)}
@@ -369,7 +369,7 @@ export default function BossNotificationsPage() {
                       <Icon size={18} className={accent} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-boss-text-muted">
                         <span
                           className={
                             'rounded-full border px-2 py-0.5 text-[10px] font-semibold ' +
@@ -381,8 +381,8 @@ export default function BossNotificationsPage() {
                             '알림'}
                         </span>
                         {!isRead && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> NEW
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-boss-primary">
+                            <span className="h-1.5 w-1.5 rounded-full bg-boss-primary" /> NEW
                           </span>
                         )}
                         <span>{relativeTime(item.crtDtm)}</span>
@@ -390,15 +390,15 @@ export default function BossNotificationsPage() {
                       <h3
                         className={
                           'mb-1 line-clamp-1 text-base font-semibold ' +
-                          (isRead ? 'text-slate-300' : 'text-white')
+                          (isRead ? 'text-boss-text-secondary' : 'text-boss-text')
                         }
                       >
                         {item.subject ?? '(제목 없음)'}
                       </h3>
-                      <p className="line-clamp-2 text-xs text-slate-400">
+                      <p className="line-clamp-2 text-xs text-boss-text-muted">
                         {item.contents ?? ''}
                       </p>
-                      <div className="mt-2 flex items-center gap-3 text-[11px] text-slate-500">
+                      <div className="mt-2 flex items-center gap-3 text-[11px] text-boss-text-muted">
                         <span className="inline-flex items-center gap-1">
                           <Eye size={11} /> {item.viewCnt ?? 0}
                         </span>
@@ -409,7 +409,7 @@ export default function BossNotificationsPage() {
                     type="button"
                     onClick={() => removeItem(item)}
                     title="삭제"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-400 opacity-0 transition-opacity hover:border-rose-700/50 hover:text-rose-300 group-hover:opacity-100"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-muted opacity-0 transition-opacity hover:border-boss-error/30 hover:text-boss-error group-hover:opacity-100"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -421,14 +421,14 @@ export default function BossNotificationsPage() {
       )}
 
       {/* 페이지네이션 */}
-      <nav className="flex items-center justify-between border-t border-slate-800 pt-4">
-        <p className="text-xs text-slate-500">페이지 {page + 1}</p>
+      <nav className="flex items-center justify-between border-t border-boss-border pt-4">
+        <p className="text-xs text-boss-text-muted">페이지 {page + 1}</p>
         <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={page <= 0 || loading}
             onClick={() => setPage((p) => Math.max(0, p - 1))}
-            className="flex h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-xs text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+            className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
           >
             <ChevronLeft size={12} /> 이전
           </button>
@@ -436,7 +436,7 @@ export default function BossNotificationsPage() {
             type="button"
             disabled={!hasMore || loading}
             onClick={() => setPage((p) => p + 1)}
-            className="flex h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-xs text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+            className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
           >
             다음 <ChevronRight size={12} />
           </button>
@@ -450,11 +450,11 @@ export default function BossNotificationsPage() {
           onClick={closeDetail}
         >
           <div
-            className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl"
+            className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-boss-border bg-boss-bg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 p-5">
+            <div className="flex items-start justify-between gap-3 border-b border-boss-border p-5">
               <div className="flex min-w-0 items-start gap-3">
                 {(() => {
                   const { Icon, badge, accent } = categoryStyle(selected.typeDtCd);
@@ -470,7 +470,7 @@ export default function BossNotificationsPage() {
                   );
                 })()}
                 <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-boss-text-muted">
                     <span
                       className={
                         'rounded-full border px-2 py-0.5 text-[10px] font-semibold ' +
@@ -483,7 +483,7 @@ export default function BossNotificationsPage() {
                     </span>
                     <span>{relativeTime(selected.crtDtm)}</span>
                   </div>
-                  <h2 className="line-clamp-2 text-lg font-bold text-white">
+                  <h2 className="line-clamp-2 text-lg font-bold text-boss-text">
                     {selected.subject ?? '(제목 없음)'}
                   </h2>
                 </div>
@@ -491,7 +491,7 @@ export default function BossNotificationsPage() {
               <button
                 type="button"
                 onClick={closeDetail}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text"
               >
                 <X size={16} />
               </button>
@@ -501,35 +501,35 @@ export default function BossNotificationsPage() {
             <div className="max-h-[60vh] overflow-y-auto p-5">
               {detailLoading ? (
                 <div className="space-y-3">
-                  <div className="h-4 w-3/4 animate-pulse rounded bg-slate-800" />
-                  <div className="h-4 w-full animate-pulse rounded bg-slate-800" />
-                  <div className="h-4 w-5/6 animate-pulse rounded bg-slate-800" />
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-boss-elevated" />
+                  <div className="h-4 w-full animate-pulse rounded bg-boss-elevated" />
+                  <div className="h-4 w-5/6 animate-pulse rounded bg-boss-elevated" />
                 </div>
               ) : detailError ? (
-                <div className="flex items-start gap-2 rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+                <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
                   <span>{detailError}</span>
                 </div>
               ) : (
-                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed text-slate-200">
+                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed text-boss-text">
                   {selected.contents ?? '내용이 없습니다.'}
                 </div>
               )}
             </div>
 
             {/* 푸터 */}
-            <div className="flex items-center justify-end gap-2 border-t border-slate-800 bg-slate-950/80 p-4">
+            <div className="flex items-center justify-end gap-2 border-t border-boss-border bg-boss-bg/80 p-4">
               <button
                 type="button"
                 onClick={() => removeItem(selected)}
-                className="flex h-9 items-center gap-1.5 rounded-lg border border-rose-700/50 bg-rose-950/40 px-3 text-sm text-rose-200 hover:bg-rose-900/40"
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-error/30 bg-boss-error/10 px-3 text-sm text-boss-error hover:bg-boss-error/10"
               >
                 <Trash2 size={14} /> 삭제
               </button>
               <button
                 type="button"
                 onClick={closeDetail}
-                className="h-9 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-white hover:bg-emerald-400"
+                className="h-9 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover"
               >
                 닫기
               </button>

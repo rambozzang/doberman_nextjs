@@ -92,7 +92,7 @@ export default function BossCommunityNewPage() {
         actions={
           <Link
             href="/boss/community"
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+            className="inline-flex items-center gap-1 text-xs text-boss-text-muted hover:text-boss-text"
           >
             <ArrowLeft size={12} /> 목록으로
           </Link>
@@ -102,18 +102,18 @@ export default function BossCommunityNewPage() {
       <Card padded>
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
               제목
             </label>
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="제목을 입력하세요"
-              className="h-10 w-full rounded-md border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:bg-white/[0.05] focus:outline-none"
+              className="h-10 w-full rounded-md border border-boss-border bg-boss-elevated px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-elevated focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
               내용
             </label>
             <RichEditor
@@ -122,12 +122,12 @@ export default function BossCommunityNewPage() {
               placeholder="자유롭게 작성하세요. 굵게, 목록, 인용, 링크 등을 사용할 수 있습니다."
               minHeight={280}
             />
-            <p className="mt-1.5 text-[10px] text-slate-600">
+            <p className="mt-1.5 text-[10px] text-boss-text-muted">
               Cmd/Ctrl + B 굵게 · Cmd/Ctrl + I 기울임 · 툴바에서 제목·목록·인용·링크 삽입
             </p>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
               이미지 첨부
             </label>
             <input
@@ -135,14 +135,14 @@ export default function BossCommunityNewPage() {
               accept="image/*"
               multiple
               onChange={handleImageChange}
-              className="block w-full text-sm text-slate-400 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500/10 file:px-3 file:py-2 file:text-xs file:font-medium file:text-emerald-300 hover:file:bg-emerald-500/20"
+              className="block w-full text-sm text-boss-text-muted file:mr-3 file:rounded-md file:border-0 file:bg-boss-primary/10 file:px-3 file:py-2 file:text-xs file:font-medium file:text-boss-primary hover:file:bg-boss-primary/20"
             />
             {images.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {images.map((src, idx) => (
                   <div
                     key={idx}
-                    className="relative h-20 w-20 overflow-hidden rounded-lg border border-white/[0.08]"
+                    className="relative h-20 w-20 overflow-hidden rounded-lg border border-boss-border"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -153,7 +153,7 @@ export default function BossCommunityNewPage() {
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-rose-500/80"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-boss-text hover:bg-boss-error/100/80"
                       aria-label="이미지 삭제"
                     >
                       <X size={10} />
@@ -164,7 +164,7 @@ export default function BossCommunityNewPage() {
             )}
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-slate-300">
+          <label className="flex items-center gap-2 text-xs text-boss-text-secondary">
             <input
               type="checkbox"
               checked={isAnonymous}
@@ -174,7 +174,7 @@ export default function BossCommunityNewPage() {
             익명 작성
           </label>
 
-          <div className="flex justify-end border-t border-white/[0.06] pt-4">
+          <div className="flex justify-end border-t border-boss-border pt-4">
             <Button
               variant="primary"
               size="md"

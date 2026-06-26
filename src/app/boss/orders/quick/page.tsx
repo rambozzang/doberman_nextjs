@@ -258,7 +258,7 @@ export default function QuickOrderPage() {
         }
       />
 
-      <Card className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+      <Card className="space-y-6 rounded-2xl border border-boss-border bg-boss-surface p-6">
         {/* Progress */}
         <div className="flex items-center gap-2">
           {STEPS.map((step, idx) => {
@@ -269,10 +269,10 @@ export default function QuickOrderPage() {
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
                     done
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-boss-primary text-boss-text'
                       : active
-                        ? 'border border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-                        : 'border border-slate-700 bg-slate-900/60 text-slate-500'
+                        ? 'border border-boss-primary/30 bg-boss-primary/10 text-boss-primary'
+                        : 'border border-boss-border bg-boss-surface text-boss-text-muted'
                   }`}
                 >
                   {done ? <Check size={14} /> : idx + 1}
@@ -280,7 +280,7 @@ export default function QuickOrderPage() {
                 {idx < STEPS.length - 1 && (
                   <div
                     className={`h-0.5 flex-1 rounded-full ${
-                      done ? 'bg-emerald-500/50' : 'bg-slate-800'
+                      done ? 'bg-boss-primary/50' : 'bg-boss-elevated'
                     }`}
                   />
                 )}
@@ -291,11 +291,11 @@ export default function QuickOrderPage() {
 
         {/* Completed answers */}
         {completedLabels.length > 0 && (
-          <div className="space-y-3 border-b border-slate-800 pb-5">
+          <div className="space-y-3 border-b border-boss-border pb-5">
             {completedLabels.map((item) => (
               <div key={item.key} className="flex items-center gap-4">
-                <span className="w-20 text-sm text-slate-500">{item.label}</span>
-                <span className="flex-1 text-base font-medium text-white">{item.value}</span>
+                <span className="w-20 text-sm text-boss-text-muted">{item.label}</span>
+                <span className="flex-1 text-base font-medium text-boss-text">{item.value}</span>
               </div>
             ))}
           </div>
@@ -304,8 +304,8 @@ export default function QuickOrderPage() {
         {/* Active input */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <currentStep.icon size={16} className="text-emerald-400" />
-            <span className="text-sm font-medium text-slate-300">{currentStep.sublabel}</span>
+            <currentStep.icon size={16} className="text-boss-primary" />
+            <span className="text-sm font-medium text-boss-text-secondary">{currentStep.sublabel}</span>
           </div>
 
           {currentStep.key === 'estimateDate' || currentStep.key === 'workDate' ? (
@@ -316,7 +316,7 @@ export default function QuickOrderPage() {
               onChange={handleChange}
               onKeyDown={handleKeyDown}
               placeholder={currentStep.placeholder}
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-4 text-lg text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="w-full rounded-xl border border-boss-border bg-boss-surface px-4 py-4 text-lg text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
               autoComplete="off"
             />
           ) : (
@@ -329,13 +329,13 @@ export default function QuickOrderPage() {
               onKeyDown={handleKeyDown}
               placeholder={currentStep.placeholder}
               maxLength={currentStep.maxLength}
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-4 text-lg text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="w-full rounded-xl border border-boss-border bg-boss-surface px-4 py-4 text-lg text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
               autoComplete="off"
             />
           )}
 
           {currentStep.key !== 'name' && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-boss-text-muted">
               {currentStep.key === 'phone'
                 ? '010을 제외한 8자리 숫자를 입력하세요.'
                 : '날짜와 시간을 선택하세요.'}

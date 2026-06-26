@@ -86,19 +86,19 @@ export default function BillingPlansPage() {
 
       <Link
         href="/boss/billing"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
       >
         <ArrowLeft size={14} /> 결제 관리로 돌아가기
       </Link>
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div className="flex-1">{error}</div>
           <button
             type="button"
             onClick={() => void load()}
-            className="text-xs font-medium text-rose-300 hover:text-rose-200"
+            className="text-xs font-medium text-boss-error hover:text-boss-error"
           >
             다시 시도
           </button>
@@ -129,38 +129,38 @@ export default function BillingPlansPage() {
             return (
               <Card
                 key={plan.planId}
-                className={`relative flex flex-col rounded-2xl border-slate-800 bg-slate-900/40 p-6 ${
+                className={`relative flex flex-col rounded-2xl border-boss-border bg-boss-surface p-6 ${
                   plan.isPopular
-                    ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10'
+                    ? 'border-boss-primary/30 shadow-boss-md shadow-emerald-500/10'
                     : ''
                 }`}
               >
                 {plan.isPopular && (
                   <div className="absolute -top-3 left-5">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-boss-primary/20 bg-boss-primary/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-boss-primary">
                       <Sparkles size={10} />
                       인기
                     </span>
                   </div>
                 )}
 
-                <h3 className="text-lg font-bold text-slate-100">{plan.title}</h3>
+                <h3 className="text-lg font-bold text-boss-text">{plan.title}</h3>
                 {plan.description && (
-                  <p className="mt-1 text-sm text-slate-400">{plan.description}</p>
+                  <p className="mt-1 text-sm text-boss-text-muted">{plan.description}</p>
                 )}
 
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-emerald-400">
+                  <span className="text-2xl font-bold text-boss-primary">
                     {formatPrice(plan)}
                   </span>
-                  <span className="text-xs text-slate-400">{formatPeriod(plan)}</span>
+                  <span className="text-xs text-boss-text-muted">{formatPeriod(plan)}</span>
                 </div>
 
                 {plan.features && plan.features.length > 0 && (
-                  <ul className="mt-4 flex-1 space-y-2 text-sm text-slate-300">
+                  <ul className="mt-4 flex-1 space-y-2 text-sm text-boss-text-secondary">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-boss-primary" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -188,7 +188,7 @@ export default function BillingPlansPage() {
 
 function PlanSkeleton() {
   return (
-    <Card className="rounded-2xl border-slate-800 bg-slate-900/40 p-6">
+    <Card className="rounded-2xl border-boss-border bg-boss-surface p-6">
       <Skeleton className="mb-2 h-5 w-24" />
       <Skeleton className="mb-4 h-4 w-full" />
       <Skeleton className="mb-6 h-8 w-32" />

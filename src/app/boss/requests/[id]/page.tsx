@@ -41,17 +41,17 @@ export default function BossRequestDetailPage() {
         actions={
           <Link
             href={`/boss/requests/${id}/answer`}
-            className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+            className="rounded bg-boss-primary-hover px-3 py-1.5 text-sm font-semibold text-boss-text hover:bg-boss-primary"
           >
             답변 작성
           </Link>
         }
       />
-      {error && <div className="rounded border border-rose-700 bg-rose-900/30 p-3 text-sm text-rose-200">{error}</div>}
+      {error && <div className="rounded border border-rose-700 bg-rose-900/30 p-3 text-sm text-boss-error">{error}</div>}
       {loading ? (
-        <div className="rounded border border-slate-700 bg-slate-800/40 p-6 text-center text-sm text-slate-400">불러오는 중...</div>
+        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">불러오는 중...</div>
       ) : data ? (
-        <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800/60 p-5">
+        <div className="space-y-3 rounded-lg border border-boss-border bg-boss-elevated/60 p-5">
           <Field label="건물 유형" value={data.buildingType} />
           <Field label="지역" value={data.region} />
           <Field label="시공 위치" value={data.constructionLocation} />
@@ -71,8 +71,8 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
     <div className="grid grid-cols-[100px_1fr] gap-2 text-sm">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className="text-slate-100">{value}</dd>
+      <dt className="text-boss-text-muted">{label}</dt>
+      <dd className="text-boss-text">{value}</dd>
     </div>
   );
 }

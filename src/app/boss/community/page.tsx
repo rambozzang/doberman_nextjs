@@ -96,15 +96,15 @@ export default function BossCommunityListPage() {
       {/* 헤더 */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">사장님 커뮤니티</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="text-2xl font-bold tracking-tight text-boss-text">사장님 커뮤니티</h1>
+          <p className="mt-1 text-sm text-boss-text-muted">
             다른 도배 사장님들과 정보를 나누는 공간입니다.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -112,13 +112,13 @@ export default function BossCommunityListPage() {
                 if (e.key === 'Enter') onSearch();
               }}
               placeholder="제목·내용 검색"
-              className="h-9 w-56 rounded-lg border border-slate-800 bg-slate-900/60 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
             />
           </div>
           <button
             type="button"
             onClick={onSearch}
-            className="h-9 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="h-9 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             검색
           </button>
@@ -126,25 +126,25 @@ export default function BossCommunityListPage() {
             type="button"
             onClick={onRefresh}
             disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
           </button>
           <Link
             href="/boss/community/my"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <UserIcon size={14} /> 내 글
           </Link>
           <Link
             href="/boss/community/blocks"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-sm text-slate-300 hover:border-slate-700 hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
           >
             <ShieldOff size={14} /> 차단 관리
           </Link>
           <Link
             href="/boss/community/new"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-white hover:bg-emerald-400"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover"
           >
             <PenSquare size={14} /> 글쓰기
           </Link>
@@ -152,7 +152,7 @@ export default function BossCommunityListPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -161,28 +161,28 @@ export default function BossCommunityListPage() {
       {loading && items.length === 0 ? (
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40" />
+            <div key={i} className="h-20 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
             <Inbox size={20} />
           </div>
-          <p className="text-sm font-medium text-slate-200">표시할 게시글이 없습니다</p>
-          <p className="mt-1 text-xs text-slate-500">첫 글을 작성해보세요.</p>
+          <p className="text-sm font-medium text-boss-text">표시할 게시글이 없습니다</p>
+          <p className="mt-1 text-xs text-boss-text-muted">첫 글을 작성해보세요.</p>
         </div>
       ) : (
-        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
           {items.map((item) => (
             <li key={item.boardId}>
               <Link
                 href={`/boss/community/${item.boardId}`}
-                className="block p-4 transition-colors hover:bg-slate-800/40"
+                className="block p-4 transition-colors hover:bg-boss-elevated/40"
               >
-                <div className="mb-1 flex items-center gap-2 text-xs text-slate-500">
+                <div className="mb-1 flex items-center gap-2 text-xs text-boss-text-muted">
                   {item.typeDtNm && (
-                    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
+                    <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] text-boss-text-secondary">
                       {item.typeDtNm}
                     </span>
                   )}
@@ -190,13 +190,13 @@ export default function BossCommunityListPage() {
                   <span>·</span>
                   <span>{relativeTime(item.crtDtm)}</span>
                 </div>
-                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-white">
+                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-boss-text">
                   {item.subject ?? '(제목 없음)'}
                 </h3>
-                <p className="mb-2 line-clamp-2 text-xs text-slate-400">
+                <p className="mb-2 line-clamp-2 text-xs text-boss-text-muted">
                   {item.contents ?? ''}
                 </p>
-                <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                <div className="flex items-center gap-3 text-[11px] text-boss-text-muted">
                   <span className="inline-flex items-center gap-1">
                     <Eye size={11} /> {item.viewCnt ?? 0}
                   </span>
@@ -214,14 +214,14 @@ export default function BossCommunityListPage() {
       )}
 
       {/* 페이지네이션 */}
-      <nav className="flex items-center justify-between border-t border-slate-800 pt-4">
-        <p className="text-xs text-slate-500">페이지 {page}</p>
+      <nav className="flex items-center justify-between border-t border-boss-border pt-4">
+        <p className="text-xs text-boss-text-muted">페이지 {page}</p>
         <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={page <= 1 || loading}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="flex h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-xs text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+            className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
           >
             <ChevronLeft size={12} /> 이전
           </button>
@@ -229,7 +229,7 @@ export default function BossCommunityListPage() {
             type="button"
             disabled={!hasMore || loading}
             onClick={() => setPage((p) => p + 1)}
-            className="flex h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-3 text-xs text-slate-300 hover:border-slate-700 hover:text-white disabled:opacity-40"
+            className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
           >
             다음 <ChevronRight size={12} />
           </button>

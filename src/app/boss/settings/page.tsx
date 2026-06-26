@@ -70,14 +70,14 @@ export default function BossSettingsPage() {
         {
           href: '/boss/notifications',
           icon: <Bell size={18} />,
-          iconBg: 'bg-sky-500/20 text-sky-300',
+          iconBg: 'bg-boss-info/20 text-boss-info',
           title: '공지사항',
           subtitle: '서비스 공지사항을 확인합니다.',
         },
         {
           href: '/boss/settings/faq',
           icon: <HelpCircle size={18} />,
-          iconBg: 'bg-violet-500/20 text-violet-300',
+          iconBg: 'bg-violet-500/20 text-violet-400',
           title: 'FAQ',
           subtitle: '자주 묻는 질문을 확인합니다.',
         },
@@ -89,7 +89,7 @@ export default function BossSettingsPage() {
         {
           href: '/boss/settings/alarm',
           icon: <Bell size={18} />,
-          iconBg: 'bg-emerald-500/20 text-emerald-300',
+          iconBg: 'bg-boss-primary/20 text-boss-primary',
           title: '알림(PUSH) 설정',
           subtitle: '신규글 등록, 좋아요, 댓글 알림을 수신합니다.',
         },
@@ -101,14 +101,14 @@ export default function BossSettingsPage() {
         {
           href: '/boss/settings/terms',
           icon: <FileText size={18} />,
-          iconBg: 'bg-rose-500/20 text-rose-300',
+          iconBg: 'bg-boss-error/20 text-boss-error',
           title: '서비스 이용약관',
           subtitle: '회사 서비스 이용약관',
         },
         {
           href: '/boss/settings/privacy',
           icon: <ShieldCheck size={18} />,
-          iconBg: 'bg-amber-500/20 text-amber-300',
+          iconBg: 'bg-boss-warning/20 text-boss-warning',
           title: '개인정보 처리방침',
           subtitle: '회사 개인정보 처리방침',
         },
@@ -142,23 +142,23 @@ export default function BossSettingsPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
         >
           <ArrowLeft size={14} /> 홈
         </Link>
-        <h1 className="text-xl font-bold text-white">설정</h1>
+        <h1 className="text-xl font-bold text-boss-text">설정</h1>
         <div className="w-10" />
       </div>
 
       {groups.map((group) => (
         <section key={group.title} className="space-y-2">
-          <h2 className="px-1 text-sm font-bold text-slate-300">{group.title}</h2>
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+          <h2 className="px-1 text-sm font-bold text-boss-text-secondary">{group.title}</h2>
+          <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
             {group.items.map((item, idx) => {
               const inner = (
                 <div
-                  className={`flex items-center gap-3 px-4 py-3.5 transition hover:bg-slate-800/40 ${
-                    idx > 0 ? 'border-t border-slate-800/70' : ''
+                  className={`flex items-center gap-3 px-4 py-3.5 transition hover:bg-boss-elevated/40 ${
+                    idx > 0 ? 'border-t border-boss-border/70' : ''
                   }`}
                 >
                   <div
@@ -169,16 +169,16 @@ export default function BossSettingsPage() {
                   <div className="min-w-0 flex-1">
                     <div
                       className={`truncate text-sm font-semibold ${
-                        item.danger ? 'text-rose-300' : 'text-white'
+                        item.danger ? 'text-boss-error' : 'text-boss-text'
                       }`}
                     >
                       {item.title}
                     </div>
                     {item.subtitle && (
-                      <div className="truncate text-xs text-slate-400">{item.subtitle}</div>
+                      <div className="truncate text-xs text-boss-text-muted">{item.subtitle}</div>
                     )}
                   </div>
-                  <ChevronRight size={16} className="shrink-0 text-slate-500" />
+                  <ChevronRight size={16} className="shrink-0 text-boss-text-muted" />
                 </div>
               );
 
@@ -204,11 +204,11 @@ export default function BossSettingsPage() {
         </section>
       ))}
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 text-xs text-slate-400">
+      <div className="rounded-2xl border border-boss-border bg-boss-surface p-5 text-xs text-boss-text-muted">
         <div>코드랩타이거(CodeLabTiger)</div>
         <div>사업자등록번호 : 770-50-01045</div>
-        <div className="mt-3 text-right text-slate-300">Copyright 2024 TIGER Group</div>
-        <div className="text-right text-slate-300">All rights reserved</div>
+        <div className="mt-3 text-right text-boss-text-secondary">Copyright 2024 TIGER Group</div>
+        <div className="text-right text-boss-text-secondary">All rights reserved</div>
       </div>
     </div>
   );
