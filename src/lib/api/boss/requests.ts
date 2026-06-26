@@ -9,6 +9,7 @@ import type {
   BossRequestListResponse,
   BossAnswerSubmitRequest,
   BossAnswerSubmitResponse,
+  BossRequestAnswer,
 } from '@/types/boss';
 
 export const bossRequestsApi = {
@@ -27,6 +28,12 @@ export const bossRequestsApi = {
   // 내가 단 답변 목록
   myAnswers: (id: number) =>
     BossApiClient.postPrivate<BossRequestListItem[]>(`/web/customer-request/answer-list/${id}`),
+
+  // 특정 요청에 대한 견적 답변 목록
+  answers: (requestId: number) =>
+    BossApiClient.postPrivate<BossRequestAnswer[]>(`/web/customer-request/webRequestAnswerList`, {
+      requestId,
+    }),
 
   // 견적 답변 제출
   submit: (data: BossAnswerSubmitRequest): Promise<ApiResponse<BossAnswerSubmitResponse>> =>

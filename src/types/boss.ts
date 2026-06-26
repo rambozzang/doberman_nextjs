@@ -155,6 +155,18 @@ export interface BossAnswerSubmitResponse {
   message?: string;
 }
 
+export interface BossRequestAnswer {
+  answerId?: number;
+  requestId?: number;
+  answerTitle?: string;
+  answerBody?: string;
+  cost?: number;
+  status?: string;
+  createdDt?: string;
+  userNm?: string;
+  companyNm?: string;
+}
+
 // 채팅 파트너 정보 (사장님이 채팅하는 상대 = 고객)
 export interface BossChatPartner {
   customerId: number;
