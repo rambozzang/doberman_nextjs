@@ -151,7 +151,7 @@ export default function BossOrderListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/boss/orders/new">
+          <Link href="/boss/orders/quick">
             <Button variant="primary" icon={FilePlus} size="sm">
               주문 등록
             </Button>
