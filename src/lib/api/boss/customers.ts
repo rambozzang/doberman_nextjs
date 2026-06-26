@@ -4,6 +4,9 @@ import BossApiClient from '@/lib/bossApi';
 import type { BossCustomerData } from '@/types/boss-customer';
 
 export const bossCustomersApi = {
+  // 고객 목록 — GET /customers
+  list: () => BossApiClient.getPrivate<BossCustomerData[]>('/customers'),
+
   // 고객 생성 — POST /customers
   create: (data: BossCustomerData) =>
     BossApiClient.postPrivate<BossCustomerData>('/customers', data),

@@ -134,8 +134,10 @@ export default function BossMyCompanyPage() {
         stamp,
       };
 
-      // 생성 또는 지역 업데이트
-      const res = await bossCompanyApi.create(payload);
+      // 생성 또는 수정
+      const res = companyId
+        ? await bossCompanyApi.update(companyId, payload)
+        : await bossCompanyApi.create(payload);
       if (res.success && res.data) {
         fillFromData(res.data);
         setIsEdit(true);

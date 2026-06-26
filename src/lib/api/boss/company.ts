@@ -12,6 +12,10 @@ export const bossCompanyApi = {
   get: (companyId: number | string) =>
     BossApiClient.getPrivate<BossCompanyData>(`/company/${companyId}`),
 
+  // 회사 수정 — Flutter: CompanyRepo.update → PUT /company/{id}
+  update: (companyId: number | string, data: BossCompanyData) =>
+    BossApiClient.putPrivate<BossCompanyData>(`/company/${companyId}`, data),
+
   // 로고 경로 변경 — Flutter: CompanyRepo.updateLogoPath → PUT /company/logoPath
   updateLogoPath: (companyId: number | string, logoPath: string) =>
     BossApiClient.putPrivate<{ success?: boolean }>('/company/logoPath', {

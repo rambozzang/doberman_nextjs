@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/boss/ui';
 import Link from 'next/link';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import type { BossOrderItem, OrderSortType } from '@/types/boss';
@@ -20,6 +21,7 @@ import {
   Plus,
   ListChecks,
   Image as ImageIcon,
+  FilePlus,
 } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
@@ -149,6 +151,11 @@ export default function BossOrderListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Link href="/boss/orders/new">
+            <Button variant="primary" icon={FilePlus} size="sm">
+              주문 등록
+            </Button>
+          </Link>
           <div className="relative">
             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
             <input
