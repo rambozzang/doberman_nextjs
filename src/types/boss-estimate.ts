@@ -2,6 +2,22 @@
 // Flutter `lib/app/estimate/cntr/estimate_data.dart` 의 EstimateData 1:1 대응
 // 백엔드 엔드포인트: /estimateitems/* (Flutter EstimateRepo 와 동일)
 
+// 견적서 헤더 데이터 (/estimates/*)
+export interface BossEstimate {
+  id: number;
+  customerId: number;
+  customerName: string;
+  estimateDate?: string | null;
+  memo?: string | null;
+  totalItems?: number | null;
+  totalQuantity?: number | null;
+  totalAmount?: number | null;
+  companyId?: number | null;
+  createdDt?: string;
+  updatedDt?: string;
+  deletedDt?: string | null;
+}
+
 // 견적 품목(라인 아이템) 데이터
 export interface BossEstimateItem {
   id?: number;

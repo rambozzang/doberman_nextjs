@@ -14,9 +14,9 @@ export const STATE_LABEL: Record<BossSubscriptionState, string> = {
 export const STATE_BADGE_CLASS: Record<BossSubscriptionState, string> = {
   ACTIVE: 'bg-boss-primary/15 text-boss-primary border-boss-primary/30',
   GRACE_PERIOD: 'bg-amber-500/15 text-boss-warning border-amber-500/30',
-  EXPIRED: 'bg-boss-error/100/15 text-boss-error border-rose-500/30',
+  EXPIRED: 'bg-boss-error/15 text-boss-error border-rose-500/30',
   NONE: 'bg-boss-elevated/40 text-boss-text-secondary border-boss-border/40',
-  ERROR: 'bg-boss-error/100/15 text-boss-error border-rose-500/30',
+  ERROR: 'bg-boss-error/15 text-boss-error border-rose-500/30',
 };
 
 export function formatDate(value?: string | null): string {

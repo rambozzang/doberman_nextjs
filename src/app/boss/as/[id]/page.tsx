@@ -53,7 +53,7 @@ function statusColor(status: string): string {
 function priorityColor(priority: string): string {
   switch (priority) {
     case '긴급':
-      return 'bg-boss-error/100/15 text-boss-error ring-boss-error/30';
+      return 'bg-boss-error/15 text-boss-error ring-boss-error/30';
     case '보통':
       return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
     case '낮음':

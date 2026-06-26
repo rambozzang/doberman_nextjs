@@ -153,7 +153,7 @@ export default function BossCommunityNewPage() {
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-boss-text hover:bg-boss-error/100/80"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-boss-text hover:bg-boss-error/80"
                       aria-label="이미지 삭제"
                     >
                       <X size={10} />

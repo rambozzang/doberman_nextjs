@@ -37,11 +37,11 @@ export const bossCompanyApi = {
       region,
     }),
 
-  // 로고 삭제 — Flutter: CompanyRepo.deleteLogoPath → DELETE /company/logoPath/{companyId}
+  // 로고 삭제 — DELETE /company/deleteLogo/{id}
   deleteLogoPath: (companyId: number | string) =>
-    BossApiClient.deletePrivate<{ success?: boolean }>(`/company/logoPath/${companyId}`),
+    BossApiClient.deletePrivate<{ success?: boolean }>(`/company/deleteLogo/${companyId}`),
 
-  // 도장 삭제 — Flutter: CompanyRepo.deleteStampPath → DELETE /company/stampPath/{companyId}
+  // 도장 삭제 — DELETE /company/deleteStamp/{id}
   deleteStampPath: (companyId: number | string) =>
-    BossApiClient.deletePrivate<{ success?: boolean }>(`/company/stampPath/${companyId}`),
+    BossApiClient.deletePrivate<{ success?: boolean }>(`/company/deleteStamp/${companyId}`),
 };

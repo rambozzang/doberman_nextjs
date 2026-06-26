@@ -465,7 +465,7 @@ function BossPhotoInner() {
                   <button
                     type="button"
                     onClick={() => handleDelete(originIndex)}
-                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-boss-text opacity-0 transition-opacity group-hover:opacity-100 hover:bg-boss-error/100/80"
+                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-boss-text opacity-0 transition-opacity group-hover:opacity-100 hover:bg-boss-error/80"
                     aria-label="삭제"
                   >
                     <Trash2 size={14} />

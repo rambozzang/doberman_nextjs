@@ -162,7 +162,7 @@ export default function BossSignatureListPage() {
           </button>
           <Link
             href="/boss/signature/capture"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-error/100 px-3 text-sm font-semibold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-error px-3 text-sm font-semibold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400"
           >
             <Plus size={14} /> 서명 받기
           </Link>

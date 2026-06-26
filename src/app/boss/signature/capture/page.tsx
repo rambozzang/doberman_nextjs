@@ -239,7 +239,7 @@ export default function BossSignatureCapturePage() {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-error/100 px-3 py-1.5 text-xs font-bold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-error px-3 py-1.5 text-xs font-bold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400 disabled:opacity-50"
           >
             <Save size={14} /> {isSaving ? '저장 중…' : '저장'}
           </button>

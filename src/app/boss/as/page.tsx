@@ -232,7 +232,7 @@ export default function BossAsListPage() {
                   <span className="font-medium text-boss-text">{formatDate(item.requestDate)}</span>
                   <span className="ml-auto" />
                   {item.priority === '긴급' && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-error/100/15 px-2 py-0.5 text-[10px] font-bold text-boss-error">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-error/15 px-2 py-0.5 text-[10px] font-bold text-boss-error">
                       <AlertTriangle size={10} /> 긴급
                     </span>
                   )}
@@ -265,7 +265,7 @@ export default function BossAsListPage() {
                     </span>
                   )}
                   {defectCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-error/100/15 px-2 py-1 text-[11px] font-semibold text-boss-error">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-error/15 px-2 py-1 text-[11px] font-semibold text-boss-error">
                       <ImageIcon size={10} /> 하자 {defectCount}
                     </span>
                   )}

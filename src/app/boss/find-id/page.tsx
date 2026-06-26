@@ -19,7 +19,7 @@ export default function BossFindIdPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const [foundId, setFoundId] = useState<string | null>(null);
+  const [found, setFound] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,20 +32,15 @@ export default function BossFindIdPage() {
       return;
     }
     setLoading(true);
-    setFoundId(null);
+    setFound(false);
     try {
       const payload: BossFindIdRequest = { name: name.trim(), phone: phone.trim() };
       const res = await bossAuthApi.findId(payload);
-      if (res.success) {
-        const id = res.data?.userId;
-        if (id) {
-          setFoundId(id);
-          toast.success('아이디를 찾았습니다.');
-        } else {
-          toast.success(res.message || '등록된 이메일로 아이디를 발송했습니다.');
-        }
+      if (res.success && res.data === true) {
+        setFound(true);
+        toast.success(res.message || '회원가입 시 등록된 이메일로 아이디를 발송했습니다.');
       } else {
-        toast.error(res.message || res.error || '아이디 찾기에 실패했습니다.');
+        toast.error(res.message || res.error || '일치하는 사용자를 찾을 수 없습니다.');
       }
     } catch (err) {
       console.error('boss find-id error', err);
@@ -171,13 +166,15 @@ export default function BossFindIdPage() {
               </button>
             </form>
 
-            {foundId && (
+            {found && (
               <div className="mt-6 rounded-lg border border-boss-primary/30 bg-boss-primary/10 p-4">
                 <div className="flex items-center gap-2 text-xs font-medium text-boss-primary">
                   <Mail size={13} />
-                  찾은 아이디
+                  아이디 안내 발송 완료
                 </div>
-                <p className="mt-1 text-base font-bold text-boss-text">{foundId}</p>
+                <p className="mt-1 text-sm text-boss-text">
+                  회원가입 시 등록된 이메일로 아이디를 발송했습니다.
+                </p>
                 <Link
                   href="/boss/login"
                   className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-boss-primary hover:text-boss-primary"

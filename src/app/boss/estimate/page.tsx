@@ -22,7 +22,9 @@ import {
   Save,
 } from 'lucide-react';
 import { bossEstimateApi } from '@/lib/api/boss/estimate';
+import { bossEstimatesApi } from '@/lib/api/boss/estimates';
 import type {
+  BossEstimate,
   BossEstimateItem,
   BossEstimateItemCreateRequest,
   BossEstimateTotals,
@@ -105,6 +107,11 @@ export default function BossEstimatePage() {
   const [customerIdInput, setCustomerIdInput] = useState('');
   const [customerId, setCustomerId] = useState<string>('');
 
+  // 해당 고객의 견적서 목록 및 선택된 견적서 ID
+  const [estimates, setEstimates] = useState<BossEstimate[]>([]);
+  const [estimatesLoading, setEstimatesLoading] = useState(false);
+  const [selectedEstimateId, setSelectedEstimateId] = useState<number | null>(null);
+
   const [items, setItems] = useState<BossEstimateItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +120,7 @@ export default function BossEstimatePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingEstimateId, setEditingEstimateId] = useState<number | null>(null);
   const [form, setForm] = useState<ItemFormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -139,11 +147,33 @@ export default function BossEstimatePage() {
     }
   }, []);
 
+  // 고객별 견적서 목록 조회
+  const loadEstimates = useCallback(async (cid: string) => {
+    if (!cid) return;
+    setEstimatesLoading(true);
+    try {
+      const res = await bossEstimatesApi.listByCustomer(cid);
+      const list = Array.isArray(res.data) ? res.data : [];
+      setEstimates(list);
+      // 최신 견적서를 기본 선택
+      const latest =
+        list.find((e) => !e.deletedDt) ??
+        (list.length > 0 ? list[list.length - 1] : null);
+      setSelectedEstimateId(latest?.id ?? null);
+    } catch {
+      setEstimates([]);
+      setSelectedEstimateId(null);
+    } finally {
+      setEstimatesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (customerId) {
       loadItems(customerId);
+      loadEstimates(customerId);
     }
-  }, [customerId, loadItems]);
+  }, [customerId, loadItems, loadEstimates]);
 
   const totals = useMemo(() => computeTotals(items), [items]);
   const calcPreview = useMemo(() => calcFromForm(form), [form]);
@@ -157,6 +187,8 @@ export default function BossEstimatePage() {
       return;
     }
     setCustomerId(v);
+    setEstimates([]);
+    setSelectedEstimateId(null);
   };
 
   // 신규 등록 모달 열기
@@ -165,8 +197,13 @@ export default function BossEstimatePage() {
       toast.error('먼저 고객 ID를 입력하세요.');
       return;
     }
+    if (selectedEstimateId == null) {
+      toast.error('등록할 견적서를 선택하세요.');
+      return;
+    }
     setModalMode('create');
     setEditingId(null);
+    setEditingEstimateId(null);
     setForm(EMPTY_FORM);
     setModalOpen(true);
   };
@@ -175,6 +212,7 @@ export default function BossEstimatePage() {
   const openEditModal = (item: BossEstimateItem) => {
     setModalMode('edit');
     setEditingId(item.id ?? null);
+    setEditingEstimateId(item.estimateId ?? null);
     setForm({
       itemName: item.itemName ?? '',
       itemSpec: item.itemSpec ?? '',
@@ -210,6 +248,7 @@ export default function BossEstimatePage() {
     const { supply, vat, total } = calcFromForm(form);
     return {
       customerId: Number(customerId),
+      estimateId: editingEstimateId ?? selectedEstimateId ?? undefined,
       itemName: form.itemName.trim(),
       itemSpec: form.itemSpec.trim(),
       unit: form.unit.trim(),
@@ -332,6 +371,29 @@ export default function BossEstimatePage() {
               조회
             </button>
           </form>
+
+          {customerId && (
+            <div className="relative">
+              <select
+                value={selectedEstimateId ?? ''}
+                onChange={(e) => setSelectedEstimateId(e.target.value ? Number(e.target.value) : null)}
+                disabled={estimatesLoading || estimates.length === 0}
+                className="h-9 min-w-[10rem] rounded-lg border border-boss-border bg-boss-surface pl-3 pr-8 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10 disabled:opacity-50"
+              >
+                {estimatesLoading ? (
+                  <option>견적서 로딩 중…</option>
+                ) : estimates.length === 0 ? (
+                  <option value="">견적서 없음</option>
+                ) : (
+                  estimates.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.id}번 {e.customerName} {e.estimateDate ? `(${e.estimateDate})` : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
 
           <button
             type="button"

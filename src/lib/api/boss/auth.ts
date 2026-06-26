@@ -24,8 +24,9 @@ export const bossAuthApi = {
     BossApiClient.get<{ available?: boolean } | boolean>(`/auth/check-id/${encodeURIComponent(userId)}`),
 
   // 아이디 찾기 — Flutter: LoginRepo.findId → POST /auth/find-id
+  // 백엔드는 result(boolean) 와 "회원가입시 등록된 Email로 발송되었습니다" 메시지를 반환
   findId: (data: BossFindIdRequest) =>
-    BossApiClient.post<{ userId?: string }>('/auth/find-id', data),
+    BossApiClient.post<boolean>('/auth/find-id', data),
 
   // 사용자 정보 확인(비밀번호 찾기 전 단계) — Flutter: LoginRepo.verifyUser → POST /auth/checkUserInfo
   verifyUser: (data: BossCheckUserInfoRequest) =>

@@ -153,6 +153,9 @@ module.exports = {
         },
       },
       boxShadow: {
+        'boss': 'var(--boss-shadow)',
+        'boss-md': 'var(--boss-shadow-md)',
+        'boss-lg': 'var(--boss-shadow-lg)',
         'glow': '0 0 20px rgba(59, 130, 246, 0.3)',
         'glow-lg': '0 0 40px rgba(59, 130, 246, 0.4)',
         'glow-purple': '0 0 20px rgba(147, 51, 234, 0.3)',
