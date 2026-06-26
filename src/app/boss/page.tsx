@@ -134,12 +134,12 @@ export default function BossDashboardPage() {
     void fetchData();
   }, []);
 
-  // 차트 데이터
+  // 차트 데이터 (매출 = 수금액)
   const revenueData = useMemo(
     () =>
       monthly.map((r) => ({
         month: rowLabel(r),
-        revenue: r.totalAmount ?? 0,
+        revenue: r.collectedAmount ?? 0,
         count: r.totalCount ?? 0,
       })),
     [monthly]
@@ -183,20 +183,20 @@ export default function BossDashboardPage() {
   // 견적 상태 분포
   const statusData = useMemo(
     () => [
-      { name: '견적', value: current?.estimateCount ?? 0, color: '#22c55e' },
-      { name: '계약', value: current?.contractCount ?? 0, color: '#0ea5e9' },
-      { name: '완료', value: current?.completeCount ?? 0, color: '#a855f7' },
-      { name: '취소', value: current?.cancelCount ?? 0, color: '#475569' },
+      { name: '진행중', value: current?.inProgressCount ?? 0, color: 'rgb(var(--boss-info))' },
+      { name: '수금중', value: current?.collectingCount ?? 0, color: 'rgb(var(--boss-warning))' },
+      { name: '완료', value: current?.completedCount ?? 0, color: 'rgb(var(--boss-primary))' },
+      { name: '취소', value: current?.canceledCount ?? 0, color: 'rgb(var(--boss-text-muted))' },
     ],
     [current]
   );
   const statusTotal = statusData.reduce((s, d) => s + d.value, 0);
 
   // 상단 메트릭
-  const monthlyEstimateCount = current?.estimateCount ?? current?.totalCount ?? 0;
-  const monthlyContractCount = current?.contractCount ?? 0;
-  const monthlyRevenue = current?.totalAmount ?? 0;
-  const monthlyCompleteCount = current?.completeCount ?? 0;
+  const monthlyTotalCount = current?.totalCount ?? 0;
+  const monthlyInProgressCount = current?.inProgressCount ?? 0;
+  const monthlyRevenue = current?.collectedAmount ?? 0;
+  const monthlyCompletedCount = current?.completedCount ?? 0;
 
   const today = new Date().toLocaleDateString('ko-KR', {
     month: 'long',
@@ -233,7 +233,7 @@ export default function BossDashboardPage() {
       </header>
 
       {error && !loading && (
-        <div className="mb-4 rounded-lg border border-boss-error/20 bg-boss-error/100/[0.06] px-3 py-2 text-sm text-boss-error">
+        <div className="mb-4 rounded-lg border border-boss-error/20 bg-boss-error/10 px-3 py-2 text-sm text-boss-error">
           {error}
         </div>
       )}
@@ -241,8 +241,8 @@ export default function BossDashboardPage() {
       {/* ───── 메트릭 카드 ───── */}
       <section className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
-          label="이번 달 견적"
-          value={`${monthlyEstimateCount.toLocaleString('ko-KR')}건`}
+          label="이번 달 총 건수"
+          value={`${monthlyTotalCount.toLocaleString('ko-KR')}건`}
           icon={FileText}
           delta={countDelta}
           hint="전월 대비"
@@ -250,13 +250,13 @@ export default function BossDashboardPage() {
         />
         <StatCard
           label="진행 중 시공"
-          value={`${monthlyContractCount.toLocaleString('ko-KR')}건`}
+          value={`${monthlyInProgressCount.toLocaleString('ko-KR')}건`}
           icon={Hammer}
-          hint="계약 완료"
+          hint="진행중"
           loading={loading}
         />
         <StatCard
-          label="이번 달 매출"
+          label="이번 달 수금"
           value={fmtWonShort(monthlyRevenue)}
           icon={TrendingUp}
           delta={revenueDelta}
@@ -265,7 +265,7 @@ export default function BossDashboardPage() {
         />
         <StatCard
           label="이번 달 완료"
-          value={`${monthlyCompleteCount.toLocaleString('ko-KR')}건`}
+          value={`${monthlyCompletedCount.toLocaleString('ko-KR')}건`}
           icon={CheckCircle2}
           hint="이번 달"
           loading={loading}

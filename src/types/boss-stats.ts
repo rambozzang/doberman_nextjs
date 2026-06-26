@@ -1,5 +1,5 @@
 // 사장님 매출/통계(stats) 모듈 타입 정의
-// Flutter `lib/repo/statis_repo.dart` (StatistRepo) 와 백엔드 `/stats/*` 응답 1:1 대응
+// 백엔드 /stats/* 응답 1:1 대응
 //
 // 백엔드 엔드포인트:
 //   - GET /stats/monthly?startYear=&startMonth=&endYear=&endMonth=
@@ -7,37 +7,54 @@
 
 // 월별 통계 단일 row (1개월치 집계)
 export interface BossMonthlyStat {
-  // 연월 (예: "202504" 또는 "2025-04") - 백엔드 필드명에 맞춰 다양한 케이스를 허용
-  yearMonth?: string;
+  // 연월
   year?: number;
   month?: number;
+  yearMonth?: string;
+  companyId?: string;
 
-  // 집계 값
+  // 상태별 건수
+  inProgressCount?: number;   // 진행중
+  collectingCount?: number;   // 수금중
+  completedCount?: number;    // 완료
+  holdCount?: number;         // 보류
+  canceledCount?: number;     // 취소
+
+  // 금액
+  estimateAmount?: number;    // 견적 금액
+  collectedAmount?: number;   // 수금 금액
+  uncollectedAmount?: number; // 미수금
+  averageAmount?: number;     // 평균 단가
+
+  // 전체
   totalCount?: number;        // 총 건수
-  totalAmount?: number;       // 총 매출액
-  paidAmount?: number;        // 수금 금액
-  unpaidAmount?: number;      // 미수금 금액
 
-  // 부가 지표 (백엔드가 내려줄 수 있는 값)
-  estimateCount?: number;     // 견적 건수
-  contractCount?: number;     // 계약 건수
-  completeCount?: number;     // 완료 건수
-  cancelCount?: number;       // 취소 건수
+  // 이전월 대비 (current 월 응답에 포함)
+  lastMonthTotalCount?: number;
+  lastMonthCompletedCount?: number;
+  lastMonthCanceledCount?: number;
+  lastMonthCollectedAmount?: number;
 
-  // 평균 단가
+  // 과거 호환용 별칭
+  totalAmount?: number;
+  paidAmount?: number;
+  unpaidAmount?: number;
+  estimateCount?: number;
+  contractCount?: number;
+  completeCount?: number;
+  cancelCount?: number;
   avgAmount?: number;
 }
 
 // 월별 통계 조회 파라미터 (GET /stats/monthly)
 export interface BossMonthlyStatsParams {
-  startYear: string;
-  startMonth: string;
-  endYear: string;
-  endMonth: string;
+  startYear: number;
+  startMonth: number;
+  endYear: number;
+  endMonth: number;
 }
 
-// 월별 통계 응답 (배열 또는 컨테이너 형태 모두 허용)
-// 백엔드가 배열을 바로 내려주거나 { list: [...] } 형태로 내려줄 수 있음
+// 월별 통계 응답
 export interface BossMonthlyStatsResponse {
   list?: BossMonthlyStat[];
   content?: BossMonthlyStat[];
@@ -45,40 +62,20 @@ export interface BossMonthlyStatsResponse {
   totalAmount?: number;
 }
 
-// 현재월(또는 특정월) 매출 상세 - GET /stats/monthly/current
-// Flutter 화면의 sales_status_page 가 사용하는 실시간 매출 한 건
+// 현재월(또는 특정월) 매출 상세 row
 export interface BossSalesItem {
   id?: number;
-  name?: string;            // 고객명/현장명
-  workDate?: string;        // 시공일자 (yyyyMMdd 또는 ISO)
-  updatedDt?: string;       // 수금일자
-  totalAmount?: number;     // 금액
-  statusCd?: string;        // 상태코드
+  name?: string;
+  workDate?: string;
+  updatedDt?: string;
+  totalAmount?: number;
+  statusCd?: string;
   phone?: string;
   address?: string;
 }
 
-// 현재월 통계 응답 - 다양한 백엔드 구조 허용
-export interface BossCurrentMonthStats {
-  yearMonth?: string;
-
-  // 집계 정보
-  totalCount?: number;
-  totalAmount?: number;
-  paidAmount?: number;
-  unpaidAmount?: number;
-
-  // 트렌드 비교용 (이전월 대비)
-  prevTotalAmount?: number;
-  prevTotalCount?: number;
-
-  // 상태별 카운트
-  estimateCount?: number;
-  contractCount?: number;
-  completeCount?: number;
-  cancelCount?: number;
-
-  // 상세 리스트 (sales_status_page 의 salesList 대응)
+// 현재월 통계 응답
+export interface BossCurrentMonthStats extends BossMonthlyStat {
   list?: BossSalesItem[];
   content?: BossSalesItem[];
 }

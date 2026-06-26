@@ -78,7 +78,7 @@ export default function BossOrderListPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await bossOrdersApi.list({ page, size: 24, sortType });
+      const res = await bossOrdersApi.list({ page: page - 1, size: 24, sortType });
       if (res.success && res.data) {
         setItems(res.data.content ?? []);
         setTotalPages(res.data.totalPages ?? 1);
@@ -99,7 +99,7 @@ export default function BossOrderListPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await bossOrdersApi.list({ page, size: 24, sortType });
+        const res = await bossOrdersApi.list({ page: page - 1, size: 24, sortType });
         if (cancelled) return;
         if (res.success && res.data) {
           setItems(res.data.content ?? []);

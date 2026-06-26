@@ -55,7 +55,7 @@ export default function BossSignupPage() {
         const data = res.data;
         let available = false;
         if (typeof data === 'boolean') {
-          available = data;
+          available = !data; // 백엔드는 중복 여부를 반환
         } else if (data && typeof data === 'object' && 'available' in data) {
           available = !!data.available;
         } else {
@@ -99,8 +99,9 @@ export default function BossSignupPage() {
       toast.error('이름을 입력해주세요.');
       return;
     }
-    if (phone.length !== 11) {
-      toast.error('휴대폰 번호는 11자리여야 합니다.');
+    const phoneDigits = phone.replace(/[^\d]/g, '');
+    if (phoneDigits.length !== 11) {
+      toast.error('휴대폰 번호는 11자리 숫자여야 합니다.');
       return;
     }
     if (!validateEmail(email)) {
@@ -114,8 +115,9 @@ export default function BossSignupPage() {
         userId: userId.trim(),
         password,
         name: name.trim(),
-        phone: phone.trim(),
+        phone: phoneDigits,
         email: email.trim(),
+        companyId: 0,
         fcmToken: '',
         deviceId: ensureDeviceId() ?? '',
       };

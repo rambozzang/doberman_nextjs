@@ -32,8 +32,9 @@ export const bossAuthApi = {
     BossApiClient.post<{ verified?: boolean }>('/auth/checkUserInfo', data),
 
   // 비밀번호 변경 — Flutter: LoginRepo.changePassword → PUT /auth/password
+  // 비밀번호 찾기 흐름에서는 로그인 전이므로 public 클라이언트 사용
   changePassword: (data: BossChangePasswordRequest) =>
-    BossApiClient.putPrivate<{ success?: boolean }>('/auth/password', data),
+    BossApiClient.put<{ success?: boolean }>('/auth/password', data),
 
   // 회원 탈퇴 — Flutter: LoginRepo.withdrawUser → DELETE /user/{userId}
   withdraw: (userId: string) =>

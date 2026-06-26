@@ -113,6 +113,12 @@ class BossApiClient {
       return normalize<T>(r.data);
     } catch (e) { return this.handleError(e); }
   }
+  static async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    try {
+      const r: AxiosResponse<unknown> = await bossPublicApi.put(url, data, config);
+      return normalize<T>(r.data);
+    } catch (e) { return this.handleError(e); }
+  }
   static async putPrivate<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
       const r: AxiosResponse<unknown> = await bossPrivateApi.put(url, data, config);

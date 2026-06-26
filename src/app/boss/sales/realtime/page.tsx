@@ -6,13 +6,9 @@ import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Activity, RefreshCw, Calendar, Wallet } from 'lucide-react';
 import { bossStatsApi, formatYearMonth } from '@/lib/api/boss/stats';
-import type { BossSalesItem, BossCurrentMonthStats } from '@/types/boss-stats';
-
-// 백엔드 응답에서 리스트 추출
-function extractList(data?: BossCurrentMonthStats | null): BossSalesItem[] {
-  if (!data) return [];
-  return data.list ?? data.content ?? [];
-}
+import { bossOrdersApi } from '@/lib/api/boss/orders';
+import type { BossCurrentMonthStats } from '@/types/boss-stats';
+import type { BossOrderItem } from '@/types/boss';
 
 // yyyyMMdd / ISO 모두 yyyy.MM.dd 로 변환
 function fmtDate(s?: string): string {
@@ -25,8 +21,17 @@ function fmtDate(s?: string): string {
 }
 
 function fmtWon(n?: number): string {
-  if (n == null) return '₩0';
+  if (n == null || Number.isNaN(n)) return '₩0';
   return `₩${n.toLocaleString('ko-KR')}`;
+}
+
+function yearMonthRange(ym: string) {
+  const y = Number(ym.slice(0, 4));
+  const m = Number(ym.slice(4, 6));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const start = `${y}${pad(m)}010000`;
+  const end = `${y}${pad(m)}${pad(new Date(y, m, 0).getDate())}2359`;
+  return { start, end };
 }
 
 // 최근 3개월 yearMonth 옵션 생성
@@ -49,24 +54,44 @@ export default function BossSalesRealtimePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<BossCurrentMonthStats | null>(null);
+  const [items, setItems] = useState<BossOrderItem[]>([]);
 
   const fetchData = async (ym: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await bossStatsApi.current(ym);
-      if (res.success === false) {
-        const msg = res.error || res.message || '실시간 매출 정보를 불러오지 못했습니다.';
+      const { start, end } = yearMonthRange(ym);
+      const [statsRes, ordersRes] = await Promise.all([
+        bossStatsApi.current(ym),
+        bossOrdersApi.list({
+          page: 0,
+          size: 200,
+          sortType: 'WORK_DATE',
+          workDateFrom: start,
+          workDateTo: end,
+        }),
+      ]);
+      if (statsRes.success === false) {
+        const msg = statsRes.error || statsRes.message || '실시간 매출 정보를 불러오지 못했습니다.';
         setError(msg);
         setStats(null);
         toast.error(msg);
-        return;
+      } else {
+        setStats(statsRes.data ?? null);
       }
-      setStats(res.data ?? null);
+      if (ordersRes.success === false) {
+        const msg = ordersRes.error || ordersRes.message || '주문 목록을 불러오지 못했습니다.';
+        setError((prev) => prev ?? msg);
+        toast.error(msg);
+        setItems([]);
+      } else {
+        setItems(ordersRes.data?.content ?? []);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '실시간 매출 정보를 불러오지 못했습니다.';
       setError(msg);
       setStats(null);
+      setItems([]);
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -77,19 +102,16 @@ export default function BossSalesRealtimePage() {
     void fetchData(yearMonth);
   }, [yearMonth]);
 
-  const items = extractList(stats);
-
-  // 합계: 응답 totalCount/totalAmount 우선, 없으면 리스트 합산
+  // 합계: 응답 집계 우선, 없으면 리스트 합산
   const totalCount = stats?.totalCount ?? items.length;
-  const totalAmount =
-    stats?.totalAmount ?? items.reduce((s, it) => s + (it.totalAmount ?? 0), 0);
-  const paidAmount = stats?.paidAmount ?? 0;
+  const totalAmount = (stats?.collectedAmount ?? 0) + (stats?.uncollectedAmount ?? 0);
+  const paidAmount = stats?.collectedAmount ?? 0;
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-boss-error/20 bg-boss-error/100/5 px-3 py-1">
+          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-boss-error/20 bg-boss-error/5 px-3 py-1">
             <Activity size={11} className="text-boss-error" />
             <span className="text-[11px] font-medium text-boss-error">실시간 매출 현황</span>
           </div>
@@ -144,17 +166,17 @@ export default function BossSalesRealtimePage() {
         ) : items.length === 0 ? (
           <p className="text-sm text-boss-text-muted">표시할 매출이 없습니다.</p>
         ) : (
-          <ul className="divide-y divide-slate-800/60">
+          <ul className="divide-y divide-boss-border">
             {items.map((item, i) => (
               <li key={item.id ?? i} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-boss-text">{item.name ?? '이름 없음'}</p>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-boss-text-muted">
                     <span>시공일: {fmtDate(item.workDate)}</span>
-                    <span>수금일: {fmtDate(item.updatedDt)}</span>
+                    <span>상태: {item.statusCd ?? '-'}</span>
                   </div>
                 </div>
-                <div className="text-right text-sm font-bold text-boss-error">
+                <div className="text-right text-sm font-bold text-boss-text">
                   {fmtWon(item.totalAmount)}
                 </div>
               </li>

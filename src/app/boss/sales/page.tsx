@@ -82,14 +82,14 @@ export default function BossSalesPage() {
     void fetchData(months);
   }, [months]);
 
-  // 차트 데이터 변환
+  // 차트 데이터 변환 (수금액 기준)
   const chartData = useMemo(
     () =>
       rows.map((r) => ({
         label: rowLabel(r),
-        amount: r.totalAmount ?? 0,
+        amount: r.collectedAmount ?? 0,
         count: r.totalCount ?? 0,
-        paid: r.paidAmount ?? 0,
+        total: (r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0),
       })),
     [rows]
   );
@@ -97,9 +97,9 @@ export default function BossSalesPage() {
   // 합계 계산
   const totals = useMemo(
     () => ({
-      amount: rows.reduce((s, r) => s + (r.totalAmount ?? 0), 0),
+      amount: rows.reduce((s, r) => s + ((r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0)), 0),
       count: rows.reduce((s, r) => s + (r.totalCount ?? 0), 0),
-      paid: rows.reduce((s, r) => s + (r.paidAmount ?? 0), 0),
+      paid: rows.reduce((s, r) => s + (r.collectedAmount ?? 0), 0),
     }),
     [rows]
   );

@@ -94,7 +94,7 @@ export default function BossStatisticsPage() {
     () =>
       monthly.map((r) => ({
         label: rowLabel(r),
-        amount: r.totalAmount ?? 0,
+        amount: r.collectedAmount ?? 0,
         count: r.totalCount ?? 0,
       })),
     [monthly]
@@ -104,10 +104,10 @@ export default function BossStatisticsPage() {
   const statusData = useMemo(() => {
     const c = current;
     return [
-      { name: '견적', value: c?.estimateCount ?? 0, color: '#22c55e' },
-      { name: '계약', value: c?.contractCount ?? 0, color: '#0ea5e9' },
-      { name: '완료', value: c?.completeCount ?? 0, color: '#a855f7' },
-      { name: '취소', value: c?.cancelCount ?? 0, color: '#64748b' },
+      { name: '진행중', value: c?.inProgressCount ?? 0, color: 'rgb(var(--boss-info))' },
+      { name: '수금중', value: c?.collectingCount ?? 0, color: 'rgb(var(--boss-warning))' },
+      { name: '완료', value: c?.completedCount ?? 0, color: 'rgb(var(--boss-primary))' },
+      { name: '취소', value: c?.canceledCount ?? 0, color: 'rgb(var(--boss-text-muted))' },
     ];
   }, [current]);
 
@@ -136,10 +136,10 @@ export default function BossStatisticsPage() {
 
       {/* 상단 카드 (현재월) */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="이번달 매출" value={fmtWon(current?.totalAmount)} icon={<TrendingUp size={18} />} accent="from-violet-500 to-violet-700" loading={loading} />
+        <StatCard label="이번달 수금" value={fmtWon(current?.collectedAmount)} icon={<TrendingUp size={18} />} accent="from-violet-500 to-violet-700" loading={loading} />
         <StatCard label="이번달 건수" value={`${(current?.totalCount ?? 0).toLocaleString('ko-KR')}건`} icon={<FileText size={18} />} accent="from-boss-primary to-emerald-700" loading={loading} />
-        <StatCard label="진행 중(계약)" value={`${(current?.contractCount ?? 0).toLocaleString('ko-KR')}건`} icon={<Hammer size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
-        <StatCard label="완료" value={`${(current?.completeCount ?? 0).toLocaleString('ko-KR')}건`} icon={<CheckCircle2 size={18} />} accent="from-amber-500 to-amber-700" loading={loading} />
+        <StatCard label="진행 중" value={`${(current?.inProgressCount ?? 0).toLocaleString('ko-KR')}건`} icon={<Hammer size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
+        <StatCard label="완료" value={`${(current?.completedCount ?? 0).toLocaleString('ko-KR')}건`} icon={<CheckCircle2 size={18} />} accent="from-amber-500 to-amber-700" loading={loading} />
       </section>
 
       {error && !loading && (

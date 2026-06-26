@@ -76,7 +76,7 @@ export default function BossRequestListPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await bossRequestsApi.list({ page: targetPage, size: 24 });
+      const res = await bossRequestsApi.list({ page: targetPage - 1, size: 24 });
       if (res.success && res.data) {
         setItems(res.data.content ?? []);
         setTotalPages(res.data.totalPages ?? 1);

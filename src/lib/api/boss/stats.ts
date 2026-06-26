@@ -37,9 +37,9 @@ export function buildRecentMonthsParams(months: number): BossMonthlyStatsParams 
   const end = new Date(now.getFullYear(), now.getMonth(), 1);
   const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
   return {
-    startYear: String(start.getFullYear()),
-    startMonth: String(start.getMonth() + 1).padStart(2, '0'),
-    endYear: String(end.getFullYear()),
-    endMonth: String(end.getMonth() + 1).padStart(2, '0'),
+    startYear: start.getFullYear(),
+    startMonth: start.getMonth() + 1,
+    endYear: end.getFullYear(),
+    endMonth: end.getMonth() + 1,
   };
 }
