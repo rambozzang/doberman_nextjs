@@ -247,8 +247,8 @@ export default function BossSalesPage() {
                   <tr key={`${r.yearMonth ?? i}`} className="border-t border-boss-border/60 text-boss-text">
                     <td className="px-2 py-2">{rowLabel(r)}</td>
                     <td className="px-2 py-2">{(r.totalCount ?? 0).toLocaleString('ko-KR')}건</td>
-                    <td className="px-2 py-2">{fmtWon(r.totalAmount)}</td>
-                    <td className="px-2 py-2">{fmtWon(r.paidAmount)}</td>
+                    <td className="px-2 py-2">{fmtWon((r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0))}</td>
+                    <td className="px-2 py-2">{fmtWon(r.collectedAmount ?? 0)}</td>
                   </tr>
                 ))}
               </tbody>

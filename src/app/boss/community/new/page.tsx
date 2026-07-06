@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import RichEditor from '@/components/boss/RichEditor';
@@ -17,33 +17,10 @@ export default function BossCommunityNewPage() {
   const router = useRouter();
   const [subject, setSubject] = useState('');
   const [contents, setContents] = useState('');
-  const [images, setImages] = useState<string[]>([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const hasContent = contents.replace(/<[^>]*>/g, '').trim().length > 0;
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    Promise.all(
-      files.map(
-        (file) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          }),
-      ),
-    )
-      .then((dataUrls) => setImages((prev) => [...prev, ...dataUrls]))
-      .catch(() => toast.error('이미지를 불러오는 중 오류가 발생했습니다.'));
-  };
-
-  const removeImage = (idx: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== idx));
-  };
 
   const submit = async () => {
     if (!subject.trim()) {
@@ -126,44 +103,6 @@ export default function BossCommunityNewPage() {
               Cmd/Ctrl + B 굵게 · Cmd/Ctrl + I 기울임 · 툴바에서 제목·목록·인용·링크 삽입
             </p>
           </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
-              이미지 첨부
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              className="block w-full text-sm text-boss-text-muted file:mr-3 file:rounded-md file:border-0 file:bg-boss-primary/10 file:px-3 file:py-2 file:text-xs file:font-medium file:text-boss-primary hover:file:bg-boss-primary/20"
-            />
-            {images.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {images.map((src, idx) => (
-                  <div
-                    key={idx}
-                    className="relative h-20 w-20 overflow-hidden rounded-lg border border-boss-border"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={src}
-                      alt={`첨부 이미지 ${idx + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-boss-text hover:bg-boss-error/80"
-                      aria-label="이미지 삭제"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <label className="flex items-center gap-2 text-xs text-boss-text-secondary">
             <input
               type="checkbox"

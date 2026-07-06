@@ -16,7 +16,7 @@ export default function BossMyRequestsPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await bossRequestsApi.myList({ page: 1, size: 50 });
+        const res = await bossRequestsApi.myList({ page: 0, size: 50 });
         if (cancelled) return;
         if (res.success && res.data) {
           setItems(res.data.content ?? []);

@@ -34,6 +34,7 @@ import {
   bossNotificationsReadStore,
 } from '@/lib/api/boss/notifications';
 import type { BossNotificationItem } from '@/types/boss-notifications';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
 const CATEGORY_META: Record<
   string,
@@ -270,7 +271,7 @@ export default function BossNotificationDetailPage() {
         <Card>
           <div
             className="prose prose-invert max-w-none text-sm leading-relaxed text-boss-text"
-            dangerouslySetInnerHTML={{ __html: item.contents ?? '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.contents) }}
           />
         </Card>
       ) : (

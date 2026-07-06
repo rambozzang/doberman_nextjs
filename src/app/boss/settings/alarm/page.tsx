@@ -24,7 +24,7 @@ export default function BossAlarmSettingPage() {
     // 저장된 사용자 정보가 있으면 초기값 설정
     try {
       if (typeof window === 'undefined') return;
-      const raw = localStorage.getItem('boss_user');
+      const raw = localStorage.getItem('boss_user_info');
       if (!raw) return;
       const u = JSON.parse(raw) as { alramTime?: string };
       if (!u?.alramTime) return;
@@ -60,11 +60,11 @@ export default function BossAlarmSettingPage() {
         toast.success('알림 시간이 저장되었습니다.');
         try {
           if (typeof window !== 'undefined') {
-            const raw = localStorage.getItem('boss_user');
+            const raw = localStorage.getItem('boss_user_info');
             if (raw) {
               const u = JSON.parse(raw);
               u.alramTime = alramTime;
-              localStorage.setItem('boss_user', JSON.stringify(u));
+              localStorage.setItem('boss_user_info', JSON.stringify(u));
             }
           }
         } catch {

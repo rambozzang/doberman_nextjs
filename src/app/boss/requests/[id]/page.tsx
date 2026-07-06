@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 import type { BossRequestDetail, BossRequestAnswer } from '@/types/boss';
 import BossPageHeader from '@/components/boss/BossPageHeader';
 import { Card, Button, Badge, EmptyState } from '@/components/boss/ui';
@@ -195,7 +196,7 @@ export default function BossRequestDetailPage() {
                     </div>
                     <div
                       className="prose prose-sm max-w-none text-sm text-boss-text-secondary"
-                      dangerouslySetInnerHTML={{ __html: a.answerBody || '' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.answerBody) }}
                     />
                     <div className="mt-3 flex items-center gap-3 text-xs text-boss-text-muted">
                       <span>{a.userNm || '작성자 미상'}</span>

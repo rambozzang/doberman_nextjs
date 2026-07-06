@@ -65,7 +65,8 @@ export default function BossMyInfoEditPage() {
         nickNm: nickNm.trim(),
         phone: phone.trim(),
         email: email.trim(),
-        profilePath: '',
+        // 기존 프로필 이미지 유지 (빈 문자열로 덮어써서 아바타가 지워지는 문제 방지)
+        profilePath: BossAuthManager.getUserInfo()?.profilePath,
       };
       const res = await bossUserApi.update(payload);
       if (res.success) {
