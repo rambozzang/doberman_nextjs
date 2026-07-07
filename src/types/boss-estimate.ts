@@ -42,6 +42,18 @@ export interface BossEstimateItem {
   deletedDt?: string;
 }
 
+// 견적서 생성 요청
+export interface BossEstimateCreateRequest {
+  customerId: number;
+  customerName: string;
+  estimateDate?: string | null;
+  memo?: string | null;
+  totalItems?: number | null;
+  totalQuantity?: number | null;
+  totalAmount?: number | null;
+  companyId?: number | null;
+}
+
 // 견적 품목 등록 요청 (id 없이)
 export type BossEstimateItemCreateRequest = Omit<BossEstimateItem, 'id' | 'createdDt' | 'updatedDt' | 'deletedDt' | 'delYn' | 'createdUserId'>;
 

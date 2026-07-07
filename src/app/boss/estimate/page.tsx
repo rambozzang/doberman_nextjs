@@ -23,10 +23,12 @@ import {
 } from 'lucide-react';
 import { bossEstimateApi } from '@/lib/api/boss/estimate';
 import { bossEstimatesApi } from '@/lib/api/boss/estimates';
+import { bossCustomersApi } from '@/lib/api/boss/customers';
 import type {
   BossEstimate,
   BossEstimateItem,
   BossEstimateItemCreateRequest,
+  BossEstimateCreateRequest,
   BossEstimateTotals,
 } from '@/types/boss-estimate';
 
@@ -123,6 +125,7 @@ export default function BossEstimatePage() {
   const [editingEstimateId, setEditingEstimateId] = useState<number | null>(null);
   const [form, setForm] = useState<ItemFormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [creatingEstimate, setCreatingEstimate] = useState(false);
 
   // 품목 조회
   const loadItems = useCallback(async (cid: string) => {
@@ -168,6 +171,39 @@ export default function BossEstimatePage() {
     }
   }, []);
 
+  // 견적서가 없을 때 자동으로 1건 생성한다.
+  const ensureEstimate = useCallback(async (): Promise<number | null> => {
+    if (selectedEstimateId != null) return selectedEstimateId;
+    if (!customerId) return null;
+
+    setCreatingEstimate(true);
+    try {
+      const customerRes = await bossCustomersApi.get(customerId);
+      const customerName =
+        (customerRes.success && customerRes.data && customerRes.data.name) ||
+        `고객 ${customerId}`;
+      const payload: BossEstimateCreateRequest = {
+        customerId: Number(customerId),
+        customerName,
+        estimateDate: new Date().toISOString().slice(0, 10),
+        memo: '웹에서 자동 생성',
+      };
+      const res = await bossEstimatesApi.create(payload);
+      if (!res.success || !res.data?.id) {
+        toast.error(res.message || '견적서 생성에 실패했습니다.');
+        return null;
+      }
+      setEstimates((prev) => [...prev, res.data!]);
+      setSelectedEstimateId(res.data!.id);
+      return res.data!.id;
+    } catch {
+      toast.error('견적서 생성 중 오류가 발생했습니다.');
+      return null;
+    } finally {
+      setCreatingEstimate(false);
+    }
+  }, [customerId, selectedEstimateId]);
+
   useEffect(() => {
     if (customerId) {
       loadItems(customerId);
@@ -192,18 +228,16 @@ export default function BossEstimatePage() {
   };
 
   // 신규 등록 모달 열기
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     if (!customerId) {
       toast.error('먼저 고객 ID를 입력하세요.');
       return;
     }
-    if (selectedEstimateId == null) {
-      toast.error('등록할 견적서를 선택하세요.');
-      return;
-    }
+    const estimateId = await ensureEstimate();
+    if (estimateId == null) return;
     setModalMode('create');
     setEditingId(null);
-    setEditingEstimateId(null);
+    setEditingEstimateId(estimateId);
     setForm(EMPTY_FORM);
     setModalOpen(true);
   };
@@ -407,9 +441,18 @@ export default function BossEstimatePage() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover"
+            disabled={creatingEstimate}
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-60"
           >
-            <Plus size={14} /> 품목 추가
+            {creatingEstimate ? (
+              <>
+                <RefreshCw size={14} className="animate-spin" /> 견적서 생성 중…
+              </>
+            ) : (
+              <>
+                <Plus size={14} /> 품목 추가
+              </>
+            )}
           </button>
         </div>
       </div>

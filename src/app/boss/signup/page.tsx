@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { bossAuthApi } from '@/lib/api/boss/auth';
+import { bossCompanyApi } from '@/lib/api/boss/company';
+import { bossUserApi } from '@/lib/api/boss/user';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { ensureDeviceId } from '@/lib/bossDeviceId';
-import type { BossSignupRequest } from '@/types/boss';
+import type { BossSignupRequest, BossCompanyData, BossUserInfo } from '@/types/boss';
 import {
   Building2,
   Lock,
@@ -23,6 +25,9 @@ import {
   XCircle,
   IdCard,
   ArrowLeft,
+  Briefcase,
+  MapPin,
+  FileText,
 } from 'lucide-react';
 
 export default function BossSignupPage() {
@@ -38,6 +43,13 @@ export default function BossSignupPage() {
   const [idCheckOk, setIdCheckOk] = useState(false);
   const [checkingId, setCheckingId] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // 회사 정보
+  const [companyName, setCompanyName] = useState('');
+  const [companyOwner, setCompanyOwner] = useState('');
+  const [companyBizno, setCompanyBizno] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyAddress1, setCompanyAddress1] = useState('');
 
   const validateUserId = (v: string) => /^[a-zA-Z0-9]{6,}$/.test(v);
   const validateEmail = (v: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
@@ -108,9 +120,23 @@ export default function BossSignupPage() {
       toast.error('이메일 형식이 올바르지 않습니다.');
       return;
     }
+    if (!companyName.trim()) {
+      toast.error('회사명을 입력해주세요.');
+      return;
+    }
+    if (!companyOwner.trim()) {
+      toast.error('대표자명을 입력해주세요.');
+      return;
+    }
+    const biznoDigits = companyBizno.replace(/[^\d]/g, '');
+    if (biznoDigits.length < 10 || biznoDigits.length > 12) {
+      toast.error('사업자등록번호는 10~12자리 숫자여야 합니다.');
+      return;
+    }
 
     setLoading(true);
     try {
+      const deviceId = ensureDeviceId() ?? '';
       const payload: BossSignupRequest = {
         userId: userId.trim(),
         password,
@@ -119,17 +145,49 @@ export default function BossSignupPage() {
         email: email.trim(),
         companyId: 0,
         fcmToken: '',
-        deviceId: ensureDeviceId() ?? '',
+        deviceId,
       };
       const res = await bossAuthApi.register(payload);
-      if (res.success && res.data?.token) {
-        BossAuthManager.setToken(res.data.token);
-        if (res.data.userInfo) BossAuthManager.setUserInfo(res.data.userInfo);
-        toast.success('가입이 완료되었습니다!');
-        router.replace('/boss');
-      } else {
+      if (!res.success || !res.data?.token) {
         toast.error(res.message || res.error || '회원가입에 실패했습니다.');
+        return;
       }
+
+      BossAuthManager.setToken(res.data.token);
+      const registeredUser = res.data.userInfo;
+      if (registeredUser) BossAuthManager.setUserInfo(registeredUser);
+
+      // 회사 생성 후 사용자의 companyId 를 연결한다.
+      const companyData: BossCompanyData = {
+        name: companyName.trim(),
+        owner: companyOwner.trim(),
+        bizno: biznoDigits,
+        phone: companyPhone.replace(/[^\d]/g, '') || undefined,
+        address1: companyAddress1.trim() || undefined,
+        email: email.trim(),
+      };
+      const companyRes = await bossCompanyApi.create(companyData);
+      if (!companyRes.success || !companyRes.data?.id) {
+        toast.error(companyRes.message || companyRes.error || '회사 정보 등록에 실패했습니다.');
+        return;
+      }
+
+      const companyId = companyRes.data.id;
+      const userUpdate: BossUserInfo = {
+        ...registeredUser,
+        userId: userId.trim(),
+        name: name.trim(),
+        phone: phoneDigits,
+        email: email.trim(),
+        companyId,
+      };
+      const userRes = await bossUserApi.update(userUpdate);
+      if (userRes.success && userRes.data) {
+        BossAuthManager.setUserInfo(userRes.data);
+      }
+
+      toast.success('가입이 완료되었습니다!');
+      router.replace('/boss');
     } catch (err) {
       console.error('boss signup error', err);
       toast.error('회원가입 중 오류가 발생했습니다.');
@@ -331,6 +389,136 @@ export default function BossSignupPage() {
                     className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
                     placeholder="example@email.com"
                   />
+                </div>
+              </div>
+
+              {/* 회사 정보 */}
+              <div className="pt-2">
+                <div className="mb-3 flex items-center gap-2">
+                  <Briefcase size={14} className="text-boss-primary" />
+                  <h3 className="text-xs font-semibold text-boss-text-secondary">회사 정보</h3>
+                  <span className="text-[10px] text-boss-text-muted">가입 후 대시보드에 표시됩니다</span>
+                </div>
+                <div className="space-y-4 rounded-xl border border-boss-border bg-boss-surface/50 p-4">
+                  <div>
+                    <label
+                      htmlFor="companyName"
+                      className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
+                    >
+                      회사명 <span className="text-boss-error">*</span>
+                    </label>
+                    <div className="relative">
+                      <Building2
+                        size={15}
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
+                      />
+                      <input
+                        id="companyName"
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                        placeholder="(주) 도배륜"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label
+                        htmlFor="companyOwner"
+                        className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
+                      >
+                        대표자명 <span className="text-boss-error">*</span>
+                      </label>
+                      <div className="relative">
+                        <User
+                          size={15}
+                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
+                        />
+                        <input
+                          id="companyOwner"
+                          type="text"
+                          value={companyOwner}
+                          onChange={(e) => setCompanyOwner(e.target.value)}
+                          className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                          placeholder="홍길동"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="companyBizno"
+                        className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
+                      >
+                        사업자번호 <span className="text-boss-error">*</span>
+                      </label>
+                      <div className="relative">
+                        <FileText
+                          size={15}
+                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
+                        />
+                        <input
+                          id="companyBizno"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={12}
+                          value={companyBizno}
+                          onChange={(e) => setCompanyBizno(e.target.value.replace(/[^\d-]/g, ''))}
+                          className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                          placeholder="000-00-00000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="companyPhone"
+                      className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
+                    >
+                      회사 전화번호
+                    </label>
+                    <div className="relative">
+                      <Phone
+                        size={15}
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
+                      />
+                      <input
+                        id="companyPhone"
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={11}
+                        value={companyPhone}
+                        onChange={(e) => setCompanyPhone(e.target.value.replace(/\D/g, ''))}
+                        className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                        placeholder="0212345678"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="companyAddress1"
+                      className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
+                    >
+                      기본 주소
+                    </label>
+                    <div className="relative">
+                      <MapPin
+                        size={15}
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
+                      />
+                      <input
+                        id="companyAddress1"
+                        type="text"
+                        value={companyAddress1}
+                        onChange={(e) => setCompanyAddress1(e.target.value)}
+                        className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                        placeholder="서울시 강남구 ..."
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
