@@ -1,24 +1,30 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/boss/ui';
 import Link from 'next/link';
+import {
+  PageHeader,
+  Toolbar,
+  SearchInput,
+  Button,
+  ListTabs,
+  DataTable,
+  Card,
+  Badge,
+  EmptyState,
+  Pagination,
+  Skeleton,
+  ViewToggle,
+} from '@/components/boss/ui';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import type { BossOrderItem, OrderSortType } from '@/types/boss';
 import {
-  Search,
   RefreshCw,
-  LayoutGrid,
-  Rows3,
-  ChevronLeft,
-  ChevronRight,
   Inbox,
   MapPin,
   Phone,
   Calendar,
   Wallet,
-  ArrowUpRight,
-  Plus,
   ListChecks,
   Image as ImageIcon,
   FilePlus,
@@ -33,14 +39,14 @@ const SORT_OPTIONS: { key: OrderSortType; label: string }[] = [
   { key: 'TODAY', label: '오늘' },
 ];
 
-function statusBadge(code?: string) {
+function orderStatus(code?: string) {
   const c = (code ?? '').toUpperCase();
-  if (c.includes('NEW') || c.includes('대기')) return { label: '대기', cls: 'bg-boss-elevated/40 text-boss-text ring-boss-border/30' };
-  if (c.includes('CONFIRM') || c.includes('확정')) return { label: '확정', cls: 'bg-boss-primary/10 text-boss-primary ring-boss-primary/30' };
-  if (c.includes('PROGRESS') || c.includes('진행')) return { label: '진행', cls: 'bg-boss-info/10 text-boss-info ring-boss-info/30' };
-  if (c.includes('DONE') || c.includes('완료')) return { label: '완료', cls: 'bg-violet-500/10 text-violet-400 ring-violet-500/30' };
-  if (c.includes('CANCEL') || c.includes('취소')) return { label: '취소', cls: 'bg-boss-error/10 text-boss-error ring-boss-error/30' };
-  return { label: code || '신규', cls: 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30' };
+  if (c.includes('NEW') || c.includes('대기')) return { label: '대기', tone: 'default' as const };
+  if (c.includes('CONFIRM') || c.includes('확정')) return { label: '확정', tone: 'emerald' as const };
+  if (c.includes('PROGRESS') || c.includes('진행')) return { label: '진행', tone: 'sky' as const };
+  if (c.includes('DONE') || c.includes('완료')) return { label: '완료', tone: 'violet' as const };
+  if (c.includes('CANCEL') || c.includes('취소')) return { label: '취소', tone: 'rose' as const };
+  return { label: code || '신규', tone: 'default' as const };
 }
 
 function formatMoney(n?: number) {
@@ -135,119 +141,68 @@ export default function BossOrderListPage() {
   );
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-boss-text">주문 관리</h1>
-            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
-              {totalCount.toLocaleString()}
-            </span>
-          </div>
-          <p className="text-sm text-boss-text-muted">
-            확정된 주문과 시공 일정을 한눈에 관리하세요.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-4">
+      <PageHeader
+        title="주문 관리"
+        description="등록된 주문과 시공 일정을 조회·관리합니다."
+        actions={
           <Link href="/boss/orders/quick">
             <Button variant="primary" icon={FilePlus} size="sm">
               주문 등록
             </Button>
           </Link>
-          <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="고객명·전화·주소"
-              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={reload}
-            disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
-          </button>
-          <div className="flex h-9 items-center rounded-lg border border-boss-border bg-boss-surface p-0.5">
-            <button
-              type="button"
-              onClick={() => setView('grid')}
-              className={`flex h-8 w-8 items-center justify-center rounded-md ${
-                view === 'grid' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
-              }`}
-              aria-label="그리드 보기"
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setView('list')}
-              className={`flex h-8 w-8 items-center justify-center rounded-md ${
-                view === 'list' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
-              }`}
-              aria-label="리스트 보기"
-            >
-              <Rows3 size={14} />
-            </button>
-          </div>
-          <Link
-            href="/boss/orders/quick"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-medium text-boss-text shadow-boss-md hover:bg-boss-primary-hover"
-          >
-            <Plus size={14} /> 빠른 주문
+        }
+      />
+
+      <Toolbar>
+        <SearchInput
+          value={keyword}
+          onChange={setKeyword}
+          placeholder="고객명·전화·주소"
+          className="w-56"
+        />
+        <Button variant="secondary" icon={RefreshCw} size="sm" onClick={reload} disabled={loading}>
+          새로고침
+        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <ViewToggle value={view} onChange={setView} />
+          <Link href="/boss/orders/quick">
+            <Button variant="primary" icon={FilePlus} size="sm">
+              빠른 주문
+            </Button>
           </Link>
         </div>
-      </div>
+      </Toolbar>
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-boss-border bg-boss-surface/50 p-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Card padded={false} className="p-3">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">총 주문</p>
-          <p className="mt-1 text-lg font-bold text-boss-text">{totalCount.toLocaleString()}건</p>
-        </div>
-        <div className="rounded-xl border border-boss-border bg-boss-surface/50 p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">현재 페이지 합계</p>
-          <p className="mt-1 text-lg font-bold text-boss-primary">{formatMoney(totalAmount)}</p>
-        </div>
-        <div className="rounded-xl border border-boss-border bg-boss-surface/50 p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">정렬</p>
-          <p className="mt-1 text-lg font-bold text-boss-text">
+          <p className="mt-1 text-base font-semibold text-boss-text">{totalCount.toLocaleString()}건</p>
+        </Card>
+        <Card padded={false} className="p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">필터 합계</p>
+          <p className="mt-1 text-base font-semibold text-boss-primary">{formatMoney(totalAmount)}</p>
+        </Card>
+        <Card padded={false} className="p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">정렬 기준</p>
+          <p className="mt-1 text-base font-semibold text-boss-text">
             {SORT_OPTIONS.find((s) => s.key === sortType)?.label ?? '-'}
           </p>
-        </div>
-        <div className="rounded-xl border border-boss-border bg-boss-surface/50 p-3">
+        </Card>
+        <Card padded={false} className="p-3">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">표시 중</p>
-          <p className="mt-1 text-lg font-bold text-boss-text">{filtered.length}건</p>
-        </div>
+          <p className="mt-1 text-base font-semibold text-boss-text">{filtered.length}건</p>
+        </Card>
       </div>
 
-      {/* Sort tabs */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-boss-border">
-        {SORT_OPTIONS.map(({ key, label }) => {
-          const active = sortType === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => {
-                setSortType(key);
-                setPage(1);
-              }}
-              className={`relative px-4 py-2.5 text-sm transition-colors ${
-                active ? 'text-boss-text' : 'text-boss-text-muted hover:text-boss-text'
-              }`}
-            >
-              {label}
-              {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-boss-primary" />}
-            </button>
-          );
-        })}
-      </div>
+      <ListTabs
+        tabs={SORT_OPTIONS.map((s) => ({ key: s.key, label: s.label }))}
+        active={sortType}
+        onChange={(key) => {
+          setSortType(key);
+          setPage(1);
+        }}
+      />
 
       {error && (
         <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
@@ -255,58 +210,69 @@ export default function BossOrderListPage() {
         </div>
       )}
 
-      {/* Content */}
       {loading && items.length === 0 ? (
-        <div className={view === 'grid' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3' : 'space-y-2'}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
-            <Inbox size={20} />
+        view === 'grid' ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 rounded-lg border border-boss-border" />
+            ))}
           </div>
-          <p className="text-sm font-medium text-boss-text">표시할 주문이 없습니다</p>
-          <p className="mt-1 text-xs text-boss-text-muted">상단의 빠른 주문으로 첫 주문을 등록해보세요.</p>
-        </div>
+        ) : (
+          <DataTable>
+            <thead>
+              <tr>
+                {['#', '고객', '전화', '주소', '작업일', '금액', '상태', '등록'].map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: 8 }).map((__, j) => (
+                    <td key={j}>
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        )
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Inbox}
+          title="표시할 주문이 없습니다"
+          description="조건을 변경하거나 새 주문을 등록해 보세요."
+        />
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => {
-            const badge = statusBadge(item.statusCd);
+            const status = orderStatus(item.statusCd);
             const fullAddr = [item.address1, item.address2].filter(Boolean).join(' ') || '-';
             return (
-              <div
-                key={item.id}
-                className="group relative overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50 p-4 transition-all hover:-translate-y-0.5 hover:border-boss-primary/20 hover:shadow-boss-lg hover:shadow-emerald-500/5"
-              >
-                <div className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
-                  <ArrowUpRight size={16} className="text-boss-primary" />
-                </div>
-
-                <div className="mb-3 flex items-center gap-2">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${badge.cls}`}>
-                    {badge.label}
-                  </span>
+              <Card key={item.id} padded={false} interactive className="p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <Badge tone={status.tone}>{status.label}</Badge>
                   {item.isExistChecklist === 'Y' && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-boss-warning/10 px-2 py-0.5 text-[10px] text-boss-warning ring-1 ring-inset ring-amber-500/30">
+                    <Badge tone="amber">
                       <ListChecks size={10} /> 체크리스트
-                    </span>
+                    </Badge>
                   )}
                   {(item.imageCount ?? 0) > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] text-boss-text-secondary">
+                    <Badge tone="default">
                       <ImageIcon size={10} /> {item.imageCount}
-                    </span>
+                    </Badge>
                   )}
                   <span className="ml-auto text-[11px] text-boss-text-muted">#{item.id}</span>
                 </div>
 
-                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-boss-text">
+                <h3 className="mb-0.5 line-clamp-1 text-sm font-semibold text-boss-text">
                   {item.name ?? '고객명 없음'}
                 </h3>
-                <p className="mb-3 line-clamp-1 text-xs text-boss-text-muted">{fullAddr}</p>
+                <p className="mb-2 line-clamp-1 text-xs text-boss-text-muted">{fullAddr}</p>
 
-                <div className="grid grid-cols-2 gap-2 border-t border-boss-border pt-3 text-xs">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 border-t border-boss-border pt-2 text-xs">
                   <div className="flex items-center gap-1.5 text-boss-text-secondary">
                     <Phone size={12} className="text-boss-text-muted" />
                     <span className="truncate">{item.phone ?? '-'}</span>
@@ -319,88 +285,59 @@ export default function BossOrderListPage() {
                     <MapPin size={12} className="text-boss-text-muted" />
                     <span className="truncate">{item.post ?? '-'}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 font-semibold text-boss-primary">
+                  <div className="flex items-center gap-1.5 font-medium text-boss-primary">
                     <Wallet size={12} />
                     <span className="truncate">{formatMoney(item.totalAmount)}</span>
                   </div>
                 </div>
 
                 <p className="mt-2 text-right text-[10px] text-boss-text-muted">{relativeTime(item.createdDt)}</p>
-              </div>
+              </Card>
             );
           })}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
-          <table className="w-full text-sm">
-            <thead className="border-b border-boss-border bg-boss-surface text-xs uppercase tracking-wider text-boss-text-muted">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">#</th>
-                <th className="px-4 py-3 text-left font-medium">고객</th>
-                <th className="px-4 py-3 text-left font-medium">전화</th>
-                <th className="px-4 py-3 text-left font-medium">주소</th>
-                <th className="px-4 py-3 text-left font-medium">작업일</th>
-                <th className="px-4 py-3 text-right font-medium">금액</th>
-                <th className="px-4 py-3 text-left font-medium">상태</th>
-                <th className="px-4 py-3 text-left font-medium">등록</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {filtered.map((item) => {
-                const badge = statusBadge(item.statusCd);
-                return (
-                  <tr key={item.id} className="transition-colors hover:bg-boss-elevated/40">
-                    <td className="px-4 py-3 text-xs text-boss-text-muted">#{item.id}</td>
-                    <td className="px-4 py-3 font-medium text-boss-text">{item.name ?? '-'}</td>
-                    <td className="px-4 py-3 text-boss-text-secondary">{item.phone ?? '-'}</td>
-                    <td className="px-4 py-3 text-boss-text-secondary">
-                      <span className="block max-w-[260px] truncate">
-                        {[item.address1, item.address2].filter(Boolean).join(' ') || '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-boss-text-secondary">{item.workDate ?? '-'}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-boss-primary">
-                      {formatMoney(item.totalAmount)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${badge.cls}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-boss-text-muted">{relativeTime(item.createdDt)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>고객</th>
+              <th>전화</th>
+              <th>주소</th>
+              <th>작업일</th>
+              <th className="text-right">금액</th>
+              <th>상태</th>
+              <th>등록</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => {
+              const status = orderStatus(item.statusCd);
+              return (
+                <tr key={item.id}>
+                  <td className="text-xs text-boss-text-muted">#{item.id}</td>
+                  <td className="font-medium text-boss-text">{item.name ?? '-'}</td>
+                  <td className="text-boss-text-secondary">{item.phone ?? '-'}</td>
+                  <td className="text-boss-text-secondary">
+                    <span className="block max-w-[260px] truncate">
+                      {[item.address1, item.address2].filter(Boolean).join(' ') || '-'}
+                    </span>
+                  </td>
+                  <td className="text-boss-text-secondary">{item.workDate ?? '-'}</td>
+                  <td className="text-right font-medium text-boss-primary">{formatMoney(item.totalAmount)}</td>
+                  <td>
+                    <Badge tone={status.tone}>{status.label}</Badge>
+                  </td>
+                  <td className="text-xs text-boss-text-muted">{relativeTime(item.createdDt)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <nav className="flex items-center justify-between border-t border-boss-border pt-4">
-          <p className="text-xs text-boss-text-muted">
-            페이지 {page} / {totalPages} · 총 {totalCount.toLocaleString()}건
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
-            >
-              <ChevronLeft size={12} /> 이전
-            </button>
-            <button
-              type="button"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
-              className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
-            >
-              다음 <ChevronRight size={12} />
-            </button>
-          </div>
-        </nav>
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} disabled={loading} />
       )}
     </div>
   );

@@ -7,7 +7,7 @@
 
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, ChevronRight, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ChevronRight, ChevronLeft, LayoutGrid, Rows3, Search, type LucideIcon } from 'lucide-react';
 
 // ───────────────────────────────────────────
 // Card
@@ -278,9 +278,197 @@ export function Toolbar({
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 rounded-xl border border-boss-border bg-boss-surface px-3 py-2 shadow-boss ${className}`}
+      className={`flex flex-wrap items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-3 py-2 shadow-boss ${className}`}
     >
       {children}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────
+// SearchInput
+// ───────────────────────────────────────────
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = '검색',
+  className = '',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-8 w-full rounded-md border border-boss-border bg-boss-bg pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+      />
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────
+// IconButton
+// ───────────────────────────────────────────
+export function IconButton({
+  icon: Icon,
+  label,
+  active,
+  ...rest
+}: {
+  icon: LucideIcon;
+  label?: string;
+  active?: boolean;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      title={label}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-boss-primary/20 disabled:opacity-50 ${
+        active
+          ? 'border-boss-border bg-boss-elevated text-boss-primary'
+          : 'border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text'
+      }`}
+      {...rest}
+    >
+      <Icon size={14} />
+    </button>
+  );
+}
+
+// ───────────────────────────────────────────
+// ViewToggle
+// ───────────────────────────────────────────
+export function ViewToggle({
+  value,
+  onChange,
+}: {
+  value: 'grid' | 'list';
+  onChange: (value: 'grid' | 'list') => void;
+}) {
+  return (
+    <div className="flex items-center rounded-md border border-boss-border bg-boss-bg p-0.5">
+      <IconButton
+        icon={LayoutGrid}
+        label="그리드 보기"
+        active={value === 'grid'}
+        onClick={() => onChange('grid')}
+        className="h-7 w-7 rounded-sm border-0"
+      />
+      <IconButton
+        icon={Rows3}
+        label="리스트 보기"
+        active={value === 'list'}
+        onClick={() => onChange('list')}
+        className="h-7 w-7 rounded-sm border-0"
+      />
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────
+// ListTabs
+// ───────────────────────────────────────────
+export function ListTabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { key: T; label: string; count?: number }[];
+  active: T;
+  onChange: (key: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1 border-b border-boss-border">
+      {tabs.map(({ key, label, count }) => {
+        const isActive = active === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onChange(key)}
+            className={`relative flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+              isActive ? 'text-boss-text' : 'text-boss-text-muted hover:text-boss-text'
+            }`}
+          >
+            <span>{label}</span>
+            {count !== undefined && (
+              <span
+                className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                  isActive ? 'bg-boss-primary/15 text-boss-primary' : 'bg-boss-elevated text-boss-text-muted'
+                }`}
+              >
+                {count.toLocaleString()}
+              </span>
+            )}
+            {isActive && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-boss-primary" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────
+// DataTable
+// ───────────────────────────────────────────
+export function DataTable({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss ${className}`}>
+      <table className="boss-table">{children}</table>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────
+// Pagination
+// ───────────────────────────────────────────
+export function Pagination({
+  page,
+  totalPages,
+  onChange,
+  disabled,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <p className="text-xs text-boss-text-muted">
+        페이지 {page.toLocaleString()} / {totalPages.toLocaleString()}
+      </p>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onChange(page - 1)}
+          disabled={disabled || page <= 1}
+        >
+          <ChevronLeft size={13} /> 이전
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onChange(page + 1)}
+          disabled={disabled || page >= totalPages}
+        >
+          다음 <ChevronRight size={13} />
+        </Button>
+      </div>
     </div>
   );
 }

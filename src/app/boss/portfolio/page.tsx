@@ -1,6 +1,6 @@
 'use client';
 
-// 사장님 포트폴리오 목록 (그리드 갤러리)
+// 사장님 포트폴리오 목록
 // Flutter `lib/app/portfolio/portfolio_list_page.dart` 의 기능을
 // B2B 다크 톤으로 재구성한다. 실 API: GET /portfolios/{custId}
 import { useEffect, useMemo, useState } from 'react';
@@ -10,7 +10,6 @@ import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossPortfolioItem } from '@/types/boss-portfolio';
 import {
   Image as ImageIcon,
-  Search,
   RefreshCw,
   Plus,
   Eye,
@@ -20,8 +19,20 @@ import {
   Calendar,
   Inbox,
   Link as LinkIcon,
-  ArrowUpRight,
 } from 'lucide-react';
+import {
+  PageHeader,
+  Toolbar,
+  SearchInput,
+  Button,
+  ListTabs,
+  DataTable,
+  Card,
+  Badge,
+  EmptyState,
+  Skeleton,
+  ViewToggle,
+} from '@/components/boss/ui';
 
 // 응답이 'Y'/'N' 또는 boolean 두 형태로 모두 올 수 있어 통일
 function normalizeIsPublic(v: BossPortfolioItem['isPublic']): boolean {
@@ -64,6 +75,8 @@ function formatDate(input?: string | null): string {
 }
 
 type SortType = 'CREATED_DT' | 'WORK_DATE';
+type TabType = 'all' | 'public' | 'private';
+type ViewType = 'grid' | 'list';
 
 export default function BossPortfolioListPage() {
   const [items, setItems] = useState<BossPortfolioItem[]>([]);
@@ -71,6 +84,8 @@ export default function BossPortfolioListPage() {
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [sort, setSort] = useState<SortType>('CREATED_DT');
+  const [tab, setTab] = useState<TabType>('all');
+  const [view, setView] = useState<ViewType>('grid');
 
   const load = async () => {
     const userInfo = BossAuthManager.getUserInfo();
@@ -109,84 +124,104 @@ export default function BossPortfolioListPage() {
           .some((v) => String(v).toLowerCase().includes(k)),
       );
     }
+    if (tab !== 'all') {
+      list = list.filter((it) =>
+        tab === 'public' ? normalizeIsPublic(it.isPublic) : !normalizeIsPublic(it.isPublic),
+      );
+    }
     list.sort((a, b) => {
       const aKey = sort === 'WORK_DATE' ? a.workDate ?? '' : a.createdAt ?? '';
       const bKey = sort === 'WORK_DATE' ? b.workDate ?? '' : b.createdAt ?? '';
       return bKey.localeCompare(aKey);
     });
     return list;
-  }, [items, keyword, sort]);
+  }, [items, keyword, sort, tab]);
 
   const publicCount = useMemo(
     () => items.filter((i) => normalizeIsPublic(i.isPublic)).length,
     [items],
   );
+  const privateCount = items.length - publicCount;
 
   return (
-    <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-boss-text">시공 포트폴리오</h1>
-            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
-              {items.length.toLocaleString()}
-            </span>
-            <span className="rounded-full bg-boss-primary/10 px-2 py-0.5 text-xs font-semibold text-boss-primary ring-1 ring-inset ring-boss-primary/30">
-              공개 {publicCount}
-            </span>
-          </div>
-          <p className="text-sm text-boss-text-muted">
-            완료한 시공 사례를 모아 고객에게 전문성을 어필하세요.
-          </p>
-        </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="시공 포트폴리오"
+        description="완료한 시공 사례를 관리하고 고객에게 전문성을 어필하세요."
+        actions={
+          <>
+            <Button variant="secondary" icon={RefreshCw} onClick={load} disabled={loading}>
+              새로고침
+            </Button>
+            <Link href="/boss/portfolio/new" passHref>
+              <Button variant="primary" icon={Plus}>
+                신규 등록
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="제목·지역·유형 검색"
-              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-            />
-          </div>
-          <div className="flex h-9 items-center rounded-lg border border-boss-border bg-boss-surface p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setSort('CREATED_DT')}
-              className={`h-8 rounded-md px-3 ${
-                sort === 'CREATED_DT' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
-              }`}
-            >
-              등록일순
-            </button>
-            <button
-              type="button"
-              onClick={() => setSort('WORK_DATE')}
-              className={`h-8 rounded-md px-3 ${
-                sort === 'WORK_DATE' ? 'bg-boss-elevated text-boss-primary' : 'text-boss-text-muted hover:text-boss-text-secondary'
-              }`}
-            >
-              시공일순
-            </button>
-          </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card className="p-3">
+          <p className="text-xs text-boss-text-muted">전체</p>
+          <p className="mt-1 text-lg font-semibold text-boss-text">{items.length.toLocaleString()}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-boss-text-muted">공개</p>
+          <p className="mt-1 text-lg font-semibold text-boss-primary">{publicCount.toLocaleString()}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-boss-text-muted">비공개</p>
+          <p className="mt-1 text-lg font-semibold text-boss-text">{privateCount.toLocaleString()}</p>
+        </Card>
+      </div>
+
+      <ListTabs
+        tabs={[
+          { key: 'all', label: '전체', count: items.length },
+          { key: 'public', label: '공개', count: publicCount },
+          { key: 'private', label: '비공개', count: privateCount },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
+      <Toolbar>
+        <SearchInput
+          value={keyword}
+          onChange={setKeyword}
+          placeholder="제목·지역·유형 검색"
+          className="w-60"
+        />
+        <div className="flex items-center rounded-md border border-boss-border bg-boss-bg p-0.5">
           <button
             type="button"
-            onClick={load}
-            disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
+            onClick={() => setSort('CREATED_DT')}
+            className={`h-7 rounded-sm px-2.5 text-xs ${
+              sort === 'CREATED_DT'
+                ? 'bg-boss-elevated font-medium text-boss-text'
+                : 'text-boss-text-muted hover:text-boss-text-secondary'
+            }`}
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
+            등록일순
           </button>
-          <Link
-            href="/boss/portfolio/new"
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover"
+          <button
+            type="button"
+            onClick={() => setSort('WORK_DATE')}
+            className={`h-7 rounded-sm px-2.5 text-xs ${
+              sort === 'WORK_DATE'
+                ? 'bg-boss-elevated font-medium text-boss-text'
+                : 'text-boss-text-muted hover:text-boss-text-secondary'
+            }`}
           >
-            <Plus size={14} /> 신규 등록
-          </Link>
+            시공일순
+          </button>
         </div>
-      </div>
+        <div className="ml-auto flex items-center gap-2">
+          <ViewToggle value={view} onChange={setView} />
+        </div>
+      </Toolbar>
 
       {error && (
         <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
@@ -194,32 +229,54 @@ export default function BossPortfolioListPage() {
         </div>
       )}
 
-      {/* 컨텐츠 */}
       {loading && items.length === 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-72 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
-            />
-          ))}
-        </div>
-      ) : sortedFiltered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
-            <Inbox size={20} />
+        view === 'grid' ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-lg border border-boss-border" />
+            ))}
           </div>
-          <p className="text-sm font-medium text-boss-text">등록된 포트폴리오가 없습니다</p>
-          <p className="mt-1 text-xs text-boss-text-muted">새 시공 사례를 등록해 갤러리를 채워보세요.</p>
-          <Link
-            href="/boss/portfolio/new"
-            className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover"
-          >
-            <Plus size={14} /> 포트폴리오 등록
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        ) : (
+          <DataTable>
+            <thead>
+              <tr>
+                <th>포트폴리오</th>
+                <th>지역</th>
+                <th>평형</th>
+                <th>시공일</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i}>
+                  <td><Skeleton className="h-4 w-40" /></td>
+                  <td><Skeleton className="h-4 w-24" /></td>
+                  <td><Skeleton className="h-4 w-16" /></td>
+                  <td><Skeleton className="h-4 w-20" /></td>
+                  <td><Skeleton className="h-4 w-14" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        )
+      ) : sortedFiltered.length === 0 ? (
+        <Card className="py-12">
+          <EmptyState
+            icon={Inbox}
+            title={keyword || tab !== 'all' ? '검색 결과가 없습니다' : '등록된 포트폴리오가 없습니다'}
+            description={keyword || tab !== 'all' ? '조건을 변경해 다시 검색하세요.' : '새 시공 사례를 등록해 포트폴리오를 시작하세요.'}
+            action={
+              <Link href="/boss/portfolio/new" passHref>
+                <Button variant="primary" icon={Plus}>
+                  포트폴리오 등록
+                </Button>
+              </Link>
+            }
+          />
+        </Card>
+      ) : view === 'grid' ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {sortedFiltered.map((item) => {
             const isPublic = normalizeIsPublic(item.isPublic);
             const thumb = getThumbnail(item);
@@ -229,49 +286,38 @@ export default function BossPortfolioListPage() {
               <Link
                 key={item.id}
                 href={`/boss/portfolio/${item.id}`}
-                className="group overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/50 transition-all hover:-translate-y-0.5 hover:border-boss-primary/20 hover:shadow-boss-lg hover:shadow-emerald-500/5"
+                className="block overflow-hidden rounded-lg border border-boss-border bg-boss-surface transition-colors hover:border-boss-border-strong"
               >
-                {/* 썸네일 */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-boss-surface">
+                <div className="relative aspect-[16/10] overflow-hidden bg-boss-elevated">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={thumb}
                       alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-boss-text-muted">
-                      <ImageIcon size={48} />
+                      <ImageIcon size={40} />
                     </div>
                   )}
-                  <div className="absolute right-3 top-3 flex items-center gap-1.5">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
-                        isPublic
-                          ? 'bg-boss-primary/15 text-boss-primary ring-boss-primary/30'
-                          : 'bg-boss-elevated/50 text-boss-text-secondary ring-boss-border/40'
-                      }`}
-                    >
+                  <div className="absolute right-2.5 top-2.5">
+                    <Badge tone={isPublic ? 'emerald' : 'default'}>
                       {isPublic ? <Eye size={10} /> : <EyeOff size={10} />}
                       {isPublic ? '공개' : '비공개'}
-                    </span>
-                  </div>
-                  <div className="absolute left-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
-                    <ArrowUpRight size={16} className="text-boss-primary" />
+                    </Badge>
                   </div>
                 </div>
 
-                {/* 본문 */}
-                <div className="p-4">
-                  <h3 className="mb-1 line-clamp-1 text-base font-semibold text-boss-text">
+                <div className="p-3">
+                  <h3 className="line-clamp-1 text-sm font-semibold text-boss-text">
                     {item.title || '제목 없음'}
                   </h3>
-                  <p className="mb-3 line-clamp-1 text-xs text-boss-text-muted">
+                  <p className="line-clamp-1 text-xs text-boss-text-muted">
                     {item.description || '설명 없음'}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2 border-t border-boss-border pt-3 text-xs">
+                  <div className="mt-2.5 grid grid-cols-2 gap-x-2 gap-y-1.5 border-t border-boss-border pt-2.5 text-xs">
                     <div className="flex items-center gap-1.5 text-boss-text-secondary">
                       <MapPin size={12} className="text-boss-text-muted" />
                       <span className="truncate">{item.region ?? '-'}</span>
@@ -303,6 +349,60 @@ export default function BossPortfolioListPage() {
             );
           })}
         </div>
+      ) : (
+        <DataTable>
+          <thead>
+            <tr>
+              <th>포트폴리오</th>
+              <th>지역</th>
+              <th>평형</th>
+              <th>시공일</th>
+              <th>이미지</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedFiltered.map((item) => {
+              const isPublic = normalizeIsPublic(item.isPublic);
+              const { before, after } = splitImages(item);
+              const linkCount = (item.links ?? item.externalLinks ?? []).length;
+              return (
+                <tr key={item.id} className="cursor-pointer">
+                  <td>
+                    <Link
+                      href={`/boss/portfolio/${item.id}`}
+                      className="block font-medium text-boss-text hover:text-boss-primary"
+                    >
+                      {item.title || '제목 없음'}
+                    </Link>
+                    {item.description && (
+                      <p className="line-clamp-1 text-xs text-boss-text-muted">{item.description}</p>
+                    )}
+                  </td>
+                  <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
+                  <td className="text-boss-text-secondary">
+                    {item.area != null ? `${Math.round(item.area)}평` : '-'}
+                  </td>
+                  <td className="text-boss-text-secondary">{formatDate(item.workDate)}</td>
+                  <td className="text-boss-text-secondary">
+                    전 {before.length} / 후 {after.length}
+                    {linkCount > 0 && (
+                      <span className="ml-1.5 inline-flex items-center gap-0.5 text-boss-text-muted">
+                        <LinkIcon size={10} /> {linkCount}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <Badge tone={isPublic ? 'emerald' : 'default'}>
+                      {isPublic ? <Eye size={10} /> : <EyeOff size={10} />}
+                      {isPublic ? '공개' : '비공개'}
+                    </Badge>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
     </div>
   );

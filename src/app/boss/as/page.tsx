@@ -4,8 +4,8 @@
 // Flutter: as_request_list_page.dart 포팅
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  Wrench,
   Plus,
   RefreshCw,
   Inbox,
@@ -14,10 +14,21 @@ import {
   AlertTriangle,
   Image as ImageIcon,
   Link2,
-  ChevronDown,
 } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsRequestItem } from '@/types/boss-as';
+import {
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  ListTabs,
+  PageHeader,
+  SearchInput,
+  Skeleton,
+  Toolbar,
+} from '@/components/boss/ui';
 
 type StatusFilter = '' | '접수' | '진행중' | '완료';
 type SortType = 'CREATED_DT' | 'REQUEST_DATE';
@@ -29,21 +40,6 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: '완료', label: '완료' },
 ];
 
-function statusColor(status: string): string {
-  switch (status) {
-    case '접수':
-      return 'bg-boss-info/10 text-boss-info ring-boss-info/30';
-    case '진행중':
-      return 'bg-boss-warning/10 text-boss-warning ring-amber-500/30';
-    case '완료':
-      return 'bg-boss-primary/10 text-boss-primary ring-boss-primary/30';
-    case '취소':
-      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
-    default:
-      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
-  }
-}
-
 function formatDate(input?: string | null): string {
   if (!input) return '-';
   const d = new Date(input);
@@ -54,13 +50,29 @@ function formatDate(input?: string | null): string {
   return `${yyyy}.${mm}.${dd}`;
 }
 
+function statusBadgeTone(status: string): Parameters<typeof Badge>[0]['tone'] {
+  switch (status) {
+    case '접수':
+      return 'sky';
+    case '진행중':
+      return 'amber';
+    case '완료':
+      return 'emerald';
+    case '취소':
+      return 'default';
+    default:
+      return 'default';
+  }
+}
+
 export default function BossAsListPage() {
+  const router = useRouter();
   const [items, setItems] = useState<AsRequestItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
   const [sortType, setSortType] = useState<SortType>('CREATED_DT');
-  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async () => {
     const custId = getBossCustId();
@@ -89,202 +101,215 @@ export default function BossAsListPage() {
     load();
   }, [load, statusFilter]);
 
-  // 정렬된 목록
-  const sortedItems = useMemo(() => {
-    const list = [...items];
+  const statusCounts = useMemo(() => {
+    const counts: Record<StatusFilter, number> = {
+      '': items.length,
+      접수: 0,
+      진행중: 0,
+      완료: 0,
+    };
+    items.forEach((item) => {
+      if (counts[item.status as StatusFilter] !== undefined) {
+        counts[item.status as StatusFilter] += 1;
+      }
+    });
+    return counts;
+  }, [items]);
+
+  const displayedItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = items.filter((item) => {
+      if (!q) return true;
+      const text = [
+        item.title,
+        item.customerName,
+        item.customerPhone,
+        item.address,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return text.includes(q);
+    });
     if (sortType === 'REQUEST_DATE') {
       list.sort((a, b) => (b.requestDate || '').localeCompare(a.requestDate || ''));
     } else {
       list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     }
     return list;
-  }, [items, sortType]);
-
-  const currentStatusLabel = STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label ?? '전체';
+  }, [items, query, sortType]);
 
   return (
-    <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <Wrench size={20} className="text-indigo-300" />
-            <h1 className="text-2xl font-bold tracking-tight text-boss-text">AS 요청</h1>
-            <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
-              {sortedItems.length.toLocaleString()}
-            </span>
-          </div>
-          <p className="text-sm text-boss-text-muted">하자보수 AS 요청을 관리하고 처리 상태를 변경하세요.</p>
-        </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="AS 요청"
+        description="하자보수 AS 요청을 관리하고 처리 상태를 확인합니다."
+        actions={
+          <>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Plus}
+              onClick={() => router.push('/boss/as/new')}
+            >
+              등록
+            </Button>
+            <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> 새로고침
+            </Button>
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/boss/as/new"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-3 text-sm text-indigo-200 hover:border-indigo-400 hover:text-boss-text"
-          >
-            <Plus size={14} /> 등록
-          </Link>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
-          </button>
-        </div>
-      </div>
+      <ListTabs
+        tabs={STATUS_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label, count: statusCounts[opt.value] }))}
+        active={statusFilter}
+        onChange={(key) => setStatusFilter(key)}
+      />
 
-      {/* 정렬/필터 바 */}
-      <div className="flex items-center gap-2 rounded-2xl border border-boss-border bg-boss-surface p-2">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
+      <Toolbar>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="제목, 고객, 주소 검색"
+          className="w-full max-w-xs"
+        />
+        <div className="ml-auto flex items-center gap-1">
+          <Button
+            variant={sortType === 'CREATED_DT' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setSortType('CREATED_DT')}
-            className={`h-8 rounded-md px-3 text-xs font-bold ${
-              sortType === 'CREATED_DT' ? 'bg-boss-surface text-boss-text' : 'bg-transparent text-boss-text-secondary hover:text-boss-text'
-            }`}
           >
             등록일
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant={sortType === 'REQUEST_DATE' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setSortType('REQUEST_DATE')}
-            className={`h-8 rounded-md px-3 text-xs font-bold ${
-              sortType === 'REQUEST_DATE' ? 'bg-boss-surface text-boss-text' : 'bg-transparent text-boss-text-secondary hover:text-boss-text'
-            }`}
           >
             요청일
-          </button>
+          </Button>
         </div>
-
-        <div className="ml-auto relative">
-          <button
-            type="button"
-            onClick={() => setStatusMenuOpen((v) => !v)}
-            className="flex h-8 items-center gap-1 rounded-md border border-boss-border bg-boss-surface px-3 text-xs font-semibold text-boss-text hover:border-boss-border"
-          >
-            {currentStatusLabel}
-            <ChevronDown size={12} />
-          </button>
-          {statusMenuOpen && (
-            <div className="absolute right-0 z-20 mt-1 w-32 overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss-lg">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value || 'all'}
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter(opt.value);
-                    setStatusMenuOpen(false);
-                  }}
-                  className={`block w-full px-3 py-2 text-left text-xs font-semibold hover:bg-boss-elevated ${
-                    statusFilter === opt.value ? 'text-boss-primary' : 'text-boss-text'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      </Toolbar>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">{error}</div>
+        <Card padded className="rounded-lg border-boss-error/30 bg-boss-error/10 text-sm text-boss-error">
+          {error}
+        </Card>
       )}
 
-      {/* 콘텐츠 */}
       {loading && items.length === 0 ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
-          ))}
-        </div>
-      ) : sortedItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
-            <Inbox size={20} />
-          </div>
-          <p className="text-sm font-medium text-boss-text">
-            {statusFilter ? `'${statusFilter}' 상태의 AS 요청이 없습니다` : '등록된 AS 요청이 없습니다'}
-          </p>
-          <Link
-            href="/boss/as/new"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-indigo-500/20 px-3 py-1.5 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/30"
-          >
-            <Plus size={12} /> AS 요청 등록
-          </Link>
-        </div>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>요청일</th>
+              <th>상태</th>
+              <th>제목</th>
+              <th>고객</th>
+              <th>주소</th>
+              <th>정보</th>
+              <th>등록일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <tr key={i}>
+                <td colSpan={7}>
+                  <Skeleton className="h-5 w-full" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </DataTable>
+      ) : displayedItems.length === 0 ? (
+        <EmptyState
+          icon={Inbox}
+          title={statusFilter || query ? '검색/필터 결과가 없습니다' : '등록된 AS 요청이 없습니다'}
+          description="신규 AS 요청을 등록하거나 필터를 변경해 보세요."
+          action={
+            <Link
+              href="/boss/as/new"
+              className="boss-btn boss-btn-primary inline-flex items-center gap-1.5"
+            >
+              <Plus size={13} /> AS 요청 등록
+            </Link>
+          }
+        />
       ) : (
-        <div className="space-y-2">
-          {sortedItems.map((item) => {
-            const defectCount = item.images?.filter((i) => i.imageType === 'DEFECT').length ?? 0;
-            const repairCount = item.images?.filter((i) => i.imageType === 'REPAIR').length ?? 0;
-            return (
-              <Link
-                key={item.id}
-                href={`/boss/as/${item.id}`}
-                className="block rounded-2xl border border-boss-border bg-boss-surface p-4 transition-all hover:-translate-y-0.5 hover:border-indigo-500/40 hover:shadow-boss-lg hover:shadow-indigo-500/5"
-              >
-                {/* 상단: 요청일 + 우선순위 + 상태 */}
-                <div className="mb-2 flex items-center gap-2 text-xs">
-                  <span className="font-semibold text-indigo-300">요청</span>
-                  <span className="font-medium text-boss-text">{formatDate(item.requestDate)}</span>
-                  <span className="ml-auto" />
-                  {item.priority === '긴급' && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-error/15 px-2 py-0.5 text-[10px] font-bold text-boss-error">
-                      <AlertTriangle size={10} /> 긴급
-                    </span>
-                  )}
-                  <span
-                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset ${statusColor(item.status)}`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-
-                {/* 제목 */}
-                <h3 className="mb-1 line-clamp-1 text-base font-bold text-boss-text">{item.title}</h3>
-
-                {/* 고객명 + 전화 */}
-                <p className="mb-1 line-clamp-1 text-sm text-boss-text-secondary">
-                  {item.customerName}
-                  {item.customerPhone ? ` / ${item.customerPhone}` : ''}
-                </p>
-
-                {/* 주소 */}
-                {item.address && (
-                  <p className="mb-2 line-clamp-1 text-xs text-boss-text-muted">{item.address}</p>
-                )}
-
-                {/* 칩 */}
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                  {item.orderId != null && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-pink-500/15 px-2 py-1 text-[11px] font-semibold text-pink-300">
-                      <Link2 size={10} /> 주문연결
-                    </span>
-                  )}
-                  {defectCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-error/15 px-2 py-1 text-[11px] font-semibold text-boss-error">
-                      <ImageIcon size={10} /> 하자 {defectCount}
-                    </span>
-                  )}
-                  {repairCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-boss-primary/15 px-2 py-1 text-[11px] font-semibold text-boss-primary">
-                      <CheckCircle2 size={10} /> 수리 {repairCount}
-                    </span>
-                  )}
-                </div>
-
-                {/* 하단 메타 */}
-                <div className="mt-2 flex items-center gap-1 text-[10px] text-boss-text-muted">
-                  <Clock size={10} />
-                  <span>등록 {formatDate(item.createdAt)}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>요청일</th>
+              <th>상태</th>
+              <th>제목</th>
+              <th>고객</th>
+              <th>주소</th>
+              <th>정보</th>
+              <th>등록일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayedItems.map((item) => {
+              const defectCount = item.images?.filter((i) => i.imageType === 'DEFECT').length ?? 0;
+              const repairCount = item.images?.filter((i) => i.imageType === 'REPAIR').length ?? 0;
+              return (
+                <tr key={item.id} className="cursor-pointer">
+                  <td className="whitespace-nowrap">{formatDate(item.requestDate)}</td>
+                  <td>
+                    <Badge tone={statusBadgeTone(item.status)}>{item.status}</Badge>
+                  </td>
+                  <td>
+                    <Link
+                      href={`/boss/as/${item.id}`}
+                      className="font-medium text-boss-text hover:text-boss-primary hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                  </td>
+                  <td className="whitespace-nowrap">
+                    <span className="block text-boss-text">{item.customerName}</span>
+                    {item.customerPhone && (
+                      <span className="block text-xs text-boss-text-muted">{item.customerPhone}</span>
+                    )}
+                  </td>
+                  <td className="max-w-xs truncate text-boss-text-secondary">
+                    {item.address || '-'}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {item.priority === '긴급' && (
+                        <Badge tone="rose">
+                          <AlertTriangle size={10} /> 긴급
+                        </Badge>
+                      )}
+                      {item.orderId != null && (
+                        <Badge tone="violet">
+                          <Link2 size={10} /> 주문
+                        </Badge>
+                      )}
+                      {defectCount > 0 && (
+                        <Badge tone="rose">
+                          <ImageIcon size={10} /> 하자 {defectCount}
+                        </Badge>
+                      )}
+                      {repairCount > 0 && (
+                        <Badge tone="emerald">
+                          <CheckCircle2 size={10} /> 수리 {repairCount}
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap text-boss-text-muted">
+                    <div className="flex items-center gap-1">
+                      <Clock size={11} />
+                      {formatDate(item.createdAt)}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
     </div>
   );
