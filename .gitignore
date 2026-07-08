@@ -38,6 +38,13 @@ yarn-error.log*
 
 .history
 
+# AI agent state
+.omc/
+.agent/
+.claude/
+.cursor/
+.trae/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
