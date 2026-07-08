@@ -2,7 +2,7 @@
 
 // 사장님 커뮤니티 게시글 목록
 // Flutter `bbs_list_page.dart` 를 Next.js 로 포팅한 화면이다.
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
@@ -71,8 +71,13 @@ export default function BossCommunityListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const loadingRef = useRef(false);
+
+  const dedupe = (list: BbsData[]): BbsData[] => Array.from(new Map(list.map((i) => [i.boardId, i])).values());
 
   const load = useCallback(async (targetPage: number, searchWord: string) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -84,7 +89,7 @@ export default function BossCommunityListPage() {
         sortDesc: 'crtDtm',
       });
       if (res.success !== false && res.data) {
-        const list = pickList(res.data);
+        const list = dedupe(pickList(res.data));
         setItems(list);
         setHasMore(list.length >= PAGE_SIZE);
       } else {
@@ -93,6 +98,7 @@ export default function BossCommunityListPage() {
     } catch {
       setError('네트워크 오류로 게시글을 불러오지 못했습니다.');
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   }, [category]);
