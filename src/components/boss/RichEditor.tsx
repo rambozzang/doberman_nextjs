@@ -64,7 +64,7 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
     editorProps: {
       attributes: {
         class:
-          'prose prose-invert prose-sm max-w-none px-4 py-3 focus:outline-none prose-p:my-2 prose-headings:text-boss-text prose-strong:text-boss-text prose-blockquote:border-l-emerald-500',
+          'prose dark:prose-invert prose-sm max-w-none px-4 py-3 focus:outline-none prose-p:my-2 prose-headings:text-boss-text prose-strong:text-boss-text prose-blockquote:border-l-emerald-500',
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -100,8 +100,8 @@ export default function RichEditor({ value, onChange, placeholder, minHeight = 2
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-boss-border bg-boss-surface focus-within:border-boss-primary/30 focus-within:ring-2 focus-within:ring-emerald-500/10">
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-boss-border bg-boss-elevated/60 px-2 py-1.5">
+    <div className="overflow-hidden rounded-lg border border-boss-border-strong bg-boss-surface focus-within:border-boss-primary focus-within:ring-2 focus-within:ring-boss-primary/15">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-boss-border bg-boss-elevated/80 px-2 py-1.5 backdrop-blur">
         <ToolButton
           label="실행 취소"
           onClick={() => editor.chain().focus().undo().run()}
