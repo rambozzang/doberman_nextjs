@@ -64,6 +64,10 @@ export const bossCommunityApi = {
   unlike: (boardId: number | string): Promise<ApiResponse<unknown>> =>
     BossApiClient.deletePrivate<unknown>(`/bbs/like/${boardId}`),
 
+  // 구인구직 연락 요청(푸시) — POST /bbs/job/contact
+  contactJob: (boardId: number | string, message?: string): Promise<ApiResponse<unknown>> =>
+    BossApiClient.postPrivate<unknown>('/bbs/job/contact', { boardId, message }),
+
   // 차단한 사용자 목록 — Flutter BbsRepo.blockList → GET /bbs/blockedUsers
   blockedUsers: (): Promise<ApiResponse<BbsBlockData[]>> =>
     BossApiClient.getPrivate<BbsBlockData[]>('/bbs/blockedUsers'),

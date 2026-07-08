@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { PageHeader, Card, Button } from '@/components/boss/ui';
 import { bossUserApi } from '@/lib/api/boss/user';
 import { BossAuthManager } from '@/lib/bossAuth';
+import type { BossUserInfo } from '@/types/boss';
 
 function parseAlarmTime(value?: string): string {
   if (!value) return '09:00';
@@ -33,8 +34,10 @@ function isValidTime(value: string): boolean {
 
 export default function BossNotificationsSettingPage() {
   const [alarmTime, setAlarmTime] = useState('09:00');
+  const [jobAlarmEnabled, setJobAlarmEnabled] = useState(true);
   const [pushEnabled] = useState(true);
   const [marketingEnabled] = useState(true);
+  const [user, setUser] = useState<BossUserInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -54,7 +57,9 @@ export default function BossNotificationsSettingPage() {
         const res = await bossUserApi.get(userId);
         if (!alive) return;
         if (res.success && res.data) {
+          setUser(res.data);
           setAlarmTime(parseAlarmTime(res.data.alramTime));
+          setJobAlarmEnabled(res.data.jobAlarmYn !== 'N');
         } else {
           toast.error(res.message || '알림 설정을 불러오지 못했습니다.');
         }
@@ -75,11 +80,25 @@ export default function BossNotificationsSettingPage() {
       toast.error('알림 시간은 HH:MM 형식으로 입력해주세요.');
       return;
     }
+    if (!user?.userId) {
+      toast.error('사용자 정보를 찾을 수 없습니다.');
+      return;
+    }
     setSaving(true);
     try {
-      const res = await bossUserApi.setAlarmTime(alarmTime);
+      const payload: BossUserInfo = {
+        ...user,
+        alramTime: alarmTime.replace(':', ''),
+        jobAlarmYn: jobAlarmEnabled ? 'Y' : 'N',
+      };
+      const res = await bossUserApi.update(payload);
       if (res.success !== false) {
-        toast.success('알림 시간이 저장되었습니다.');
+        const updated = res.data;
+        if (updated) {
+          setUser(updated);
+          BossAuthManager.setUserInfo(updated);
+        }
+        toast.success('알림 설정이 저장되었습니다.');
       } else {
         toast.error(res.message || '저장에 실패했습니다.');
       }
@@ -155,6 +174,13 @@ export default function BossNotificationsSettingPage() {
       </Card>
 
       <Card className="space-y-4">
+        <ToggleRow
+          label="구인 / 구직 지역 알림"
+          description="내 회사 지역과 일치하는 구인/구직 글이 올라오면 PUSH로 알려줍니다."
+          enabled={jobAlarmEnabled}
+          onChange={setJobAlarmEnabled}
+        />
+        <div className="border-t border-boss-border/70" />
         <ToggleRow
           label="PUSH 알림"
           description="신규글, 좋아요, 댓글 등 활동 알림을 수신합니다. (기기 설정에서 변경)"

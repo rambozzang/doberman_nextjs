@@ -12,6 +12,7 @@ export interface BossUserInfo {
   email?: string;
   companyId?: number;
   alramTime?: string;
+  jobAlarmYn?: string;
   createdDt?: string;
   deviceId?: string;
 }

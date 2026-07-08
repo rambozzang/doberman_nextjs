@@ -14,6 +14,8 @@ import {
   Trash2,
   Pencil,
   Flag,
+  Phone,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
@@ -42,6 +44,10 @@ export default function BossCommunityDetailPage() {
   const [commentInput, setCommentInput] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [likePending, setLikePending] = useState(false);
+
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactMsg, setContactMsg] = useState('');
+  const [contactSending, setContactSending] = useState(false);
 
   const myUserId = BossAuthManager.getUserInfo()?.userId ?? '';
 
@@ -173,7 +179,27 @@ export default function BossCommunityDetailPage() {
     }
   };
 
+  const onContactRequest = async () => {
+    if (!boardId) return;
+    setContactSending(true);
+    try {
+      const res = await bossCommunityApi.contactJob(boardId, contactMsg.trim() || undefined);
+      if (res.success !== false) {
+        toast.success('연락 요청이 전송되었습니다. 작성자가 푸시를 받게 됩니다.');
+        setContactOpen(false);
+        setContactMsg('');
+      } else {
+        toast.error(res.message || '연락 요청에 실패했습니다.');
+      }
+    } catch {
+      toast.error('네트워크 오류로 전송에 실패했습니다.');
+    } finally {
+      setContactSending(false);
+    }
+  };
+
   const isMine = post?.crtCustId && myUserId && post.crtCustId === myUserId;
+  const isJobPost = post?.typeDtCd === 'JOB';
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -281,6 +307,68 @@ export default function BossCommunityDetailPage() {
             </span>
           </div>
         </article>
+      )}
+
+      {/* 구인구직 연락 요청 */}
+      {post && isJobPost && !isMine && (
+        <section className="rounded-xl border border-boss-border bg-boss-surface p-4">
+          {!contactOpen ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-boss-text">작성자에게 연락 요청</h3>
+                <p className="text-xs text-boss-text-muted">버튼을 누르면 작성자에게 푸시 알림이 전송됩니다.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setContactOpen(true)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover"
+              >
+                <Phone size={14} /> 연락 요청
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-boss-text">연락 요청 메시지</h3>
+                <button
+                  type="button"
+                  onClick={() => setContactOpen(false)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <textarea
+                value={contactMsg}
+                onChange={(e) => setContactMsg(e.target.value)}
+                placeholder="전달할 메시지를 입력하세요. (선택, 예: 오전에 통화 가능합니다)"
+                rows={3}
+                maxLength={200}
+                className="w-full resize-none rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-boss-text-muted">{contactMsg.length}/200</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(false)}
+                    className="inline-flex h-8 items-center rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:text-boss-text"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onContactRequest}
+                    disabled={contactSending}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-xs font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-60"
+                  >
+                    <Send size={13} /> {contactSending ? '전송 중…' : '보내기'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
       )}
 
       {/* 댓글 영역 */}
