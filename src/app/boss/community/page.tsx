@@ -2,7 +2,7 @@
 
 // 사장님 커뮤니티 게시글 목록
 // Flutter `bbs_list_page.dart` 를 Next.js 로 포팅한 화면이다.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
@@ -15,6 +15,7 @@ import {
   EmptyState,
   Pagination,
   Skeleton,
+  ListTabs,
 } from '@/components/boss/ui';
 import {
   MessageCircle,
@@ -29,6 +30,15 @@ import {
 import toast from 'react-hot-toast';
 
 const PAGE_SIZE = 20;
+
+type CategoryCode = 'ALL' | 'FREE' | 'JOB' | 'ANON';
+
+const CATEGORY_TABS: { key: CategoryCode; label: string }[] = [
+  { key: 'ALL', label: '전체' },
+  { key: 'FREE', label: '자유' },
+  { key: 'JOB', label: '구인 / 구직' },
+  { key: 'ANON', label: '익명' },
+];
 
 // 응답이 배열일 수도, list/content 페이징 객체일 수도 있어 흡수한다.
 function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
@@ -57,11 +67,12 @@ export default function BossCommunityListPage() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [category, setCategory] = useState<CategoryCode>('ALL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
-  const load = async (targetPage: number, searchWord: string) => {
+  const load = useCallback(async (targetPage: number, searchWord: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -69,6 +80,7 @@ export default function BossCommunityListPage() {
         pageNum: targetPage,
         pageSize: PAGE_SIZE,
         searchWord: searchWord || undefined,
+        typeDtCd: category === 'ALL' ? undefined : category,
         sortDesc: 'crtDtm',
       });
       if (res.success !== false && res.data) {
@@ -83,11 +95,16 @@ export default function BossCommunityListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [category]);
 
   useEffect(() => {
     load(page, keyword);
-  }, [page, keyword]);
+  }, [load, page, keyword, category]);
+
+  const onCategoryChange = (next: CategoryCode) => {
+    setCategory(next);
+    setPage(1);
+  };
 
   const onSearch = () => {
     setPage(1);
@@ -146,6 +163,8 @@ export default function BossCommunityListPage() {
           새로고침
         </Button>
       </Toolbar>
+
+      <ListTabs tabs={CATEGORY_TABS} active={category} onChange={onCategoryChange} />
 
       {error && (
         <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
