@@ -2,6 +2,7 @@
 
 // AS 요청 상세 페이지
 // Flutter: as_request_detail_page.dart 포팅
+// 레이아웃: boss/requests/[id] 상세 페이지의 컴팩트 B2B 패턴을 따름
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -19,9 +20,13 @@ import {
   User,
   Receipt,
   Loader2,
+  FileText,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsRequestItem } from '@/types/boss-as';
+import { PageHeader, Card, Button, Badge, EmptyState, ListTabs } from '@/components/boss/ui';
 
 type Tab = 'defect' | 'repair';
 
@@ -35,32 +40,24 @@ function formatDate(input?: string | null): string {
   return `${yyyy}.${mm}.${dd}`;
 }
 
-function statusColor(status: string): string {
+function statusBadge(status: string): { tone: 'sky' | 'amber' | 'emerald' | 'default'; label: string } {
   switch (status) {
     case '접수':
-      return 'bg-boss-info/10 text-boss-info ring-boss-info/30';
+      return { tone: 'sky', label: '접수' };
     case '진행중':
-      return 'bg-boss-warning/10 text-boss-warning ring-amber-500/30';
+      return { tone: 'amber', label: '진행중' };
     case '완료':
-      return 'bg-boss-primary/10 text-boss-primary ring-boss-primary/30';
+      return { tone: 'emerald', label: '완료' };
     case '취소':
-      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
+      return { tone: 'default', label: '취소' };
     default:
-      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
+      return { tone: 'default', label: status || '접수' };
   }
 }
 
-function priorityColor(priority: string): string {
-  switch (priority) {
-    case '긴급':
-      return 'bg-boss-error/15 text-boss-error ring-boss-error/30';
-    case '보통':
-      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
-    case '낮음':
-      return 'bg-boss-elevated/30 text-boss-text-muted ring-boss-border/30';
-    default:
-      return 'bg-boss-elevated/40 text-boss-text-secondary ring-boss-border/30';
-  }
+function priorityBadge(priority: string): { tone: 'rose' | 'default'; label: string; urgent: boolean } {
+  if (priority === '긴급') return { tone: 'rose', label: '긴급', urgent: true };
+  return { tone: 'default', label: priority || '보통', urgent: false };
 }
 
 function nextStatus(status: string): { next: string; label: string } | null {
@@ -151,182 +148,237 @@ export default function BossAsDetailPage() {
     }
   };
 
-  if (loading && !item) {
-    return (
-      <div className="flex h-64 items-center justify-center text-boss-text-muted">
-        <Loader2 size={24} className="animate-spin" />
-      </div>
-    );
-  }
+  const badge = item ? statusBadge(item.status) : null;
+  const prio = item ? priorityBadge(item.priority) : null;
+  const next = item ? nextStatus(item.status) : null;
+  const isClosed = item ? item.status === '완료' || item.status === '취소' : false;
+  const defectImages = item?.images?.filter((i) => i.imageType === 'DEFECT') ?? [];
+  const repairImages = item?.images?.filter((i) => i.imageType === 'REPAIR') ?? [];
 
-  if (error || !item) {
-    return (
-      <div className="space-y-3">
-        <Link href="/boss/as" className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text">
-          <ArrowLeft size={14} /> 목록으로
-        </Link>
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-4 text-sm text-boss-error">
-          {error || '데이터를 찾을 수 없습니다.'}
-        </div>
-      </div>
-    );
-  }
-
-  const defectImages = item.images?.filter((i) => i.imageType === 'DEFECT') ?? [];
-  const repairImages = item.images?.filter((i) => i.imageType === 'REPAIR') ?? [];
-  const next = nextStatus(item.status);
-  const isClosed = item.status === '완료' || item.status === '취소';
+  const headerActions = item ? (
+    <>
+      {!isClosed && next && (
+        <Button
+          variant="primary"
+          size="sm"
+          icon={statusChanging ? Loader2 : CheckCircle2}
+          onClick={() => handleChangeStatus(next.next)}
+          disabled={statusChanging}
+        >
+          {next.label}
+        </Button>
+      )}
+      <Link href={`/boss/as/new?id=${encodeURIComponent(item.id)}`}>
+        <Button variant="secondary" size="sm" icon={Pencil}>
+          수정
+        </Button>
+      </Link>
+      <Button
+        variant="danger"
+        size="sm"
+        icon={deleting ? Loader2 : Trash2}
+        onClick={handleDelete}
+        disabled={deleting}
+      >
+        삭제
+      </Button>
+    </>
+  ) : undefined;
 
   return (
     <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/boss/as"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
-          >
-            <ArrowLeft size={16} />
-          </Link>
-          <h1 className="text-xl font-bold text-boss-text">AS 요청 내용</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {!isClosed && next && (
-            <button
-              type="button"
-              onClick={() => handleChangeStatus(next.next)}
-              disabled={statusChanging}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-emerald-400 hover:text-boss-text disabled:opacity-50"
-            >
-              {statusChanging ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-              {next.label}
-            </button>
-          )}
-          <Link
-            href={`/boss/as/new?id=${encodeURIComponent(item.id)}`}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-3 text-xs font-bold text-indigo-200 hover:border-indigo-400 hover:text-boss-text"
-          >
-            <Pencil size={12} /> 수정
-          </Link>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-error/30 bg-boss-error/10 px-3 text-xs font-bold text-boss-error hover:border-rose-500 disabled:opacity-50"
-          >
-            {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} 삭제
-          </button>
-        </div>
-      </div>
-
-      {/* 상태 + 우선순위 칩 */}
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${statusColor(item.status)}`}
-        >
-          {item.status}
-        </span>
-        <span
-          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${priorityColor(item.priority)}`}
-        >
-          {item.priority === '긴급' && <AlertTriangle size={10} className="mr-1" />}
-          {item.priority}
-        </span>
-      </div>
-
-      {/* 메인 정보 카드 */}
-      <div className="space-y-2 rounded-2xl border border-boss-border bg-boss-surface p-4">
-        {/* 요청일 */}
-        <div className="flex items-center gap-2 rounded-lg bg-boss-surface px-3 py-2">
-          <span className="text-xs font-bold text-indigo-300">요청</span>
-          <span className="text-sm font-bold text-boss-text">{formatDate(item.requestDate)}</span>
-          <span className="ml-auto text-xs font-bold text-boss-text-secondary">{item.status}</span>
-        </div>
-
-        {/* 완료일 */}
-        {item.completedDate && (
-          <div className="flex items-center gap-2 rounded-lg bg-boss-surface px-3 py-2">
-            <span className="text-xs font-bold text-boss-primary">완료</span>
-            <span className="text-sm font-bold text-boss-text">{formatDate(item.completedDate)}</span>
-          </div>
-        )}
-
-        {/* 제목 */}
-        <div className="rounded-lg bg-boss-surface px-3 py-2">
-          <h2 className="text-base font-bold text-boss-text">{item.title}</h2>
-        </div>
-
-        {/* 고객 정보 */}
-        <div className="space-y-1.5 rounded-lg bg-boss-surface px-3 py-2 text-sm">
-          <div className="flex items-center gap-2">
-            <User size={12} className="text-boss-text-muted" />
-            <span className="w-12 text-xs text-boss-text-muted">고객명</span>
-            <span className="font-medium text-boss-text">{item.customerName}</span>
-          </div>
-          {item.customerPhone && (
-            <div className="flex items-center gap-2">
-              <Phone size={12} className="text-boss-text-muted" />
-              <span className="w-12 text-xs text-boss-text-muted">전화</span>
-              <a href={`tel:${item.customerPhone}`} className="font-medium text-boss-text hover:text-boss-primary">
-                {item.customerPhone}
-              </a>
-            </div>
-          )}
-          {item.address && (
-            <div className="flex items-start gap-2">
-              <MapPin size={12} className="mt-1 text-boss-text-muted" />
-              <span className="w-12 text-xs text-boss-text-muted">주소</span>
-              <span className="font-medium text-boss-text">{item.address}</span>
-            </div>
-          )}
-        </div>
-
-        {/* 설명 */}
-        {item.description && (
-          <div className="rounded-lg bg-boss-surface px-3 py-2">
-            <p className="mb-1 text-xs text-boss-text-muted">하자 설명</p>
-            <p className="whitespace-pre-line text-sm text-boss-text">{item.description}</p>
-          </div>
-        )}
-
-        {/* 주문 연결 */}
-        {item.orderId != null && (
-          <div className="flex items-center gap-2 rounded-lg bg-boss-surface px-3 py-2">
-            <Receipt size={14} className="text-indigo-300" />
-            <span className="text-sm font-semibold text-indigo-300">주문 #{item.orderId} 연결됨</span>
-          </div>
-        )}
-      </div>
-
-      {/* 이미지 탭 */}
-      <div className="rounded-2xl border border-boss-border bg-boss-surface p-2">
-        <div className="grid grid-cols-2 gap-1">
-          <button
-            type="button"
-            onClick={() => setTab('defect')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-              tab === 'defect' ? 'bg-boss-surface text-boss-text' : 'text-boss-text-secondary hover:text-boss-text'
-            }`}
-          >
-            <ImageIcon size={12} /> 하자 {defectImages.length}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('repair')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-              tab === 'repair' ? 'bg-boss-surface text-boss-text' : 'text-boss-text-secondary hover:text-boss-text'
-            }`}
-          >
-            <Wrench size={12} /> 수리 {repairImages.length}
-          </button>
-        </div>
-      </div>
-
-      {/* 이미지 그리드 */}
-      <ImageGrid
-        images={tab === 'defect' ? defectImages.map((i) => i.filePath) : repairImages.map((i) => i.filePath)}
-        emptyMessage={tab === 'defect' ? '등록된 하자 사진이 없습니다' : '등록된 수리 사진이 없습니다'}
+      <PageHeader
+        title="AS 요청 상세"
+        breadcrumbs={[{ label: 'AS 요청', href: '/boss/as' }, { label: '상세' }]}
+        actions={headerActions}
       />
+
+      {error && (
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+          {error}
+        </div>
+      )}
+
+      {loading && !item ? (
+        <div className="boss-empty">불러오는 중...</div>
+      ) : !item ? (
+        !error ? (
+          <EmptyState
+            icon={Wrench}
+            title="데이터를 찾을 수 없습니다"
+            description="AS 요청 정보를 불러올 수 없습니다."
+            action={
+              <Link href="/boss/as">
+                <Button variant="secondary" size="sm" icon={ArrowLeft}>
+                  목록으로
+                </Button>
+              </Link>
+            }
+          />
+        ) : null
+      ) : (
+        <>
+          {/* 개요 카드 */}
+          <Card className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
+                {prio && (
+                  <Badge tone={prio.tone}>
+                    {prio.urgent && <AlertTriangle size={10} />}
+                    {prio.label}
+                  </Badge>
+                )}
+                <span className="text-xs text-boss-text-muted">#{item.id}</span>
+              </div>
+              <h2 className="text-lg font-semibold text-boss-text">{item.title}</h2>
+              <p className="mt-1 text-sm text-boss-text-muted">
+                고객: {item.customerName} · 접수일: {formatDate(item.requestDate)}
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="text-center">
+                <p className="text-xs text-boss-text-muted">하자 사진</p>
+                <p className="font-semibold text-boss-text">{defectImages.length}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-boss-text-muted">수리 사진</p>
+                <p className="font-semibold text-boss-text">{repairImages.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid gap-5 lg:grid-cols-3">
+            {/* 고객·연락처 */}
+            <Section title="고객·연락처" icon={User}>
+              <Info label="고객명" value={item.customerName} icon={User} />
+              <Info
+                label="전화"
+                value={item.customerPhone}
+                icon={Phone}
+                href={item.customerPhone ? `tel:${item.customerPhone}` : undefined}
+              />
+              <Info label="주소" value={item.address} icon={MapPin} />
+            </Section>
+
+            {/* 요청 내용 */}
+            <Section title="요청 내용" icon={Wrench}>
+              <Info label="제목" value={item.title} icon={FileText} />
+              <Info label="우선순위" value={item.priority} icon={AlertTriangle} />
+              <Info
+                label="연결 주문"
+                value={item.orderId != null ? `#${item.orderId}` : undefined}
+                icon={Receipt}
+              />
+              {item.description && (
+                <div className="flex items-start gap-2.5 text-sm">
+                  <FileText size={14} className="mt-0.5 text-boss-text-muted" />
+                  <div>
+                    <p className="text-xs text-boss-text-muted">하자 설명</p>
+                    <p className="whitespace-pre-line text-boss-text">{item.description}</p>
+                  </div>
+                </div>
+              )}
+            </Section>
+
+            {/* 처리 상태·이력 */}
+            <Section title="처리 상태·이력" icon={Clock}>
+              <Info label="현재 상태" value={item.status} icon={CheckCircle2} />
+              <Info label="접수일" value={formatDate(item.requestDate)} icon={Calendar} />
+              <Info
+                label="완료일"
+                value={item.completedDate ? formatDate(item.completedDate) : undefined}
+                icon={CheckCircle2}
+              />
+              <Info
+                label="등록일시"
+                value={item.createdAt ? formatDate(item.createdAt) : undefined}
+                icon={Clock}
+              />
+              <Info
+                label="수정일시"
+                value={item.updatedAt ? formatDate(item.updatedAt) : undefined}
+                icon={Clock}
+              />
+            </Section>
+          </div>
+
+          {/* 현장 사진 (하자/수리 탭) */}
+          <Card>
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
+              <ImageIcon size={15} className="text-boss-primary" />
+              현장 사진
+            </h3>
+            <ListTabs
+              tabs={[
+                { key: 'defect', label: '하자', count: defectImages.length },
+                { key: 'repair', label: '수리', count: repairImages.length },
+              ]}
+              active={tab}
+              onChange={(key) => setTab(key)}
+            />
+            <div className="mt-4">
+              <ImageGrid
+                images={
+                  tab === 'defect'
+                    ? defectImages.map((i) => i.filePath)
+                    : repairImages.map((i) => i.filePath)
+                }
+                emptyMessage={tab === 'defect' ? '등록된 하자 사진이 없습니다' : '등록된 수리 사진이 없습니다'}
+              />
+            </div>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Section({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
+        <Icon size={15} className="text-boss-primary" />
+        {title}
+      </h3>
+      <div className="space-y-3">{children}</div>
+    </Card>
+  );
+}
+
+function Info({
+  label,
+  value,
+  icon: Icon,
+  href,
+}: {
+  label: string;
+  value?: string | number | null;
+  icon: React.ElementType;
+  href?: string;
+}) {
+  if (value === undefined || value === null || value === '') return null;
+  return (
+    <div className="flex items-start gap-2.5 text-sm">
+      <Icon size={14} className="mt-0.5 text-boss-text-muted" />
+      <div>
+        <p className="text-xs text-boss-text-muted">{label}</p>
+        {href ? (
+          <a href={href} className="text-boss-text hover:text-boss-primary">
+            {value}
+          </a>
+        ) : (
+          <p className="text-boss-text">{value}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -334,8 +386,8 @@ export default function BossAsDetailPage() {
 function ImageGrid({ images, emptyMessage }: { images: string[]; emptyMessage: string }) {
   if (images.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-12 text-center">
-        <ImageIcon size={28} className="mb-2 text-boss-text-muted" />
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-boss-border bg-boss-surface/30 px-6 py-10 text-center">
+        <ImageIcon size={24} className="mb-2 text-boss-text-muted" />
         <p className="text-sm text-boss-text-muted">{emptyMessage}</p>
       </div>
     );
