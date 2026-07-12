@@ -1,20 +1,17 @@
 'use client';
 
 // 사장님 영수증 상세 페이지
-// Flutter receipt_detail_page.dart 포팅
-import { useCallback, useEffect, useState } from 'react';
+// Flutter receipt_detail_page.dart 포팅 — 컴팩트 B2B 레이아웃
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
   Trash2,
   RefreshCw,
   Save,
-  Building2,
-  Calendar,
-  Wallet,
-  CreditCard,
-  Tag,
   FileText,
+  Package,
+  Image as ImageIcon,
   Receipt as ReceiptIcon,
 } from 'lucide-react';
 import { bossReceiptApi } from '@/lib/api/boss/receipt';
@@ -30,6 +27,7 @@ import {
   Card,
   Button,
   Badge,
+  DataTable,
   EmptyState,
   Skeleton,
 } from '@/components/boss/ui';
@@ -39,12 +37,18 @@ function fmtWon(n?: number): string {
   return n.toLocaleString('ko-KR');
 }
 
-function fmtDate(s?: string): string {
+function won(n?: number): string {
+  return `₩${fmtWon(n)}`;
+}
+
+function formatDate(s?: string): string {
   if (!s) return '-';
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return s;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+const BREADCRUMBS = [{ label: '영수증 관리', href: '/boss/receipt' }, { label: '상세' }];
 
 export default function BossReceiptDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -141,23 +145,25 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
     }
   };
 
+  // ── 로딩 ──────────────────────────────────
   if (loading && !data) {
     return (
       <div className="space-y-4">
-        <PageHeader title="영수증 상세" />
-        <Skeleton className="h-64 rounded-lg" />
-        <Skeleton className="h-48 rounded-lg" />
+        <PageHeader title="영수증 상세" breadcrumbs={BREADCRUMBS} />
+        <Skeleton className="h-28 rounded-xl" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Skeleton className="h-64 rounded-xl lg:col-span-2" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
       </div>
     );
   }
 
+  // ── 에러 / 없음 ───────────────────────────
   if (error || !data) {
     return (
       <div className="space-y-4">
-        <PageHeader
-          title="영수증 상세"
-          breadcrumbs={[{ label: '영수증', href: '/boss/receipt' }, { label: '상세' }]}
-        />
+        <PageHeader title="영수증 상세" breadcrumbs={BREADCRUMBS} />
         <EmptyState
           icon={ReceiptIcon}
           title={error || '영수증을 찾을 수 없습니다'}
@@ -171,39 +177,25 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
     );
   }
 
+  const supplyAmount = data.totalAmount - (data.taxAmount ?? 0);
+  const items = data.items ?? [];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader
         title="영수증 상세"
-        breadcrumbs={[{ label: '영수증', href: '/boss/receipt' }, { label: '상세' }]}
+        breadcrumbs={BREADCRUMBS}
         actions={
           <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
-              onClick={load}
-              disabled={loading}
-            >
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
               새로고침
             </Button>
             {!editing ? (
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Save}
-                onClick={() => setEditing(true)}
-              >
+              <Button variant="primary" size="sm" icon={Save} onClick={() => setEditing(true)}>
                 수정
               </Button>
             ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Save}
-                onClick={handleSave}
-                disabled={saving}
-              >
+              <Button variant="primary" size="sm" icon={Save} onClick={handleSave} disabled={saving}>
                 {saving ? '저장 중...' : '저장'}
               </Button>
             )}
@@ -220,220 +212,249 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* 영수증 이미지 */}
-        {data.imageUrl && (
-          <Card className="lg:col-span-1">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">
-              영수증 이미지
-            </p>
-            <div className="overflow-hidden rounded-lg border border-boss-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={data.imageUrl}
-                alt={data.vendorName ?? '영수증'}
-                className="w-full object-contain"
+      {editing ? (
+        // ── 편집 폼 ─────────────────────────────
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <label className="boss-label">상호명</label>
+              <input
+                type="text"
+                value={vendorName}
+                onChange={(e) => setVendorName(e.target.value)}
+                className="boss-input"
+                placeholder="예: 홍길동 벽지매트"
               />
             </div>
-          </Card>
-        )}
-
-        {/* 정보 */}
-        <Card className={data.imageUrl ? 'lg:col-span-2' : 'lg:col-span-3'}>
-          {!editing ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge tone="emerald">{categoryLabel(data.category)}</Badge>
-                {data.paymentMethod && (
-                  <Badge tone="sky">{paymentLabel(data.paymentMethod)}</Badge>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <InfoRow icon={Building2} label="상호명" value={data.vendorName ?? '-'} />
-                <InfoRow icon={Calendar} label="거래일" value={fmtDate(data.txDate)} />
-                <InfoRow
-                  icon={Wallet}
-                  label="총 금액"
-                  value={`${fmtWon(data.totalAmount)}원`}
-                  highlight
-                />
-                <InfoRow
-                  icon={ReceiptIcon}
-                  label="부가세"
-                  value={data.taxAmount != null ? `${fmtWon(data.taxAmount)}원` : '-'}
-                />
-              </div>
-
-              {data.items && data.items.length > 0 && (
-                <div>
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">
-                    품목 내역
-                  </p>
-                  <div className="overflow-hidden rounded-lg border border-boss-border">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-boss-elevated text-boss-text-muted">
-                        <tr>
-                          <th className="px-3 py-2 font-medium">품목</th>
-                          <th className="px-3 py-2 text-right font-medium">수량</th>
-                          <th className="px-3 py-2 text-right font-medium">단가</th>
-                          <th className="px-3 py-2 text-right font-medium">금액</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.items.map((item, i) => (
-                          <tr key={i} className="border-t border-boss-border">
-                            <td className="px-3 py-2 text-boss-text">{item.name ?? '-'}</td>
-                            <td className="px-3 py-2 text-right text-boss-text-secondary">{item.qty ?? '-'}</td>
-                            <td className="px-3 py-2 text-right text-boss-text-secondary">
-                              {item.unitPrice != null ? fmtWon(item.unitPrice) : '-'}
-                            </td>
-                            <td className="px-3 py-2 text-right font-medium text-boss-text">
-                              {item.amount != null ? fmtWon(item.amount) : '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {data.memo && (
-                <div>
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">
-                    메모
-                  </p>
-                  <p className="rounded-lg border border-boss-border bg-boss-bg p-3 text-sm text-boss-text-secondary">
-                    {data.memo}
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="boss-label">상호명</label>
+                <label className="boss-label">거래일</label>
                 <input
-                  type="text"
-                  value={vendorName}
-                  onChange={(e) => setVendorName(e.target.value)}
+                  type="date"
+                  value={txDate ? txDate.substring(0, 10) : ''}
+                  onChange={(e) => setTxDate(e.target.value)}
                   className="boss-input"
-                  placeholder="예: 홍길동 벽지매트"
                 />
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="boss-label">거래일</label>
-                  <input
-                    type="date"
-                    value={txDate ? txDate.substring(0, 10) : ''}
-                    onChange={(e) => setTxDate(e.target.value)}
-                    className="boss-input"
-                  />
-                </div>
-                <div>
-                  <label className="boss-label">카테고리</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as ReceiptCategoryCode)}
-                    className="boss-input"
-                  >
-                    {RECEIPT_CATEGORIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="boss-label">총 금액</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={totalAmount}
-                    onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d]/g, ''))}
-                    className="boss-input text-right font-semibold text-boss-primary"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="boss-label">부가세</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={taxAmount}
-                    onChange={(e) => setTaxAmount(e.target.value.replace(/[^\d]/g, ''))}
-                    className="boss-input text-right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
               <div>
-                <label className="boss-label">결제 수단</label>
+                <label className="boss-label">카테고리</label>
                 <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as ReceiptCategoryCode)}
                   className="boss-input"
                 >
-                  <option value="">선택 안함</option>
-                  <option value="CARD">카드</option>
-                  <option value="CASH">현금</option>
+                  {RECEIPT_CATEGORIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
                 </select>
               </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="boss-label">메모</label>
-                <textarea
-                  value={memo}
-                  onChange={(e) => setMemo(e.target.value)}
-                  className="boss-input min-h-[80px] resize-y"
-                  placeholder="추가 메모"
+                <label className="boss-label">총 금액</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d]/g, ''))}
+                  className="boss-input text-right font-semibold text-boss-primary"
+                  placeholder="0"
                 />
               </div>
-              <div className="flex items-center justify-end gap-2 border-t border-boss-border pt-4">
-                <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
-                  취소
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={Save}
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? '저장 중...' : '저장'}
-                </Button>
+              <div>
+                <label className="boss-label">부가세</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={taxAmount}
+                  onChange={(e) => setTaxAmount(e.target.value.replace(/[^\d]/g, ''))}
+                  className="boss-input text-right"
+                  placeholder="0"
+                />
               </div>
             </div>
-          )}
+            <div>
+              <label className="boss-label">결제 수단</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="boss-input"
+              >
+                <option value="">선택 안함</option>
+                <option value="CARD">카드</option>
+                <option value="CASH">현금</option>
+              </select>
+            </div>
+            <div>
+              <label className="boss-label">메모</label>
+              <textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                className="boss-input min-h-[80px] resize-y"
+                placeholder="추가 메모"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-boss-border pt-4">
+              <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
+                취소
+              </Button>
+              <Button variant="primary" size="sm" icon={Save} onClick={handleSave} disabled={saving}>
+                {saving ? '저장 중...' : '저장'}
+              </Button>
+            </div>
+          </div>
         </Card>
-      </div>
+      ) : (
+        <>
+          {/* 개요 카드 */}
+          <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Badge tone="emerald">{categoryLabel(data.category)}</Badge>
+                {data.paymentMethod && <Badge tone="sky">{paymentLabel(data.paymentMethod)}</Badge>}
+                {data.id != null && <span className="text-xs text-boss-text-muted">#{data.id}</span>}
+              </div>
+              <h2 className="text-lg font-semibold text-boss-text">
+                {data.vendorName || '거래처 미상'}
+              </h2>
+              <p className="mt-1 text-sm text-boss-text-muted">거래일 {formatDate(data.txDate)}</p>
+            </div>
+            <div className="text-left md:text-right">
+              <p className="text-xs text-boss-text-muted">총 금액</p>
+              <p className="font-mono text-2xl font-semibold tabular-nums text-boss-primary">
+                {won(data.totalAmount)}
+              </p>
+            </div>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {/* 정보 + 품목 */}
+            <div className={`space-y-4 ${data.imageUrl ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+              {/* 영수증 정보 */}
+              <Section title="영수증 정보" icon={FileText}>
+                <div className="divide-y divide-boss-border">
+                  <Info label="사업자번호" value={data.bizNo} />
+                  <Info label="거래일" value={formatDate(data.txDate)} />
+                  <Info label="공급가액" value={won(supplyAmount)} />
+                  <Info
+                    label="부가세"
+                    value={data.taxAmount != null ? won(data.taxAmount) : '-'}
+                  />
+                  <Info label="총 금액" value={won(data.totalAmount)} strong />
+                  <Info
+                    label="결제수단"
+                    value={
+                      data.paymentMethod ? (
+                        <Badge tone="sky">{paymentLabel(data.paymentMethod)}</Badge>
+                      ) : undefined
+                    }
+                  />
+                </div>
+                {data.memo && (
+                  <div className="mt-3 border-t border-boss-border pt-3">
+                    <p className="mb-1 text-xs text-boss-text-muted">메모</p>
+                    <p className="whitespace-pre-wrap text-sm text-boss-text-secondary">
+                      {data.memo}
+                    </p>
+                  </div>
+                )}
+              </Section>
+
+              {/* 품목 */}
+              <Section title={`품목${items.length > 0 ? ` (${items.length})` : ''}`} icon={Package}>
+                {items.length === 0 ? (
+                  <EmptyState icon={Package} title="등록된 품목이 없습니다" />
+                ) : (
+                  <DataTable>
+                    <thead>
+                      <tr>
+                        <th>품명</th>
+                        <th className="text-right">수량</th>
+                        <th className="text-right">단가</th>
+                        <th className="text-right">금액</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, i) => (
+                        <tr key={i}>
+                          <td className="font-medium">{item.name ?? '-'}</td>
+                          <td className="text-right text-boss-text-secondary">{item.qty ?? '-'}</td>
+                          <td className="text-right text-boss-text-secondary">
+                            {item.unitPrice != null ? won(item.unitPrice) : '-'}
+                          </td>
+                          <td className="text-right font-medium">
+                            {item.amount != null ? won(item.amount) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </DataTable>
+                )}
+              </Section>
+            </div>
+
+            {/* 영수증 이미지 */}
+            {data.imageUrl && (
+              <div className="space-y-4">
+                <Section title="영수증 이미지" icon={ImageIcon}>
+                  <div className="overflow-hidden rounded-lg border border-boss-border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={data.imageUrl}
+                      alt={data.vendorName ?? '영수증'}
+                      className="w-full object-contain"
+                    />
+                  </div>
+                </Section>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function InfoRow({
+function Section({
+  title,
   icon: Icon,
-  label,
-  value,
-  highlight,
+  children,
 }: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: string;
-  highlight?: boolean;
+  title: string;
+  icon: React.ElementType;
+  children: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-bg p-3">
-      <Icon size={14} className="shrink-0 text-boss-text-muted" />
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">{label}</p>
-        <p className={`text-sm ${highlight ? 'font-semibold text-boss-primary' : 'text-boss-text'}`}>
-          {value}
-        </p>
-      </div>
+    <Card>
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
+        <Icon size={15} className="text-boss-primary" />
+        {title}
+      </h3>
+      {children}
+    </Card>
+  );
+}
+
+function Info({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value?: ReactNode;
+  strong?: boolean;
+}) {
+  if (value === undefined || value === null || value === '') return null;
+  return (
+    <div className="flex items-center justify-between gap-3 py-2 text-sm">
+      <span className="text-boss-text-muted">{label}</span>
+      <span
+        className={`text-right ${strong ? 'font-semibold text-boss-primary' : 'font-medium text-boss-text'}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
