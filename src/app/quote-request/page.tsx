@@ -491,6 +491,7 @@ export default function QuoteRequestPage() {
   const router = useRouter();
   const districtRef = useRef<HTMLDivElement>(null); // 구/군 선택 영역 참조
   const nameInputRef = useRef<HTMLInputElement>(null); // 이름 입력 필드 참조
+  const autoSubmitTriedRef = useRef(false); // 소셜로그인 자동제출 1회 실행 가드(중복 견적 방지)
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -562,6 +563,10 @@ export default function QuoteRequestPage() {
       if (hasPendingSubmit() && loginStatus && user) {
         const savedFormData = loadFormDataFromStorage();
         if (savedFormData) {
+          // 중복 자동제출 방지: 메모리 가드로 1회만 실행하고, 네트워크 호출 전에 pending 플래그를 즉시 소비
+          if (autoSubmitTriedRef.current) return;
+          autoSubmitTriedRef.current = true;
+          setPendingSubmit(false);
           console.log('페이지 로드 시 pending submit 발견, 자동 제출 처리');
           setIsAutoSubmitting(true);
           toast.loading('견적 신청을 처리 중입니다...', {
@@ -635,7 +640,7 @@ export default function QuoteRequestPage() {
     };
 
     checkLoginAndPendingSubmit();
-  }, [hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage]);
+  }, [hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage, setPendingSubmit]);
 
   // 팝업창으로부터 메시지 수신 처리
   useEffect(() => {
@@ -662,6 +667,10 @@ export default function QuoteRequestPage() {
           // 저장된 폼 데이터 복원
           const savedFormData = loadFormDataFromStorage();
           if (savedFormData && loginStatus && user) {
+            // 중복 자동제출 방지: 메모리 가드로 1회만 실행하고, 네트워크 호출 전에 pending 플래그를 즉시 소비
+            if (autoSubmitTriedRef.current) return;
+            autoSubmitTriedRef.current = true;
+            setPendingSubmit(false);
             setIsAutoSubmitting(true);
             toast.loading('견적 신청을 처리 중입니다...', {
               id: 'auto-submit',
@@ -746,7 +755,7 @@ export default function QuoteRequestPage() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [currentStep, hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage]);
+  }, [currentStep, hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage, setPendingSubmit]);
 
   // 고객정보 단계로 넘어갈 때 스크롤 최상단 이동 및 이름 필드 포커스
   useEffect(() => {

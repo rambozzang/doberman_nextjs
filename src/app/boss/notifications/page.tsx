@@ -1,15 +1,5 @@
 'use client';
 
-// 사장님 알림(Notifications) 페이지
-// Flutter 참조:
-//   - lib/app/setting/noti_page.dart      : 알림 목록 (BBS NOTI 타입)
-//   - lib/app/setting/noti_view_page.dart : 알림 상세
-//   - lib/app/alert/ad_page.dart          : 광고 카테고리 디자인
-//   - lib/app/alert/update_page.dart      : 업데이트 카테고리 디자인
-//   - lib/app/alert/company_registration_page.dart : 광고 카테고리 보조
-//
-// 백엔드 알림은 BBS(`/bbs/...`) 의 typeCd='NOTI' 를 재사용하며
-// 카테고리(typeDtCd) 로 공지(NOTI) / 광고(AD) / 업데이트(UPDATE) 를 구분한다.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Bell,
@@ -17,15 +7,13 @@ import {
   Megaphone,
   Sparkles,
   RefreshCw,
-  Search,
   Inbox,
-  ChevronLeft,
-  ChevronRight,
   Trash2,
   X,
   CheckCheck,
   Eye,
   AlertCircle,
+  type LucideIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -38,6 +26,20 @@ import type {
   BossNotificationItem,
   BossNotificationListResponse,
 } from '@/types/boss-notifications';
+import {
+  PageHeader,
+  Toolbar,
+  SearchInput,
+  Button,
+  ListTabs,
+  RowList,
+  RowItem,
+  RowThumb,
+  Badge,
+  EmptyState,
+  Pagination,
+  Skeleton,
+} from '@/components/boss/ui';
 
 const PAGE_SIZE = 20;
 
@@ -48,28 +50,14 @@ const CATEGORIES: BossNotificationCategoryMeta[] = [
   { code: 'UPDATE', label: '업데이트' },
 ];
 
-// 카테고리별 아이콘/색상
-function categoryStyle(code?: string) {
+function categoryIcon(code?: string): { Icon: LucideIcon; tone: 'default' | 'emerald' | 'amber' | 'sky' } {
   switch (code) {
     case 'AD':
-      return {
-        Icon: Megaphone,
-        badge: 'bg-boss-warning/10 text-boss-warning border-amber-500/30',
-        accent: 'text-boss-warning',
-      };
+      return { Icon: Megaphone, tone: 'amber' };
     case 'UPDATE':
-      return {
-        Icon: Sparkles,
-        badge: 'bg-boss-info/10 text-boss-info border-boss-info/30',
-        accent: 'text-boss-info',
-      };
-    case 'NOTI':
+      return { Icon: Sparkles, tone: 'sky' };
     default:
-      return {
-        Icon: BellRing,
-        badge: 'bg-boss-primary/10 text-boss-primary border-boss-primary/30',
-        accent: 'text-boss-primary',
-      };
+      return { Icon: BellRing, tone: 'emerald' };
   }
 }
 
@@ -99,25 +87,20 @@ function relativeTime(input?: string): string {
 export default function BossNotificationsPage() {
   const [category, setCategory] = useState<BossNotificationCategory>('ALL');
   const [items, setItems] = useState<BossNotificationItem[]>([]);
-  const [page, setPage] = useState(0); // Flutter 와 동일하게 0-base
+  const [page, setPage] = useState(0);
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [readVersion, setReadVersion] = useState(0); // 로컬 읽음 변경 시 리렌더 트리거
+  const [readVersion, setReadVersion] = useState(0);
 
-  // 상세 모달
   const [selected, setSelected] = useState<BossNotificationItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
   const load = useCallback(
-    async (
-      targetPage: number,
-      searchWord: string,
-      cat: BossNotificationCategory,
-    ) => {
+    async (targetPage: number, searchWord: string, cat: BossNotificationCategory) => {
       setLoading(true);
       setError(null);
       try {
@@ -157,17 +140,12 @@ export default function BossNotificationsPage() {
     setKeyword(searchInput.trim());
   };
 
-  const onRefresh = () => {
-    load(page, keyword, category).catch(() => toast.error('새로고침 실패'));
-  };
-
   const onChangeCategory = (cat: BossNotificationCategory) => {
     if (cat === category) return;
     setCategory(cat);
     setPage(0);
   };
 
-  // 알림 선택(상세) — 서버 조회수 증가 + 로컬 읽음 처리
   const openDetail = async (item: BossNotificationItem) => {
     setSelected(item);
     setDetailError(null);
@@ -175,7 +153,6 @@ export default function BossNotificationsPage() {
     if (item.boardId != null) {
       bossNotificationsReadStore.markRead(item.boardId);
       setReadVersion((v) => v + 1);
-      // 조회수 증가는 실패해도 사용자 흐름에 영향 없음
       bossNotificationsApi.markRead(item.boardId).catch(() => {});
     }
     try {
@@ -201,7 +178,6 @@ export default function BossNotificationsPage() {
     setDetailError(null);
   };
 
-  // 알림 삭제
   const removeItem = async (item: BossNotificationItem) => {
     if (item.boardId == null) return;
     if (!window.confirm('이 알림을 삭제하시겠습니까?')) return;
@@ -219,7 +195,6 @@ export default function BossNotificationsPage() {
     }
   };
 
-  // 모두 읽음 처리(로컬)
   const markAllRead = () => {
     items.forEach((it) => bossNotificationsReadStore.markRead(it.boardId));
     setReadVersion((v) => v + 1);
@@ -227,7 +202,6 @@ export default function BossNotificationsPage() {
   };
 
   const unreadCount = useMemo(() => {
-    // readVersion 으로 강제 재계산
     void readVersion;
     return items.reduce(
       (acc, it) => (bossNotificationsReadStore.isRead(it.boardId) ? acc : acc + 1),
@@ -235,88 +209,59 @@ export default function BossNotificationsPage() {
     );
   }, [items, readVersion]);
 
+  const pageNum = page + 1;
+
   return (
-    <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+    <div className="space-y-4">
+      <PageHeader
+        title="알림"
+        description="공지·광고·업데이트 등 받은 모든 알림을 확인하세요."
+        actions={
           <div className="flex items-center gap-2">
-            <Bell size={20} className="text-boss-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-boss-text">알림</h1>
-            {unreadCount > 0 && (
-              <span className="rounded-full bg-boss-primary/15 px-2 py-0.5 text-xs font-semibold text-boss-primary">
-                {unreadCount} 새 알림
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-boss-text-muted">
-            공지·광고·업데이트 등 받은 모든 알림을 확인하세요.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search
-              size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted"
-            />
-            <input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearch();
-              }}
-              placeholder="제목·내용 검색"
-              className="h-9 w-56 rounded-lg border border-boss-border bg-boss-surface pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={onSearch}
-            className="h-9 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-          >
-            검색
-          </button>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
-          </button>
-          <button
-            type="button"
-            onClick={markAllRead}
-            disabled={items.length === 0}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-40"
-          >
-            <CheckCheck size={14} /> 모두 읽음
-          </button>
-        </div>
-      </div>
-
-      {/* 카테고리 탭 */}
-      <div className="flex flex-wrap items-center gap-2">
-        {CATEGORIES.map((c) => {
-          const active = category === c.code;
-          return (
-            <button
-              key={c.code}
-              type="button"
-              onClick={() => onChangeCategory(c.code)}
-              className={
-                'h-9 rounded-full border px-4 text-xs font-semibold transition-colors ' +
-                (active
-                  ? 'border-boss-primary/20 bg-boss-primary/15 text-boss-primary'
-                  : 'border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text')
-              }
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={CheckCheck}
+              onClick={markAllRead}
+              disabled={items.length === 0}
             >
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
+              모두 읽음
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              onClick={() => load(page, keyword, category)}
+              disabled={loading}
+            >
+              새로고침
+            </Button>
+          </div>
+        }
+      />
+
+      <Toolbar>
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="제목·내용 검색"
+          className="w-full max-w-xs"
+        />
+        <Button onClick={onSearch} disabled={loading}>
+          검색
+        </Button>
+        {unreadCount > 0 && (
+          <Badge tone="emerald">
+            <Bell size={10} /> {unreadCount}개 안 읽음
+          </Badge>
+        )}
+      </Toolbar>
+
+      <ListTabs
+        tabs={CATEGORIES.map((c) => ({ key: c.code, label: c.label }))}
+        active={category}
+        onChange={onChangeCategory}
+      />
 
       {error && (
         <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
@@ -325,185 +270,113 @@ export default function BossNotificationsPage() {
         </div>
       )}
 
-      {/* 본문 */}
       {loading && items.length === 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-px">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-20 animate-pulse rounded-2xl border border-boss-border bg-boss-surface"
-            />
+            <Skeleton key={i} className="h-16 rounded-lg" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
-            <Inbox size={20} />
-          </div>
-          <p className="text-sm font-medium text-boss-text">표시할 알림이 없습니다</p>
-          <p className="mt-1 text-xs text-boss-text-muted">
-            새로운 공지·광고·업데이트가 오면 여기에 표시됩니다.
-          </p>
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title="표시할 알림이 없습니다"
+          description="새로운 공지·광고·업데이트가 오면 여기에 표시됩니다."
+        />
       ) : (
-        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
+        <RowList>
           {items.map((item) => {
-            const { Icon, badge, accent } = categoryStyle(item.typeDtCd);
+            const { Icon, tone } = categoryIcon(item.typeDtCd);
             const isRead = bossNotificationsReadStore.isRead(item.boardId);
-            // readVersion 의존을 위해 참조
             void readVersion;
+            const tags = (
+              <>
+                <Badge tone={tone}>
+                  {item.typeDtNm ?? CATEGORIES.find((c) => c.code === item.typeDtCd)?.label ?? '알림'}
+                </Badge>
+                {!isRead && <Badge tone="emerald">NEW</Badge>}
+              </>
+            );
             return (
-              <li key={item.boardId ?? Math.random()}>
-                <div className="group flex items-start gap-3 p-4 transition-colors hover:bg-boss-elevated/40">
+              <RowItem
+                key={item.boardId ?? Math.random()}
+                onClick={() => openDetail(item)}
+                leading={<RowThumb icon={Icon} />}
+                title={item.subject ?? '(제목 없음)'}
+                subtitle={item.contents ?? undefined}
+                tags={tags}
+                meta={
+                  <div className="flex flex-col items-end gap-1">
+                    <span>{relativeTime(item.crtDtm)}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Eye size={11} /> {item.viewCnt ?? 0}
+                    </span>
+                  </div>
+                }
+                actions={
                   <button
                     type="button"
-                    onClick={() => openDetail(item)}
-                    className="flex flex-1 items-start gap-3 text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void removeItem(item);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted transition-colors hover:bg-boss-error/10 hover:text-boss-error"
+                    aria-label="삭제"
                   >
-                    <div
-                      className={
-                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ' +
-                        badge
-                      }
-                    >
-                      <Icon size={18} className={accent} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-boss-text-muted">
-                        <span
-                          className={
-                            'rounded-full border px-2 py-0.5 text-[10px] font-semibold ' +
-                            badge
-                          }
-                        >
-                          {item.typeDtNm ??
-                            CATEGORIES.find((c) => c.code === item.typeDtCd)?.label ??
-                            '알림'}
-                        </span>
-                        {!isRead && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-boss-primary">
-                            <span className="h-1.5 w-1.5 rounded-full bg-boss-primary" /> NEW
-                          </span>
-                        )}
-                        <span>{relativeTime(item.crtDtm)}</span>
-                      </div>
-                      <h3
-                        className={
-                          'mb-1 line-clamp-1 text-base font-semibold ' +
-                          (isRead ? 'text-boss-text-secondary' : 'text-boss-text')
-                        }
-                      >
-                        {item.subject ?? '(제목 없음)'}
-                      </h3>
-                      <p className="line-clamp-2 text-xs text-boss-text-muted">
-                        {item.contents ?? ''}
-                      </p>
-                      <div className="mt-2 flex items-center gap-3 text-[11px] text-boss-text-muted">
-                        <span className="inline-flex items-center gap-1">
-                          <Eye size={11} /> {item.viewCnt ?? 0}
-                        </span>
-                      </div>
-                    </div>
+                    <Trash2 size={13} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item)}
-                    title="삭제"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-muted opacity-0 transition-opacity hover:border-boss-error/30 hover:text-boss-error group-hover:opacity-100"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </li>
+                }
+              />
             );
           })}
-        </ul>
+        </RowList>
       )}
 
-      {/* 페이지네이션 */}
-      <nav className="flex items-center justify-between border-t border-boss-border pt-4">
-        <p className="text-xs text-boss-text-muted">페이지 {page + 1}</p>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={page <= 0 || loading}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
-          >
-            <ChevronLeft size={12} /> 이전
-          </button>
-          <button
-            type="button"
-            disabled={!hasMore || loading}
-            onClick={() => setPage((p) => p + 1)}
-            className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-xs text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-40"
-          >
-            다음 <ChevronRight size={12} />
-          </button>
-        </div>
-      </nav>
+      {(hasMore || page > 0) && (
+        <Pagination
+          page={pageNum}
+          totalPages={hasMore ? pageNum + 1 : pageNum}
+          onChange={(p) => setPage(p - 1)}
+          disabled={loading}
+        />
+      )}
 
       {/* 상세 모달 */}
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           onClick={closeDetail}
         >
           <div
-            className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-boss-border bg-boss-bg shadow-2xl"
+            className="relative w-full max-w-2xl overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 헤더 */}
             <div className="flex items-start justify-between gap-3 border-b border-boss-border p-5">
-              <div className="flex min-w-0 items-start gap-3">
-                {(() => {
-                  const { Icon, badge, accent } = categoryStyle(selected.typeDtCd);
-                  return (
-                    <div
-                      className={
-                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ' +
-                        badge
-                      }
-                    >
-                      <Icon size={20} className={accent} />
-                    </div>
-                  );
-                })()}
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-boss-text-muted">
-                    <span
-                      className={
-                        'rounded-full border px-2 py-0.5 text-[10px] font-semibold ' +
-                        categoryStyle(selected.typeDtCd).badge
-                      }
-                    >
-                      {selected.typeDtNm ??
-                        CATEGORIES.find((c) => c.code === selected.typeDtCd)?.label ??
-                        '알림'}
-                    </span>
-                    <span>{relativeTime(selected.crtDtm)}</span>
-                  </div>
-                  <h2 className="line-clamp-2 text-lg font-bold text-boss-text">
-                    {selected.subject ?? '(제목 없음)'}
-                  </h2>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1.5 flex items-center gap-2 text-xs text-boss-text-muted">
+                  <Badge tone="default">
+                    {selected.typeDtNm ?? CATEGORIES.find((c) => c.code === selected.typeDtCd)?.label ?? '알림'}
+                  </Badge>
+                  <span>{relativeTime(selected.crtDtm)}</span>
                 </div>
+                <h2 className="line-clamp-2 text-lg font-semibold text-boss-text">
+                  {selected.subject ?? '(제목 없음)'}
+                </h2>
               </div>
               <button
                 type="button"
                 onClick={closeDetail}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-muted hover:border-boss-border hover:text-boss-text"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* 본문 */}
             <div className="max-h-[60vh] overflow-y-auto p-5">
               {detailLoading ? (
                 <div className="space-y-3">
-                  <div className="h-4 w-3/4 animate-pulse rounded bg-boss-elevated" />
-                  <div className="h-4 w-full animate-pulse rounded bg-boss-elevated" />
-                  <div className="h-4 w-5/6 animate-pulse rounded bg-boss-elevated" />
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-4 w-full" />
+                  ))}
                 </div>
               ) : detailError ? (
                 <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
@@ -511,28 +384,25 @@ export default function BossNotificationsPage() {
                   <span>{detailError}</span>
                 </div>
               ) : (
-                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed text-boss-text">
+                <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed text-boss-text">
                   {selected.contents ?? '내용이 없습니다.'}
                 </div>
               )}
             </div>
 
-            {/* 푸터 */}
-            <div className="flex items-center justify-end gap-2 border-t border-boss-border bg-boss-bg/80 p-4">
-              <button
-                type="button"
+            <div className="flex items-center justify-end gap-2 border-t border-boss-border p-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Trash2}
                 onClick={() => removeItem(selected)}
-                className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-error/30 bg-boss-error/10 px-3 text-sm text-boss-error hover:bg-boss-error/10"
+                className="text-boss-error hover:bg-boss-error/10"
               >
-                <Trash2 size={14} /> 삭제
-              </button>
-              <button
-                type="button"
-                onClick={closeDetail}
-                className="h-9 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover"
-              >
+                삭제
+              </Button>
+              <Button variant="primary" size="sm" onClick={closeDetail}>
                 닫기
-              </button>
+              </Button>
             </div>
           </div>
         </div>

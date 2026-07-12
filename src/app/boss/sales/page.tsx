@@ -1,7 +1,5 @@
 'use client';
 
-// 사장님 매출 통계 페이지 — Flutter sales_status_page 의 월간 통계 영역에 대응
-// GET /stats/monthly 호출하여 최근 N개월 매출/건수를 recharts 로 시각화한다.
 import { useEffect, useMemo, useState } from 'react';
 import {
   AreaChart,
@@ -18,8 +16,16 @@ import toast from 'react-hot-toast';
 import { TrendingUp, BarChart3, RefreshCw, Calendar } from 'lucide-react';
 import { bossStatsApi, buildRecentMonthsParams } from '@/lib/api/boss/stats';
 import type { BossMonthlyStat } from '@/types/boss-stats';
+import {
+  PageHeader,
+  Card,
+  StatCard,
+  DataTable,
+  EmptyState,
+  Button,
+  Skeleton,
+} from '@/components/boss/ui';
 
-// 백엔드 응답에서 BossMonthlyStat[] 추출 (배열/객체 구조 모두 허용)
 function extractList(data: unknown): BossMonthlyStat[] {
   if (!data) return [];
   if (Array.isArray(data)) return data as BossMonthlyStat[];
@@ -27,7 +33,6 @@ function extractList(data: unknown): BossMonthlyStat[] {
   return obj.list ?? obj.content ?? [];
 }
 
-// "202504" / "2025-04" / 분리된 year+month 모두 처리
 function rowLabel(row: BossMonthlyStat): string {
   if (row.yearMonth) {
     const ym = row.yearMonth.replace('-', '');
@@ -37,17 +42,24 @@ function rowLabel(row: BossMonthlyStat): string {
   return '-';
 }
 
-// 통화 포맷 (천 단위 콤마 + 원)
 function fmtWon(n?: number): string {
   if (n == null) return '₩0';
   return `₩${n.toLocaleString('ko-KR')}`;
 }
 
 const PERIOD_OPTIONS = [
-  { value: 3, label: '최근 3개월' },
-  { value: 6, label: '최근 6개월' },
-  { value: 12, label: '최근 12개월' },
+  { value: 3, label: '3개월' },
+  { value: 6, label: '6개월' },
+  { value: 12, label: '12개월' },
 ];
+
+const CHART_STYLE = {
+  grid: 'rgb(var(--boss-border))',
+  axis: 'rgb(var(--boss-text-muted))',
+  tooltipBg: 'rgb(var(--boss-surface))',
+  tooltipBorder: 'rgb(var(--boss-border))',
+  tooltipLabel: 'rgb(var(--boss-text-secondary))',
+};
 
 export default function BossSalesPage() {
   const [months, setMonths] = useState<number>(6);
@@ -82,7 +94,6 @@ export default function BossSalesPage() {
     void fetchData(months);
   }, [months]);
 
-  // 차트 데이터 변환 (수금액 기준)
   const chartData = useMemo(
     () =>
       rows.map((r) => ({
@@ -91,204 +102,164 @@ export default function BossSalesPage() {
         count: r.totalCount ?? 0,
         total: (r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0),
       })),
-    [rows]
+    [rows],
   );
 
-  // 합계 계산
   const totals = useMemo(
     () => ({
       amount: rows.reduce((s, r) => s + ((r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0)), 0),
       count: rows.reduce((s, r) => s + (r.totalCount ?? 0), 0),
       paid: rows.reduce((s, r) => s + (r.collectedAmount ?? 0), 0),
     }),
-    [rows]
+    [rows],
   );
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1">
-            <TrendingUp size={11} className="text-violet-400" />
-            <span className="text-[11px] font-medium text-violet-400">매출 분석</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-boss-text md:text-3xl">월별 매출 통계</h1>
-          <p className="mt-1 text-sm text-boss-text-muted">기간을 선택해 매출 추이를 확인하세요.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setMonths(opt.value)}
-              className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
-                months === opt.value
-                  ? 'border-violet-500/40 bg-violet-500/10 text-violet-400'
-                  : 'border-boss-border bg-boss-surface/50 text-boss-text-muted hover:text-boss-text'
-              }`}
+    <div className="space-y-4">
+      <PageHeader
+        eyebrow="매출 분석"
+        title="월별 매출 통계"
+        description="기간을 선택해 매출 추이를 확인하세요."
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-md border border-boss-border bg-boss-bg p-0.5">
+              {PERIOD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setMonths(opt.value)}
+                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                    months === opt.value
+                      ? 'bg-boss-elevated text-boss-text'
+                      : 'text-boss-text-muted hover:text-boss-text'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              onClick={() => fetchData(months)}
+              disabled={loading}
             >
-              {opt.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => fetchData(months)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-boss-border bg-boss-surface/50 text-boss-text-secondary hover:text-boss-text"
-            aria-label="새로고침"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      </header>
+              새로고침
+            </Button>
+          </div>
+        }
+      />
 
-      {/* 합계 카드 */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard label="총 매출" value={fmtWon(totals.amount)} icon={<TrendingUp size={18} />} accent="from-violet-500 to-violet-700" loading={loading} />
-        <SummaryCard label="총 건수" value={`${totals.count.toLocaleString('ko-KR')}건`} icon={<BarChart3 size={18} />} accent="from-boss-primary to-emerald-700" loading={loading} />
-        <SummaryCard label="수금 금액" value={fmtWon(totals.paid)} icon={<Calendar size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard label="총 매출" value={fmtWon(totals.amount)} icon={TrendingUp} loading={loading} />
+        <StatCard label="총 건수" value={`${totals.count.toLocaleString('ko-KR')}건`} icon={BarChart3} loading={loading} />
+        <StatCard label="수금 금액" value={fmtWon(totals.paid)} icon={Calendar} loading={loading} />
       </section>
 
-      {/* 에러 메시지 */}
       {error && !loading && (
-        <div className="rounded-2xl border border-rose-500/30 bg-boss-error/10 p-4 text-sm text-boss-error">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
-      {/* 매출 추이 차트 */}
-      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <Card>
+          <div className="mb-4">
             <h2 className="text-sm font-semibold text-boss-text">매출 추이</h2>
-            <p className="text-xs text-boss-text-muted">최근 {months}개월 매출액</p>
+            <p className="mt-0.5 text-xs text-boss-text-muted">최근 {months}개월 매출액</p>
           </div>
-        </div>
-        {loading ? (
-          <div className="h-64 animate-pulse rounded-xl bg-boss-elevated/40" />
-        ) : chartData.length === 0 ? (
-          <div className="flex h-64 items-center justify-center text-sm text-boss-text-muted">
-            표시할 데이터가 없습니다.
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={256}>
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="label" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${Math.round(v / 10000)}만`} />
-              <Tooltip
-                contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
-                labelStyle={{ color: '#e2e8f0' }}
-                formatter={(v) => fmtWon(Number(v))}
-              />
-              <Area type="monotone" dataKey="amount" stroke="#a855f7" strokeWidth={2} fill="url(#salesGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </section>
+          {loading ? (
+            <div className="h-56 animate-pulse rounded-lg bg-boss-elevated" />
+          ) : chartData.length === 0 ? (
+            <EmptyState icon={TrendingUp} title="데이터가 없습니다" description="통계가 집계되면 표시됩니다." />
+          ) : (
+            <ResponsiveContainer width="100%" height={224}>
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgb(var(--boss-primary))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="rgb(var(--boss-primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke={CHART_STYLE.grid} vertical={false} />
+                <XAxis dataKey="label" stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${Math.round(v / 10000)}만`} />
+                <Tooltip
+                  contentStyle={{ background: CHART_STYLE.tooltipBg, border: `1px solid ${CHART_STYLE.tooltipBorder}`, borderRadius: '6px', fontSize: '11px', padding: '6px 10px' }}
+                  labelStyle={{ color: CHART_STYLE.tooltipLabel, marginBottom: '2px' }}
+                  formatter={(v) => fmtWon(Number(v))}
+                />
+                <Area type="monotone" dataKey="amount" stroke="rgb(var(--boss-primary))" strokeWidth={1.5} fill="url(#salesGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
 
-      {/* 건수 차트 */}
-      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
+        <Card>
+          <div className="mb-4">
             <h2 className="text-sm font-semibold text-boss-text">건수 추이</h2>
-            <p className="text-xs text-boss-text-muted">최근 {months}개월 시공 건수</p>
+            <p className="mt-0.5 text-xs text-boss-text-muted">최근 {months}개월 시공 건수</p>
           </div>
+          {loading ? (
+            <div className="h-56 animate-pulse rounded-lg bg-boss-elevated" />
+          ) : chartData.length === 0 ? (
+            <EmptyState icon={BarChart3} title="데이터가 없습니다" description="통계가 집계되면 표시됩니다." />
+          ) : (
+            <ResponsiveContainer width="100%" height={224}>
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke={CHART_STYLE.grid} vertical={false} />
+                <XAxis dataKey="label" stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgb(var(--boss-primary) / 0.04)' }}
+                  contentStyle={{ background: CHART_STYLE.tooltipBg, border: `1px solid ${CHART_STYLE.tooltipBorder}`, borderRadius: '6px', fontSize: '11px', padding: '6px 10px' }}
+                  labelStyle={{ color: CHART_STYLE.tooltipLabel }}
+                />
+                <Bar dataKey="count" fill="rgb(var(--boss-primary))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+      </div>
+
+      <Card padded={false}>
+        <div className="border-b border-boss-border px-4 py-3">
+          <h2 className="text-sm font-semibold text-boss-text">월별 상세</h2>
         </div>
         {loading ? (
-          <div className="h-56 animate-pulse rounded-xl bg-boss-elevated/40" />
-        ) : chartData.length === 0 ? (
-          <div className="flex h-56 items-center justify-center text-sm text-boss-text-muted">표시할 데이터가 없습니다.</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={224}>
-            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="label" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip
-                cursor={{ fill: 'rgba(168,85,247,0.05)' }}
-                contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
-              />
-              <Bar dataKey="count" fill="#22c55e" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </section>
-
-      {/* 월별 표 */}
-      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
-        <h2 className="mb-4 text-sm font-semibold text-boss-text">월별 상세</h2>
-        {loading ? (
-          <div className="space-y-2">
+          <div className="space-y-2 p-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-lg bg-boss-elevated/40" />
+              <Skeleton key={i} className="h-8 w-full rounded" />
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-boss-text-muted">데이터가 없습니다.</p>
+          <div className="p-6">
+            <EmptyState icon={BarChart3} title="데이터가 없습니다" />
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs text-boss-text-muted">
-                <tr>
-                  <th className="px-2 py-2 font-medium">월</th>
-                  <th className="px-2 py-2 font-medium">건수</th>
-                  <th className="px-2 py-2 font-medium">매출액</th>
-                  <th className="px-2 py-2 font-medium">수금액</th>
+          <DataTable>
+            <thead>
+              <tr>
+                <th>월</th>
+                <th>건수</th>
+                <th>매출액</th>
+                <th>수금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={`${r.yearMonth ?? i}`}>
+                  <td className="font-medium text-boss-text">{rowLabel(r)}</td>
+                  <td className="text-boss-text-secondary">{(r.totalCount ?? 0).toLocaleString('ko-KR')}건</td>
+                  <td className="text-boss-text-secondary">{fmtWon((r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0))}</td>
+                  <td className="font-medium text-boss-primary">{fmtWon(r.collectedAmount ?? 0)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <tr key={`${r.yearMonth ?? i}`} className="border-t border-boss-border/60 text-boss-text">
-                    <td className="px-2 py-2">{rowLabel(r)}</td>
-                    <td className="px-2 py-2">{(r.totalCount ?? 0).toLocaleString('ko-KR')}건</td>
-                    <td className="px-2 py-2">{fmtWon((r.collectedAmount ?? 0) + (r.uncollectedAmount ?? 0))}</td>
-                    <td className="px-2 py-2">{fmtWon(r.collectedAmount ?? 0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </DataTable>
         )}
-      </section>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon,
-  accent,
-  loading,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  accent: string;
-  loading: boolean;
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-boss-border bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
-      <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-2xl`} />
-      <div className="relative">
-        <div className="mb-4 flex items-center justify-between">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-boss-text`}>
-            {icon}
-          </div>
-        </div>
-        <p className="text-xs font-medium uppercase tracking-wider text-boss-text-muted">{label}</p>
-        {loading ? (
-          <div className="mt-1 h-7 w-32 animate-pulse rounded bg-boss-elevated/60" />
-        ) : (
-          <p className="mt-1 text-2xl font-bold text-boss-text">{value}</p>
-        )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,10 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import type { BossRequestListItem } from '@/types/boss';
-import BossPageHeader from '@/components/boss/BossPageHeader';
+import {
+  PageHeader,
+  RowList,
+  RowItem,
+  EmptyState,
+  Skeleton,
+  Badge,
+} from '@/components/boss/ui';
+import { Inbox, FileText } from 'lucide-react';
 
 export default function BossMyRequestsPage() {
   const [items, setItems] = useState<BossRequestListItem[]>([]);
@@ -34,28 +41,45 @@ export default function BossMyRequestsPage() {
 
   return (
     <div className="space-y-4">
-      <BossPageHeader title="내가 답변한 견적" description="제출한 견적 답변과 진행 상황을 확인하세요." backHref="/boss/requests" />
-      {error && <div className="rounded border border-rose-700 bg-rose-900/30 p-3 text-sm text-boss-error">{error}</div>}
+      <PageHeader
+        title="내가 답변한 견적"
+        description="제출한 견적 답변과 진행 상황을 확인하세요."
+        breadcrumbs={[{ label: '견적 요청', href: '/boss/requests' }, { label: '내 답변' }]}
+      />
+
+      {error && (
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+          {error}
+        </div>
+      )}
+
       {loading ? (
-        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">불러오는 중...</div>
-      ) : items.length === 0 ? (
-        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">아직 답변한 견적이 없습니다.</div>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link
-                href={`/boss/requests/${item.id}`}
-                className="block rounded-lg border border-boss-border bg-boss-elevated/60 p-4 hover:border-emerald-500/60"
-              >
-                <div className="text-sm font-semibold text-boss-text">
-                  {item.buildingType ?? '견적'} · {item.region ?? ''}
-                </div>
-                <div className="mt-1 text-xs text-boss-text-muted">{item.preferredDate ?? ''}</div>
-              </Link>
-            </li>
+        <div className="space-y-px">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-lg" />
           ))}
-        </ul>
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={Inbox}
+          title="아직 답변한 견적이 없습니다"
+          description="견적 요청에 답변하면 여기에 표시됩니다."
+        />
+      ) : (
+        <RowList>
+          {items.map((item) => (
+            <RowItem
+              key={item.id}
+              href={`/boss/requests/${item.id}`}
+              leading={
+                <span className="font-mono text-[11px] text-boss-text-muted">#{item.id}</span>
+              }
+              title={`${item.buildingType ?? '견적'} · ${item.region ?? ''}`}
+              subtitle={item.preferredDate ?? undefined}
+              meta={item.status ? <Badge tone="default">{item.status}</Badge> : undefined}
+            />
+          ))}
+        </RowList>
       )}
     </div>
   );

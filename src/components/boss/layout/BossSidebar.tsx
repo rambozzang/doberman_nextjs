@@ -24,6 +24,8 @@ import {
   ShoppingCart,
   BarChart3,
   Bell,
+  Briefcase,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -34,6 +36,7 @@ type NavItem = {
   exact?: boolean;
   badge?: string;
   shortcut?: string;
+  exclude?: string[];
 };
 
 type NavSection = { title: string; items: NavItem[] };
@@ -63,6 +66,7 @@ const SECTIONS: NavSection[] = [
       { href: '/boss/construction', label: '시공 기록', icon: Hammer },
       { href: '/boss/checklist', label: '체크리스트', icon: ListChecks },
       { href: '/boss/as', label: 'AS 요청', icon: Wrench },
+      { href: '/boss/receipt', label: '영수증 관리', icon: Receipt },
     ],
   },
   {
@@ -70,7 +74,8 @@ const SECTIONS: NavSection[] = [
     items: [
       { href: '/boss/sales', label: '매출 분석', icon: TrendingUp },
       { href: '/boss/statistics', label: '종합 통계', icon: BarChart3 },
-      { href: '/boss/community', label: '커뮤니티', icon: Users },
+      { href: '/boss/community', label: '커뮤니티', icon: Users, exclude: ['/boss/community/jobs'] },
+      { href: '/boss/community/jobs', label: '구인 / 구직', icon: Briefcase },
     ],
   },
   {
@@ -104,8 +109,9 @@ export default function BossSidebar() {
     });
   };
 
-  const isActive = (href: string, exact?: boolean) => {
+  const isActive = (href: string, exact?: boolean, exclude?: string[]) => {
     if (!pathname) return false;
+    if (exclude?.some((p) => pathname === p || pathname.startsWith(p + '/'))) return false;
     if (exact) return pathname === href;
     return pathname === href || pathname.startsWith(href + '/');
   };
@@ -126,8 +132,8 @@ export default function BossSidebar() {
                 </p>
               )}
               <ul className="space-y-px">
-                {section.items.map(({ href, label, icon: Icon, exact, badge, shortcut }) => {
-                  const active = isActive(href, exact);
+                {section.items.map(({ href, label, icon: Icon, exact, badge, shortcut, exclude }) => {
+                  const active = isActive(href, exact, exclude);
                   return (
                     <li key={href}>
                       <Link

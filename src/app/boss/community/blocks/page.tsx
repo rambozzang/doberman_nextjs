@@ -1,13 +1,19 @@
 'use client';
 
-// 사장님 커뮤니티 차단 사용자 관리
-// Flutter `bbs_block_list_page.dart` 를 Next.js 로 포팅.
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, ShieldOff, UserX } from 'lucide-react';
+import { ShieldOff, UserX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import type { BbsBlockData } from '@/types/boss-community';
+import {
+  PageHeader,
+  RowList,
+  RowItem,
+  RowThumb,
+  Button,
+  EmptyState,
+  Skeleton,
+} from '@/components/boss/ui';
 
 export default function BossCommunityBlocksPage() {
   const [items, setItems] = useState<BbsBlockData[]>([]);
@@ -56,17 +62,12 @@ export default function BossCommunityBlocksPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss/community"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 목록으로
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">차단 관리</h1>
-        <div className="w-20" />
-      </div>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <PageHeader
+        title="차단 관리"
+        description="차단한 사용자를 관리하고 해제합니다."
+        breadcrumbs={[{ label: '커뮤니티', href: '/boss/community' }, { label: '차단 관리' }]}
+      />
 
       {error && (
         <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
@@ -75,41 +76,38 @@ export default function BossCommunityBlocksPage() {
       )}
 
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-px">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl border border-boss-border bg-boss-surface" />
+            <Skeleton key={i} className="h-16 rounded-lg" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
-            <ShieldOff size={20} />
-          </div>
-          <p className="text-sm font-medium text-boss-text">차단한 사용자가 없습니다</p>
-        </div>
+        <EmptyState
+          icon={ShieldOff}
+          title="차단한 사용자가 없습니다"
+          description="커뮤니티에서 사용자를 차단하면 여기에 표시됩니다."
+        />
       ) : (
-        <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-boss-border bg-boss-surface/30">
+        <RowList>
           {items.map((item) => (
-            <li key={item.denyCustId} className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm font-semibold text-boss-text">
-                  {item.nickNm ?? item.name ?? item.denyCustId}
-                </p>
-                <p className="text-xs text-boss-text-muted">
-                  차단일 {item.crtDtm ? new Date(item.crtDtm).toLocaleDateString('ko-KR') : '-'}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={unblocking === item.denyCustId}
-                onClick={() => onUnblock(item.denyCustId)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:border-rose-700 hover:text-boss-error disabled:opacity-50"
-              >
-                <UserX size={12} /> 차단 해제
-              </button>
-            </li>
+            <RowItem
+              key={item.denyCustId}
+              leading={<RowThumb icon={UserX} />}
+              title={item.nickNm ?? item.name ?? item.denyCustId}
+              subtitle={`차단일 ${item.crtDtm ? new Date(item.crtDtm).toLocaleDateString('ko-KR') : '-'}`}
+              actions={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onUnblock(item.denyCustId)}
+                  disabled={unblocking === item.denyCustId}
+                >
+                  차단 해제
+                </Button>
+              }
+            />
           ))}
-        </ul>
+        </RowList>
       )}
     </div>
   );

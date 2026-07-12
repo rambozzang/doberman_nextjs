@@ -34,10 +34,12 @@ import {
   BarChart3,
   Sun,
   Moon,
+  Briefcase,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 
-type MobileNavItem = { href: string; label: string; icon: LucideIcon };
+type MobileNavItem = { href: string; label: string; icon: LucideIcon; exclude?: string[] };
 
 const MOBILE_NAV: MobileNavItem[] = [
   { href: '/boss', label: '대시보드', icon: LayoutDashboard },
@@ -48,11 +50,13 @@ const MOBILE_NAV: MobileNavItem[] = [
   { href: '/boss/construction', label: '시공 기록', icon: Hammer },
   { href: '/boss/checklist', label: '체크리스트', icon: ListChecks },
   { href: '/boss/as', label: 'AS 요청', icon: Wrench },
+  { href: '/boss/receipt', label: '영수증 관리', icon: Receipt },
   { href: '/boss/portfolio', label: '포트폴리오', icon: ImageIcon },
   { href: '/boss/estimate', label: '견적서', icon: FileSignature },
   { href: '/boss/sales', label: '매출 분석', icon: TrendingUp },
   { href: '/boss/statistics', label: '종합 통계', icon: BarChart3 },
-  { href: '/boss/community', label: '커뮤니티', icon: Users },
+  { href: '/boss/community', label: '커뮤니티', icon: Users, exclude: ['/boss/community/jobs'] },
+  { href: '/boss/community/jobs', label: '구인 / 구직', icon: Briefcase },
   { href: '/boss/billing', label: '구독·결제', icon: CreditCard },
   { href: '/boss/settings', label: '설정', icon: Settings },
 ];
@@ -233,8 +237,10 @@ export default function BossHeader() {
             </div>
 
             <ul className="space-y-px">
-              {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href || pathname?.startsWith(href + '/');
+              {MOBILE_NAV.map(({ href, label, icon: Icon, exclude }) => {
+                const active =
+                  !exclude?.some((p) => pathname === p || pathname?.startsWith(p + '/')) &&
+                  (pathname === href || pathname?.startsWith(href + '/'));
                 return (
                   <li key={href}>
                     <Link

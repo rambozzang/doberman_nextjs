@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   Image as ImageIcon,
   Link2,
+  Phone,
+  Wrench,
 } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsRequestItem } from '@/types/boss-as';
@@ -21,13 +23,17 @@ import {
   Badge,
   Button,
   Card,
-  DataTable,
   EmptyState,
   ListTabs,
   PageHeader,
   SearchInput,
   Skeleton,
   Toolbar,
+  RowList,
+  RowItem,
+  RowThumb,
+  RowAction,
+  RowChevron,
 } from '@/components/boss/ui';
 
 type StatusFilter = '' | '접수' | '진행중' | '완료';
@@ -199,28 +205,11 @@ export default function BossAsListPage() {
       )}
 
       {loading && items.length === 0 ? (
-        <DataTable>
-          <thead>
-            <tr>
-              <th>요청일</th>
-              <th>상태</th>
-              <th>제목</th>
-              <th>고객</th>
-              <th>주소</th>
-              <th>정보</th>
-              <th>등록일</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i}>
-                <td colSpan={7}>
-                  <Skeleton className="h-5 w-full" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </DataTable>
+        <div className="space-y-px">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-lg" />
+          ))}
+        </div>
       ) : displayedItems.length === 0 ? (
         <EmptyState
           icon={Inbox}
@@ -236,80 +225,64 @@ export default function BossAsListPage() {
           }
         />
       ) : (
-        <DataTable>
-          <thead>
-            <tr>
-              <th>요청일</th>
-              <th>상태</th>
-              <th>제목</th>
-              <th>고객</th>
-              <th>주소</th>
-              <th>정보</th>
-              <th>등록일</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayedItems.map((item) => {
-              const defectCount = item.images?.filter((i) => i.imageType === 'DEFECT').length ?? 0;
-              const repairCount = item.images?.filter((i) => i.imageType === 'REPAIR').length ?? 0;
-              return (
-                <tr key={item.id} className="cursor-pointer">
-                  <td className="whitespace-nowrap">{formatDate(item.requestDate)}</td>
-                  <td>
-                    <Badge tone={statusBadgeTone(item.status)}>{item.status}</Badge>
-                  </td>
-                  <td>
-                    <Link
-                      href={`/boss/as/${item.id}`}
-                      className="font-medium text-boss-text hover:text-boss-primary hover:underline"
-                    >
-                      {item.title}
-                    </Link>
-                  </td>
-                  <td className="whitespace-nowrap">
-                    <span className="block text-boss-text">{item.customerName}</span>
-                    {item.customerPhone && (
-                      <span className="block text-xs text-boss-text-muted">{item.customerPhone}</span>
-                    )}
-                  </td>
-                  <td className="max-w-xs truncate text-boss-text-secondary">
-                    {item.address || '-'}
-                  </td>
-                  <td className="whitespace-nowrap">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {item.priority === '긴급' && (
-                        <Badge tone="rose">
-                          <AlertTriangle size={10} /> 긴급
-                        </Badge>
-                      )}
-                      {item.orderId != null && (
-                        <Badge tone="violet">
-                          <Link2 size={10} /> 주문
-                        </Badge>
-                      )}
-                      {defectCount > 0 && (
-                        <Badge tone="rose">
-                          <ImageIcon size={10} /> 하자 {defectCount}
-                        </Badge>
-                      )}
-                      {repairCount > 0 && (
-                        <Badge tone="emerald">
-                          <CheckCircle2 size={10} /> 수리 {repairCount}
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap text-boss-text-muted">
-                    <div className="flex items-center gap-1">
-                      <Clock size={11} />
-                      {formatDate(item.createdAt)}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </DataTable>
+        <RowList>
+          {displayedItems.map((item) => {
+            const defectCount = item.images?.filter((i) => i.imageType === 'DEFECT').length ?? 0;
+            const repairCount = item.images?.filter((i) => i.imageType === 'REPAIR').length ?? 0;
+            const tags = (
+              <>
+                <Badge tone={statusBadgeTone(item.status)}>{item.status}</Badge>
+                {item.priority === '긴급' && (
+                  <Badge tone="rose">
+                    <AlertTriangle size={10} /> 긴급
+                  </Badge>
+                )}
+                {item.orderId != null && (
+                  <Badge tone="violet">
+                    <Link2 size={10} /> 주문
+                  </Badge>
+                )}
+                {defectCount > 0 && (
+                  <Badge tone="rose">
+                    <ImageIcon size={10} /> 하자 {defectCount}
+                  </Badge>
+                )}
+                {repairCount > 0 && (
+                  <Badge tone="emerald">
+                    <CheckCircle2 size={10} /> 수리 {repairCount}
+                  </Badge>
+                )}
+              </>
+            );
+            const meta = (
+              <span className="inline-flex items-center gap-1">
+                <Clock size={11} /> {formatDate(item.createdAt)}
+              </span>
+            );
+            const actions = (
+              <>
+                {item.customerPhone ? (
+                  <RowAction icon={Phone} label="연락" href={`tel:${item.customerPhone}`} />
+                ) : null}
+                <Link href={`/boss/as/${item.id}`}>
+                  <RowChevron />
+                </Link>
+              </>
+            );
+            return (
+              <RowItem
+                key={item.id}
+                href={`/boss/as/${item.id}`}
+                leading={<RowThumb icon={Wrench} />}
+                title={item.title}
+                subtitle={[item.customerName, item.address].filter(Boolean).join(' · ')}
+                tags={tags}
+                meta={meta}
+                actions={actions}
+              />
+            );
+          })}
+        </RowList>
       )}
     </div>
   );

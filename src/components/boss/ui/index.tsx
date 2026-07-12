@@ -426,7 +426,7 @@ export function DataTable({
   className?: string;
 }) {
   return (
-    <div className={`overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss ${className}`}>
+    <div className={`overflow-x-auto rounded-lg border border-boss-border bg-boss-surface shadow-boss ${className}`}>
       <table className="boss-table">{children}</table>
     </div>
   );
@@ -472,6 +472,11 @@ export function Pagination({
     </div>
   );
 }
+
+// ───────────────────────────────────────────
+// RowList (컴팩트 행 리스트)
+// ───────────────────────────────────────────
+export { RowList, RowItem, RowThumb, RowAction, RowChevron } from './RowList';
 
 // ───────────────────────────────────────────
 // Skeleton

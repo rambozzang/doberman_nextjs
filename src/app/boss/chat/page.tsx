@@ -1,70 +1,78 @@
 'use client';
 
-import Link from 'next/link';
 import { useChatRooms } from '@/hooks/useChatRooms';
-import BossPageHeader from '@/components/boss/BossPageHeader';
-import { MessageCircle } from 'lucide-react';
+import {
+  PageHeader,
+  Button,
+  RowList,
+  RowItem,
+  RowThumb,
+  EmptyState,
+  Skeleton,
+} from '@/components/boss/ui';
+import { MessageCircle, RefreshCw, Inbox } from 'lucide-react';
 
 export default function BossChatListPage() {
   const { chatRooms, isLoading, error, refreshChatRooms } = useChatRooms();
 
   return (
     <div className="space-y-4">
-      <BossPageHeader
+      <PageHeader
         title="채팅"
         description="고객과의 상담 메시지를 확인하세요."
         actions={
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
             onClick={refreshChatRooms}
-            className="rounded border border-boss-border px-3 py-1 text-sm text-boss-text hover:border-emerald-500"
+            disabled={isLoading}
           >
             새로고침
-          </button>
+          </Button>
         }
       />
+
       {error && (
-        <div className="rounded border border-rose-700 bg-rose-900/30 p-3 text-sm text-boss-error">{error}</div>
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+          {error}
+        </div>
       )}
+
       {isLoading ? (
-        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">
-          불러오는 중...
+        <div className="space-y-px">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-lg" />
+          ))}
         </div>
       ) : chatRooms.length === 0 ? (
-        <div className="rounded border border-boss-border bg-boss-elevated/40 p-6 text-center text-sm text-boss-text-muted">
-          진행 중인 채팅이 없습니다.
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title="진행 중인 채팅이 없습니다"
+          description="고객이 상담을 요청하면 여기에 표시됩니다."
+        />
       ) : (
-        <ul className="space-y-2">
+        <RowList>
           {chatRooms.map((room) => (
-            <li key={room.roomId}>
-              <Link
-                href={`/boss/chat/${room.roomId}`}
-                className="flex items-center justify-between rounded-lg border border-boss-border bg-boss-elevated/60 p-4 hover:border-emerald-500/60"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-boss-primary-hover/20 text-boss-primary">
-                    <MessageCircle size={18} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-boss-text">{room.partnerName}</div>
-                    <div className="mt-0.5 line-clamp-1 text-xs text-boss-text-muted">
-                      {room.lastMessage ?? '아직 메시지가 없습니다.'}
-                    </div>
-                  </div>
-                </div>
+            <RowItem
+              key={room.roomId}
+              href={`/boss/chat/${room.roomId}`}
+              leading={<RowThumb icon={MessageCircle} />}
+              title={room.partnerName}
+              subtitle={room.lastMessage ?? '아직 메시지가 없습니다.'}
+              meta={
                 <div className="flex flex-col items-end gap-1">
-                  <span className="text-[11px] text-boss-text-muted">{room.lastMessageTime ?? ''}</span>
+                  <span>{room.lastMessageTime ?? ''}</span>
                   {room.unreadCount > 0 && (
-                    <span className="rounded-full bg-boss-primary px-1.5 py-0.5 text-[10px] font-semibold text-boss-text">
+                    <span className="inline-flex items-center justify-center rounded-full bg-boss-primary px-1.5 py-0.5 text-[10px] font-bold text-boss-primary-foreground">
                       {room.unreadCount}
                     </span>
                   )}
                 </div>
-              </Link>
-            </li>
+              }
+            />
           ))}
-        </ul>
+        </RowList>
       )}
     </div>
   );

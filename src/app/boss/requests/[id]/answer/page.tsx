@@ -4,9 +4,9 @@ import { FormEvent, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
-import BossPageHeader from '@/components/boss/BossPageHeader';
 import RichEditor from '@/components/boss/RichEditor';
-import { FileSignature, Wallet, Sparkles } from 'lucide-react';
+import { PageHeader, Card, Button } from '@/components/boss/ui';
+import { FileSignature, Wallet, Sparkles, CheckCircle2 } from 'lucide-react';
 
 const TEMPLATES = [
   {
@@ -78,12 +78,19 @@ export default function BossAnswerPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <BossPageHeader title={`견적 답변 작성 #${requestId}`} backHref={`/boss/requests/${requestId}`} />
+    <div className="space-y-4">
+      <PageHeader
+        title={`견적 답변 작성 #${requestId}`}
+        breadcrumbs={[
+          { label: '견적 요청', href: '/boss/requests' },
+          { label: '상세', href: `/boss/requests/${requestId}` },
+          { label: '답변' },
+        ]}
+      />
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
-          <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <Card>
             <label htmlFor="title" className="mb-2 flex items-center gap-2 text-sm font-medium text-boss-text">
               <FileSignature size={14} className="text-boss-primary" />
               제목
@@ -92,12 +99,12 @@ export default function BossAnswerPage() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-boss-border bg-boss-surface px-4 py-2.5 text-boss-text outline-none transition-colors focus:border-boss-primary/50 focus:ring-2 focus:ring-boss-primary/10"
+              className="boss-input h-11 w-full"
               placeholder="예: 32평 아파트 실크벽지 도배 견적"
             />
-          </div>
+          </Card>
 
-          <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+          <Card>
             <div className="mb-2 flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm font-medium text-boss-text">
                 <Sparkles size={14} className="text-boss-primary" />
@@ -109,7 +116,7 @@ export default function BossAnswerPage() {
                     key={t.label}
                     type="button"
                     onClick={() => setBody(t.body)}
-                    className="rounded-md border border-boss-border bg-boss-elevated/60 px-2 py-1 text-[11px] text-boss-text-secondary hover:border-boss-primary/20 hover:text-boss-primary"
+                    className="rounded-md border border-boss-border bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-secondary transition-colors hover:border-boss-primary/20 hover:text-boss-primary"
                   >
                     {t.label}
                   </button>
@@ -123,11 +130,11 @@ export default function BossAnswerPage() {
               minHeight={280}
             />
             <p className="mt-2 text-right text-[11px] text-boss-text-muted">{bodyText.length}자</p>
-          </div>
+          </Card>
         </div>
 
-        <div className="space-y-5">
-          <div className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
+        <div className="space-y-4">
+          <Card>
             <label htmlFor="cost" className="mb-2 flex items-center gap-2 text-sm font-medium text-boss-text">
               <Wallet size={14} className="text-boss-primary" />
               견적 금액
@@ -138,7 +145,7 @@ export default function BossAnswerPage() {
                 inputMode="numeric"
                 value={cost}
                 onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, ''))}
-                className="w-full rounded-lg border border-boss-border bg-boss-surface px-4 py-2.5 pr-10 text-right text-lg font-bold text-boss-primary outline-none transition-colors focus:border-boss-primary/50 focus:ring-2 focus:ring-boss-primary/10"
+                className="boss-input h-12 w-full pr-10 text-right text-lg font-bold text-boss-primary"
                 placeholder="0"
               />
               <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-boss-text-muted">
@@ -148,24 +155,29 @@ export default function BossAnswerPage() {
             {formattedCost && (
               <p className="mt-2 text-right text-xs text-boss-text-muted">{formattedCost}</p>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 via-emerald-500/5 to-transparent p-5">
-            <p className="mb-2 text-xs font-semibold text-boss-primary">제출 전 체크</p>
-            <ul className="space-y-1 text-xs text-boss-text-secondary">
-              <li className={title.trim() ? 'text-boss-primary' : ''}>• 제목 작성</li>
-              <li className={bodyText ? 'text-boss-primary' : ''}>• 상세 내용 작성</li>
-              <li className={cost ? 'text-boss-primary' : ''}>• 견적 금액 입력</li>
+          <Card>
+            <div className="mb-2 flex items-center gap-2">
+              <CheckCircle2 size={13} className="text-boss-primary" />
+              <p className="text-xs font-semibold text-boss-text">제출 전 체크</p>
+            </div>
+            <ul className="space-y-1 text-xs">
+              <li className={title.trim() ? 'text-boss-primary' : 'text-boss-text-muted'}>• 제목 작성</li>
+              <li className={bodyText ? 'text-boss-primary' : 'text-boss-text-muted'}>• 상세 내용 작성</li>
+              <li className={cost ? 'text-boss-primary' : 'text-boss-text-muted'}>• 견적 금액 입력</li>
             </ul>
-          </div>
+          </Card>
 
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={submitting}
-            className="w-full rounded-xl bg-gradient-to-r from-boss-primary to-boss-primary-hover py-3 text-sm font-semibold text-boss-text shadow-boss-md transition-all hover:from-boss-primary-hover hover:to-boss-primary disabled:from-slate-700 disabled:to-slate-700 disabled:shadow-none"
+            className="w-full"
           >
             {submitting ? '제출 중...' : '답변 제출하기'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

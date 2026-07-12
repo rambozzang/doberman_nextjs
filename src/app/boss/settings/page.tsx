@@ -1,11 +1,8 @@
 'use client';
 
-// 사장님 설정 메인 허브
-// Flutter 원본: lib/app/setting/setting_page.dart
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Bell,
   ChevronRight,
   FileText,
@@ -13,15 +10,16 @@ import {
   LogOut,
   ShieldCheck,
   UserX,
+  type LucideIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BossAuthManager } from '@/lib/bossAuth';
+import { PageHeader } from '@/components/boss/ui';
 
 type SettingItem = {
   href?: string;
   onClick?: () => void;
-  icon: React.ReactNode;
-  iconBg: string;
+  icon: LucideIcon;
   title: string;
   subtitle?: string;
   danger?: boolean;
@@ -69,15 +67,13 @@ export default function BossSettingsPage() {
       items: [
         {
           href: '/boss/notifications',
-          icon: <Bell size={18} />,
-          iconBg: 'bg-boss-info/20 text-boss-info',
+          icon: Bell,
           title: '공지사항',
           subtitle: '서비스 공지사항을 확인합니다.',
         },
         {
           href: '/boss/settings/faq',
-          icon: <HelpCircle size={18} />,
-          iconBg: 'bg-violet-500/20 text-violet-400',
+          icon: HelpCircle,
           title: 'FAQ',
           subtitle: '자주 묻는 질문을 확인합니다.',
         },
@@ -88,8 +84,7 @@ export default function BossSettingsPage() {
       items: [
         {
           href: '/boss/settings/alarm',
-          icon: <Bell size={18} />,
-          iconBg: 'bg-boss-primary/20 text-boss-primary',
+          icon: Bell,
           title: '알림(PUSH) 설정',
           subtitle: '신규글 등록, 좋아요, 댓글 알림을 수신합니다.',
         },
@@ -100,15 +95,13 @@ export default function BossSettingsPage() {
       items: [
         {
           href: '/boss/settings/terms',
-          icon: <FileText size={18} />,
-          iconBg: 'bg-boss-error/20 text-boss-error',
+          icon: FileText,
           title: '서비스 이용약관',
           subtitle: '회사 서비스 이용약관',
         },
         {
           href: '/boss/settings/privacy',
-          icon: <ShieldCheck size={18} />,
-          iconBg: 'bg-boss-warning/20 text-boss-warning',
+          icon: ShieldCheck,
           title: '개인정보 처리방침',
           subtitle: '회사 개인정보 처리방침',
         },
@@ -119,18 +112,16 @@ export default function BossSettingsPage() {
       items: [
         {
           onClick: handleLogout,
-          icon: <LogOut size={18} />,
-          iconBg: 'bg-orange-500/20 text-orange-300',
+          icon: LogOut,
           title: '로그아웃',
           subtitle: '로그아웃 합니다.',
           danger: true,
         },
         {
           onClick: handleLeave,
-          icon: <UserX size={18} />,
-          iconBg: 'bg-red-500/20 text-red-300',
+          icon: UserX,
           title: '탈퇴하기',
-          subtitle: '재가입 불가, 데이터 영구삭제.',
+          subtitle: '재가입 불가, 데이터 영구 삭제.',
           danger: true,
         },
       ],
@@ -138,47 +129,45 @@ export default function BossSettingsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 홈
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">설정</h1>
-        <div className="w-10" />
-      </div>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <PageHeader title="설정" description="알림, 약관, 계정을 관리합니다." />
 
       {groups.map((group) => (
-        <section key={group.title} className="space-y-2">
-          <h2 className="px-1 text-sm font-bold text-boss-text-secondary">{group.title}</h2>
-          <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
+        <section key={group.title} className="space-y-1.5">
+          <h2 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-boss-text-muted">
+            {group.title}
+          </h2>
+          <div className="overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss">
             {group.items.map((item, idx) => {
+              const Icon = item.icon;
               const inner = (
                 <div
-                  className={`flex items-center gap-3 px-4 py-3.5 transition hover:bg-boss-elevated/40 ${
+                  className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-boss-elevated/40 ${
                     idx > 0 ? 'border-t border-boss-border/70' : ''
                   }`}
                 >
                   <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${item.iconBg}`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
+                      item.danger
+                        ? 'bg-boss-error/10 text-boss-error'
+                        : 'bg-boss-elevated text-boss-text-muted'
+                    }`}
                   >
-                    {item.icon}
+                    <Icon size={15} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div
-                      className={`truncate text-sm font-semibold ${
+                    <p
+                      className={`truncate text-sm font-medium ${
                         item.danger ? 'text-boss-error' : 'text-boss-text'
                       }`}
                     >
                       {item.title}
-                    </div>
+                    </p>
                     {item.subtitle && (
-                      <div className="truncate text-xs text-boss-text-muted">{item.subtitle}</div>
+                      <p className="truncate text-xs text-boss-text-muted">{item.subtitle}</p>
                     )}
                   </div>
-                  <ChevronRight size={16} className="shrink-0 text-boss-text-muted" />
+                  <ChevronRight size={15} className="shrink-0 text-boss-text-muted" />
                 </div>
               );
 
@@ -204,11 +193,10 @@ export default function BossSettingsPage() {
         </section>
       ))}
 
-      <div className="rounded-2xl border border-boss-border bg-boss-surface p-5 text-xs text-boss-text-muted">
+      <div className="rounded-lg border border-boss-border bg-boss-surface px-4 py-3 text-[11px] text-boss-text-muted">
         <div>코드랩타이거(CodeLabTiger)</div>
         <div>사업자등록번호 : 770-50-01045</div>
-        <div className="mt-3 text-right text-boss-text-secondary">Copyright 2024 TIGER Group</div>
-        <div className="text-right text-boss-text-secondary">All rights reserved</div>
+        <div className="mt-2 text-right text-boss-text-secondary">Copyright 2024 TIGER Group · All rights reserved</div>
       </div>
     </div>
   );

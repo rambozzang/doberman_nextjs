@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import type { BossRequestListItem } from '@/types/boss';
 import {
@@ -11,27 +11,13 @@ import {
   Button,
   ListTabs,
   DataTable,
-  Card,
   Badge,
   EmptyState,
   Pagination,
   Skeleton,
-  ViewToggle,
 } from '@/components/boss/ui';
-import {
-  MapPin,
-  Clock,
-  MessageCircle,
-  SlidersHorizontal,
-  Inbox,
-  Home,
-  Ruler,
-  Calendar,
-  ArrowUpRight,
-  RefreshCw,
-} from 'lucide-react';
+import { RefreshCw, Inbox } from 'lucide-react';
 
-type ViewMode = 'grid' | 'list';
 type StatusFilter = 'all' | 'new' | 'progress' | 'done';
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet';
 
@@ -72,13 +58,12 @@ function relativeTime(input?: string): string {
 }
 
 export default function BossRequestListPage() {
+  const router = useRouter();
   const [items, setItems] = useState<BossRequestListItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<ViewMode>('grid');
   const [tab, setTab] = useState<StatusFilter>('all');
   const [keyword, setKeyword] = useState('');
 
@@ -90,7 +75,6 @@ export default function BossRequestListPage() {
       if (res.success && res.data) {
         setItems(res.data.content ?? []);
         setTotalPages(res.data.totalPages ?? 1);
-        setTotalCount(res.data.totalCount ?? 0);
       } else {
         setError(res.message || '목록을 불러오지 못했습니다.');
       }
@@ -100,14 +84,6 @@ export default function BossRequestListPage() {
       setLoading(false);
     }
   }, []);
-
-  const handleRefresh = useCallback(() => {
-    if (page === 1) {
-      void load(1);
-    } else {
-      setPage(1);
-    }
-  }, [load, page]);
 
   useEffect(() => {
     void load(page);
@@ -164,31 +140,21 @@ export default function BossRequestListPage() {
           value={keyword}
           onChange={setKeyword}
           placeholder="지역·건물·고객 검색"
-          className="w-56"
+          className="w-full max-w-xs"
         />
-        <Button variant="secondary" size="sm" icon={SlidersHorizontal}>
-          필터
-        </Button>
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => void handleRefresh()}
+          icon={RefreshCw}
+          onClick={() => (page === 1 ? load(1) : setPage(1))}
           disabled={loading}
         >
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           새로고침
         </Button>
-        <div className="ml-auto">
-          <ViewToggle value={view} onChange={setView} />
-        </div>
       </Toolbar>
 
       <ListTabs
-        tabs={STATUS_TABS.map(({ key, label }) => ({
-          key,
-          label,
-          count: counts[key],
-        }))}
+        tabs={STATUS_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
         active={tab}
         onChange={setTab}
       />
@@ -200,93 +166,24 @@ export default function BossRequestListPage() {
       )}
 
       {loading && items.length === 0 ? (
-        view === 'grid' ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <Skeleton className="h-64 rounded-lg" />
-        )
+        <Skeleton className="h-64 rounded-lg" />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Inbox}
           title="표시할 견적 요청이 없습니다"
           description="필터 조건을 변경하거나 새로고침하세요."
         />
-      ) : view === 'grid' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((item) => {
-            const badge = statusBadge(item.status);
-            return (
-              <Card
-                key={item.id}
-                interactive
-                padded={false}
-                className="rounded-lg p-3"
-              >
-                <Link href={`/boss/requests/${item.id}`} className="block">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge tone={badge.tone}>{badge.label}</Badge>
-                    {typeof item.answerCount === 'number' && item.answerCount > 0 && (
-                      <Badge tone="default">
-                        <MessageCircle size={10} /> {item.answerCount}
-                      </Badge>
-                    )}
-                    <span className="ml-auto text-[11px] text-boss-text-muted">
-                      #{item.id}
-                    </span>
-                  </div>
-                  <h3 className="mb-0.5 text-sm font-medium text-boss-text">
-                    {item.buildingType ?? '견적 요청'}
-                    {item.areaSize ? (
-                      <span className="ml-1 text-boss-text-secondary">
-                        · {item.areaSize}㎡
-                      </span>
-                    ) : null}
-                  </h3>
-                  <p className="mb-2 line-clamp-1 text-xs text-boss-text-muted">
-                    {item.constructionLocation ?? item.wallpaper ?? '시공 위치 정보 없음'}
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 border-t border-boss-border pt-2 text-xs text-boss-text-secondary">
-                    <div className="flex items-center gap-1.5">
-                      <MapPin size={12} className="text-boss-text-muted" />
-                      <span className="truncate">{item.region ?? '-'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Home size={12} className="text-boss-text-muted" />
-                      <span className="truncate">
-                        {item.roomCount ? `방 ${item.roomCount}개` : '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Calendar size={12} className="text-boss-text-muted" />
-                      <span className="truncate">{item.preferredDate ?? '-'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={12} className="text-boss-text-muted" />
-                      <span className="truncate">
-                        {relativeTime(item.createdDt ?? item.requestDate)}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </Card>
-            );
-          })}
-        </div>
       ) : (
         <DataTable>
           <thead>
             <tr>
-              <th>#</th>
+              <th className="whitespace-nowrap">#</th>
               <th>유형</th>
               <th>지역</th>
-              <th>면적</th>
-              <th>희망일</th>
+              <th className="whitespace-nowrap">희망일</th>
               <th>상태</th>
-              <th>접수</th>
+              <th className="text-center whitespace-nowrap">답변</th>
+              <th className="whitespace-nowrap">접수</th>
               <th />
             </tr>
           </thead>
@@ -294,39 +191,46 @@ export default function BossRequestListPage() {
             {filtered.map((item) => {
               const badge = statusBadge(item.status);
               return (
-                <tr key={item.id}>
-                  <td className="text-boss-text-muted">#{item.id}</td>
+                <tr
+                  key={item.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/boss/requests/${item.id}`)}
+                >
+                  <td className="whitespace-nowrap text-xs text-boss-text-muted">#{item.id}</td>
                   <td>
-                    <Link
-                      href={`/boss/requests/${item.id}`}
-                      className="font-medium text-boss-text"
-                    >
+                    <span className="font-medium text-boss-text">
                       {item.buildingType ?? '견적 요청'}
-                    </Link>
+                    </span>
+                    {item.areaSize ? (
+                      <span className="ml-1 text-boss-text-secondary">· {item.areaSize}㎡</span>
+                    ) : null}
+                    {item.roomCount ? (
+                      <span className="ml-1 text-xs text-boss-text-muted">/ 방 {item.roomCount}개</span>
+                    ) : null}
                   </td>
                   <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
-                  <td className="text-boss-text-secondary">
-                    <span className="inline-flex items-center gap-1">
-                      <Ruler size={11} className="text-boss-text-muted" />
-                      {item.areaSize ? `${item.areaSize}㎡` : '-'}
-                    </span>
-                  </td>
-                  <td className="text-boss-text-secondary">
+                  <td className="whitespace-nowrap text-boss-text-secondary">
                     {item.preferredDate ?? '-'}
                   </td>
                   <td>
                     <Badge tone={badge.tone}>{badge.label}</Badge>
                   </td>
-                  <td className="text-xs text-boss-text-muted">
+                  <td className="text-center text-boss-text-secondary">
+                    {typeof item.answerCount === 'number' && item.answerCount > 0
+                      ? `${item.answerCount}건`
+                      : '-'}
+                  </td>
+                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
                     {relativeTime(item.createdDt ?? item.requestDate)}
                   </td>
-                  <td className="text-right">
-                    <Link
-                      href={`/boss/requests/${item.id}`}
-                      className="inline-flex text-boss-text-muted hover:text-boss-text"
+                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => router.push(`/boss/requests/${item.id}`)}
                     >
-                      <ArrowUpRight size={14} />
-                    </Link>
+                      답변
+                    </Button>
                   </td>
                 </tr>
               );
@@ -336,12 +240,7 @@ export default function BossRequestListPage() {
       )}
 
       {!isFiltering && totalPages > 1 ? (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onChange={setPage}
-          disabled={loading}
-        />
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} disabled={loading} />
       ) : isFiltering ? (
         <div className="flex justify-end border-t border-boss-border pt-3">
           <span className="rounded-md bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-muted">

@@ -1,23 +1,16 @@
 'use client';
 
-// 사장님 결제/구독 관리 페이지
-// Flutter 참조:
-//  - lib/app/payments/views/subscription_status_page.dart
-//  - lib/app/payments/views/subscription_page.dart
-//  - lib/app/payments/views/subscription_renewal_history_page.dart
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CreditCard,
   CheckCircle2,
   AlertCircle,
-  Clock,
   RefreshCw,
   XCircle,
   Sparkles,
   Receipt,
-  Loader2,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import { bossBillingApi } from '@/lib/api/boss/billing';
 import type {
@@ -27,7 +20,18 @@ import type {
   BossBillingPlan,
   BossCreateSubscriptionRequest,
 } from '@/types/boss-billing';
-import { EmptyState } from '@/components/boss/ui';
+import {
+  PageHeader,
+  Card,
+  Button,
+  Badge,
+  DataTable,
+  EmptyState,
+  Skeleton,
+  SectionHeader,
+} from '@/components/boss/ui';
+
+type BadgeTone = 'default' | 'emerald' | 'amber' | 'rose';
 
 const STATE_LABEL: Record<BossSubscriptionState, string> = {
   ACTIVE: '구독중',
@@ -37,12 +41,12 @@ const STATE_LABEL: Record<BossSubscriptionState, string> = {
   ERROR: '오류',
 };
 
-const STATE_BADGE: Record<BossSubscriptionState, string> = {
-  ACTIVE: 'bg-boss-primary/15 text-boss-primary border-boss-primary/30',
-  GRACE_PERIOD: 'bg-amber-500/15 text-boss-warning border-amber-500/30',
-  EXPIRED: 'bg-boss-error/15 text-boss-error border-rose-500/30',
-  NONE: 'bg-boss-elevated/40 text-boss-text-secondary border-boss-border/40',
-  ERROR: 'bg-boss-error/15 text-boss-error border-rose-500/30',
+const STATE_TONE: Record<BossSubscriptionState, BadgeTone> = {
+  ACTIVE: 'emerald',
+  GRACE_PERIOD: 'amber',
+  EXPIRED: 'rose',
+  NONE: 'default',
+  ERROR: 'rose',
 };
 
 function formatDate(value?: string | null): string {
@@ -50,11 +54,7 @@ function formatDate(value?: string | null): string {
   try {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    return d.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
+    return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
   } catch {
     return value;
   }
@@ -81,10 +81,8 @@ export default function BossBillingPage() {
   const [status, setStatus] = useState<BossSubscriptionStatusResponse | null>(null);
   const [history, setHistory] = useState<BossPurchaseHistoryItem[]>([]);
   const [plans, setPlans] = useState<BossBillingPlan[]>([]);
-
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const [actionPlanId, setActionPlanId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -92,31 +90,19 @@ export default function BossBillingPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
-
     try {
       const [statusRes, historyRes, plansRes] = await Promise.all([
         bossBillingApi.getStatus(),
         bossBillingApi.getHistory(),
         bossBillingApi.getPlans(),
       ]);
-
       if (statusRes.success === false) {
         setErrorMessage(statusRes.error ?? statusRes.message ?? '구독 정보를 불러오지 못했습니다.');
       } else {
         setStatus(statusRes.data ?? null);
       }
-
-      if (historyRes.success !== false && historyRes.data) {
-        setHistory(historyRes.data.items ?? []);
-      } else {
-        setHistory([]);
-      }
-
-      if (plansRes.success !== false && plansRes.data) {
-        setPlans(plansRes.data.plans ?? []);
-      } else {
-        setPlans([]);
-      }
+      setHistory(historyRes.success !== false ? historyRes.data?.items ?? [] : []);
+      setPlans(plansRes.success !== false ? plansRes.data?.plans ?? [] : []);
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : '결제 정보를 불러오지 못했습니다.');
     } finally {
@@ -163,10 +149,7 @@ export default function BossBillingPage() {
       setActionMessage('취소할 구독 ID를 찾을 수 없습니다.');
       return;
     }
-    if (typeof window !== 'undefined') {
-      const ok = window.confirm('정말 구독을 취소하시겠습니까?');
-      if (!ok) return;
-    }
+    if (typeof window !== 'undefined' && !window.confirm('정말 구독을 취소하시겠습니까?')) return;
     setIsCancelling(true);
     setActionMessage(null);
     const res = await bossBillingApi.cancel(subsId);
@@ -180,279 +163,208 @@ export default function BossBillingPage() {
   }, [status?.subscriptionId, loadAll]);
 
   return (
-    <div className="min-h-screen bg-boss-bg text-boss-text">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* 헤더 */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-boss-primary">
-              <CreditCard className="h-5 w-5" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Billing</span>
-            </div>
-            <h1 className="mt-1 text-2xl font-bold text-boss-text sm:text-3xl">결제 관리</h1>
-            <p className="mt-1 text-sm text-boss-text-muted">
-              구독 상태, 결제 이력, 이용 가능한 플랜을 한곳에서 관리합니다.
-            </p>
-          </div>
-          <button
-            type="button"
+    <div className="space-y-4">
+      <PageHeader
+        eyebrow="Billing"
+        title="결제 관리"
+        description="구독 상태, 결제 이력, 이용 가능한 플랜을 한곳에서 관리합니다."
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
             onClick={() => void loadAll()}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-4 py-2 text-sm font-medium text-boss-text transition hover:border-boss-primary/20 hover:text-boss-primary disabled:opacity-50"
           >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            새로 고침
-          </button>
+            새로고침
+          </Button>
+        }
+      />
+
+      {errorMessage && (
+        <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {actionMessage && (
+        <div className="flex items-start gap-2 rounded-lg border border-boss-primary/30 bg-boss-primary/10 p-3 text-sm text-boss-primary">
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+          <span>{actionMessage}</span>
+        </div>
+      )}
+
+      {/* 구독 상태 */}
+      <Card>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} className="text-boss-primary" />
+            <h2 className="text-sm font-semibold text-boss-text">현재 구독 상태</h2>
+          </div>
+          <Badge tone={STATE_TONE[subscriptionState]}>{STATE_LABEL[subscriptionState]}</Badge>
         </div>
 
-        {errorMessage && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
-            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{errorMessage}</span>
+        {isLoading ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <InfoTile label="상품명" value={status?.productName ?? status?.entitlement?.productName ?? '-'} />
+            <InfoTile label="시작일" value={formatDate(status?.startDate ?? status?.entitlement?.originalPurchaseDate)} />
+            <InfoTile label="만료일" value={formatDate(status?.expirationDate ?? status?.entitlement?.expirationDate)} />
+            <InfoTile label="자동 갱신" value={(status?.willRenew ?? status?.entitlement?.willRenew) ? '사용' : '미사용'} />
           </div>
         )}
 
-        {actionMessage && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-primary/30 bg-boss-primary/10 px-4 py-3 text-sm text-boss-primary">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{actionMessage}</span>
-          </div>
-        )}
-
-        {errorMessage && !isLoading && (
-          <EmptyState
-            icon={AlertCircle}
-            title="결제 정보를 불러오지 못했습니다"
-            description={errorMessage}
-            action={
-              <button
-                type="button"
-                onClick={() => void loadAll()}
-                className="inline-flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-4 py-2 text-sm font-medium text-boss-text transition hover:border-boss-primary/20 hover:text-boss-primary"
-              >
-                <RefreshCw className="h-4 w-4" />
-                다시 시도
-              </button>
-            }
-          />
-        )}
-
-        {/* 구독 상태 카드 */}
-        <section className="mb-8 rounded-2xl border border-boss-border bg-boss-surface p-6 shadow-boss-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-boss-text-secondary">
-              <ShieldCheck className="h-5 w-5 text-boss-primary" />
-              <h2 className="text-base font-semibold">현재 구독 상태</h2>
-            </div>
-            <span
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${STATE_BADGE[subscriptionState]}`}
+        {isActive && status?.subscriptionId && (
+          <div className="mt-4 flex justify-end border-t border-boss-border pt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={XCircle}
+              onClick={() => void handleCancel()}
+              disabled={isCancelling}
+              className="text-boss-error hover:bg-boss-error/10"
             >
-              {STATE_LABEL[subscriptionState]}
-            </span>
+              {isCancelling ? '취소 중...' : '구독 취소'}
+            </Button>
           </div>
+        )}
+      </Card>
 
-          {isLoading ? (
-            <div className="mt-6 flex items-center gap-2 text-sm text-boss-text-muted">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              구독 정보를 불러오는 중...
-            </div>
-          ) : (
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <InfoTile
-                label="상품명"
-                value={status?.productName ?? status?.entitlement?.productName ?? '-'}
-              />
-              <InfoTile
-                label="시작일"
-                value={formatDate(
-                  status?.startDate ?? status?.entitlement?.originalPurchaseDate,
-                )}
-              />
-              <InfoTile
-                label="만료일"
-                value={formatDate(status?.expirationDate ?? status?.entitlement?.expirationDate)}
-              />
-              <InfoTile
-                label="자동 갱신"
-                value={
-                  (status?.willRenew ?? status?.entitlement?.willRenew) ? '사용' : '미사용'
-                }
-              />
-            </div>
-          )}
-
-          {isActive && status?.subscriptionId && (
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => void handleCancel()}
-                disabled={isCancelling}
-                className="inline-flex items-center gap-2 rounded-lg border border-boss-error/20 bg-boss-error/10 px-4 py-2 text-sm font-semibold text-boss-error transition hover:bg-boss-error/20 disabled:opacity-50"
-              >
-                {isCancelling ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
-                구독 취소
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* 플랜 목록 */}
-        <section className="mb-8">
-          <div className="mb-4 flex items-center gap-2 text-boss-text-secondary">
-            <Sparkles className="h-5 w-5 text-boss-primary" />
-            <h2 className="text-base font-semibold">이용 가능한 플랜</h2>
+      {/* 플랜 목록 */}
+      <Card>
+        <SectionHeader title="이용 가능한 플랜" />
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-48 rounded-lg" />
+            ))}
           </div>
-          {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-boss-text-muted">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              플랜 정보를 불러오는 중...
-            </div>
-          ) : plans.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-boss-border bg-boss-surface p-8 text-center text-sm text-boss-text-muted">
-              현재 이용 가능한 플랜이 없습니다.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {plans.map((plan) => {
-                const purchasing = actionPlanId === plan.planId;
-                return (
-                  <div
-                    key={plan.planId}
-                    className={`flex flex-col rounded-2xl border bg-boss-surface p-6 transition ${
-                      plan.isPopular
-                        ? 'border-boss-primary/30 shadow-emerald-500/10 shadow-boss-md'
-                        : 'border-boss-border hover:border-boss-border'
-                    }`}
-                  >
-                    {plan.isPopular && (
-                      <span className="mb-3 self-start rounded-full border border-boss-primary/20 bg-boss-primary/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-boss-primary">
-                        Popular
+        ) : plans.length === 0 ? (
+          <EmptyState title="현재 이용 가능한 플랜이 없습니다" />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {plans.map((plan) => {
+              const purchasing = actionPlanId === plan.planId;
+              return (
+                <div
+                  key={plan.planId}
+                  className={`flex flex-col rounded-lg border p-5 transition ${
+                    plan.isPopular
+                      ? 'border-boss-primary/30 bg-boss-primary/5'
+                      : 'border-boss-border bg-boss-surface'
+                  }`}
+                >
+                  {plan.isPopular && (
+                    <Badge tone="emerald" className="mb-2 self-start">POPULAR</Badge>
+                  )}
+                  <h3 className="text-base font-semibold text-boss-text">{plan.title}</h3>
+                  {plan.description && (
+                    <p className="mt-1 text-xs text-boss-text-muted">{plan.description}</p>
+                  )}
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="text-xl font-bold text-boss-primary">{formatPrice(plan)}</span>
+                    {plan.periodUnit && (
+                      <span className="text-[11px] text-boss-text-muted">
+                        / {plan.periodLength ?? 1} {plan.periodUnit.toLowerCase()}
                       </span>
                     )}
-                    <h3 className="text-lg font-bold text-boss-text">{plan.title}</h3>
-                    {plan.description && (
-                      <p className="mt-1 text-sm text-boss-text-muted">{plan.description}</p>
-                    )}
-                    <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-boss-primary">
-                        {formatPrice(plan)}
-                      </span>
-                      {plan.periodUnit && (
-                        <span className="text-xs text-boss-text-muted">
-                          / {plan.periodLength ?? 1} {plan.periodUnit.toLowerCase()}
-                        </span>
-                      )}
-                    </div>
-                    {plan.features && plan.features.length > 0 && (
-                      <ul className="mt-4 space-y-2 text-sm text-boss-text-secondary">
-                        {plan.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2">
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-boss-primary" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => void handleSubscribe(plan)}
-                      disabled={purchasing || isActive}
-                      className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-boss-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-boss-primary-hover disabled:bg-boss-elevated disabled:text-boss-text-muted"
-                    >
-                      {purchasing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CreditCard className="h-4 w-4" />
-                      )}
-                      {isActive ? '이미 구독중' : '구독 신청'}
-                    </button>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* 구매 이력 */}
-        <section>
-          <div className="mb-4 flex items-center gap-2 text-boss-text-secondary">
-            <Receipt className="h-5 w-5 text-boss-primary" />
-            <h2 className="text-base font-semibold">구매 이력</h2>
+                  {plan.features && plan.features.length > 0 && (
+                    <ul className="mt-4 flex-1 space-y-1.5 text-xs text-boss-text-secondary">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2">
+                          <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-boss-primary" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <Button
+                    variant={plan.isPopular ? 'primary' : 'secondary'}
+                    size="sm"
+                    icon={CreditCard}
+                    onClick={() => void handleSubscribe(plan)}
+                    disabled={purchasing || isActive}
+                    className="mt-5 w-full"
+                  >
+                    {purchasing ? '처리 중...' : isActive ? '이미 구독중' : '구독 신청'}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
-          {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-boss-text-muted">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              구매 이력을 불러오는 중...
-            </div>
-          ) : history.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-boss-border bg-boss-surface p-8 text-center text-sm text-boss-text-muted">
-              구매 이력이 없습니다.
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
-              <table className="min-w-full divide-y divide-slate-800 text-sm">
-                <thead className="bg-boss-surface/80 text-xs uppercase tracking-wider text-boss-text-muted">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">상품</th>
-                    <th className="px-4 py-3 text-left font-semibold">결제일</th>
-                    <th className="px-4 py-3 text-left font-semibold">만료일</th>
-                    <th className="px-4 py-3 text-right font-semibold">금액</th>
-                    <th className="px-4 py-3 text-left font-semibold">상태</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/70 text-boss-text">
-                  {history.map((item, idx) => (
-                    <tr key={item.transactionId ?? `${item.productId}-${idx}`}>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{item.productName ?? item.productId ?? '-'}</div>
-                        {item.store && (
-                          <div className="mt-0.5 text-xs text-boss-text-muted">{item.store}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-boss-text-secondary">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-boss-text-muted" />
-                          {formatDate(item.purchaseDate)}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-boss-text-secondary">
-                        {formatDate(item.expirationDate)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium text-boss-text">
-                        {item.amount != null
-                          ? `${item.amount.toLocaleString('ko-KR')} ${item.currency ?? ''}`.trim()
-                          : '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full border border-boss-border bg-boss-elevated/60 px-2.5 py-0.5 text-xs text-boss-text-secondary">
-                          {item.status ?? '-'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </div>
+        )}
+      </Card>
+
+      {/* 구매 이력 */}
+      <Card padded={false}>
+        <div className="border-b border-boss-border px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Receipt size={15} className="text-boss-primary" />
+            <h2 className="text-sm font-semibold text-boss-text">구매 이력</h2>
+          </div>
+        </div>
+        {isLoading ? (
+          <div className="p-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="mb-2 h-10 w-full rounded" />
+            ))}
+          </div>
+        ) : history.length === 0 ? (
+          <div className="p-6">
+            <EmptyState title="구매 이력이 없습니다" />
+          </div>
+        ) : (
+          <DataTable>
+            <thead>
+              <tr>
+                <th>상품</th>
+                <th>결제일</th>
+                <th>만료일</th>
+                <th className="text-right">금액</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((item, idx) => (
+                <tr key={item.transactionId ?? `${item.productId}-${idx}`}>
+                  <td>
+                    <p className="font-medium text-boss-text">{item.productName ?? item.productId ?? '-'}</p>
+                    {item.store && <p className="text-xs text-boss-text-muted">{item.store}</p>}
+                  </td>
+                  <td className="text-boss-text-secondary">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock size={11} /> {formatDate(item.purchaseDate)}
+                    </span>
+                  </td>
+                  <td className="text-boss-text-secondary">{formatDate(item.expirationDate)}</td>
+                  <td className="text-right font-medium text-boss-text">
+                    {item.amount != null ? `${item.amount.toLocaleString('ko-KR')} ${item.currency ?? ''}`.trim() : '-'}
+                  </td>
+                  <td>
+                    <Badge tone="default">{item.status ?? '-'}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        )}
+      </Card>
     </div>
   );
 }
 
 function InfoTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-boss-border bg-boss-bg/60 px-4 py-3">
-      <div className="text-xs uppercase tracking-wider text-boss-text-muted">{label}</div>
-      <div className="mt-1 truncate text-sm font-semibold text-boss-text">{value}</div>
+    <div className="rounded-lg border border-boss-border bg-boss-bg p-3">
+      <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-boss-text">{value}</p>
     </div>
   );
 }

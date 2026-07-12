@@ -82,13 +82,20 @@ interface Props {
   mode: 'create' | 'edit';
   boardId?: string;
   initial?: BbsData;
+  defaultCategory?: CategoryCode;
   onSubmit: (payload: BbsCreateRequest | BbsUpdateRequest) => Promise<{ success: boolean; message?: string }>;
   onSuccess?: () => void;
 }
 
-export default function CommunityPostForm({ mode, boardId, initial, onSubmit, onSuccess }: Props) {
+export default function CommunityPostForm({ mode, boardId, initial, defaultCategory, onSubmit, onSuccess }: Props) {
   const router = useRouter();
-  const [category, setCategory] = useState<CategoryCode>(initial?.typeDtCd === 'JOB' ? 'JOB' : initial?.typeDtCd === 'ANON' ? 'ANON' : 'FREE');
+  const [category, setCategory] = useState<CategoryCode>(
+    initial?.typeDtCd === 'JOB' || defaultCategory === 'JOB'
+      ? 'JOB'
+      : initial?.typeDtCd === 'ANON' || defaultCategory === 'ANON'
+        ? 'ANON'
+        : 'FREE',
+  );
   const [subject, setSubject] = useState(initial?.subject ?? '');
   const [contents, setContents] = useState('');
   const [jobMeta, setJobMeta] = useState<JobMeta>({ ...EMPTY_JOB_META });
@@ -106,6 +113,7 @@ export default function CommunityPostForm({ mode, boardId, initial, onSubmit, on
   // 작성 모드에서 로컬 드래프트 자동 저장
   useEffect(() => {
     if (mode !== 'create') return;
+    if (defaultCategory) return;
     try {
       const raw = localStorage.getItem('boss-community-draft');
       if (raw) {

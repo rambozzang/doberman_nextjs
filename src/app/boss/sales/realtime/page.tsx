@@ -1,16 +1,25 @@
 'use client';
 
-// 사장님 실시간 매출 페이지 — Flutter sales_status_page 의 리스트 영역에 대응
-// GET /stats/monthly/current 호출하여 현재월(또는 선택월) 매출 현황을 표시한다.
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Activity, RefreshCw, Calendar, Wallet } from 'lucide-react';
+import { Activity, RefreshCw, Calendar, Wallet, User } from 'lucide-react';
 import { bossStatsApi, formatYearMonth } from '@/lib/api/boss/stats';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import type { BossCurrentMonthStats } from '@/types/boss-stats';
 import type { BossOrderItem } from '@/types/boss';
+import {
+  PageHeader,
+  Card,
+  StatCard,
+  RowList,
+  RowItem,
+  RowThumb,
+  Badge,
+  EmptyState,
+  Button,
+  Skeleton,
+} from '@/components/boss/ui';
 
-// yyyyMMdd / ISO 모두 yyyy.MM.dd 로 변환
 function fmtDate(s?: string): string {
   if (!s) return '-';
   const digits = s.replace(/[^0-9]/g, '');
@@ -34,7 +43,6 @@ function yearMonthRange(ym: string) {
   return { start, end };
 }
 
-// 최근 3개월 yearMonth 옵션 생성
 function buildMonthOptions(): { value: string; label: string }[] {
   const now = new Date();
   const opts: { value: string; label: string }[] = [];
@@ -102,121 +110,81 @@ export default function BossSalesRealtimePage() {
     void fetchData(yearMonth);
   }, [yearMonth]);
 
-  // 합계: 응답 집계 우선, 없으면 리스트 합산
   const totalCount = stats?.totalCount ?? items.length;
   const totalAmount = (stats?.collectedAmount ?? 0) + (stats?.uncollectedAmount ?? 0);
   const paidAmount = stats?.collectedAmount ?? 0;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-boss-error/20 bg-boss-error/5 px-3 py-1">
-            <Activity size={11} className="text-boss-error" />
-            <span className="text-[11px] font-medium text-boss-error">실시간 매출 현황</span>
+    <div className="space-y-4">
+      <PageHeader
+        eyebrow="실시간 매출"
+        title="실시간 실적"
+        description="선택한 월의 실시간 매출과 시공 건을 확인하세요."
+        actions={
+          <div className="flex items-center gap-2">
+            <select
+              value={yearMonth}
+              onChange={(e) => setYearMonth(e.target.value)}
+              className="h-8 rounded-md border border-boss-border bg-boss-bg px-2 text-xs font-medium text-boss-text focus:border-boss-primary/50 focus:outline-none"
+            >
+              {monthOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              onClick={() => fetchData(yearMonth)}
+              disabled={loading}
+            />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-boss-text md:text-3xl">실시간 실적</h1>
-          <p className="mt-1 text-sm text-boss-text-muted">선택한 월의 실시간 매출과 시공 건을 확인하세요.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={yearMonth}
-            onChange={(e) => setYearMonth(e.target.value)}
-            className="rounded-xl border border-boss-border bg-boss-surface/50 px-3 py-2 text-xs font-medium text-boss-text outline-none hover:text-boss-text"
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-boss-surface">
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => fetchData(yearMonth)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-boss-border bg-boss-surface/50 text-boss-text-secondary hover:text-boss-text"
-            aria-label="새로고침"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      </header>
+        }
+      />
 
-      {/* 요약 카드 */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard label="총 건수" value={`${totalCount.toLocaleString('ko-KR')}건`} icon={<Calendar size={18} />} accent="from-sky-500 to-sky-700" loading={loading} />
-        <SummaryCard label="총 매출" value={fmtWon(totalAmount)} icon={<Activity size={18} />} accent="from-rose-500 to-rose-700" loading={loading} />
-        <SummaryCard label="수금 금액" value={fmtWon(paidAmount)} icon={<Wallet size={18} />} accent="from-boss-primary to-emerald-700" loading={loading} />
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard label="총 건수" value={`${totalCount.toLocaleString('ko-KR')}건`} icon={Calendar} loading={loading} />
+        <StatCard label="총 매출" value={fmtWon(totalAmount)} icon={Activity} loading={loading} />
+        <StatCard label="수금 금액" value={fmtWon(paidAmount)} icon={Wallet} loading={loading} />
       </section>
 
       {error && !loading && (
-        <div className="rounded-2xl border border-rose-500/30 bg-boss-error/10 p-4 text-sm text-boss-error">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
         </div>
       )}
 
-      {/* 시공 리스트 */}
-      <section className="rounded-2xl border border-boss-border bg-boss-surface/50 p-5">
-        <h2 className="mb-4 text-sm font-semibold text-boss-text">매출 상세 목록</h2>
+      <Card padded={false}>
+        <div className="border-b border-boss-border px-4 py-3">
+          <h2 className="text-sm font-semibold text-boss-text">매출 상세 목록</h2>
+        </div>
         {loading ? (
-          <div className="space-y-2">
+          <div className="space-y-px p-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded-lg bg-boss-elevated/40" />
+              <Skeleton key={i} className="h-12 rounded" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-boss-text-muted">표시할 매출이 없습니다.</p>
-        ) : (
-          <ul className="divide-y divide-boss-border">
-            {items.map((item, i) => (
-              <li key={item.id ?? i} className="flex items-center justify-between gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-boss-text">{item.name ?? '이름 없음'}</p>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-boss-text-muted">
-                    <span>시공일: {fmtDate(item.workDate)}</span>
-                    <span>상태: {item.statusCd ?? '-'}</span>
-                  </div>
-                </div>
-                <div className="text-right text-sm font-bold text-boss-text">
-                  {fmtWon(item.totalAmount)}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon,
-  accent,
-  loading,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  accent: string;
-  loading: boolean;
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-boss-border bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
-      <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-2xl`} />
-      <div className="relative">
-        <div className="mb-4 flex items-center justify-between">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-boss-text`}>
-            {icon}
+          <div className="p-6">
+            <EmptyState title="표시할 매출이 없습니다" description="해당 월의 주문이 없습니다." />
           </div>
-        </div>
-        <p className="text-xs font-medium uppercase tracking-wider text-boss-text-muted">{label}</p>
-        {loading ? (
-          <div className="mt-1 h-7 w-32 animate-pulse rounded bg-boss-elevated/60" />
         ) : (
-          <p className="mt-1 text-2xl font-bold text-boss-text">{value}</p>
+          <RowList className="rounded-none border-0 shadow-none">
+            {items.map((item, i) => (
+              <RowItem
+                key={item.id ?? i}
+                leading={<RowThumb icon={User} />}
+                title={item.name ?? '이름 없음'}
+                subtitle={`시공일 ${fmtDate(item.workDate)}`}
+                tags={item.statusCd ? <Badge tone="default">{item.statusCd}</Badge> : undefined}
+                meta={<span className="font-semibold text-boss-primary">{fmtWon(item.totalAmount)}</span>}
+              />
+            ))}
+          </RowList>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -9,15 +9,23 @@ import { bossAuthApi } from '@/lib/api/boss/auth';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossUserInfo } from '@/types/boss';
 import {
+  PageHeader,
+  Card,
+  Button,
+  RowList,
+  RowItem,
+  RowThumb,
+  RowChevron,
+  Skeleton,
+} from '@/components/boss/ui';
+import {
   User,
   Mail,
   Phone,
   Building2,
   LogOut,
   UserX,
-  Settings,
   Edit3,
-  ChevronRight,
   Bell,
   ShieldCheck,
   Loader2,
@@ -97,138 +105,113 @@ export default function BossMyInfoPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-boss-text">내 정보</h1>
-        <Link
-          href="/boss/settings"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-elevated text-boss-text-secondary hover:border-boss-primary/30 hover:text-boss-primary"
-        >
-          <Settings size={16} />
-        </Link>
-      </div>
-
-      {/* 프로필 카드 */}
-      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
-        <div className="bg-gradient-to-br from-blue-600 to-purple-700 p-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-boss-surface/20 ring-2 ring-white/40">
-              {user?.profilePath ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.profilePath}
-                  alt="프로필"
-                  className="h-16 w-16 rounded-full object-cover"
-                />
-              ) : (
-                <User size={28} className="text-boss-text" />
-              )}
-            </div>
-            <div className="flex-1 text-boss-text">
-              <p className="text-xl font-bold">{user?.name || '이름 없음'}</p>
-              <p className="text-sm text-blue-100">@{user?.userId || '-'}</p>
-              {user?.nickNm && <p className="mt-0.5 text-xs text-blue-100">{user.nickNm}</p>}
-            </div>
-            <Link
-              href="/boss/me/edit"
-              className="flex h-9 items-center gap-1 rounded-lg bg-boss-surface/20 px-3 text-xs font-semibold text-boss-text hover:bg-boss-surface/30"
-            >
-              <Edit3 size={13} />
+      <PageHeader
+        title="내 정보"
+        actions={
+          <Link href="/boss/me/edit">
+            <Button variant="secondary" size="sm" icon={Edit3}>
               수정
-            </Link>
+            </Button>
+          </Link>
+        }
+      />
+
+      {/* 프로필 */}
+      <Card>
+        <div className="flex items-center gap-4">
+          <RowThumb
+            src={user?.profilePath}
+            alt="프로필"
+            icon={User}
+            className="h-14 w-14"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-semibold text-boss-text">{user?.name || '이름 없음'}</p>
+            <p className="text-sm text-boss-text-muted">@{user?.userId || '-'}</p>
+            {user?.nickNm && (
+              <p className="mt-0.5 text-xs text-boss-text-muted">{user.nickNm}</p>
+            )}
           </div>
         </div>
 
-        <div className="divide-y divide-slate-800">
-          <div className="flex items-center gap-3 px-6 py-4">
-            <Mail size={16} className="text-boss-text-muted" />
-            <div className="flex-1">
-              <p className="text-[11px] text-boss-text-muted">이메일</p>
-              <p className="text-sm font-medium text-boss-text">{user?.email || '-'}</p>
+        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-boss-border pt-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <Mail size={14} className="shrink-0 text-boss-text-muted" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">이메일</p>
+              <p className="truncate text-sm text-boss-text">{user?.email || '-'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 px-6 py-4">
-            <Phone size={16} className="text-boss-text-muted" />
-            <div className="flex-1">
-              <p className="text-[11px] text-boss-text-muted">휴대폰</p>
-              <p className="text-sm font-medium text-boss-text">{user?.phone || '-'}</p>
+          <div className="flex items-center gap-2">
+            <Phone size={14} className="shrink-0 text-boss-text-muted" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">휴대폰</p>
+              <p className="truncate text-sm text-boss-text">{user?.phone || '-'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 px-6 py-4">
-            <Bell size={16} className="text-boss-text-muted" />
-            <div className="flex-1">
-              <p className="text-[11px] text-boss-text-muted">알림 시간</p>
-              <p className="text-sm font-medium text-boss-text">{user?.alramTime || '-'}</p>
+          <div className="flex items-center gap-2">
+            <Bell size={14} className="shrink-0 text-boss-text-muted" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">알림 시간</p>
+              <p className="truncate text-sm text-boss-text">{user?.alramTime || '-'}</p>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 빠른 메뉴 */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
+      <RowList>
+        <RowItem
           href="/boss/me/company"
-          className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface p-4 hover:border-boss-primary/30 hover:bg-boss-elevated/60"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-boss-primary/10 text-boss-primary">
-              <Building2 size={18} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-boss-text">회사 정보</p>
-              <p className="text-[11px] text-boss-text-muted">로고/도장/지역</p>
-            </div>
-          </div>
-          <ChevronRight size={16} className="text-boss-text-muted" />
-        </Link>
-
-        <Link
+          leading={<RowThumb icon={Building2} />}
+          title="회사 정보"
+          subtitle="로고/도장/지역"
+          actions={<RowChevron />}
+        />
+        <RowItem
           href="/boss/settings"
-          className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface p-4 hover:border-blue-500/50 hover:bg-boss-elevated/60"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-              <ShieldCheck size={18} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-boss-text">설정</p>
-              <p className="text-[11px] text-boss-text-muted">알림/보안</p>
-            </div>
-          </div>
-          <ChevronRight size={16} className="text-boss-text-muted" />
-        </Link>
-      </div>
+          leading={<RowThumb icon={ShieldCheck} />}
+          title="설정"
+          subtitle="알림/보안"
+          actions={<RowChevron />}
+        />
+      </RowList>
 
       {/* 계정 관리 */}
-      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
-        <button
-          type="button"
+      <RowList>
+        <RowItem
           onClick={handleLogout}
-          disabled={actionLoading}
-          className="flex w-full items-center justify-between border-b border-boss-border px-6 py-4 text-left hover:bg-boss-elevated/40 disabled:opacity-50"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-boss-elevated text-boss-text-muted">
-              <LogOut size={15} />
-            </div>
-            <span className="text-sm font-medium text-boss-text">로그아웃</span>
-          </div>
-          <ChevronRight size={16} className="text-boss-text-muted" />
-        </button>
-        <button
-          type="button"
+          leading={<RowThumb icon={LogOut} />}
+          title="로그아웃"
+          actions={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              disabled={actionLoading}
+            >
+              로그아웃
+            </Button>
+          }
+        />
+        <RowItem
           onClick={handleWithdraw}
-          disabled={actionLoading}
-          className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-rose-950/30 disabled:opacity-50"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-boss-error/10 text-boss-error">
-              <UserX size={15} />
-            </div>
-            <span className="text-sm font-medium text-boss-error">회원 탈퇴</span>
-          </div>
-          <ChevronRight size={16} className="text-rose-700" />
-        </button>
-      </div>
+          leading={<RowThumb icon={UserX} />}
+          title="회원 탈퇴"
+          subtitle="재가입 불가, 데이터 영구 삭제"
+          actions={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleWithdraw}
+              disabled={actionLoading}
+              className="text-boss-error hover:bg-boss-error/10"
+            >
+              탈퇴
+            </Button>
+          }
+        />
+      </RowList>
     </div>
   );
 }

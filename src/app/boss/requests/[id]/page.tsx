@@ -6,8 +6,7 @@ import { useParams } from 'next/navigation';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
 import type { BossRequestDetail, BossRequestAnswer } from '@/types/boss';
-import BossPageHeader from '@/components/boss/BossPageHeader';
-import { Card, Button, Badge, EmptyState } from '@/components/boss/ui';
+import { PageHeader, Card, Button, Badge, EmptyState } from '@/components/boss/ui';
 import {
   ArrowLeft,
   Edit3,
@@ -78,9 +77,9 @@ export default function BossRequestDetailPage() {
 
   return (
     <div className="space-y-5">
-      <BossPageHeader
-        title={`견적 요청 상세`}
-        backHref="/boss/requests"
+      <PageHeader
+        title="견적 요청 상세"
+        breadcrumbs={[{ label: '견적 요청', href: '/boss/requests' }, { label: '상세' }]}
         actions={
           <Link href={`/boss/requests/${id}/answer`}>
             <Button variant="primary" icon={Edit3}>
