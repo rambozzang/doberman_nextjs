@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   PenLine,
   Plus,
   RefreshCw,
   Inbox,
   Phone,
-  Calendar,
   Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -20,13 +20,14 @@ import {
   Toolbar,
   SearchInput,
   Button,
-  RowList,
-  RowItem,
+  DataTable,
   RowThumb,
   Badge,
   EmptyState,
   Skeleton,
 } from '@/components/boss/ui';
+
+type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
 
 function formatDate(input?: string | null): string {
   if (!input) return '-';
@@ -44,7 +45,15 @@ function maskPhone(phone?: string | null): string {
   return phone;
 }
 
+function statusBadge(item: BossSignatureItem): { label: string; tone: BadgeTone } {
+  if (item.confirmedAt || item.signatureImagePath) {
+    return { label: '서명완료', tone: 'emerald' };
+  }
+  return { label: '미완료', tone: 'amber' };
+}
+
 export default function BossSignatureListPage() {
+  const router = useRouter();
   const [items, setItems] = useState<BossSignatureItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -162,11 +171,7 @@ export default function BossSignatureListPage() {
       )}
 
       {loading && items.length === 0 ? (
-        <div className="space-y-px">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-lg" />
-          ))}
-        </div>
+        <Skeleton className="h-64 rounded-lg" />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Inbox}
@@ -174,55 +179,91 @@ export default function BossSignatureListPage() {
           description="'서명 받기'로 새 서명을 받아보세요."
         />
       ) : (
-        <RowList>
-          {filtered.map((item) => (
-            <RowItem
-              key={item.id}
-              href={`/boss/signature/${item.id}`}
-              leading={
-                <RowThumb
-                  src={item.signatureImagePath}
-                  alt={item.customerName ?? 'signature'}
-                  icon={PenLine}
-                />
-              }
-              title={item.customerName ?? '이름 없음'}
-              subtitle={item.memo ?? undefined}
-              tags={
-                <>
-                  {item.customerPhone ? (
-                    <Badge tone="default">
-                      <Phone size={10} /> {maskPhone(item.customerPhone)}
-                    </Badge>
-                  ) : null}
-                  {item.orderId ? (
-                    <Badge tone="violet">주문 #{item.orderId}</Badge>
-                  ) : null}
-                </>
-              }
-              meta={
-                <span className="inline-flex items-center gap-1">
-                  <Calendar size={11} /> {formatDate(item.confirmedAt ?? item.createdDt)}
-                </span>
-              }
-              actions={
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    void handleDelete(item.id);
-                  }}
-                  disabled={deletingId === item.id}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted transition-colors hover:bg-boss-error/10 hover:text-boss-error disabled:opacity-50"
-                  aria-label="삭제"
+        <DataTable>
+          <thead>
+            <tr>
+              <th>고객</th>
+              <th>상태</th>
+              <th className="whitespace-nowrap">연락처</th>
+              <th>관련 정보</th>
+              <th className="whitespace-nowrap">서명일</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => {
+              const badge = statusBadge(item);
+              return (
+                <tr
+                  key={item.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/boss/signature/${item.id}`)}
                 >
-                  <Trash2 size={13} />
-                </button>
-              }
-            />
-          ))}
-        </RowList>
+                  <td>
+                    <div className="flex items-center gap-2.5">
+                      <RowThumb
+                        src={item.signatureImagePath}
+                        alt={item.customerName ?? 'signature'}
+                        icon={PenLine}
+                        className="h-9 w-9"
+                      />
+                      <div className="min-w-0">
+                        <span className="block font-medium text-boss-text">
+                          {item.customerName ?? '이름 없음'}
+                        </span>
+                        {item.memo ? (
+                          <span className="block max-w-[16rem] truncate text-xs text-boss-text-muted">
+                            {item.memo}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <Badge tone={badge.tone}>{badge.label}</Badge>
+                  </td>
+                  <td className="whitespace-nowrap text-boss-text-secondary">
+                    {item.customerPhone ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Phone size={11} className="text-boss-text-muted" />
+                        {maskPhone(item.customerPhone)}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td className="text-boss-text-secondary">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {item.orderId ? (
+                        <Badge tone="violet">주문 #{item.orderId}</Badge>
+                      ) : null}
+                      {item.recordId ? (
+                        <Badge tone="sky">기록 #{item.recordId}</Badge>
+                      ) : null}
+                      {!item.orderId && !item.recordId ? (
+                        <span className="text-boss-text-muted">-</span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                    {formatDate(item.confirmedAt ?? item.createdDt)}
+                  </td>
+                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(item.id)}
+                      disabled={deletingId === item.id}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted transition-colors hover:bg-boss-error/10 hover:text-boss-error disabled:opacity-50"
+                      aria-label="삭제"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
     </div>
   );

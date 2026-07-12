@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -22,20 +22,27 @@ import RichEditor from '@/components/boss/RichEditor';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
 import {
   PageHeader,
+  Toolbar,
+  SearchInput,
   Button,
+  IconButton,
   Badge,
-  RowList,
-  RowItem,
-  RowThumb,
-  RowAction,
+  ListTabs,
+  DataTable,
   EmptyState,
   Skeleton,
-  Card,
 } from '@/components/boss/ui';
 
 const DEFAULT_TITLE = '견적서 보내드립니다.';
 
 type EditorMode = 'create' | 'edit';
+type KindFilter = 'all' | 'default' | 'user';
+
+const KIND_TABS: { key: KindFilter; label: string }[] = [
+  { key: 'all', label: '전체' },
+  { key: 'default', label: '기본' },
+  { key: 'user', label: '사용자' },
+];
 
 interface EditorState {
   open: boolean;
@@ -59,6 +66,8 @@ export default function BossTemplatesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [custId, setCustId] = useState('');
+  const [tab, setTab] = useState<KindFilter>('all');
+  const [keyword, setKeyword] = useState('');
   const [previewTarget, setPreviewTarget] = useState<BossTemplate | null>(null);
   const [editor, setEditor] = useState<EditorState>({
     open: false,
@@ -217,34 +226,64 @@ export default function BossTemplatesPage() {
   const update = (field: keyof BossTemplateFormValue, val: string) =>
     setEditor((s) => ({ ...s, value: { ...s.value, [field]: val } }));
 
-  const userCount = templates.filter((t) => !t.isDefault).length;
+  const counts = useMemo(() => {
+    const c = { all: templates.length, default: 0, user: 0 };
+    templates.forEach((t) => {
+      if (t.isDefault) c.default++;
+      else c.user++;
+    });
+    return c;
+  }, [templates]);
+
+  const filtered = useMemo(() => {
+    let list = templates;
+    if (tab === 'default') list = list.filter((t) => t.isDefault);
+    else if (tab === 'user') list = list.filter((t) => !t.isDefault);
+    if (keyword.trim()) {
+      const k = keyword.toLowerCase();
+      list = list.filter((t) =>
+        [t.name, t.title, stripHtml(t.content || '')]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(k)),
+      );
+    }
+    return list;
+  }, [templates, tab, keyword]);
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="답변 템플릿"
         description="웹 견적서 답변에 자주 쓰는 문구를 템플릿으로 저장하고 불러오세요."
-        actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
-              onClick={load}
-              disabled={loading}
-            >
-              새로고침
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={() => openCreate()}
-            >
-              템플릿 추가
-            </Button>
-          </div>
-        }
+      />
+
+      <Toolbar>
+        <SearchInput
+          value={keyword}
+          onChange={setKeyword}
+          placeholder="이름·제목·내용 검색"
+          className="w-full max-w-xs"
+        />
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
+            onClick={load}
+            disabled={loading}
+          >
+            새로고침
+          </Button>
+          <Button variant="primary" size="sm" icon={Plus} onClick={() => openCreate()}>
+            템플릿 추가
+          </Button>
+        </div>
+      </Toolbar>
+
+      <ListTabs
+        tabs={KIND_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
+        active={tab}
+        onChange={setTab}
       />
 
       {error && (
@@ -254,12 +293,8 @@ export default function BossTemplatesPage() {
       )}
 
       {loading && templates.length === 0 ? (
-        <div className="space-y-px">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-lg" />
-          ))}
-        </div>
-      ) : templates.length === 0 ? (
+        <Skeleton className="h-64 rounded-lg" />
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={Inbox}
           title="등록된 템플릿이 없습니다"
@@ -271,70 +306,89 @@ export default function BossTemplatesPage() {
           }
         />
       ) : (
-        <RowList>
-          {templates.map((t) => {
-            const contentPreview = t.content ? stripHtml(t.content) : '';
-            return (
-              <RowItem
-                key={String(t.id)}
-                leading={
-                  <RowThumb icon={t.isDefault ? Lock : FileText} />
-                }
-                title={t.name}
-                subtitle={t.title || undefined}
-                tags={
-                  <>
-                    {t.isDefault && <Badge tone="default">기본</Badge>}
-                    {!t.isDefault && userCount > 0 && (
+        <DataTable>
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>견적서 제목</th>
+              <th>내용</th>
+              <th>구분</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((t) => {
+              const contentPreview = t.content ? stripHtml(t.content) : '';
+              return (
+                <tr
+                  key={String(t.id)}
+                  className="cursor-pointer"
+                  onClick={() => setPreviewTarget(t)}
+                >
+                  <td>
+                    <span className="flex items-center gap-1.5 font-medium text-boss-text">
+                      {t.isDefault ? (
+                        <Lock size={13} className="shrink-0 text-boss-text-muted" />
+                      ) : (
+                        <FileText size={13} className="shrink-0 text-boss-text-muted" />
+                      )}
+                      <span className="truncate">{t.name}</span>
+                    </span>
+                  </td>
+                  <td className="text-boss-text-secondary">{t.title || '-'}</td>
+                  <td className="text-boss-text-muted">
+                    {contentPreview ? (
+                      <span className="line-clamp-1 max-w-[280px]">{contentPreview}</span>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td>
+                    {t.isDefault ? (
+                      <Badge tone="default">기본</Badge>
+                    ) : (
                       <Badge tone="emerald">사용자</Badge>
                     )}
-                  </>
-                }
-                meta={
-                  contentPreview ? (
-                    <span className="line-clamp-1 max-w-[200px] text-boss-text-muted">
-                      {contentPreview}
-                    </span>
-                  ) : undefined
-                }
-                actions={
-                  <>
-                    <RowAction
-                      icon={Eye}
-                      label="미리보기"
-                      onClick={() => setPreviewTarget(t)}
-                    />
-                    <RowAction
-                      icon={Copy}
-                      label="복사"
-                      onClick={() => duplicate(t)}
-                    />
-                    {!t.isDefault && (
-                      <RowAction
-                        icon={Pencil}
-                        label="수정"
-                        onClick={() => openEdit(t)}
-                      />
-                    )}
-                    {!t.isDefault && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleDelete(t);
-                        }}
-                        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-boss-text-secondary transition-colors hover:bg-boss-error/10 hover:text-boss-error"
-                        title="삭제"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </>
-                }
-              />
-            );
-          })}
-        </RowList>
+                  </td>
+                  <td
+                    className="whitespace-nowrap text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <IconButton icon={Copy} label="복사" onClick={() => duplicate(t)} />
+                      {!t.isDefault && (
+                        <IconButton
+                          icon={Trash2}
+                          label="삭제"
+                          onClick={() => void handleDelete(t)}
+                        />
+                      )}
+                      {t.isDefault ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={Eye}
+                          onClick={() => setPreviewTarget(t)}
+                        >
+                          보기
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          icon={Pencil}
+                          onClick={() => openEdit(t)}
+                        >
+                          편집
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
 
       {/* 미리보기 모달 */}

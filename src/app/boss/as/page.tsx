@@ -1,43 +1,27 @@
 'use client';
 
-// AS 요청 목록 페이지
+// AS 요청 목록 페이지 (B2B 데이터 그리드)
 // Flutter: as_request_list_page.dart 포팅
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Plus,
-  RefreshCw,
-  Inbox,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Image as ImageIcon,
-  Link2,
-  Phone,
-  Wrench,
-} from 'lucide-react';
+import { Plus, RefreshCw, Inbox, AlertTriangle, Link2 } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsRequestItem } from '@/types/boss-as';
 import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  ListTabs,
   PageHeader,
-  SearchInput,
-  Skeleton,
   Toolbar,
-  RowList,
-  RowItem,
-  RowThumb,
-  RowAction,
-  RowChevron,
+  SearchInput,
+  Button,
+  ListTabs,
+  DataTable,
+  Badge,
+  EmptyState,
+  Skeleton,
 } from '@/components/boss/ui';
 
 type StatusFilter = '' | '접수' | '진행중' | '완료';
 type SortType = 'CREATED_DT' | 'REQUEST_DATE';
+type BadgeTone = Parameters<typeof Badge>[0]['tone'];
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: '', label: '전체' },
@@ -56,7 +40,22 @@ function formatDate(input?: string | null): string {
   return `${yyyy}.${mm}.${dd}`;
 }
 
-function statusBadgeTone(status: string): Parameters<typeof Badge>[0]['tone'] {
+function relativeTime(input?: string | null): string {
+  if (!input) return '-';
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return input;
+  const diff = Date.now() - d.getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return '방금';
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  const day = Math.floor(h / 24);
+  if (day < 7) return `${day}일 전`;
+  return d.toLocaleDateString('ko-KR');
+}
+
+function statusBadgeTone(status: string): BadgeTone {
   switch (status) {
     case '접수':
       return 'sky';
@@ -64,8 +63,6 @@ function statusBadgeTone(status: string): Parameters<typeof Badge>[0]['tone'] {
       return 'amber';
     case '완료':
       return 'emerald';
-    case '취소':
-      return 'default';
     default:
       return 'default';
   }
@@ -126,12 +123,7 @@ export default function BossAsListPage() {
     const q = query.trim().toLowerCase();
     const list = items.filter((item) => {
       if (!q) return true;
-      const text = [
-        item.title,
-        item.customerName,
-        item.customerPhone,
-        item.address,
-      ]
+      const text = [item.title, item.customerName, item.customerPhone, item.address]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -160,24 +152,24 @@ export default function BossAsListPage() {
             >
               등록
             </Button>
-            <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> 새로고침
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              onClick={load}
+              disabled={loading}
+            >
+              새로고침
             </Button>
           </>
         }
-      />
-
-      <ListTabs
-        tabs={STATUS_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label, count: statusCounts[opt.value] }))}
-        active={statusFilter}
-        onChange={(key) => setStatusFilter(key)}
       />
 
       <Toolbar>
         <SearchInput
           value={query}
           onChange={setQuery}
-          placeholder="제목, 고객, 주소 검색"
+          placeholder="제목·고객·주소·연락처 검색"
           className="w-full max-w-xs"
         />
         <div className="ml-auto flex items-center gap-1">
@@ -186,103 +178,132 @@ export default function BossAsListPage() {
             size="sm"
             onClick={() => setSortType('CREATED_DT')}
           >
-            등록일
+            등록일순
           </Button>
           <Button
             variant={sortType === 'REQUEST_DATE' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setSortType('REQUEST_DATE')}
           >
-            요청일
+            요청일순
           </Button>
         </div>
       </Toolbar>
 
+      <ListTabs
+        tabs={STATUS_OPTIONS.map((opt) => ({
+          key: opt.value,
+          label: opt.label,
+          count: statusCounts[opt.value],
+        }))}
+        active={statusFilter}
+        onChange={(key) => setStatusFilter(key)}
+      />
+
       {error && (
-        <Card padded className="rounded-lg border-boss-error/30 bg-boss-error/10 text-sm text-boss-error">
+        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
           {error}
-        </Card>
+        </div>
       )}
 
       {loading && items.length === 0 ? (
-        <div className="space-y-px">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-lg" />
-          ))}
-        </div>
+        <Skeleton className="h-64 rounded-lg" />
       ) : displayedItems.length === 0 ? (
         <EmptyState
           icon={Inbox}
           title={statusFilter || query ? '검색/필터 결과가 없습니다' : '등록된 AS 요청이 없습니다'}
           description="신규 AS 요청을 등록하거나 필터를 변경해 보세요."
           action={
-            <Link
-              href="/boss/as/new"
-              className="boss-btn boss-btn-primary inline-flex items-center gap-1.5"
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Plus}
+              onClick={() => router.push('/boss/as/new')}
             >
-              <Plus size={13} /> AS 요청 등록
-            </Link>
+              AS 요청 등록
+            </Button>
           }
         />
       ) : (
-        <RowList>
-          {displayedItems.map((item) => {
-            const defectCount = item.images?.filter((i) => i.imageType === 'DEFECT').length ?? 0;
-            const repairCount = item.images?.filter((i) => i.imageType === 'REPAIR').length ?? 0;
-            const tags = (
-              <>
-                <Badge tone={statusBadgeTone(item.status)}>{item.status}</Badge>
-                {item.priority === '긴급' && (
-                  <Badge tone="rose">
-                    <AlertTriangle size={10} /> 긴급
-                  </Badge>
-                )}
-                {item.orderId != null && (
-                  <Badge tone="violet">
-                    <Link2 size={10} /> 주문
-                  </Badge>
-                )}
-                {defectCount > 0 && (
-                  <Badge tone="rose">
-                    <ImageIcon size={10} /> 하자 {defectCount}
-                  </Badge>
-                )}
-                {repairCount > 0 && (
-                  <Badge tone="emerald">
-                    <CheckCircle2 size={10} /> 수리 {repairCount}
-                  </Badge>
-                )}
-              </>
-            );
-            const meta = (
-              <span className="inline-flex items-center gap-1">
-                <Clock size={11} /> {formatDate(item.createdAt)}
-              </span>
-            );
-            const actions = (
-              <>
-                {item.customerPhone ? (
-                  <RowAction icon={Phone} label="연락" href={`tel:${item.customerPhone}`} />
-                ) : null}
-                <Link href={`/boss/as/${item.id}`}>
-                  <RowChevron />
-                </Link>
-              </>
-            );
-            return (
-              <RowItem
-                key={item.id}
-                href={`/boss/as/${item.id}`}
-                leading={<RowThumb icon={Wrench} />}
-                title={item.title}
-                subtitle={[item.customerName, item.address].filter(Boolean).join(' · ')}
-                tags={tags}
-                meta={meta}
-                actions={actions}
-              />
-            );
-          })}
-        </RowList>
+        <DataTable>
+          <thead>
+            <tr>
+              <th className="whitespace-nowrap">#</th>
+              <th>제목 / 고객</th>
+              <th>상태</th>
+              <th>지역 / 연락처</th>
+              <th className="text-center whitespace-nowrap">사진</th>
+              <th className="whitespace-nowrap">요청일</th>
+              <th className="whitespace-nowrap">접수</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {displayedItems.map((item) => {
+              const defectCount = item.images?.filter((i) => i.imageType === 'DEFECT').length ?? 0;
+              const repairCount = item.images?.filter((i) => i.imageType === 'REPAIR').length ?? 0;
+              const hasPhotos = defectCount > 0 || repairCount > 0;
+              return (
+                <tr
+                  key={item.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/boss/as/${item.id}`)}
+                >
+                  <td className="whitespace-nowrap text-xs text-boss-text-muted">#{item.id}</td>
+                  <td>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-boss-text">{item.title}</span>
+                      {item.priority === '긴급' && (
+                        <Badge tone="rose">
+                          <AlertTriangle size={10} /> 긴급
+                        </Badge>
+                      )}
+                      {item.orderId != null && (
+                        <Badge tone="violet">
+                          <Link2 size={10} /> 주문
+                        </Badge>
+                      )}
+                    </div>
+                    {item.customerName ? (
+                      <span className="text-xs text-boss-text-muted">{item.customerName}</span>
+                    ) : null}
+                  </td>
+                  <td>
+                    <Badge tone={statusBadgeTone(item.status)}>{item.status}</Badge>
+                  </td>
+                  <td className="text-boss-text-secondary">
+                    <div>{item.customerPhone || '-'}</div>
+                    {item.address ? (
+                      <span className="text-xs text-boss-text-muted">{item.address}</span>
+                    ) : null}
+                  </td>
+                  <td className="text-center whitespace-nowrap text-xs text-boss-text-secondary">
+                    {hasPhotos
+                      ? [defectCount > 0 ? `하자 ${defectCount}` : null, repairCount > 0 ? `수리 ${repairCount}` : null]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : '-'}
+                  </td>
+                  <td className="whitespace-nowrap text-boss-text-secondary">
+                    {formatDate(item.requestDate)}
+                  </td>
+                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                    {relativeTime(item.createdAt)}
+                  </td>
+                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => router.push(`/boss/as/${item.id}`)}
+                    >
+                      상세
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
     </div>
   );

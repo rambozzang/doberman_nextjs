@@ -26,6 +26,8 @@ import {
   Bell,
   Briefcase,
   Receipt,
+  Contact,
+  PenTool,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -58,6 +60,7 @@ const SECTIONS: NavSection[] = [
       { href: '/boss/orders', label: '주문 관리', icon: ShoppingCart },
       { href: '/boss/estimate', label: '견적서', icon: FileSignature },
       { href: '/boss/portfolio', label: '포트폴리오', icon: ImageIcon },
+      { href: '/boss/customers', label: '고객 관리', icon: Contact },
     ],
   },
   {
@@ -67,6 +70,7 @@ const SECTIONS: NavSection[] = [
       { href: '/boss/checklist', label: '체크리스트', icon: ListChecks },
       { href: '/boss/as', label: 'AS 요청', icon: Wrench },
       { href: '/boss/receipt', label: '영수증 관리', icon: Receipt },
+      { href: '/boss/signature', label: '고객 서명', icon: PenTool },
     ],
   },
   {

@@ -1,20 +1,15 @@
 'use client';
 
+// 사장님 알림(Notifications) 목록 페이지
+// Flutter 참조:
+//   - lib/app/setting/noti_page.dart : BBS list 를 typeCd='NOTI' 로 호출
+//   - lib/repo/bbs/bbs_repo.dart : list / detail / delete / viewCount
+//
+// 백엔드 알림은 BBS(`/bbs/...`) 의 typeCd='NOTI' 를 재사용하며
+// 하위 카테고리(typeDtCd) 로 공지(NOTI)/광고(AD)/업데이트(UPDATE) 를 구분한다.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Bell,
-  BellRing,
-  Megaphone,
-  Sparkles,
-  RefreshCw,
-  Inbox,
-  Trash2,
-  X,
-  CheckCheck,
-  Eye,
-  AlertCircle,
-  type LucideIcon,
-} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, RefreshCw, CheckCheck, Trash2, Inbox, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   bossNotificationsApi,
@@ -32,14 +27,14 @@ import {
   SearchInput,
   Button,
   ListTabs,
-  RowList,
-  RowItem,
-  RowThumb,
+  DataTable,
   Badge,
   EmptyState,
   Pagination,
   Skeleton,
 } from '@/components/boss/ui';
+
+type BadgeTone = 'default' | 'emerald' | 'amber' | 'sky';
 
 const PAGE_SIZE = 20;
 
@@ -50,14 +45,14 @@ const CATEGORIES: BossNotificationCategoryMeta[] = [
   { code: 'UPDATE', label: '업데이트' },
 ];
 
-function categoryIcon(code?: string): { Icon: LucideIcon; tone: 'default' | 'emerald' | 'amber' | 'sky' } {
-  switch (code) {
+function categoryBadge(item: BossNotificationItem): { label: string; tone: BadgeTone } {
+  switch (item.typeDtCd) {
     case 'AD':
-      return { Icon: Megaphone, tone: 'amber' };
+      return { label: item.typeDtNm ?? '광고', tone: 'amber' };
     case 'UPDATE':
-      return { Icon: Sparkles, tone: 'sky' };
+      return { label: item.typeDtNm ?? '업데이트', tone: 'sky' };
     default:
-      return { Icon: BellRing, tone: 'emerald' };
+      return { label: item.typeDtNm ?? '공지', tone: 'emerald' };
   }
 }
 
@@ -67,6 +62,15 @@ function pickList(
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
   return payload.list ?? payload.content ?? [];
+}
+
+function stripHtml(input?: string): string {
+  if (!input) return '';
+  return input
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function relativeTime(input?: string): string {
@@ -85,29 +89,24 @@ function relativeTime(input?: string): string {
 }
 
 export default function BossNotificationsPage() {
+  const router = useRouter();
   const [category, setCategory] = useState<BossNotificationCategory>('ALL');
   const [items, setItems] = useState<BossNotificationItem[]>([]);
   const [page, setPage] = useState(0);
   const [keyword, setKeyword] = useState('');
-  const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [readVersion, setReadVersion] = useState(0);
 
-  const [selected, setSelected] = useState<BossNotificationItem | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-
   const load = useCallback(
-    async (targetPage: number, searchWord: string, cat: BossNotificationCategory) => {
+    async (targetPage: number, cat: BossNotificationCategory) => {
       setLoading(true);
       setError(null);
       try {
         const res = await bossNotificationsApi.list({
           pageNum: targetPage,
           pageSize: PAGE_SIZE,
-          searchWord: searchWord || undefined,
           typeDtCd: cat === 'ALL' ? undefined : cat,
           sortDesc: 'crtDtm',
         });
@@ -132,13 +131,8 @@ export default function BossNotificationsPage() {
   );
 
   useEffect(() => {
-    load(page, keyword, category);
-  }, [page, keyword, category, load]);
-
-  const onSearch = () => {
-    setPage(0);
-    setKeyword(searchInput.trim());
-  };
+    void load(page, category);
+  }, [load, page, category]);
 
   const onChangeCategory = (cat: BossNotificationCategory) => {
     if (cat === category) return;
@@ -146,36 +140,11 @@ export default function BossNotificationsPage() {
     setPage(0);
   };
 
-  const openDetail = async (item: BossNotificationItem) => {
-    setSelected(item);
-    setDetailError(null);
-    setDetailLoading(true);
-    if (item.boardId != null) {
-      bossNotificationsReadStore.markRead(item.boardId);
-      setReadVersion((v) => v + 1);
-      bossNotificationsApi.markRead(item.boardId).catch(() => {});
-    }
-    try {
-      if (item.boardId == null) {
-        setSelected(item);
-        return;
-      }
-      const res = await bossNotificationsApi.detail(item.boardId);
-      if (res.success !== false && res.data) {
-        setSelected(res.data);
-      } else {
-        setDetailError(res.message || '상세 정보를 불러오지 못했습니다.');
-      }
-    } catch {
-      setDetailError('네트워크 오류로 상세를 불러오지 못했습니다.');
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const closeDetail = () => {
-    setSelected(null);
-    setDetailError(null);
+  const openDetail = (item: BossNotificationItem) => {
+    if (item.boardId == null) return;
+    bossNotificationsReadStore.markRead(item.boardId);
+    setReadVersion((v) => v + 1);
+    router.push(`/boss/notifications/${item.boardId}`);
   };
 
   const removeItem = async (item: BossNotificationItem) => {
@@ -186,7 +155,6 @@ export default function BossNotificationsPage() {
       if (res.success !== false) {
         toast.success('알림이 삭제되었습니다.');
         setItems((prev) => prev.filter((x) => x.boardId !== item.boardId));
-        if (selected?.boardId === item.boardId) closeDetail();
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');
       }
@@ -201,6 +169,16 @@ export default function BossNotificationsPage() {
     toast.success('모두 읽음으로 표시했습니다.');
   };
 
+  const filtered = useMemo(() => {
+    const k = keyword.trim().toLowerCase();
+    if (!k) return items;
+    return items.filter((it) =>
+      [it.subject, stripHtml(it.contents)]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(k)),
+    );
+  }, [items, keyword]);
+
   const unreadCount = useMemo(() => {
     void readVersion;
     return items.reduce(
@@ -209,6 +187,7 @@ export default function BossNotificationsPage() {
     );
   }, [items, readVersion]);
 
+  const isFiltering = keyword.trim().length > 0;
   const pageNum = page + 1;
 
   return (
@@ -231,7 +210,7 @@ export default function BossNotificationsPage() {
               variant="secondary"
               size="sm"
               icon={RefreshCw}
-              onClick={() => load(page, keyword, category)}
+              onClick={() => load(page, category)}
               disabled={loading}
             >
               새로고침
@@ -242,14 +221,11 @@ export default function BossNotificationsPage() {
 
       <Toolbar>
         <SearchInput
-          value={searchInput}
-          onChange={setSearchInput}
+          value={keyword}
+          onChange={setKeyword}
           placeholder="제목·내용 검색"
           className="w-full max-w-xs"
         />
-        <Button onClick={onSearch} disabled={loading}>
-          검색
-        </Button>
         {unreadCount > 0 && (
           <Badge tone="emerald">
             <Bell size={10} /> {unreadCount}개 안 읽음
@@ -271,142 +247,100 @@ export default function BossNotificationsPage() {
       )}
 
       {loading && items.length === 0 ? (
-        <div className="space-y-px">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-lg" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
+        <Skeleton className="h-64 rounded-lg" />
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={Inbox}
           title="표시할 알림이 없습니다"
           description="새로운 공지·광고·업데이트가 오면 여기에 표시됩니다."
         />
       ) : (
-        <RowList>
-          {items.map((item) => {
-            const { Icon, tone } = categoryIcon(item.typeDtCd);
-            const isRead = bossNotificationsReadStore.isRead(item.boardId);
-            void readVersion;
-            const tags = (
-              <>
-                <Badge tone={tone}>
-                  {item.typeDtNm ?? CATEGORIES.find((c) => c.code === item.typeDtCd)?.label ?? '알림'}
-                </Badge>
-                {!isRead && <Badge tone="emerald">NEW</Badge>}
-              </>
-            );
-            return (
-              <RowItem
-                key={item.boardId ?? Math.random()}
-                onClick={() => openDetail(item)}
-                leading={<RowThumb icon={Icon} />}
-                title={item.subject ?? '(제목 없음)'}
-                subtitle={item.contents ?? undefined}
-                tags={tags}
-                meta={
-                  <div className="flex flex-col items-end gap-1">
-                    <span>{relativeTime(item.crtDtm)}</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Eye size={11} /> {item.viewCnt ?? 0}
+        <DataTable>
+          <thead>
+            <tr>
+              <th className="whitespace-nowrap">유형</th>
+              <th>제목</th>
+              <th>내용</th>
+              <th className="text-center whitespace-nowrap">조회</th>
+              <th className="whitespace-nowrap">등록일</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => {
+              const badge = categoryBadge(item);
+              void readVersion;
+              const isRead = bossNotificationsReadStore.isRead(item.boardId);
+              const summary = stripHtml(item.contents);
+              return (
+                <tr
+                  key={item.boardId ?? Math.random()}
+                  className="cursor-pointer"
+                  onClick={() => openDetail(item)}
+                >
+                  <td className="whitespace-nowrap">
+                    <Badge tone={badge.tone}>{badge.label}</Badge>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={
+                          isRead
+                            ? 'text-boss-text-secondary'
+                            : 'font-medium text-boss-text'
+                        }
+                      >
+                        {item.subject ?? '(제목 없음)'}
+                      </span>
+                      {!isRead && <Badge tone="emerald">NEW</Badge>}
+                    </div>
+                  </td>
+                  <td className="max-w-xs">
+                    <span className="line-clamp-1 text-boss-text-muted">
+                      {summary || '-'}
                     </span>
-                  </div>
-                }
-                actions={
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void removeItem(item);
-                    }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted transition-colors hover:bg-boss-error/10 hover:text-boss-error"
-                    aria-label="삭제"
+                  </td>
+                  <td className="text-center text-boss-text-secondary">
+                    {item.viewCnt ?? 0}
+                  </td>
+                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                    {relativeTime(item.crtDtm)}
+                  </td>
+                  <td
+                    className="whitespace-nowrap text-right"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Trash2 size={13} />
-                  </button>
-                }
-              />
-            );
-          })}
-        </RowList>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={Trash2}
+                      onClick={() => removeItem(item)}
+                      className="text-boss-text-muted hover:text-boss-error"
+                    >
+                      삭제
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
 
-      {(hasMore || page > 0) && (
+      {!isFiltering && (hasMore || page > 0) ? (
         <Pagination
           page={pageNum}
           totalPages={hasMore ? pageNum + 1 : pageNum}
           onChange={(p) => setPage(p - 1)}
           disabled={loading}
         />
-      )}
-
-      {/* 상세 모달 */}
-      {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={closeDetail}
-        >
-          <div
-            className="relative w-full max-w-2xl overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-boss-border p-5">
-              <div className="min-w-0 flex-1">
-                <div className="mb-1.5 flex items-center gap-2 text-xs text-boss-text-muted">
-                  <Badge tone="default">
-                    {selected.typeDtNm ?? CATEGORIES.find((c) => c.code === selected.typeDtCd)?.label ?? '알림'}
-                  </Badge>
-                  <span>{relativeTime(selected.crtDtm)}</span>
-                </div>
-                <h2 className="line-clamp-2 text-lg font-semibold text-boss-text">
-                  {selected.subject ?? '(제목 없음)'}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={closeDetail}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="max-h-[60vh] overflow-y-auto p-5">
-              {detailLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-4 w-full" />
-                  ))}
-                </div>
-              ) : detailError ? (
-                <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <span>{detailError}</span>
-                </div>
-              ) : (
-                <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed text-boss-text">
-                  {selected.contents ?? '내용이 없습니다.'}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-boss-border p-4">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Trash2}
-                onClick={() => removeItem(selected)}
-                className="text-boss-error hover:bg-boss-error/10"
-              >
-                삭제
-              </Button>
-              <Button variant="primary" size="sm" onClick={closeDetail}>
-                닫기
-              </Button>
-            </div>
-          </div>
+      ) : isFiltering ? (
+        <div className="flex justify-end border-t border-boss-border pt-3">
+          <span className="rounded-md bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-muted">
+            현재 페이지 내 필터
+          </span>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
