@@ -60,6 +60,14 @@ function formatDate(input?: string | null) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// 시공 기간: 종료일이 있고 시작일과 다르면 "시작 ~ 종료", 아니면 시작일만
+function formatWorkPeriod(start?: string | null, end?: string | null) {
+  if (end && end !== start) {
+    return `${formatDate(start)} ~ ${formatDate(end)}`;
+  }
+  return formatDate(start);
+}
+
 export default function BossOrderDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const id = Number(params?.id);
@@ -173,8 +181,10 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
             <p className="font-semibold text-boss-primary">{formatMoney(item.totalAmount)}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-boss-text-muted">작업일</p>
-            <p className="font-semibold text-boss-text">{formatDate(item.workDate)}</p>
+            <p className="text-xs text-boss-text-muted">시공 기간</p>
+            <p className="font-semibold text-boss-text">
+              {formatWorkPeriod(item.workDate, item.workEndDate)}
+            </p>
           </div>
         </div>
       </Card>
@@ -195,7 +205,11 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
             icon={Wallet}
             highlight
           />
-          <Info label="작업일" value={item.workDate ? formatDate(item.workDate) : undefined} icon={Calendar} />
+          <Info
+            label="시공 기간"
+            value={item.workDate ? formatWorkPeriod(item.workDate, item.workEndDate) : undefined}
+            icon={Calendar}
+          />
           <Info
             label="견적일"
             value={item.estimateDate ? formatDate(item.estimateDate) : undefined}

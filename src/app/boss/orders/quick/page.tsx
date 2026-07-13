@@ -27,6 +27,7 @@ export default function BossOrderQuickPage() {
     email: '',
     estimateDate: '',
     workDate: '',
+    workEndDate: '',
     post: '',
     address1: '',
     address2: '',
@@ -50,6 +51,7 @@ export default function BossOrderQuickPage() {
         ...form,
         estimateDate: toYyyyMMddHHmm(form.estimateDate),
         workDate: toYyyyMMddHHmm(form.workDate),
+        workEndDate: toYyyyMMddHHmm(form.workEndDate),
         companyId: userInfo?.companyId ?? undefined,
       };
       const res = await bossCustomersApi.create(payload);
@@ -129,11 +131,19 @@ export default function BossOrderQuickPage() {
                 className="boss-input"
               />
             </Field>
-            <Field label="시공일" icon={Calendar}>
+            <Field label="시공 시작일" icon={Calendar}>
               <input
                 type="datetime-local"
                 value={form.workDate}
                 onChange={(e) => set('workDate', e.target.value)}
+                className="boss-input"
+              />
+            </Field>
+            <Field label="시공 종료일" icon={Calendar}>
+              <input
+                type="datetime-local"
+                value={form.workEndDate}
+                onChange={(e) => set('workEndDate', e.target.value)}
                 className="boss-input"
               />
             </Field>

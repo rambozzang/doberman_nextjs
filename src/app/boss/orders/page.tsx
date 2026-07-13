@@ -181,6 +181,11 @@ export default function BossOrderListPage() {
                   </td>
                   <td className="whitespace-nowrap text-boss-text-secondary">
                     {item.workDate ?? item.estimateDate ?? '-'}
+                    {item.workDate && item.workEndDate && item.workEndDate !== item.workDate && (
+                      <span className="block text-xs text-boss-text-muted">
+                        ~ {item.workEndDate}
+                      </span>
+                    )}
                   </td>
                   <td className="text-right font-medium text-boss-primary whitespace-nowrap">
                     {formatMoney(item.totalAmount)}

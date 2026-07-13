@@ -203,6 +203,7 @@ export interface BossOrderItem {
   address1?: string;
   address2?: string;
   workDate?: string;
+  workEndDate?: string | null;
   estimateDate?: string;
   memo?: string;
   statusCd?: string;

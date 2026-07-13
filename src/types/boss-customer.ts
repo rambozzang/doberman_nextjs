@@ -6,7 +6,8 @@ export interface BossCustomerData {
   name?: string;
   phone?: string;
   email?: string;
-  workDate?: string;      // yyyyMMddHHmm
+  workDate?: string;      // yyyyMMddHHmm (시공 시작일)
+  workEndDate?: string | null; // yyyyMMddHHmm (시공 종료일)
   estimateDate?: string;  // yyyyMMddHHmm
   post?: string;
   address1?: string;
