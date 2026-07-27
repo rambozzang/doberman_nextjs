@@ -129,8 +129,10 @@ export default function MapPage() {
     ? { sido: selectedMarker.sido, sigungu: selectedMarker.sigungu }
     : dominantRegion(markers);
 
+  // 사이트 헤더가 fixed(z-50) 라 흐름을 차지하지 않는다. 헤더 높이(h-16 lg:h-20)만큼
+  // 위쪽 패딩을 주지 않으면 좌우 패널과 지도가 헤더에 가려진다.
   return (
-    <div className="flex h-[calc(100dvh-64px)] min-h-[560px] flex-col lg:h-[calc(100dvh-80px)]">
+    <div className="flex h-[100dvh] min-h-[620px] flex-col pt-16 lg:pt-20">
       {/* 모바일 탭 — 3분할이 들어가지 않으므로 화면을 전환한다 */}
       <div className="flex border-b border-slate-700 bg-slate-900 lg:hidden">
         {(
