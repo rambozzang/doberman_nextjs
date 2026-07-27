@@ -140,8 +140,29 @@ INSERT INTO TB_VENDOR_AD (VENDOR_ID,TIER,REGION_SIDO,REGION_SIGUNGU,TITLE,BODY,S
 VALUES (123, 2, '서울특별시', '강남구', '강남 도배 전문', '20년 경력', '2026-08-01', '2026-08-31');
 ```
 
-## 8. 남은 작업
-- 회원사(`TB_COMPANY` 177건) 지오코딩 후 `TB_VENDOR` 병합 (`MEMBER_YN='Y'`) — NCP 키 필요
+## 8. 현재 적재된 데이터 (2026-07-28)
+
+| 항목 | 건수 |
+|---|---|
+| `TB_VENDOR` | **136곳** (전부 회원사, 15개 시도, 82개 시군구) |
+| 지오코딩 실패 | 41곳 — 좌표를 추측하지 않고 건너뜀 |
+| `TB_VENDOR_LINK` | 3건 (모두 네이버 블로그, 출처 `HOMEPAGE`) |
+| `TB_VENDOR_AD` | 0건 |
+| `TB_VENDOR_STORY` | 0건 |
+
+회원사는 `member_sync` 로 적재했다. 지오코더가 Nominatim(OSM) 이라 적중률이 77% 였다.
+**NCP 키를 넣고 다시 돌리면 실패한 41곳도 대부분 채워진다** — `member_sync` 는 upsert 라
+그냥 다시 실행하면 된다.
+```bash
+# python/.env 에 NAVER_MAP_CLIENT_ID / NAVER_MAP_CLIENT_SECRET 추가 후
+python3 -m vendor.member_sync
+```
+
+상가정보 CSV 를 넣으면 `SOURCE='SBIZ'` 로 전국 업체가 추가된다(3장 참고).
+
+## 9. 남은 작업
+- 상가정보 CSV 적재 — 전국 업체 확보 (CSV 다운로드만 필요)
+- 지오코딩 실패 41곳 — NCP 키로 재실행
 - 업체 claim(내 업체 등록) 화면 — SNS 공식 링크를 업체가 직접 넣는 경로
-- 광고 등록/결제 관리 화면 (현재는 DB 직접 INSERT)
+- 광고 결제 연동 (등록/중지 화면은 `/boss/ads` 에 있음)
 - 이야기 신고/차단
