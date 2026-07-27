@@ -82,19 +82,66 @@ VENDOR_DB_NAME=doberman
 라벨 값(건물유형·벽지종류 등)은 `/quote-request` 와 동일하게 맞췄다 — 사장님 대시보드에서
 같은 기준으로 필터되어야 하므로 임의 문구를 쓰면 안 된다.
 
-## 5. SNS/플랫폼 링크 (현재 1차 구현)
+## 5. SNS/플랫폼 링크
 
-`src/app/map/socialLinks.ts` — 인스타그램·틱톡·유튜브·당근·숨고·크몽.
+인스타그램·틱톡·유튜브·당근·숨고·크몽. **수집된 실제 계정이 있으면 그것을, 없으면 검색으로**
+대체한다. 좌측 패널에서 체크 표시가 있는 것이 수집된 실제 계정이다.
 
-**현재는 업체명+지역 검색 URL 로 이동한다.** 6개 플랫폼을 스크래핑하면 각 사 약관 위반이자
-차단 위험이 크고, 상호명만으로 계정을 자동 매칭하면 동명 업체 오탐이 심하기 때문이다.
-업체가 직접 등록(claim)한 공식 URL 을 우선 노출하는 것이 다음 단계다.
+### 수집 방법 (`python/vendor/link_resolver.py`)
+각 SNS 를 직접 스크래핑하지 않는다. 약관 위반이고 차단 위험이 크며, 상호명만으로
+계정을 자동 매칭하면 동명 업체 오탐이 심하다. 대신 두 가지만 쓴다.
 
-동작 확인이 필요한 URL 패턴: `daangn`, `soomgo`, `kmong` (`verified: false` 로 표시됨).
-각 사가 경로를 바꾸면 이 파일 한 곳만 고치면 된다.
+| 출처 | 방법 | 신뢰도 |
+|---|---|---|
+| `HOMEPAGE` | 업체가 자기 홈페이지에 걸어둔 링크를 읽는다 | 업체 본인이 건 링크라 오탐 없음 (`VERIFIED_YN='Y'`) |
+| `YOUTUBE_API` | YouTube Data API v3 공식 검색 | 채널명이 업체명과 겹칠 때만 채택 (`VERIFIED_YN='N'`) |
 
-## 6. 남은 작업
-- 회원사(`TB_COMPANY` 177건) 지오코딩 후 `TB_VENDOR` 병합 (`MEMBER_YN='Y'`)
-- 업체 claim + SNS 공식 링크 등록
-- 광고 슬롯 (`AD_TIER` 컬럼은 준비됨)
-- 업체 커뮤니티(이야기)
+```bash
+cd /vdata/python
+python3 -m vendor.link_resolver --dry-run --limit 20      # 결과만 확인
+python3 -m vendor.link_resolver --limit 200               # 홈페이지 수집
+python3 -m vendor.link_resolver --limit 200 --youtube     # YouTube API 도 함께
+```
+
+YouTube 를 쓰려면 `python/.env` 에 `YOUTUBE_API_KEY=...` (Google Cloud → YouTube Data API v3).
+없으면 자동으로 건너뛴다.
+
+인스타/틱톡/당근/숨고/크몽은 공개 검색 API 가 없어 홈페이지 경유로만 수집된다.
+수집 안 된 플랫폼은 프런트가 검색 딥링크로 대체 표시한다.
+검색 URL 패턴 중 `daangn`·`soomgo`·`kmong` 은 실제 확인이 안 돼 `verified: false` 로
+표시했다 — `src/app/map/socialLinks.ts` 한 곳만 고치면 된다.
+
+## 6. 이야기(커뮤니티)
+
+좌측 패널 "이야기" 탭. 업체를 선택하면 그 업체 게시판, 선택 안 하면 전체 광장이다.
+
+기존 `TB_BOARD_MASTER` 는 앱 게시판과 공용 네이티브 쿼리를 쓰고 있어 손대면 영향 범위가
+크므로 **지도 전용 테이블로 격리**했다(`TB_VENDOR_STORY`, `TB_VENDOR_STORY_COMMENT`).
+
+- 비로그인 열람·작성 허용 (표시 이름을 비우면 "익명")
+- 삭제는 작성자 본인만 (로그인 필요 — 비로그인 글은 주체 확인 불가)
+- 댓글 수는 캐시 컬럼이며 등록/삭제 시 실제 건수로 재계산한다
+
+## 7. 광고
+
+`TB_VENDOR_AD` — 지역 타겟(시도/시군구, NULL=전국) + 기간 + 등급 + 노출/클릭 집계.
+
+- 좌측 패널 최상단에 최대 2건 노출. 조회 시 노출수가 서버에서 자동 집계된다
+- 클릭 시 `POST /web/vendor/ads/{id}/click` 으로 집계 후 랜딩 URL 로 이동
+  (랜딩이 없으면 업체 상세를 연다)
+- **노출 우선순위: 시군구 일치 → 시도 일치 → 전국, 그다음 등급 높은 순, 그다음 노출 적은 순**
+  (같은 등급 안에서 균등 노출)
+- 지도 마커 우선순위는 `TB_VENDOR.AD_TIER` 로 반영된다.
+  광고 등록/종료 후 `WebVendorAdSvc.syncAdTier()` 를 호출해야 마커에 반영된다
+
+광고 등록 화면은 아직 없다. 현재는 `TB_VENDOR_AD` 직접 INSERT 로 집행한다.
+```sql
+INSERT INTO TB_VENDOR_AD (VENDOR_ID,TIER,REGION_SIDO,REGION_SIGUNGU,TITLE,BODY,START_DT,END_DT)
+VALUES (123, 2, '서울특별시', '강남구', '강남 도배 전문', '20년 경력', '2026-08-01', '2026-08-31');
+```
+
+## 8. 남은 작업
+- 회원사(`TB_COMPANY` 177건) 지오코딩 후 `TB_VENDOR` 병합 (`MEMBER_YN='Y'`) — NCP 키 필요
+- 업체 claim(내 업체 등록) 화면 — SNS 공식 링크를 업체가 직접 넣는 경로
+- 광고 등록/결제 관리 화면 (현재는 DB 직접 INSERT)
+- 이야기 신고/차단

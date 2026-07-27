@@ -7,6 +7,7 @@ export interface VendorMarker {
   lat: number;
   lng: number;
   phone?: string | null;
+  sido?: string | null;
   sigungu?: string | null;
   memberYn: string;
   adTier: number;
@@ -27,6 +28,15 @@ export interface VendorCluster {
   lng: number;
 }
 
+// 수집/등록된 실제 SNS 링크. 없으면 검색 딥링크로 대체한다.
+export interface VendorLink {
+  platform: string;
+  url: string;
+  title?: string | null;
+  source: string;
+  verified: boolean;
+}
+
 // 좌측 상세 패널
 export interface VendorDetail {
   vendorId: number;
@@ -43,6 +53,60 @@ export interface VendorDetail {
   memberYn: string;
   adTier: number;
   companyId?: number | null;
+  links?: VendorLink[];
+}
+
+// ── 이야기(커뮤니티) ──────────────────────────────────────────
+export interface VendorStory {
+  storyId: number;
+  vendorId?: number | null;
+  title: string;
+  contents: string;
+  writerName: string;
+  mine: boolean;
+  commentCnt: number;
+  likeCnt: number;
+  viewCnt: number;
+  crtDtm?: string | null;
+}
+
+export interface VendorStoryComment {
+  commentId: number;
+  contents: string;
+  writerName: string;
+  mine: boolean;
+  crtDtm?: string | null;
+}
+
+export interface VendorStoryListResponse {
+  total: number;
+  page: number;
+  stories: VendorStory[];
+}
+
+export interface VendorStoryDetail {
+  story: VendorStory;
+  comments: VendorStoryComment[];
+}
+
+// ── 광고 ─────────────────────────────────────────────────────
+export interface VendorAd {
+  adId: number;
+  vendorId: number;
+  vendorName: string;
+  tier: number;
+  title: string;
+  body?: string | null;
+  imageUrl?: string | null;
+  landingUrl?: string | null;
+  phone?: string | null;
+  sigungu?: string | null;
+}
+
+export interface VendorAdClickResponse {
+  adId: number;
+  landingUrl?: string | null;
+  vendorId: number;
 }
 
 export interface VendorMapRequest {

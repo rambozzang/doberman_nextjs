@@ -7,11 +7,36 @@ import { VendorService } from "@/services/vendorService";
 import VendorMap, { MARKER_ZOOM } from "./components/VendorMap";
 import VendorPanel from "./components/VendorPanel";
 import QuotePanel from "./components/QuotePanel";
+import StoryPanel from "./components/StoryPanel";
+import AdSlot from "./components/AdSlot";
 
 const MARKER_LIMIT = 500;
 const FETCH_DEBOUNCE_MS = 300;
 
 type MobileTab = "list" | "map" | "quote";
+type LeftTab = "vendor" | "story";
+
+/** 화면에 보이는 업체들의 지역 중 가장 많은 곳 — 광고 타겟 기준으로 쓴다. */
+function dominantRegion(markers: VendorMarker[]): { sido?: string | null; sigungu?: string | null } {
+  if (markers.length === 0) return {};
+  const counts = new Map<string, number>();
+  markers.forEach((m) => {
+    if (!m.sigungu) return;
+    const key = `${m.sido ?? ""}|${m.sigungu}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+  let best: string | null = null;
+  let bestCount = 0;
+  counts.forEach((c, k) => {
+    if (c > bestCount) {
+      best = k;
+      bestCount = c;
+    }
+  });
+  if (!best) return {};
+  const [sido, sigungu] = (best as string).split("|");
+  return { sido: sido || null, sigungu: sigungu || null };
+}
 
 export default function MapPage() {
   const [markers, setMarkers] = useState<VendorMarker[]>([]);
@@ -23,6 +48,7 @@ export default function MapPage() {
   const [quoteVendor, setQuoteVendor] = useState<VendorDetail | null>(null);
   const [keyword, setKeyword] = useState("");
   const [mobileTab, setMobileTab] = useState<MobileTab>("map");
+  const [leftTab, setLeftTab] = useState<LeftTab>("vendor");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBoundsRef = useRef<MapBounds | null>(null);
@@ -97,6 +123,11 @@ export default function MapPage() {
   }, []);
 
   const truncated = total > markers.length;
+  const selectedMarker = markers.find((m) => m.vendorId === selectedId) ?? null;
+  // 업체를 골랐으면 그 업체 지역, 아니면 화면에서 가장 많이 보이는 지역으로 광고를 타겟한다
+  const adRegion = selectedMarker
+    ? { sido: selectedMarker.sido, sigungu: selectedMarker.sigungu }
+    : dominantRegion(markers);
 
   return (
     <div className="flex h-[calc(100dvh-64px)] min-h-[560px] flex-col lg:h-[calc(100dvh-80px)]">
@@ -127,22 +158,51 @@ export default function MapPage() {
       <div className="flex min-h-0 flex-1">
         {/* 좌측 — 업체 목록/상세 */}
         <aside
-          className={`w-full shrink-0 border-r border-slate-700 lg:block lg:w-80 xl:w-96 ${
-            mobileTab === "list" ? "block" : "hidden"
+          className={`w-full shrink-0 flex-col border-r border-slate-700 bg-slate-900 lg:flex lg:w-80 xl:w-96 ${
+            mobileTab === "list" ? "flex" : "hidden"
           }`}
         >
-          <VendorPanel
-            markers={markers}
-            total={total}
-            truncated={truncated}
-            zoomedOut={zoomedOut}
-            loading={loading}
-            selectedId={selectedId}
-            keyword={keyword}
-            onKeywordChange={setKeyword}
-            onSelect={setSelectedId}
-            onRequestQuote={handleRequestQuote}
-          />
+          <AdSlot sido={adRegion.sido} sigungu={adRegion.sigungu} onSelectVendor={setSelectedId} />
+
+          <div className="flex border-b border-slate-700">
+            {(
+              [
+                { key: "vendor", label: "업체" },
+                { key: "story", label: "이야기" },
+              ] as const
+            ).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setLeftTab(key)}
+                className={`flex-1 py-2 text-xs font-semibold transition ${
+                  leftTab === key
+                    ? "border-b-2 border-blue-500 text-white"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="min-h-0 flex-1">
+            {leftTab === "vendor" ? (
+              <VendorPanel
+                markers={markers}
+                total={total}
+                truncated={truncated}
+                zoomedOut={zoomedOut}
+                loading={loading}
+                selectedId={selectedId}
+                keyword={keyword}
+                onKeywordChange={setKeyword}
+                onSelect={setSelectedId}
+                onRequestQuote={handleRequestQuote}
+              />
+            ) : (
+              <StoryPanel vendorId={selectedId} vendorName={selectedMarker?.name} />
+            )}
+          </div>
         </aside>
 
         {/* 중앙 — 지도 */}
