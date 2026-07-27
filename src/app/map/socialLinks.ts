@@ -61,6 +61,15 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     searchUrl: (q) => `https://kmong.com/search?type=gigs&keyword=${encodeURIComponent(q)}`,
     verified: false,
   },
+  // 도배 업체가 실제로 가장 많이 쓰는 채널 — 회원사 홈페이지가 대부분 네이버 블로그였다
+  {
+    key: "naverblog",
+    label: "블로그",
+    color: "bg-green-600",
+    searchUrl: (q) =>
+      `https://search.naver.com/search.naver?ssc=tab.blog.all&query=${encodeURIComponent(q)}`,
+    verified: true,
+  },
 ];
 
 /** 검색 정확도를 위해 업체명에 지역을 붙인다. 도배 키워드는 업종 한정용. */
