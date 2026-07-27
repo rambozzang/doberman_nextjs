@@ -50,6 +50,8 @@ interface VendorMapProps {
   selectedId: number | null;
   onBoundsChange: (bounds: MapBounds, zoom: number) => void;
   onSelect: (vendorId: number) => void;
+  /** 지도를 못 띄웠을 때. 부모가 지역 선택 방식으로 전환한다 */
+  onUnavailable?: (reason: string) => void;
 }
 
 export default function VendorMap({
@@ -58,6 +60,7 @@ export default function VendorMap({
   selectedId,
   onBoundsChange,
   onSelect,
+  onUnavailable,
 }: VendorMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -69,6 +72,8 @@ export default function VendorMap({
   // 최신 콜백을 지도 이벤트 핸들러에서 쓰기 위한 ref (리스너를 재등록하지 않도록)
   const boundsCbRef = useRef(onBoundsChange);
   boundsCbRef.current = onBoundsChange;
+  const onUnavailableRef = useRef(onUnavailable);
+  onUnavailableRef.current = onUnavailable;
 
   const emitBounds = useCallback(() => {
     const map = mapRef.current;
@@ -102,7 +107,11 @@ export default function VendorMap({
         emitBounds();
       })
       .catch((e: Error) => {
-        if (!cancelled) setLoadError(e.message);
+        if (cancelled) return;
+        setLoadError(e.message);
+        // 지도가 없으면 bbox 를 얻을 수 없어 목록이 영원히 빈다.
+        // 부모가 지역 선택 방식으로 갈아탈 수 있게 알린다.
+        onUnavailableRef.current?.(e.message);
       });
     return () => {
       cancelled = true;

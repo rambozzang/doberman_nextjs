@@ -9,6 +9,7 @@ import VendorPanel from "./components/VendorPanel";
 import QuotePanel from "./components/QuotePanel";
 import StoryPanel from "./components/StoryPanel";
 import AdSlot from "./components/AdSlot";
+import RegionPicker from "./components/RegionPicker";
 
 const MARKER_LIMIT = 500;
 const FETCH_DEBOUNCE_MS = 300;
@@ -49,6 +50,12 @@ export default function MapPage() {
   const [keyword, setKeyword] = useState("");
   const [mobileTab, setMobileTab] = useState<MobileTab>("map");
   const [leftTab, setLeftTab] = useState<LeftTab>("vendor");
+  // 지도를 못 띄운 경우 — 지역 선택으로 대체한다
+  const [mapDown, setMapDown] = useState<string | null>(null);
+  const [region, setRegion] = useState<{ sido: string | null; sigungu: string | null }>({
+    sido: null,
+    sigungu: null,
+  });
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBoundsRef = useRef<MapBounds | null>(null);
@@ -111,6 +118,37 @@ export default function MapPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  // 지도 대체 경로: 지역이 정해지면 그 지역 업체를 불러온다
+  useEffect(() => {
+    if (!mapDown) return;
+    if (!region.sido) {
+      setMarkers([]);
+      setTotal(0);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    VendorService.getByRegion({
+      sido: region.sido,
+      sigungu: region.sigungu ?? undefined,
+      keyword: keyword || undefined,
+      limit: MARKER_LIMIT,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data) {
+          setMarkers(res.data.markers ?? []);
+          setTotal(res.data.total ?? 0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mapDown, region, keyword]);
 
   const handleRequestQuote = useCallback((vendor: VendorDetail) => {
     setQuoteVendor(vendor);
@@ -193,7 +231,7 @@ export default function MapPage() {
                 markers={markers}
                 total={total}
                 truncated={truncated}
-                zoomedOut={zoomedOut}
+                zoomedOut={mapDown ? !region.sido : zoomedOut}
                 loading={loading}
                 selectedId={selectedId}
                 keyword={keyword}
@@ -209,13 +247,26 @@ export default function MapPage() {
 
         {/* 중앙 — 지도 */}
         <div className={`min-w-0 flex-1 lg:block ${mobileTab === "map" ? "block" : "hidden"}`}>
-          <VendorMap
-            markers={markers}
-            clusters={clusters}
-            selectedId={selectedId}
-            onBoundsChange={handleBoundsChange}
-            onSelect={handleSelect}
-          />
+          {mapDown ? (
+            <RegionPicker
+              clusters={clusters}
+              selected={region}
+              reason={mapDown}
+              onSelect={(sido, sigungu) => {
+                setRegion({ sido, sigungu });
+                setSelectedId(null);
+              }}
+            />
+          ) : (
+            <VendorMap
+              markers={markers}
+              clusters={clusters}
+              selectedId={selectedId}
+              onBoundsChange={handleBoundsChange}
+              onSelect={handleSelect}
+              onUnavailable={(reason) => setMapDown(reason)}
+            />
+          )}
         </div>
 
         {/* 우측 — 견적 요청 */}

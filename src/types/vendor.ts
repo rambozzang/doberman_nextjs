@@ -118,6 +118,14 @@ export interface VendorMapRequest {
   limit?: number;
 }
 
+// 지역 기준 조회 — 지도 SDK 가 없을 때 bbox 대신 쓴다
+export interface VendorRegionRequest {
+  sido?: string;
+  sigungu?: string;
+  keyword?: string;
+  limit?: number;
+}
+
 // 지도 경계 (네이버 지도 getBounds 결과를 옮겨담는 용도)
 export interface MapBounds {
   swLat: number;

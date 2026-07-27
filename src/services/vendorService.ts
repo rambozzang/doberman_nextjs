@@ -7,6 +7,7 @@ import {
   VendorDetail,
   VendorMapRequest,
   VendorMapResponse,
+  VendorRegionRequest,
   VendorStory,
   VendorStoryComment,
   VendorStoryDetail,
@@ -18,6 +19,11 @@ export class VendorService {
   // 지도 영역 내 업체 조회 (비로그인 공개)
   static async getInBounds(params: VendorMapRequest): Promise<ApiResponse<VendorMapResponse>> {
     return await ApiClient.post<VendorMapResponse>('/vendor/map', params);
+  }
+
+  // 지역 기준 조회 — 지도 SDK 가 없을 때의 대체 경로
+  static async getByRegion(params: VendorRegionRequest): Promise<ApiResponse<VendorMapResponse>> {
+    return await ApiClient.post<VendorMapResponse>('/vendor/by-region', params);
   }
 
   // 시군구 단위 업체 수 집계 (지도 축소 상태용)
