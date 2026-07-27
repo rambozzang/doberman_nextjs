@@ -89,7 +89,7 @@ VENDOR_DB_NAME=doberman
 
 ### 수집 방법 (`python/vendor/link_resolver.py`)
 각 SNS 를 직접 스크래핑하지 않는다. 약관 위반이고 차단 위험이 크며, 상호명만으로
-계정을 자동 매칭하면 동명 업체 오탐이 심하다. 대신 두 가지만 쓴다.
+계정을 자동 매칭하면 동명 업체 오탐이 심하다. 대신 공식 경로 세 가지만 쓴다.
 
 | 출처 | 방법 | 신뢰도 |
 |---|---|---|
@@ -144,11 +144,20 @@ YouTube 를 쓰려면 `python/.env` 에 `YOUTUBE_API_KEY=...` (Google Cloud → 
 - 지도 마커 우선순위는 `TB_VENDOR.AD_TIER` 로 반영된다.
   광고 등록/종료 후 `WebVendorAdSvc.syncAdTier()` 를 호출해야 마커에 반영된다
 
-광고 등록 화면은 아직 없다. 현재는 `TB_VENDOR_AD` 직접 INSERT 로 집행한다.
-```sql
-INSERT INTO TB_VENDOR_AD (VENDOR_ID,TIER,REGION_SIDO,REGION_SIGUNGU,TITLE,BODY,START_DT,END_DT)
-VALUES (123, 2, '서울특별시', '강남구', '강남 도배 전문', '20년 경력', '2026-08-01', '2026-08-31');
-```
+### 광고 등록 화면
+**`/boss/ads`** (사이드바 '인사이트' → 지도 광고). 목록·노출/클릭/클릭률·등록·중지.
+
+관리 API 는 `/web/vendor-ad` 하위(인증)를 쓴다. 노출용 `/web/vendor` 하위는 permitAll 이라
+같은 경로에 두면 광고 등록이 비로그인에게 열리기 때문이다.
+
+| 엔드포인트 | 용도 |
+|---|---|
+| `POST /web/vendor-ad/my` | 내 업체 광고 목록 |
+| `POST /web/vendor-ad/create` | 등록 (즉시 `syncAdTier()` 로 마커 반영) |
+| `POST /web/vendor-ad/{id}/stop` | 게시 중지 |
+
+업체 연결은 `TB_USER.COMPANY_ID` → `TB_VENDOR.COMPANY_ID` 다.
+회사 주소가 없어 지도에 미등록이면 화면에서 주소 등록을 안내한다.
 
 ## 8. 현재 적재된 데이터 (2026-07-28)
 
