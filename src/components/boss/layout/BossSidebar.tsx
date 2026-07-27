@@ -28,6 +28,7 @@ import {
   Receipt,
   Contact,
   PenTool,
+  Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -80,6 +81,7 @@ const SECTIONS: NavSection[] = [
       { href: '/boss/statistics', label: '종합 통계', icon: BarChart3 },
       { href: '/boss/community', label: '커뮤니티', icon: Users, exclude: ['/boss/community/jobs'] },
       { href: '/boss/community/jobs', label: '구인 / 구직', icon: Briefcase },
+      { href: '/boss/ads', label: '지도 광고', icon: Megaphone },
     ],
   },
   {
