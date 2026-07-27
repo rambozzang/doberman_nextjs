@@ -95,12 +95,22 @@ VENDOR_DB_NAME=doberman
 |---|---|---|
 | `HOMEPAGE` | 업체가 자기 홈페이지에 걸어둔 링크를 읽는다 | 업체 본인이 건 링크라 오탐 없음 (`VERIFIED_YN='Y'`) |
 | `YOUTUBE_API` | YouTube Data API v3 공식 검색 | 채널명이 업체명과 겹칠 때만 채택 (`VERIFIED_YN='N'`) |
+| `NAVER_API` | 네이버 블로그 검색 API | 블로그명·제목에 업체명이 겹칠 때만 채택 (`VERIFIED_YN='N'`) |
+
+**네이버 블로그가 가장 중요하다.** 회원사 중 홈페이지가 있는 3곳이 전부 네이버
+블로그였다. 다만 기존 네이버 앱은 로그인 전용이라 검색 스코프가 꺼져 있다
+(401 `Scopes are Empty`). developers.naver.com 앱에서 **'검색' API 를 추가**하고
+`python/.env` 에 아래를 넣으면 136곳 전체를 자동 수집할 수 있다.
+```
+NAVER_SEARCH_CLIENT_ID=...
+NAVER_SEARCH_CLIENT_SECRET=...
+```
 
 ```bash
 cd /vdata/python
 python3 -m vendor.link_resolver --dry-run --limit 20      # 결과만 확인
 python3 -m vendor.link_resolver --limit 200               # 홈페이지 수집
-python3 -m vendor.link_resolver --limit 200 --youtube     # YouTube API 도 함께
+python3 -m vendor.link_resolver --limit 200 --youtube --naverblog  # 공식 검색 API 도 함께
 ```
 
 YouTube 를 쓰려면 `python/.env` 에 `YOUTUBE_API_KEY=...` (Google Cloud → YouTube Data API v3).
