@@ -4,18 +4,21 @@
 
 ## 1. 필요한 키 2개
 
-### 1-1. 네이버 지도 (필수 — 없으면 지도가 안 뜸)
+### 1-1. 네이버 지도
 NAVER Cloud Platform → **Maps → Web Dynamic Map** 에서 발급.
 **네이버 로그인 API 키(`NEXT_PUBLIC_NAVER_CLIENT_ID`)와 다른 키다.**
 
-`web/.env.local` 에 추가:
+웹은 모바일 앱과 같은 공개 클라이언트 ID(`1xvp7vju2q`)를 기본값으로 사용한다.
+이 값은 지도 SDK 요청에 노출되는 공개 식별자이며, NCP의 Web 서비스 URL 제한으로 보호한다.
+별도 Maps 애플리케이션을 쓰는 환경에서만 `web/.env.local` 로 덮어쓴다:
 ```
 NEXT_PUBLIC_NAVER_MAP_CLIENT_ID=발급받은_키
 # 신규 콘솔 키는 ncpKeyId(기본값). 구 콘솔 키라면 아래를 ncpClientId 로 지정
 # NEXT_PUBLIC_NAVER_MAP_AUTH_PARAM=ncpClientId
 ```
 
-발급 시 **Web 서비스 URL** 에 `https://www.doberman.kr` 과 `http://localhost:3000` 을 등록해야 한다.
+NCP 애플리케이션의 **Web 서비스 URL** 에 `https://www.doberman.kr` 과
+`http://localhost:3000` 을 등록해야 한다.
 등록하지 않으면 인증 실패로 지도가 뜨지 않는다.
 
 ### 1-2. 공공데이터포털 (업체 데이터)
