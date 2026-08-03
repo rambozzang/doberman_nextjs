@@ -9,7 +9,7 @@
 // 하위 카테고리(typeDtCd) 로 공지(NOTI)/광고(AD)/업데이트(UPDATE) 를 구분한다.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, RefreshCw, CheckCheck, Trash2, Inbox, AlertCircle } from 'lucide-react';
+import { Bell, RefreshCw, CheckCheck, Inbox, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   bossNotificationsApi,
@@ -32,6 +32,8 @@ import {
   EmptyState,
   Pagination,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 type BadgeTone = 'default' | 'emerald' | 'amber' | 'sky';
@@ -98,6 +100,8 @@ export default function BossNotificationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [readVersion, setReadVersion] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<BossNotificationItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(
     async (targetPage: number, cat: BossNotificationCategory) => {
@@ -147,19 +151,24 @@ export default function BossNotificationsPage() {
     router.push(`/boss/notifications/${item.boardId}`);
   };
 
-  const removeItem = async (item: BossNotificationItem) => {
-    if (item.boardId == null) return;
-    if (!window.confirm('이 알림을 삭제하시겠습니까?')) return;
+  // 알림 삭제 (확인 모달 → API → 목록 반영)
+  const handleDelete = async () => {
+    const target = pendingDelete;
+    if (target?.boardId == null) return;
+    setDeleting(true);
     try {
-      const res = await bossNotificationsApi.remove(item.boardId);
+      const res = await bossNotificationsApi.remove(target.boardId);
       if (res.success !== false) {
         toast.success('알림이 삭제되었습니다.');
-        setItems((prev) => prev.filter((x) => x.boardId !== item.boardId));
+        setItems((prev) => prev.filter((x) => x.boardId !== target.boardId));
+        setPendingDelete(null);
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');
       }
     } catch {
       toast.error('네트워크 오류로 삭제에 실패했습니다.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -306,19 +315,11 @@ export default function BossNotificationsPage() {
                   <td className="whitespace-nowrap text-xs text-boss-text-muted">
                     {relativeTime(item.crtDtm)}
                   </td>
-                  <td
-                    className="whitespace-nowrap text-right"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={Trash2}
-                      onClick={() => removeItem(item)}
-                      className="text-boss-text-muted hover:text-boss-error"
-                    >
-                      삭제
-                    </Button>
+                  <td className="whitespace-nowrap text-right">
+                    <RowActions
+                      onDelete={() => setPendingDelete(item)}
+                      deleting={deleting && pendingDelete?.boardId === item.boardId}
+                    />
                   </td>
                 </tr>
               );
@@ -341,6 +342,16 @@ export default function BossNotificationsPage() {
           </span>
         </div>
       ) : null}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="알림 삭제"
+        description={`'${pendingDelete?.subject ?? '선택한 알림'}'을(를) 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

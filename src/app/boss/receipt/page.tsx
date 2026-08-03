@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, RefreshCw, Inbox } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { bossReceiptApi } from '@/lib/api/boss/receipt';
 import type { MonthlySummary, ReceiptData } from '@/types/boss-receipt';
 import { categoryLabel, paymentLabel } from '@/types/boss-receipt';
@@ -17,6 +18,8 @@ import {
   Badge,
   EmptyState,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 function formatWon(n?: number): string {
@@ -81,7 +84,31 @@ export default function BossReceiptListPage() {
     void load(ym);
   }, [ym, load]);
 
-  const receipts = summary?.receipts ?? [];
+  const receipts = useMemo(() => summary?.receipts ?? [], [summary]);
+
+  const [pendingDelete, setPendingDelete] = useState<ReceiptData | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // 영수증 삭제 (확인 모달 → API → 월별 목록 새로고침)
+  const handleDelete = async () => {
+    const target = pendingDelete;
+    if (target?.id == null) return;
+    setDeleting(true);
+    try {
+      const res = await bossReceiptApi.remove(target.id);
+      if (res.success) {
+        toast.success('영수증을 삭제했습니다.');
+        setPendingDelete(null);
+        await load(ym);
+      } else {
+        toast.error(res.message || '삭제에 실패했습니다.');
+      }
+    } catch {
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!keyword.trim()) return receipts;
@@ -206,15 +233,13 @@ export default function BossReceiptListPage() {
                       <span className="text-boss-text-muted">-</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={goDetail}
-                      disabled={id == null}
-                    >
-                      상세
-                    </Button>
+                  <td className="whitespace-nowrap text-right">
+                    <RowActions
+                      editLabel="상세"
+                      onEdit={id != null ? goDetail : undefined}
+                      onDelete={id != null ? () => setPendingDelete(item) : undefined}
+                      deleting={deleting && pendingDelete?.id === item.id}
+                    />
                   </td>
                 </tr>
               );
@@ -233,6 +258,16 @@ export default function BossReceiptListPage() {
           </span>
         </div>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="영수증 삭제"
+        description={`'${pendingDelete?.vendorName ?? '선택한 영수증'}' 영수증을 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

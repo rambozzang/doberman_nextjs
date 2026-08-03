@@ -11,10 +11,13 @@ import {
   EmptyState,
   Pagination,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import type { BossCustomerData } from '@/types/boss-customer';
 import { RefreshCw, Users, Phone, Mail } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
 
@@ -46,6 +49,29 @@ export default function BossCustomerListPage() {
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState<BossCustomerData | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // 고객 삭제 (확인 모달 → API → 목록 반영)
+  const handleDelete = async () => {
+    const target = pendingDelete;
+    if (!target?.id) return;
+    setDeleting(true);
+    try {
+      const res = await bossCustomersApi.remove(target.id);
+      if (res.success) {
+        toast.success('고객을 삭제했습니다.');
+        setItems((prev) => prev.filter((it) => it.id !== target.id));
+        setPendingDelete(null);
+      } else {
+        toast.error(res.message || '삭제에 실패했습니다.');
+      }
+    } catch {
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -169,7 +195,7 @@ export default function BossCustomerListPage() {
                     {formatDate(item.estimateDate ?? item.workDate)}
                   </td>
                   <td>{badge ? <Badge tone={badge.tone}>{badge.label}</Badge> : <span className="text-boss-text-muted">-</span>}</td>
-                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-1">
                       {item.phone ? (
                         <a
@@ -189,6 +215,10 @@ export default function BossCustomerListPage() {
                           <Mail size={14} />
                         </a>
                       ) : null}
+                      <RowActions
+                        onDelete={() => setPendingDelete(item)}
+                        deleting={deleting && pendingDelete?.id === item.id}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -201,6 +231,16 @@ export default function BossCustomerListPage() {
       {totalPages > 1 && (
         <Pagination page={page} totalPages={totalPages} onChange={setPage} disabled={loading} />
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="고객 삭제"
+        description={`'${pendingDelete?.name ?? '선택한 고객'}'을(를) 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

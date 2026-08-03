@@ -22,10 +22,13 @@ import {
   Badge,
   EmptyState,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 import { bossConstructionApi, normalizeConstructionRecord } from '@/lib/api/boss/construction';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { ConstructionRecord } from '@/types/boss-construction';
+import toast from 'react-hot-toast';
 
 type SortType = 'CREATED_DT' | 'CONSTRUCTION_DATE';
 type StatusFilter = 'all' | '진행중' | '완료';
@@ -55,6 +58,34 @@ export default function BossConstructionListPage() {
   const [sort, setSort] = useState<SortType>('CREATED_DT');
   const [statusTab, setStatusTab] = useState<StatusFilter>('all');
   const [keyword, setKeyword] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<ConstructionRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // 시공 기록 삭제 (확인 모달 → API → 목록 반영)
+  const handleDelete = async () => {
+    const target = pendingDelete;
+    if (!target) return;
+    const custId = BossAuthManager.getJwtPayload()?.sub;
+    if (!custId) {
+      toast.error('로그인이 필요합니다.');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await bossConstructionApi.remove(target.id, custId);
+      if (res.success) {
+        toast.success('시공 기록을 삭제했습니다.');
+        setItems((prev) => prev.filter((it) => it.id !== target.id));
+        setPendingDelete(null);
+      } else {
+        toast.error(res.message || '삭제에 실패했습니다.');
+      }
+    } catch {
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const load = async () => {
     const payload = BossAuthManager.getJwtPayload();
@@ -253,14 +284,12 @@ export default function BossConstructionListPage() {
                       '-'
                     )}
                   </td>
-                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/boss/construction/${item.id}`)}
-                    >
-                      상세
-                    </Button>
+                  <td className="whitespace-nowrap text-right">
+                    <RowActions
+                      onEdit={() => router.push(`/boss/construction/${item.id}`)}
+                      onDelete={() => setPendingDelete(item)}
+                      deleting={deleting && pendingDelete?.id === item.id}
+                    />
                   </td>
                 </tr>
               );
@@ -268,6 +297,16 @@ export default function BossConstructionListPage() {
           </tbody>
         </DataTable>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="시공 기록 삭제"
+        description={`'${pendingDelete?.title ?? '선택한 시공 기록'}'을(를) 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

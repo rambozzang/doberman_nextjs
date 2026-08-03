@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Inbox,
   Phone,
-  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
@@ -25,6 +24,8 @@ import {
   Badge,
   EmptyState,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
@@ -58,7 +59,8 @@ export default function BossSignatureListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<BossSignatureItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     const userInfo = BossAuthManager.getUserInfo();
@@ -104,28 +106,30 @@ export default function BossSignatureListPage() {
     );
   }, [items, keyword]);
 
-  const handleDelete = async (id?: string) => {
-    if (!id) return;
+  // 서명 기록 삭제 (확인 모달 → API → 목록 반영)
+  const handleDelete = async () => {
+    const target = pendingDelete;
+    if (!target?.id) return;
     const userInfo = BossAuthManager.getUserInfo();
     const custId = userInfo?.userId ?? '';
     if (!custId) {
       toast.error('로그인이 필요합니다.');
       return;
     }
-    if (!confirm('이 서명 기록을 삭제하시겠습니까?')) return;
-    setDeletingId(id);
+    setDeleting(true);
     try {
-      const res = await bossSignatureApi.remove(id, custId);
+      const res = await bossSignatureApi.remove(target.id, custId);
       if (res.success) {
         toast.success('삭제되었습니다.');
-        setItems((prev) => prev.filter((it) => it.id !== id));
+        setItems((prev) => prev.filter((it) => it.id !== target.id));
+        setPendingDelete(null);
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');
       }
     } catch {
       toast.error('삭제 중 오류가 발생했습니다.');
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   };
 
@@ -248,16 +252,12 @@ export default function BossSignatureListPage() {
                   <td className="whitespace-nowrap text-xs text-boss-text-muted">
                     {formatDate(item.confirmedAt ?? item.createdDt)}
                   </td>
-                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(item.id)}
-                      disabled={deletingId === item.id}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted transition-colors hover:bg-boss-error/10 hover:text-boss-error disabled:opacity-50"
-                      aria-label="삭제"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                  <td className="whitespace-nowrap text-right">
+                    <RowActions
+                      onEdit={() => router.push(`/boss/signature/${item.id}`)}
+                      onDelete={() => setPendingDelete(item)}
+                      deleting={deleting && pendingDelete?.id === item.id}
+                    />
                   </td>
                 </tr>
               );
@@ -265,6 +265,16 @@ export default function BossSignatureListPage() {
           </tbody>
         </DataTable>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="서명 기록 삭제"
+        description={`'${pendingDelete?.customerName ?? '선택한 서명'}' 서명 기록을 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }
