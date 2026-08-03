@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --ac: oklch(0.78 0.15 158); --ac-dim: oklch(0.78 0.15 158 / 0.14); --warn: oklch(0.78 0.15 62); --bad: oklch(0.68 0.17 22); }
+* { box-sizing: border-box; }
+body { margin: 0; background: #101120; color: #e8e9f2; font-family: Pretendard, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--ac); text-decoration: none; }
+a:hover { color: #fff; }
+::selection { background: var(--ac); color: #101120; }
+.scr::-webkit-scrollbar { width: 8px; height: 8px; }
+.scr::-webkit-scrollbar-thumb { background: #33364d; border-radius: 4px; }
+.scr::-webkit-scrollbar-track { background: transparent; }
+</style>
+</helmet>
+
+<div class="scr" style="min-height: 100vh; background: #101120; padding: 28px 32px 64px; overflow-x: auto">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; max-width: 1560px; min-width: 1280px; margin: 0 auto 20px; flex-wrap: wrap">
+    <div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; color: #6c7093; text-transform: uppercase">onGo · UI/UX 개선 시안 1a</div>
+      <div style="font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-top: 8px">파워유저용 고밀도 워크스페이스</div>
+      <div style="font-size: 13px; color: #8f93b3; margin-top: 6px; max-width: 720px; line-height: 1.6">로그인 화면의 다크 톤을 그대로 확장했습니다. 4개 핵심 화면 + 내비게이션 체계. 좌측 레일에서 화면을 전환하세요.</div>
+    </div>
+    <div style="display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6c7093">
+      <div style="border: 1px solid #262940; border-radius: 6px; padding: 7px 11px; white-space: nowrap">채널 5</div>
+      <div style="border: 1px solid #262940; border-radius: 6px; padding: 7px 11px; white-space: nowrap">1일 4편</div>
+      <div style="border: 1px solid #262940; border-radius: 6px; padding: 7px 11px; white-space: nowrap">반응형</div>
+    </div>
+  </div>
+
+  <div style="max-width: 1560px; min-width: 1280px; margin: 0 auto; border: 1px solid #23263c; border-radius: 14px; overflow: hidden; background: #181a27; box-shadow: 0 30px 80px -30px #000">
+
+    <div style="display: flex; height: 940px">
+
+      <!-- RAIL -->
+      <div style="width: 216px; flex: none; background: #14161f; border-right: 1px solid #23263c; display: flex; flex-direction: column; padding: 16px 12px">
+        <div style="display: flex; align-items: center; gap: 9px; padding: 4px 8px 18px">
+          <div style="width: 22px; height: 22px; border-radius: 6px; background: var(--ac)"></div>
+          <div style="font-size: 16px; font-weight: 700; letter-spacing: -0.01em">onGo</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7">
+            <div onClick="{{ n.go }}" style="{{ n.style }}" style-hover="background: #1d2030; color: #fff">
+              <span style="width: 16px; text-align: center; font-size: 11px; opacity: 0.75">{{ n.mark }}</span>
+              <span style="flex: 1">{{ n.label }}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">{{ n.badge }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+          <div style="border: 1px solid #23263c; border-radius: 9px; padding: 11px 12px; background: #181a27">
+            <div style="font-size: 11px; color: #8f93b3; display: flex; justify-content: space-between">
+              <span>이번 달 업로드</span><span style="font-family: 'JetBrains Mono', monospace; color: #e8e9f2">62/120</span>
+            </div>
+            <div style="height: 4px; border-radius: 2px; background: #23263c; margin-top: 8px; overflow: hidden">
+              <div style="width: 52%; height: 100%; background: var(--ac)"></div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 8px; cursor: pointer" style-hover="background: #1d2030">
+            <div style="width: 26px; height: 26px; border-radius: 50%; background: #2b2f47; font-size: 11px; display: flex; align-items: center; justify-content: center; color: #b9bcd6">개발</div>
+            <div style="flex: 1; min-width: 0">
+              <div style="font-size: 12px; font-weight: 600">개발자 계정</div>
+              <div style="font-size: 10px; color: #6c7093">dev@ongo</div>
+            </div>
+            <span style="color: #6c7093; font-size: 11px">⋯</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN -->
+      <div class="scr" style="flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden">
+
+        <!-- topbar -->
+        <div style="height: 56px; flex: none; border-bottom: 1px solid #23263c; display: flex; align-items: center; gap: 14px; padding: 0 18px; background: #181a27">
+          <div style="font-size: 14px; font-weight: 600; flex: none; white-space: nowrap">{{ title }}</div>
+          <div style="font-size: 12px; color: #6c7093; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0">{{ subtitle }}</div>
+          <div style="flex: 1; min-width: 8px"></div>
+          <div style="display: flex; align-items: center; gap: 8px; border: 1px solid #262940; border-radius: 8px; padding: 7px 10px; width: 240px; flex: 0 1 240px; min-width: 92px; color: #6c7093; font-size: 12px">
+            <span>⌕</span><span style="flex: 1">검색</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; border: 1px solid #2e3250; border-radius: 4px; padding: 1px 5px">/</span>
+          </div>
+          <div style="display: flex; gap: 6px; flex: none">
+            <div style="border: 1px solid #262940; border-radius: 8px; padding: 8px 11px; font-size: 12px; color: #b9bcd6; cursor: pointer; white-space: nowrap" style-hover="border-color: #3a3f61; color: #fff">일괄 가져오기</div>
+            <div onClick="{{ goCompose }}" style="border-radius: 8px; padding: 8px 13px; font-size: 12px; font-weight: 700; background: var(--ac); color: #101120; cursor: pointer; white-space: nowrap" style-hover="filter: brightness(1.1)">새 업로드</div>
+          </div>
+        </div>
+
+        <div class="scr" style="flex: 1; overflow-y: auto; overflow-x: hidden">
+
+          <!-- ===== 1. TODAY ===== -->
+          <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 18px">
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px">
+                <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+                  <div style="border: 1px solid #23263c; border-radius: 11px; padding: 13px 15px; background: #1b1e2c">
+                    <div style="font-size: 11px; color: #8f93b3; letter-spacing: 0.02em">{{ k.label }}</div>
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 7px">
+                      <div style="font-size: 25px; font-weight: 700; letter-spacing: -0.02em; font-family: 'JetBrains Mono', monospace">{{ k.value }}</div>
+                      <div style="{{ k.deltaStyle }}">{{ k.delta }}</div>
+                    </div>
+                    <div style="font-size: 11px; color: #6c7093; margin-top: 4px">{{ k.note }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; align-items: start">
+
+                <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 13px 15px; border-bottom: 1px solid #23263c">
+                    <div style="font-size: 13px; font-weight: 700">오늘의 발행 큐</div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">8월 3일 (월)</div>
+                    <div style="flex: 1"></div>
+                    <div style="font-size: 11px; color: var(--ac); cursor: pointer">캘린더로 보기 →</div>
+                  </div>
+
+                  <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+                    <div style="display: grid; grid-template-columns: 62px 84px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 15px; border-bottom: 1px solid #202335; cursor: pointer" style-hover="background: #1f2233">
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #e8e9f2">{{ q.time }}</div>
+                      <div style="height: 46px; border-radius: 6px; background: repeating-linear-gradient(135deg, #262a41 0 6px, #2d3149 6px 12px); display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px">
+                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #9598bb; background: #101120b0; border-radius: 3px; padding: 1px 3px">{{ q.dur }}</span>
+                      </div>
+                      <div style="min-width: 0">
+                        <div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ q.title }}</div>
+                        <div style="display: flex; align-items: center; gap: 7px; margin-top: 5px">
+                          <sc-for list="{{ q.targets }}" as="t" hint-placeholder-count="3">
+                            <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; border: 1px solid #2e3250; border-radius: 4px; padding: 2px 5px; color: #9598bb">{{ t }}</span>
+                          </sc-for>
+                          <span style="font-size: 11px; color: #6c7093">{{ q.meta }}</span>
+                        </div>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <span style="{{ q.statusStyle }}">{{ q.status }}</span>
+                        <span style="color: #4d5273; font-size: 13px">⋯</span>
+                      </div>
+                    </div>
+                  </sc-for>
+
+                  <div style="padding: 11px 15px; display: flex; gap: 8px; align-items: center">
+                    <div onClick="{{ goCompose }}" style="font-size: 12px; color: #9598bb; border: 1px dashed #2e3250; border-radius: 8px; padding: 8px 12px; cursor: pointer; flex: 1; text-align: center" style-hover="border-color: var(--ac); color: var(--ac)">+ 이 시간대에 영상 추가</div>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 14px">
+
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                    <div style="display: flex; align-items: center; padding: 13px 15px; border-bottom: 1px solid #23263c">
+                      <div style="font-size: 13px; font-weight: 700; flex: 1">확인 필요</div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--warn)">3건</div>
+                    </div>
+                    <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="3">
+                      <div style="padding: 12px 15px; border-bottom: 1px solid #202335; display: flex; gap: 11px; align-items: flex-start">
+                        <div style="{{ a.dotStyle }}"></div>
+                        <div style="flex: 1; min-width: 0">
+                          <div style="font-size: 12.5px; line-height: 1.45">{{ a.text }}</div>
+                          <div style="font-size: 11px; color: #6c7093; margin-top: 3px">{{ a.meta }}</div>
+                        </div>
+                        <div onClick="{{ a.go }}" style="font-size: 11px; font-weight: 600; color: var(--ac); border: 1px solid #2e3250; border-radius: 6px; padding: 5px 8px; cursor: pointer; white-space: nowrap" style-hover="border-color: var(--ac)">{{ a.cta }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                    <div style="display: flex; align-items: center; padding: 13px 15px; border-bottom: 1px solid #23263c">
+                      <div style="font-size: 13px; font-weight: 700; flex: 1">채널 상태</div>
+                      <div onClick="{{ goChannels }}" style="font-size: 11px; color: var(--ac); cursor: pointer">관리 →</div>
+                    </div>
+                    <sc-for list="{{ channels }}" as="c" hint-placeholder-count="5">
+                      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 15px; border-bottom: 1px solid #202335">
+                        <div style="{{ c.chipStyle }}">{{ c.tag }}</div>
+                        <div style="flex: 1; min-width: 0">
+                          <div style="font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ c.name }}</div>
+                          <div style="font-size: 10.5px; color: #6c7093">{{ c.sub }}</div>
+                        </div>
+                        <div style="{{ c.stateStyle }}">{{ c.state }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 2. COMPOSER ===== -->
+          <sc-if value="{{ isCompose }}" hint-placeholder-val="{{ false }}">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 372px; height: 100%">
+
+              <div class="scr" style="padding: 18px 20px 120px; overflow-y: auto; border-right: 1px solid #23263c">
+
+                <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #23263c; border-radius: 11px; background: #1b1e2c; padding: 12px 14px">
+                  <div style="width: 104px; height: 62px; flex: none; border-radius: 7px; background: repeating-linear-gradient(135deg, #262a41 0 6px, #2d3149 6px 12px); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #9598bb">VIDEO 9:16</div>
+                  <div style="flex: 1; min-width: 0">
+                    <div style="font-size: 13px; font-weight: 600">여름_루틴_숏폼_03.mp4</div>
+                    <div style="font-size: 11px; color: #6c7093; margin-top: 4px; font-family: 'JetBrains Mono', monospace">00:41 · 1080×1920 · 84.2MB · 업로드 완료</div>
+                  </div>
+                  <div style="display: flex; gap: 6px">
+                    <div style="font-size: 11px; color: #b9bcd6; border: 1px solid #2e3250; border-radius: 7px; padding: 6px 10px; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">교체</div>
+                    <div style="font-size: 11px; color: #b9bcd6; border: 1px solid #2e3250; border-radius: 7px; padding: 6px 10px; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">자동 자막</div>
+                  </div>
+                </div>
+
+                <div style="margin: 18px 0 10px; display: flex; align-items: center; gap: 10px">
+                  <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.01em">발행 대상</div>
+                  <div style="font-size: 11px; color: #6c7093">플랫폼별 제목·태그는 자동으로 규격에 맞게 변환됩니다</div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                  <sc-for list="{{ targets }}" as="t" hint-placeholder-count="6">
+                    <div onClick="{{ t.toggle }}" style="{{ t.style }}" style-hover="border-color: #3a3f61">
+                      <span style="width: 7px; height: 7px; border-radius: 2px; background: currentColor"></span>
+                      <span>{{ t.label }}</span>
+                      <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.65">{{ t.handle }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="margin-top: 20px; border: 1px solid #23263c; border-radius: 11px; background: #1b1e2c; overflow: hidden">
+                  <div style="display: flex; border-bottom: 1px solid #23263c; overflow-x: auto">
+                    <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4">
+                      <div onClick="{{ tb.go }}" style="{{ tb.style }}">{{ tb.label }}</div>
+                    </sc-for>
+                  </div>
+
+                  <div style="padding: 16px">
+                    <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 8px">
+                      <div style="font-size: 11px; color: #8f93b3">제목</div>
+                      <div style="flex: 1"></div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">{{ titleCount }}</div>
+                      <div style="font-size: 11px; color: var(--ac); cursor: pointer">AI 3안 생성</div>
+                    </div>
+                    <div style="border: 1px solid #2e3250; border-radius: 8px; background: #16182410; padding: 10px 12px; font-size: 14px; font-weight: 600; background: #171927">아침 5분 루틴으로 하루가 바뀐 이유</div>
+
+                    <div style="display: flex; align-items: center; gap: 9px; margin: 16px 0 8px">
+                      <div style="font-size: 11px; color: #8f93b3">설명 · 해시태그</div>
+                      <div style="flex: 1"></div>
+                      <div style="font-size: 11px; color: #6c7093">공통 서명 자동 삽입</div>
+                    </div>
+                    <div style="border: 1px solid #2e3250; border-radius: 8px; background: #171927; padding: 11px 12px; font-size: 12.5px; color: #c8cae0; line-height: 1.7; min-height: 92px">
+                      매일 아침 5분만 투자해서 만든 루틴을 3주간 기록했습니다. 자세한 내용은 프로필 링크에서.<br>
+                      <span style="color: var(--ac)">#아침루틴 #자기계발 #숏폼 #브이로그</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px; margin-top: 16px">
+                      <sc-for list="{{ fields }}" as="f" hint-placeholder-count="4">
+                        <div>
+                          <div style="font-size: 11px; color: #8f93b3; margin-bottom: 6px">{{ f.label }}</div>
+                          <div style="border: 1px solid #2e3250; border-radius: 8px; background: #171927; padding: 9px 11px; font-size: 12.5px; display: flex; align-items: center; justify-content: space-between; color: #d5d7ea">
+                            <span>{{ f.value }}</span><span style="color: #4d5273; font-size: 10px">▾</span>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+
+                    <div style="margin-top: 16px; border: 1px solid #2b2f47; border-radius: 9px; padding: 11px 13px; display: flex; gap: 11px; align-items: center; background: #191c2b">
+                      <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex: none"></div>
+                      <div style="font-size: 12px; color: #c8cae0; flex: 1; line-height: 1.5">TikTok은 해시태그 5개까지만 반영됩니다. 초과분은 설명 하단으로 이동합니다.</div>
+                      <div style="font-size: 11px; color: #9598bb; cursor: pointer; white-space: nowrap">규칙 보기</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="scr" style="padding: 18px 18px 40px; overflow-y: auto; background: #171927">
+                <div style="font-size: 12px; font-weight: 700; margin-bottom: 11px">미리보기</div>
+                <div style="display: flex; gap: 6px; margin-bottom: 13px">
+                  <sc-for list="{{ previewTabs }}" as="p" hint-placeholder-count="3">
+                    <div onClick="{{ p.go }}" style="{{ p.style }}">{{ p.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; padding: 12px">
+                  <div style="aspect-ratio: 9/16; border-radius: 9px; background: repeating-linear-gradient(135deg, #262a41 0 7px, #2d3149 7px 14px); display: flex; flex-direction: column; justify-content: flex-end; padding: 13px">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9598bb; margin-bottom: 6px">PREVIEW / 썸네일 자리</div>
+                    <div style="font-size: 12.5px; font-weight: 700; color: #fff; line-height: 1.4">아침 5분 루틴으로 하루가 바뀐 이유</div>
+                    <div style="font-size: 10.5px; color: #d5d7eab0; margin-top: 4px">#아침루틴 #자기계발 #숏폼</div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 16px; border: 1px solid #23263c; border-radius: 11px; background: #1b1e2c; overflow: hidden">
+                  <div style="padding: 11px 13px; border-bottom: 1px solid #23263c; font-size: 12px; font-weight: 700">발행 예약</div>
+                  <div style="padding: 13px">
+                    <div style="display: flex; flex-direction: column; gap: 7px">
+                      <sc-for list="{{ schedule }}" as="s" hint-placeholder-count="3">
+                        <div onClick="{{ s.go }}" style="{{ s.style }}">
+                          <span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid currentColor; flex: none; display: flex; align-items: center; justify-content: center"><span style="{{ s.dot }}"></span></span>
+                          <span style="flex: 1">{{ s.label }}</span>
+                          <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; opacity: 0.7">{{ s.hint }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 11px; color: #6c7093; line-height: 1.6">최적 시간대는 지난 30일 채널별 시청 데이터를 기준으로 계산됩니다.</div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 14px; display: flex; gap: 8px">
+                  <div style="flex: 1; text-align: center; border: 1px solid #2e3250; border-radius: 9px; padding: 11px; font-size: 12.5px; color: #b9bcd6; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">임시 저장</div>
+                  <div style="flex: 1.4; text-align: center; border-radius: 9px; padding: 11px; font-size: 12.5px; font-weight: 700; background: var(--ac); color: #101120; cursor: pointer" style-hover="filter: brightness(1.1)">6개 채널 예약</div>
+                </div>
+                <div style="text-align: center; font-size: 11px; color: #6c7093; margin-top: 9px">⌘↵ 로 바로 예약</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 3. INBOX ===== -->
+          <sc-if value="{{ isInbox }}" hint-placeholder-val="{{ false }}">
+            <div style="display: grid; grid-template-columns: 178px minmax(0, 340px) minmax(0, 1fr); height: 100%">
+
+              <div style="border-right: 1px solid #23263c; padding: 15px 12px; display: flex; flex-direction: column; gap: 3px">
+                <div style="font-size: 10.5px; color: #6c7093; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.12em; padding: 0 8px 8px">FILTER</div>
+                <sc-for list="{{ filters }}" as="f" hint-placeholder-count="6">
+                  <div onClick="{{ f.go }}" style="{{ f.style }}" style-hover="background: #1d2030">
+                    <span style="flex: 1">{{ f.label }}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.7">{{ f.count }}</span>
+                  </div>
+                </sc-for>
+                <div style="margin-top: 16px; font-size: 10.5px; color: #6c7093; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.12em; padding: 0 8px 8px">SAVED REPLY</div>
+                <sc-for list="{{ macros }}" as="m" hint-placeholder-count="3">
+                  <div style="font-size: 12px; color: #9598bb; padding: 7px 8px; border-radius: 7px; cursor: pointer" style-hover="background: #1d2030; color: #fff">{{ m }}</div>
+                </sc-for>
+              </div>
+
+              <div class="scr" style="border-right: 1px solid #23263c; overflow-y: auto">
+                <div style="position: sticky; top: 0; background: #181a27; border-bottom: 1px solid #23263c; padding: 11px 13px; display: flex; align-items: center; gap: 9px">
+                  <div style="font-size: 12px; font-weight: 700; flex: 1">미답변 42</div>
+                  <div style="font-size: 11px; color: #9598bb; cursor: pointer">전체 선택</div>
+                  <div style="font-size: 11px; color: var(--ac); cursor: pointer">일괄 처리</div>
+                </div>
+                <sc-for list="{{ threads }}" as="t" hint-placeholder-count="7">
+                  <div onClick="{{ t.go }}" style="{{ t.style }}">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <div style="{{ t.chipStyle }}">{{ t.tag }}</div>
+                      <div style="font-size: 12.5px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ t.author }}</div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">{{ t.time }}</div>
+                    </div>
+                    <div style="font-size: 12px; color: #a8abc8; line-height: 1.5; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{ t.text }}</div>
+                    <div style="display: flex; align-items: center; gap: 7px; margin-top: 7px">
+                      <span style="font-size: 10.5px; color: #6c7093; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1">{{ t.video }}</span>
+                      <span style="{{ t.flagStyle }}">{{ t.flag }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div class="scr" style="overflow-y: auto; display: flex; flex-direction: column">
+                <div style="padding: 14px 18px; border-bottom: 1px solid #23263c; display: flex; align-items: center; gap: 10px">
+                  <div style="width: 30px; height: 30px; border-radius: 50%; background: #2b2f47; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #b9bcd6">민</div>
+                  <div style="flex: 1">
+                    <div style="font-size: 13px; font-weight: 700">민지_daily</div>
+                    <div style="font-size: 11px; color: #6c7093">Instagram · 팔로워 1.2만 · 이전 댓글 4회</div>
+                  </div>
+                  <div style="display: flex; gap: 6px">
+                    <div style="font-size: 11px; color: #b9bcd6; border: 1px solid #2e3250; border-radius: 7px; padding: 6px 10px; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">고정</div>
+                    <div style="font-size: 11px; color: #b9bcd6; border: 1px solid #2e3250; border-radius: 7px; padding: 6px 10px; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">숨기기</div>
+                    <div style="font-size: 11px; color: var(--bad); border: 1px solid #2e3250; border-radius: 7px; padding: 6px 10px; cursor: pointer" style-hover="border-color: var(--bad)">차단</div>
+                  </div>
+                </div>
+
+                <div style="padding: 18px; display: flex; flex-direction: column; gap: 14px; flex: 1">
+                  <div style="display: flex; gap: 12px; align-items: flex-start">
+                    <div style="width: 78px; height: 104px; flex: none; border-radius: 7px; background: repeating-linear-gradient(135deg, #262a41 0 6px, #2d3149 6px 12px)"></div>
+                    <div style="flex: 1; min-width: 0">
+                      <div style="font-size: 12px; color: #6c7093">대상 게시물</div>
+                      <div style="font-size: 13px; font-weight: 600; margin-top: 4px">아침 5분 루틴으로 하루가 바뀐 이유</div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6c7093; margin-top: 6px">조회 24.1K · 좋아요 1,880 · 댓글 96 · 8월 1일</div>
+                    </div>
+                  </div>
+
+                  <sc-for list="{{ messages }}" as="m" hint-placeholder-count="3">
+                    <div style="{{ m.style }}">
+                      <div style="font-size: 11px; color: #6c7093; margin-bottom: 5px">{{ m.who }}</div>
+                      <div style="font-size: 13px; line-height: 1.65; color: #dcdeee">{{ m.text }}</div>
+                    </div>
+                  </sc-for>
+
+                  <div style="margin-top: auto; border: 1px solid #2e3250; border-radius: 11px; background: #171927; overflow: hidden">
+                    <div style="padding: 12px 13px; font-size: 13px; color: #c8cae0; min-height: 62px; line-height: 1.6">루틴 리스트는 이번 주 영상에서 자세히 정리해드릴게요. 감사합니다!</div>
+                    <div style="display: flex; align-items: center; gap: 7px; padding: 9px 11px; border-top: 1px solid #23263c">
+                      <div style="font-size: 11px; color: #9598bb; border: 1px solid #2e3250; border-radius: 6px; padding: 5px 8px; cursor: pointer" style-hover="border-color: var(--ac); color: var(--ac)">AI 답변 제안</div>
+                      <div style="font-size: 11px; color: #9598bb; border: 1px solid #2e3250; border-radius: 6px; padding: 5px 8px; cursor: pointer" style-hover="border-color: #3a3f61">저장된 답변</div>
+                      <div style="flex: 1"></div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">⌘↵ 전송 후 다음</div>
+                      <div style="border-radius: 7px; padding: 7px 13px; font-size: 12px; font-weight: 700; background: var(--ac); color: #101120; cursor: pointer" style-hover="filter: brightness(1.1)">전송</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 4. CHANNELS ===== -->
+          <sc-if value="{{ isChannels }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 20px 22px 48px">
+
+              <div style="border: 1px solid #3a3050; border-radius: 11px; background: #221c30; padding: 13px 15px; display: flex; align-items: center; gap: 12px; margin-bottom: 18px">
+                <div style="width: 7px; height: 7px; border-radius: 50%; background: var(--bad); flex: none"></div>
+                <div style="font-size: 12.5px; color: #e2d9ef; flex: 1; line-height: 1.5">Naver 블로그 연결이 만료되어 예약 2건이 대기 중입니다. 재연결하면 자동으로 발행됩니다.</div>
+                <div style="border-radius: 7px; padding: 7px 12px; font-size: 12px; font-weight: 700; background: var(--ac); color: #101120; cursor: pointer">재연결</div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px">
+                <div style="font-size: 13px; font-weight: 700">연결된 채널 5</div>
+                <div style="font-size: 11.5px; color: #6c7093">플랫폼 계정을 그룹으로 묶으면 업로드 시 한 번에 선택할 수 있습니다.</div>
+                <div style="flex: 1"></div>
+                <div style="border: 1px solid #2e3250; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #b9bcd6; cursor: pointer" style-hover="border-color: var(--ac); color: var(--ac)">+ 채널 연결</div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 11px">
+                <sc-for list="{{ channelCards }}" as="c" hint-placeholder-count="6">
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; padding: 14px; display: flex; flex-direction: column; gap: 11px" style-hover="border-color: #34385a">
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <div style="{{ c.chipStyle }}">{{ c.tag }}</div>
+                      <div style="flex: 1; min-width: 0">
+                        <div style="font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ c.name }}</div>
+                        <div style="font-size: 10.5px; color: #6c7093">{{ c.handle }}</div>
+                      </div>
+                      <div style="{{ c.stateStyle }}">{{ c.state }}</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px">
+                      <sc-for list="{{ c.stats }}" as="s" hint-placeholder-count="3">
+                        <div style="border: 1px solid #23263c; border-radius: 8px; padding: 7px 8px; background: #171927">
+                          <div style="font-size: 10px; color: #6c7093">{{ s.k }}</div>
+                          <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-top: 3px">{{ s.v }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 7px; font-size: 11px; color: #6c7093">
+                      <span style="flex: 1">{{ c.note }}</span>
+                      <span style="color: #9598bb; cursor: pointer">설정</span>
+                    </div>
+                  </div>
+                </sc-for>
+
+                <div style="border: 1px dashed #2e3250; border-radius: 12px; display: flex; align-items: center; justify-content: center; min-height: 148px; color: #6c7093; font-size: 12.5px; cursor: pointer" style-hover="border-color: var(--ac); color: var(--ac)">+ 새 플랫폼 연결</div>
+              </div>
+
+              <div style="margin-top: 24px; border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                <div style="padding: 13px 15px; border-bottom: 1px solid #23263c; display: flex; align-items: center">
+                  <div style="font-size: 13px; font-weight: 700; flex: 1">발행 규칙 (채널 그룹)</div>
+                  <div style="font-size: 11px; color: var(--ac); cursor: pointer">+ 그룹 만들기</div>
+                </div>
+                <sc-for list="{{ rules }}" as="r" hint-placeholder-count="3">
+                  <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 15px; border-bottom: 1px solid #202335">
+                    <div style="font-size: 12.5px; font-weight: 600">{{ r.name }}</div>
+                    <div style="font-size: 11.5px; color: #8f93b3; line-height: 1.5">{{ r.desc }}</div>
+                    <div style="{{ r.toggleStyle }}"><span style="{{ r.knobStyle }}"></span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 5. PERFORMANCE ===== -->
+          <sc-if value="{{ isPerf }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 20px 22px 48px; display: flex; flex-direction: column; gap: 16px">
+
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+                <div style="display: flex; gap: 6px">
+                  <sc-for list="{{ perfRange }}" as="r" hint-placeholder-count="3">
+                    <div onClick="{{ r.go }}" style="{{ r.style }}">{{ r.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="font-size: 11.5px; color: #6c7093">채널 전체 · 숏폼/롱폼 합산</div>
+                <div style="flex: 1"></div>
+                <div style="border: 1px solid #2e3250; border-radius: 8px; padding: 7px 11px; font-size: 11.5px; color: #b9bcd6; cursor: pointer; white-space: nowrap" style-hover="border-color: #3a3f61; color: #fff">CSV 내보내기</div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px">
+                <sc-for list="{{ perfKpis }}" as="k" hint-placeholder-count="4">
+                  <div style="border: 1px solid #23263c; border-radius: 11px; padding: 13px 15px; background: #1b1e2c">
+                    <div style="font-size: 11px; color: #8f93b3">{{ k.label }}</div>
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 7px">
+                      <div style="font-size: 25px; font-weight: 700; letter-spacing: -0.02em; font-family: 'JetBrains Mono', monospace">{{ k.value }}</div>
+                      <div style="{{ k.deltaStyle }}">{{ k.delta }}</div>
+                    </div>
+                    <div style="font-size: 11px; color: #6c7093; margin-top: 4px">{{ k.note }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; padding: 15px 16px">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px">
+                  <div style="font-size: 13px; font-weight: 700">일별 조회</div>
+                  <div style="font-size: 11px; color: #6c7093">발행일 기준 · 막대 강조 = 상위 10%</div>
+                </div>
+                <div style="height: 168px; display: flex; align-items: flex-end; gap: 6px">
+                  <sc-for list="{{ bars }}" as="b" hint-placeholder-count="14">
+                    <div style="{{ b.style }}"></div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; gap: 6px; margin-top: 8px">
+                  <sc-for list="{{ bars }}" as="b" hint-placeholder-count="14">
+                    <div style="flex: 1; min-width: 0; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #575b7c">{{ b.day }}</div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start">
+                <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                  <div style="padding: 13px 15px; border-bottom: 1px solid #23263c; display: flex; align-items: center">
+                    <div style="font-size: 13px; font-weight: 700; flex: 1">성과 상위 영상</div>
+                    <div style="font-size: 11px; color: #6c7093">조회 순</div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 34px minmax(0, 1fr) 76px 62px 76px 62px; gap: 10px; padding: 9px 15px; border-bottom: 1px solid #23263c; font-size: 10.5px; color: #6c7093; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em">
+                    <div>#</div><div>TITLE</div><div style="text-align: right">VIEWS</div><div style="text-align: right">WATCH</div><div style="text-align: right">FOLLOW</div><div style="text-align: right">TREND</div>
+                  </div>
+                  <sc-for list="{{ topVideos }}" as="v" hint-placeholder-count="5">
+                    <div style="display: grid; grid-template-columns: 34px minmax(0, 1fr) 76px 62px 76px 62px; gap: 10px; align-items: center; padding: 11px 15px; border-bottom: 1px solid #202335; cursor: pointer" style-hover="background: #1f2233">
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6c7093">{{ v.rank }}</div>
+                      <div style="min-width: 0">
+                        <div style="font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ v.title }}</div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px">
+                          <sc-for list="{{ v.chips }}" as="c" hint-placeholder-count="3">
+                            <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; border: 1px solid #2e3250; border-radius: 4px; padding: 1px 4px; color: #9598bb">{{ c }}</span>
+                          </sc-for>
+                        </div>
+                      </div>
+                      <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12.5px">{{ v.views }}</div>
+                      <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #b9bcd6">{{ v.watch }}</div>
+                      <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #b9bcd6">{{ v.follows }}</div>
+                      <div style="display: flex; justify-content: flex-end"><span style="{{ v.trendStyle }}">{{ v.trend }}</span></div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 11px">
+                  <sc-for list="{{ insights }}" as="i" hint-placeholder-count="3">
+                    <div style="border: 1px solid #23263c; border-radius: 12px; background: #171927; padding: 14px 15px">
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--ac)">{{ i.tag }}</div>
+                      <div style="font-size: 13.5px; font-weight: 700; margin-top: 7px">{{ i.t }}</div>
+                      <div style="font-size: 12px; color: #8f93b3; margin-top: 6px; line-height: 1.65">{{ i.d }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 6. CALENDAR ===== -->
+          <sc-if value="{{ isCalendar }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 18px 20px 48px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+                <div style="display: flex; gap: 4px; align-items: center">
+                  <div style="border: 1px solid #2e3250; border-radius: 7px; padding: 6px 9px; font-size: 12px; color: #b9bcd6; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">‹</div>
+                  <div style="border: 1px solid #2e3250; border-radius: 7px; padding: 6px 9px; font-size: 12px; color: #b9bcd6; cursor: pointer" style-hover="border-color: #3a3f61; color: #fff">›</div>
+                </div>
+                <div style="font-size: 13px; font-weight: 700; white-space: nowrap">2026년 8월 3일 주</div>
+                <div style="font-size: 11.5px; color: #6c7093">드래그로 시간 이동 · 빈 칸 클릭으로 예약 추가</div>
+                <div style="flex: 1"></div>
+                <div style="border: 1px solid #2e3250; border-radius: 8px; padding: 7px 11px; font-size: 11.5px; color: #b9bcd6; cursor: pointer; white-space: nowrap" style-hover="border-color: var(--ac); color: var(--ac)">최적 시간 자동 배치</div>
+              </div>
+
+              <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr))">
+                  <sc-for list="{{ week }}" as="w" hint-placeholder-count="7">
+                    <div style="{{ w.headStyle }}">{{ w.day }}</div>
+                  </sc-for>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); min-height: 560px">
+                  <sc-for list="{{ week }}" as="w" hint-placeholder-count="7">
+                    <div style="border-right: 1px solid #202335; padding: 9px; display: flex; flex-direction: column; gap: 7px">
+                      <sc-for list="{{ w.slots }}" as="sl" hint-placeholder-count="2">
+                        <div style="border: 1px solid #2e3250; border-radius: 8px; background: #1f2233; padding: 8px 9px; cursor: pointer" style-hover="border-color: var(--ac)">
+                          <div style="display: flex; align-items: center; gap: 6px">
+                            <div style="{{ sl.chipStyle }}">{{ sl.tag }}</div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9598bb">{{ sl.time }}</div>
+                          </div>
+                          <div style="font-size: 11.5px; font-weight: 600; margin-top: 6px; line-height: 1.35">{{ sl.title }}</div>
+                        </div>
+                      </sc-for>
+                      <div style="border: 1px dashed #262940; border-radius: 8px; min-height: 34px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #4d5273; cursor: pointer" style-hover="border-color: var(--ac); color: var(--ac)">+</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 7. SETTINGS ===== -->
+          <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+            <div style="display: grid; grid-template-columns: 194px minmax(0, 1fr); min-height: 100%">
+              <div style="border-right: 1px solid #23263c; padding: 15px 12px; display: flex; flex-direction: column; gap: 3px">
+                <div style="font-size: 10.5px; color: #6c7093; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.12em; padding: 0 8px 8px">SETTINGS</div>
+                <sc-for list="{{ settingsNav }}" as="n" hint-placeholder-count="6">
+                  <div onClick="{{ n.go }}" style="{{ n.style }}" style-hover="background: #1d2030">{{ n.label }}</div>
+                </sc-for>
+              </div>
+
+              <div style="padding: 20px 22px 48px; max-width: 880px; display: flex; flex-direction: column; gap: 16px">
+                <div>
+                  <div style="font-size: 15px; font-weight: 700">연결 · 자동화</div>
+                  <div style="font-size: 12px; color: #8f93b3; margin-top: 5px; line-height: 1.6">자동 업로드가 조용히 실패하지 않도록, 재시도와 알림 규칙을 여기서 정합니다.</div>
+                </div>
+
+                <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                  <sc-for list="{{ settingRows }}" as="r" hint-placeholder-count="6">
+                    <div style="display: flex; align-items: center; gap: 14px; padding: 14px 15px; border-bottom: 1px solid #202335">
+                      <div style="flex: 1; min-width: 0">
+                        <div style="font-size: 12.5px; font-weight: 600">{{ r.k }}</div>
+                        <div style="font-size: 11.5px; color: #8f93b3; margin-top: 3px; line-height: 1.55">{{ r.v }}</div>
+                      </div>
+                      <div style="{{ r.toggleStyle }}"><span style="{{ r.knobStyle }}"></span></div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px">
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; padding: 15px">
+                    <div style="font-size: 13px; font-weight: 700">기본 발행 시간대</div>
+                    <div style="font-size: 11.5px; color: #8f93b3; margin-top: 5px; line-height: 1.55">새 업로드의 예약 기본값</div>
+                    <div style="border: 1px solid #2e3250; border-radius: 8px; background: #171927; padding: 9px 11px; font-size: 12.5px; margin-top: 11px; display: flex; justify-content: space-between; color: #d5d7ea">
+                      <span>채널별 최적 시간</span><span style="color: #4d5273; font-size: 10px">▾</span>
+                    </div>
+                  </div>
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; padding: 15px">
+                    <div style="font-size: 13px; font-weight: 700">요금제</div>
+                    <div style="font-size: 11.5px; color: #8f93b3; margin-top: 5px; line-height: 1.55">Creator · 월 120편 · 채널 10개</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 11px">
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px">₩29,000</div>
+                      <div style="font-size: 11px; color: #6c7093">/ 월 · 9월 3일 갱신</div>
+                    </div>
+                  </div>
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; padding: 15px">
+                    <div style="font-size: 13px; font-weight: 700">위험 구역</div>
+                    <div style="font-size: 11.5px; color: #8f93b3; margin-top: 5px; line-height: 1.55">모든 예약과 연결이 즉시 해제됩니다.</div>
+                    <div style="border: 1px solid #3a2630; border-radius: 8px; padding: 8px 11px; font-size: 12px; color: var(--bad); margin-top: 11px; display: inline-block; cursor: pointer" style-hover="border-color: var(--bad)">계정 삭제</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 8. MOBILE ===== -->
+          <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 20px 22px 48px">
+              <div style="font-size: 13px; color: #8f93b3; max-width: 780px; line-height: 1.7; margin-bottom: 20px">데스크톱의 테이블 행은 카드로, 2열 컴포저는 4단계 시트로, 인박스 3열은 목록→상세 푸시로 전환됩니다. 하단 탭 4개만 노출하고 성과·설정은 프로필에서 진입합니다.</div>
+
+              <div style="display: flex; gap: 20px; flex-wrap: wrap">
+
+                <div style="width: 330px; flex: none">
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--ac); margin-bottom: 9px">오늘</div>
+                  <div style="border: 8px solid #23263c; border-radius: 34px; background: #14161f; overflow: hidden; height: 660px; display: flex; flex-direction: column">
+                    <div style="display: flex; justify-content: space-between; padding: 9px 16px 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8f93b3">
+                      <span>9:41</span><span>▮▮▮</span>
+                    </div>
+                    <div style="padding: 10px 14px 6px; display: flex; align-items: center; gap: 9px">
+                      <div style="font-size: 17px; font-weight: 700; flex: 1">오늘</div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">8월 3일</div>
+                    </div>
+                    <div style="padding: 4px 14px 10px; display: flex; gap: 7px">
+                      <div style="flex: 1; border: 1px solid #23263c; border-radius: 9px; background: #1b1e2c; padding: 9px 10px">
+                        <div style="font-size: 10px; color: #8f93b3">예약</div>
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; margin-top: 2px">5</div>
+                      </div>
+                      <div style="flex: 1; border: 1px solid #23263c; border-radius: 9px; background: #1b1e2c; padding: 9px 10px">
+                        <div style="font-size: 10px; color: #8f93b3">미답변</div>
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; margin-top: 2px">42</div>
+                      </div>
+                    </div>
+                    <div style="margin: 0 14px 10px; border: 1px solid #3a3050; border-radius: 10px; background: #221c30; padding: 10px 11px; display: flex; align-items: center; gap: 9px">
+                      <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--bad); flex: none"></div>
+                      <div style="font-size: 11.5px; color: #e2d9ef; flex: 1; line-height: 1.45">Naver 연결 만료 · 2건 대기</div>
+                      <div style="font-size: 11px; font-weight: 700; color: var(--ac); white-space: nowrap">재연결</div>
+                    </div>
+                    <div style="flex: 1; overflow: hidden; padding: 0 14px; display: flex; flex-direction: column; gap: 8px">
+                      <sc-for list="{{ mobileToday }}" as="m" hint-placeholder-count="4">
+                        <div style="border: 1px solid #23263c; border-radius: 11px; background: #1b1e2c; padding: 11px 12px; display: flex; gap: 10px; align-items: center">
+                          <div style="width: 44px; height: 52px; flex: none; border-radius: 7px; background: repeating-linear-gradient(135deg, #262a41 0 6px, #2d3149 6px 12px)"></div>
+                          <div style="flex: 1; min-width: 0">
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9598bb">{{ m.time }}</div>
+                            <div style="font-size: 12.5px; font-weight: 600; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ m.title }}</div>
+                            <div style="font-size: 10.5px; color: #6c7093; margin-top: 3px">{{ m.meta }}</div>
+                          </div>
+                          <span style="{{ m.statusStyle }}">{{ m.status }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="border-top: 1px solid #23263c; display: flex; align-items: center; padding: 0 6px 10px; position: relative; background: #14161f">
+                      <sc-for list="{{ mobileTabs }}" as="t" hint-placeholder-count="4">
+                        <div style="{{ t.style }}">{{ t.label }}</div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="width: 330px; flex: none">
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--ac); margin-bottom: 9px">업로드 — 4단계 시트</div>
+                  <div style="border: 8px solid #23263c; border-radius: 34px; background: #14161f; overflow: hidden; height: 660px; display: flex; flex-direction: column">
+                    <div style="display: flex; justify-content: space-between; padding: 9px 16px 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8f93b3">
+                      <span>9:41</span><span>▮▮▮</span>
+                    </div>
+                    <div style="padding: 10px 14px; display: flex; align-items: center; gap: 9px">
+                      <div style="font-size: 13px; color: #9598bb">취소</div>
+                      <div style="font-size: 15px; font-weight: 700; flex: 1; text-align: center">새 업로드</div>
+                      <div style="font-size: 13px; color: #6c7093">저장</div>
+                    </div>
+                    <div style="padding: 0 14px 12px; display: flex; gap: 5px">
+                      <sc-for list="{{ mobileSteps }}" as="s" hint-placeholder-count="4">
+                        <div style="{{ s.style }}">{{ s.k }}</div>
+                      </sc-for>
+                    </div>
+                    <div style="padding: 0 14px; flex: 1; display: flex; flex-direction: column; gap: 11px">
+                      <div style="border: 1px solid #23263c; border-radius: 11px; background: #1b1e2c; padding: 11px; display: flex; gap: 10px; align-items: center">
+                        <div style="width: 46px; height: 58px; border-radius: 6px; background: repeating-linear-gradient(135deg, #262a41 0 6px, #2d3149 6px 12px); flex: none"></div>
+                        <div style="flex: 1; min-width: 0">
+                          <div style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">여름_루틴_숏폼_03.mp4</div>
+                          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093; margin-top: 4px">00:41 · 6개 채널 선택</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div style="font-size: 11px; color: #8f93b3; margin-bottom: 6px">제목</div>
+                        <div style="border: 1px solid #2e3250; border-radius: 9px; background: #171927; padding: 10px 11px; font-size: 13px; font-weight: 600; line-height: 1.4">아침 5분 루틴으로 하루가 바뀐 이유</div>
+                      </div>
+                      <div>
+                        <div style="display: flex; align-items: center; margin-bottom: 6px">
+                          <div style="font-size: 11px; color: #8f93b3; flex: 1">설명 · 해시태그</div>
+                          <div style="font-size: 11px; color: var(--ac)">AI 제안</div>
+                        </div>
+                        <div style="border: 1px solid #2e3250; border-radius: 9px; background: #171927; padding: 10px 11px; font-size: 12px; color: #c8cae0; line-height: 1.6; min-height: 108px">매일 아침 5분만 투자해서 만든 루틴을 3주간 기록했습니다.<br><span style="color: var(--ac)">#아침루틴 #자기계발 #숏폼</span></div>
+                      </div>
+                      <div style="border: 1px solid #2b2f47; border-radius: 9px; background: #191c2b; padding: 10px 11px; display: flex; gap: 9px; align-items: center">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex: none"></div>
+                        <div style="font-size: 11px; color: #c8cae0; line-height: 1.45">TikTok 해시태그 5개 초과분은 설명으로 이동</div>
+                      </div>
+                    </div>
+                    <div style="padding: 12px 14px 16px; display: flex; gap: 8px; background: #14161f; border-top: 1px solid #23263c">
+                      <div style="width: 84px; text-align: center; border: 1px solid #2e3250; border-radius: 10px; padding: 12px 0; font-size: 12.5px; color: #b9bcd6">이전</div>
+                      <div style="flex: 1; text-align: center; border-radius: 10px; padding: 12px 0; font-size: 13px; font-weight: 700; background: var(--ac); color: #101120">다음 — 예약</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="width: 330px; flex: none">
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--ac); margin-bottom: 9px">인박스 — 스와이프 처리</div>
+                  <div style="border: 8px solid #23263c; border-radius: 34px; background: #14161f; overflow: hidden; height: 660px; display: flex; flex-direction: column">
+                    <div style="display: flex; justify-content: space-between; padding: 9px 16px 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8f93b3">
+                      <span>9:41</span><span>▮▮▮</span>
+                    </div>
+                    <div style="padding: 10px 14px 8px; display: flex; align-items: center; gap: 9px">
+                      <div style="font-size: 17px; font-weight: 700; flex: 1">인박스</div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ac)">42</div>
+                    </div>
+                    <div style="padding: 0 14px 10px; display: flex; gap: 6px; overflow: hidden">
+                      <div style="font-size: 11px; font-weight: 700; border-radius: 7px; padding: 6px 10px; background: var(--ac-dim); color: #fff; box-shadow: inset 0 0 0 1px #2e3250; white-space: nowrap">전체 42</div>
+                      <div style="font-size: 11px; border-radius: 7px; padding: 6px 10px; color: #9598bb; white-space: nowrap">질문 11</div>
+                      <div style="font-size: 11px; border-radius: 7px; padding: 6px 10px; color: #9598bb; white-space: nowrap">부정 6</div>
+                    </div>
+                    <div style="flex: 1; padding: 0 14px; display: flex; flex-direction: column; gap: 8px; overflow: hidden">
+                      <sc-for list="{{ mobileInbox }}" as="t" hint-placeholder-count="4">
+                        <div style="border: 1px solid #23263c; border-radius: 11px; background: #1b1e2c; padding: 11px 12px">
+                          <div style="display: flex; align-items: center; gap: 8px">
+                            <div style="{{ t.chipStyle }}">{{ t.tag }}</div>
+                            <div style="font-size: 12px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ t.author }}</div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6c7093">{{ t.time }}</div>
+                          </div>
+                          <div style="font-size: 12px; color: #a8abc8; line-height: 1.5; margin-top: 6px">{{ t.text }}</div>
+                          <div style="display: flex; align-items: center; gap: 7px; margin-top: 8px">
+                            <span style="{{ t.flagStyle }}">{{ t.flag }}</span>
+                            <div style="flex: 1"></div>
+                            <div style="font-size: 11px; color: #9598bb; border: 1px solid #2e3250; border-radius: 6px; padding: 4px 8px">저장된 답변</div>
+                            <div style="font-size: 11px; font-weight: 700; color: #101120; background: var(--ac); border-radius: 6px; padding: 5px 9px">답변</div>
+                          </div>
+                        </div>
+                      </sc-for>
+                      <div style="text-align: center; font-size: 10.5px; color: #575b7c; padding: 4px 0 10px">← 스와이프: 완료 · 숨김 →</div>
+                    </div>
+                    <div style="border-top: 1px solid #23263c; display: flex; padding: 0 6px 10px; background: #14161f">
+                      <div style="flex: 1; text-align: center; font-size: 10.5px; color: #6c7093; padding: 9px 0 4px">오늘</div>
+                      <div style="flex: 1; text-align: center; font-size: 10.5px; font-weight: 700; color: #fff; padding: 9px 0 4px">인박스</div>
+                      <div style="flex: 1; text-align: center; font-size: 10.5px; color: #6c7093; padding: 9px 0 4px">업로드</div>
+                      <div style="flex: 1; text-align: center; font-size: 10.5px; color: #6c7093; padding: 9px 0 4px">채널</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ===== 9. NAV MAP ===== -->
+          <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 22px 24px 56px">
+              <div style="font-size: 13px; color: #8f93b3; max-width: 780px; line-height: 1.7; margin-bottom: 20px">기존 구조는 기능 단위로 나뉘어 있어 "매일 반복 작업"이 여러 화면에 흩어집니다. 개선안은 <b style="color:#e8e9f2">할 일 축(오늘 → 만들기 → 응답 → 확인)</b>으로 재편하고, 설정성 화면은 하단으로 내렸습니다.</div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(252px, 1fr)); gap: 12px">
+                <sc-for list="{{ map }}" as="m" hint-placeholder-count="4">
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                    <div style="padding: 12px 14px; border-bottom: 1px solid #23263c; display: flex; align-items: center; gap: 9px">
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #101120; background: var(--ac); border-radius: 4px; padding: 2px 5px">{{ m.step }}</div>
+                      <div style="font-size: 13px; font-weight: 700">{{ m.title }}</div>
+                    </div>
+                    <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 9px">
+                      <sc-for list="{{ m.items }}" as="i" hint-placeholder-count="3">
+                        <div style="display: flex; gap: 9px; align-items: flex-start">
+                          <span style="width: 5px; height: 5px; border-radius: 50%; background: #4d5273; margin-top: 6px; flex: none"></span>
+                          <div>
+                            <div style="font-size: 12.5px; font-weight: 600">{{ i.n }}</div>
+                            <div style="font-size: 11.5px; color: #8f93b3; margin-top: 2px; line-height: 1.5">{{ i.d }}</div>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px">
+                <sc-for list="{{ principles }}" as="p" hint-placeholder-count="4">
+                  <div style="border: 1px solid #23263c; border-radius: 12px; background: #171927; padding: 15px">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--ac)">{{ p.tag }}</div>
+                    <div style="font-size: 14px; font-weight: 700; margin-top: 8px">{{ p.t }}</div>
+                    <div style="font-size: 12.5px; color: #8f93b3; margin-top: 7px; line-height: 1.65">{{ p.d }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top: 24px; border: 1px solid #23263c; border-radius: 12px; background: #1b1e2c; overflow: hidden">
+                <div style="padding: 13px 15px; border-bottom: 1px solid #23263c; font-size: 13px; font-weight: 700">모바일 대응 원칙</div>
+                <sc-for list="{{ mobile }}" as="m" hint-placeholder-count="4">
+                  <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 14px; padding: 12px 15px; border-bottom: 1px solid #202335">
+                    <div style="font-size: 12.5px; font-weight: 600; color: #c8cae0">{{ m.k }}</div>
+                    <div style="font-size: 12px; color: #8f93b3; line-height: 1.6">{{ m.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1560px; margin: 16px auto 0; font-size: 11.5px; color: #575b7c; line-height: 1.7">썸네일·영상 영역은 자리표시자입니다. 실제 소재를 주시면 교체합니다. · 좌측 레일에서 5개 화면 전환</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;oklch(0.78 0.15 320)&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;oklch(0.78 0.15 158)&quot;,&quot;oklch(0.78 0.15 240)&quot;,&quot;oklch(0.78 0.15 62)&quot;,&quot;oklch(0.78 0.15 320)&quot;],&quot;section&quot;:&quot;테마&quot;}}">
+const CHIP = (bg, fg) => `width:26px;height:26px;flex:none;border-radius:7px;background:${bg};color:${fg};font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center`;
+const PLAT = {
+  YT: ['#2c1a20', '#ff8a8a'], IG: ['#2a1c2c', '#e79ad4'], TT: ['#12262b', '#7de3e0'],
+  FB: ['#1a2138', '#8fb2ff'], NV: ['#16261c', '#8fdca8'], TH: ['#22242f', '#c9cbe0']
+};
+const chip = (t) => CHIP(...(PLAT[t] || PLAT.TH));
+const pill = (bg, fg) => `font-size:10.5px;font-weight:600;border-radius:5px;padding:3px 7px;background:${bg};color:${fg};white-space:nowrap`;
+
+class Component extends DCLogic {
+  state = { screen: 'today', tab: 'common', preview: 'IG', filter: '전체', thread: 0, sched: 'best', off: {} };
+
+  componentDidMount() { this.sync(); }
+  componentDidUpdate() { this.sync(); }
+  sync() {
+    const ac = this.props.accent || 'oklch(0.78 0.15 158)';
+    const m = /^oklch\(([^)/]+)\)$/i.exec(ac.trim());
+    const dim = m ? `oklch(${m[1].trim()} / 0.14)` : `color-mix(in oklab, ${ac} 14%, transparent)`;
+    const root = document.documentElement.style;
+    root.setProperty('--ac', ac);
+    root.setProperty('--ac-dim', dim);
+  }
+
+  go(screen) { return () => this.setState({ screen }); }
+
+  navStyle(id) {
+    const on = this.state.screen === id;
+    return `display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:8px;font-size:12.5px;font-weight:${on ? 700 : 500};cursor:pointer;color:${on ? '#fff' : '#9598bb'};background:${on ? 'var(--ac-dim)' : 'transparent'};box-shadow:${on ? 'inset 0 0 0 1px #2e3250' : 'none'}`;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const titles = {
+      today: ['오늘', '발행 큐 5건 · 미답변 42'],
+      compose: ['새 업로드', '초안 · 마지막 저장 2분 전'],
+      inbox: ['인박스', '댓글 · DM 통합'],
+      perf: ['성과', '지난 30일 · 채널 5'],
+      calendar: ['캘린더', '8월 3일 주 · 예약 14건'],
+      channels: ['채널', '연결 5 · 오류 1'],
+      settings: ['설정', '계정 · 자동화 · 결제'],
+      mobile: ['모바일', '390 × 844 기준'],
+      map: ['내비게이션 체계', '개선안 요약']
+    };
+    const [title, subtitle] = titles[s.screen];
+
+    return {
+      title, subtitle,
+      isToday: s.screen === 'today', isCompose: s.screen === 'compose',
+      isInbox: s.screen === 'inbox', isChannels: s.screen === 'channels', isMap: s.screen === 'map',
+      isPerf: s.screen === 'perf', isCalendar: s.screen === 'calendar',
+      isSettings: s.screen === 'settings', isMobile: s.screen === 'mobile',
+      goCompose: this.go('compose'), goChannels: this.go('channels'),
+
+      nav: [
+        ['today', '●', '오늘', '5'], ['compose', '▲', '새 업로드', ''],
+        ['inbox', '■', '인박스', '42'], ['calendar', '▦', '캘린더', '14'],
+        ['perf', '↗', '성과', ''], ['channels', '◆', '채널', '!'],
+        ['settings', '⚙', '설정', ''], ['mobile', '▯', '모바일 시안', ''],
+        ['map', '☰', '내비 체계', '']
+      ].map(([id, mark, label, badge]) => ({ id, mark, label, badge, go: this.go(id), style: this.navStyle(id) })),
+
+      perfRange: [['7d', '7일'], ['30d', '30일'], ['90d', '90일']].map(([id, label]) => ({
+        label, go: () => this.setState({ range: id }),
+        style: `font-size:11.5px;font-weight:600;border-radius:7px;padding:6px 11px;cursor:pointer;white-space:nowrap;border:1px solid ${(s.range || '30d') === id ? '#3a3f61' : '#23263c'};color:${(s.range || '30d') === id ? '#fff' : '#8f93b3'};background:${(s.range || '30d') === id ? '#1f2233' : 'transparent'}`
+      })),
+
+      perfKpis: [
+        { label: '총 조회', value: '4.31M', delta: '+22%', note: '숏폼 71% · 롱폼 29%', deltaStyle: pill('#16261c', '#8fdca8') },
+        { label: '평균 시청 지속', value: '68%', delta: '+4pt', note: '숏폼 기준', deltaStyle: pill('#16261c', '#8fdca8') },
+        { label: '신규 팔로워', value: '9,120', delta: '+31%', note: 'TikTok 기여 52%', deltaStyle: pill('#16261c', '#8fdca8') },
+        { label: '발행 성공률', value: '96%', delta: '실패 3', note: 'Naver 연결 오류', deltaStyle: pill('#2c1a20', '#ff9c9c') }
+      ],
+
+      bars: [42, 58, 51, 74, 66, 88, 71, 95, 63, 79, 84, 100, 76, 91].map((h, i) => ({
+        style: `flex:1;min-width:0;height:${h}%;border-radius:4px 4px 2px 2px;background:${h >= 90 ? 'var(--ac)' : '#2e3250'}`,
+        day: i % 2 === 0 ? `${7 + i}일` : ''
+      })),
+
+      topVideos: [
+        { rank: '01', title: '아침 5분 루틴으로 하루가 바뀐 이유', targets: ['YT', 'IG', 'TT'], views: '812K', watch: '74%', follows: '+2,140', trend: '상승', trendStyle: pill('#16261c', '#8fdca8') },
+        { rank: '02', title: '이 앱 하나로 채널 5개 관리', targets: ['IG', 'TT'], views: '604K', watch: '69%', follows: '+1,380', trend: '상승', trendStyle: pill('#16261c', '#8fdca8') },
+        { rank: '03', title: '루틴 3주차 기록 — 실패한 날들', targets: ['YT', 'IG'], views: '441K', watch: '71%', follows: '+980', trend: '유지', trendStyle: pill('#1e2233', '#9598bb') },
+        { rank: '04', title: '점심시간에 끝내는 콘텐츠 기획법', targets: ['YT', 'FB'], views: '288K', watch: '52%', follows: '+310', trend: '하락', trendStyle: pill('#2c1a20', '#ff9c9c') },
+        { rank: '05', title: '8월 루틴 템플릿 정리', targets: ['NV', 'TH'], views: '96K', watch: '—', follows: '+120', trend: '유지', trendStyle: pill('#1e2233', '#9598bb') }
+      ].map(v => ({ ...v, chips: v.targets })),
+
+      insights: [
+        { tag: 'WHEN', t: '화·목 19시가 가장 강함', d: '같은 영상을 19시에 올린 경우 평균 조회가 34% 높습니다. 최적 시간 예약을 기본값으로 두는 것을 권장합니다.' },
+        { tag: 'WHAT', t: '"실패담" 소재가 팔로워로 전환', d: '성공 팁 영상보다 실패 기록 영상의 팔로워 전환율이 2.1배입니다.' },
+        { tag: 'WHERE', t: 'TikTok이 신규, YouTube가 유지', d: '유입은 TikTok, 재방문은 YouTube. 숏폼은 TikTok 먼저, 아카이브는 YouTube로 묶는 편성이 유리합니다.' }
+      ],
+
+      week: ['8/3 월', '8/4 화', '8/5 수', '8/6 목', '8/7 금', '8/8 토', '8/9 일'].map((d, i) => ({
+        day: d, today: i === 0,
+        headStyle: `padding:9px 10px;font-size:11.5px;font-weight:${i === 0 ? 700 : 500};color:${i === 0 ? '#fff' : '#8f93b3'};border-bottom:1px solid #23263c;background:${i === 0 ? 'var(--ac-dim)' : 'transparent'};white-space:nowrap`,
+        slots: [
+          [{ time: '09:00', title: '아침 루틴 #12', tag: 'YT' }, { time: '19:00', title: '3주차 기록', tag: 'IG' }],
+          [{ time: '12:30', title: '기획법 롱폼', tag: 'YT' }],
+          [{ time: '09:00', title: '숏폼 A/B', tag: 'TT' }, { time: '21:00', title: '블로그 정리', tag: 'NV' }],
+          [{ time: '19:00', title: '루틴 Q&A', tag: 'IG' }, { time: '20:00', title: '요약 게시', tag: 'TH' }],
+          [{ time: '12:00', title: '주간 회고', tag: 'YT' }],
+          [{ time: '10:00', title: '주말 브이로그', tag: 'IG' }],
+          []
+        ][i].map(x => ({ ...x, chipStyle: chip(x.tag) }))
+      })),
+
+      settingsNav: ['계정', '연결 · 자동화', '알림', '팀 · 권한', '결제', '보안'].map((label, i) => ({
+        label, go: () => this.setState({ setTab: label }),
+        style: `padding:8px 10px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:${(s.setTab || '연결 · 자동화') === label ? 700 : 500};color:${(s.setTab || '연결 · 자동화') === label ? '#fff' : '#9598bb'};background:${(s.setTab || '연결 · 자동화') === label ? 'var(--ac-dim)' : 'transparent'}`
+      })),
+
+      settingRows: [
+        { k: '실패 시 자동 재시도', v: '3회까지 10분 간격으로 재시도합니다.', on: true },
+        { k: '토큰 만료 사전 알림', v: '만료 7일 전 이메일 · 앱 푸시로 알립니다.', on: true },
+        { k: '부정 댓글 자동 숨김', v: '감지 후 검토 대기함으로 이동, 자동 삭제는 하지 않습니다.', on: true },
+        { k: '해시태그 자동 변환', v: '플랫폼별 개수·형식 제한에 맞춰 조정합니다.', on: true },
+        { k: '발행 완료 요약 리포트', v: '매일 22시에 당일 발행·성과 요약을 보냅니다.', on: false },
+        { k: '워터마크 자동 삽입', v: '숏폼 우측 하단에 채널 핸들을 넣습니다.', on: false }
+      ].map(r => ({
+        ...r,
+        toggleStyle: `width:36px;height:20px;border-radius:10px;padding:2px;display:flex;flex:none;justify-content:${r.on ? 'flex-end' : 'flex-start'};background:${r.on ? 'var(--ac)' : '#2b2f47'};cursor:pointer`,
+        knobStyle: `width:16px;height:16px;border-radius:50%;background:${r.on ? '#101120' : '#6c7093'};display:block`
+      })),
+
+      mobileToday: [
+        { time: '09:00', title: '아침 5분 루틴', meta: 'YT · IG · TT', status: '예약', statusStyle: pill('#16261c', '#8fdca8') },
+        { time: '12:30', title: '기획법 롱폼', meta: 'YT · FB', status: '썸네일', statusStyle: pill('#2a2416', '#e8cf8c') },
+        { time: '15:00', title: '채널 5개 관리', meta: 'IG · TT · TH', status: '검수', statusStyle: pill('#2a2416', '#e8cf8c') },
+        { time: '21:30', title: '8월 루틴 템플릿', meta: 'NV', status: '오류', statusStyle: pill('#2c1a20', '#ff9c9c') }
+      ],
+
+      mobileSteps: [
+        { n: '1', k: '파일', d: '완료', done: true }, { n: '2', k: '대상', d: '6개', done: true },
+        { n: '3', k: '문구', d: '작성 중', done: false }, { n: '4', k: '예약', d: '', done: false }
+      ].map(x => ({
+        ...x,
+        style: `flex:1;text-align:center;padding:7px 0;border-radius:7px;font-size:10.5px;font-weight:700;background:${x.done ? 'var(--ac-dim)' : x.k === '문구' ? 'var(--ac)' : '#1f2233'};color:${x.k === '문구' ? '#101120' : x.done ? '#fff' : '#6c7093'}`
+      })),
+
+      mobileInbox: [
+        { tag: 'IG', author: '민지_daily', time: '4분', text: '루틴 리스트 어디서 볼 수 있어요?', flag: '질문', flagStyle: pill('#1e2233', '#9598bb') },
+        { tag: 'TT', author: 'brandlab.kr', time: '38분', text: '협업 제안드리고 싶습니다.', flag: '협업', flagStyle: pill('#16261c', '#8fdca8') },
+        { tag: 'IG', author: 'anon_9f2', time: '1시간', text: '이런 거 다 광고죠 결국', flag: '부정', flagStyle: pill('#2c1a20', '#ff9c9c') },
+        { tag: 'YT', author: '@daybyday', time: '3시간', text: '자막 폰트 정보 알려주세요', flag: '질문', flagStyle: pill('#1e2233', '#9598bb') }
+      ].map(t => ({ ...t, chipStyle: chip(t.tag) })),
+
+      mobileTabs: [['오늘', true], ['인박스', false], ['업로드', false], ['채널', false]].map(([label, on]) => ({
+        label,
+        style: `flex:1;text-align:center;font-size:10.5px;font-weight:${on ? 700 : 500};color:${on ? '#fff' : '#6c7093'};padding:9px 0 4px`
+      })),
+
+
+      kpis: [
+        { label: '오늘 예약', value: '5', delta: '3 대기', note: '실패 0건', deltaStyle: pill('#1e2233', '#9598bb') },
+        { label: '미답변 댓글·DM', value: '42', delta: '+12', note: '평균 응답 3.2시간', deltaStyle: pill('#2c1a20', '#ff9c9c') },
+        { label: '어제 조회', value: '38.4K', delta: '+18%', note: '숏폼 비중 71%', deltaStyle: pill('#16261c', '#8fdca8') },
+        { label: '이번 주 발행', value: '19', delta: '목표 28', note: '9편 남음', deltaStyle: pill('#1e2233', '#9598bb') }
+      ],
+
+      queue: [
+        { time: '09:00', dur: '0:41', title: '아침 5분 루틴으로 하루가 바뀐 이유', targets: ['YT', 'IG', 'TT'], meta: '숏폼 · 자막 완료', status: '예약 완료', statusStyle: pill('#16261c', '#8fdca8') },
+        { time: '12:30', dur: '1:12', title: '점심시간에 끝내는 콘텐츠 기획법', targets: ['YT', 'FB'], meta: '롱폼 · 썸네일 필요', status: '썸네일 대기', statusStyle: pill('#2a2416', '#e8cf8c') },
+        { time: '15:00', dur: '0:28', title: '이 앱 하나로 채널 5개 관리', targets: ['IG', 'TT', 'TH'], meta: '숏폼 · 검수 대기', status: '검수 필요', statusStyle: pill('#2a2416', '#e8cf8c') },
+        { time: '19:00', dur: '0:55', title: '루틴 3주차 기록 — 실패한 날들', targets: ['YT', 'IG'], meta: '숏폼 · 자막 진행 62%', status: '처리 중', statusStyle: pill('#1e2233', '#9598bb') },
+        { time: '21:30', dur: '—', title: '블로그 정리글: 8월 루틴 템플릿', targets: ['NV'], meta: '연결 만료로 보류', status: '연결 오류', statusStyle: pill('#2c1a20', '#ff9c9c') }
+      ],
+
+      alerts: [
+        { text: 'Naver 블로그 토큰 만료 — 예약 2건 대기 중', meta: '3일 전 만료', cta: '재연결', go: this.go('channels'), dotStyle: 'width:7px;height:7px;border-radius:50%;background:var(--bad);margin-top:5px;flex:none' },
+        { text: '부정 댓글 6건이 감지되었습니다', meta: 'Instagram · 자동 숨김 대기', cta: '검토', go: this.go('inbox'), dotStyle: 'width:7px;height:7px;border-radius:50%;background:var(--warn);margin-top:5px;flex:none' },
+        { text: '12:30 롱폼 썸네일이 없습니다', meta: '발행 3시간 전', cta: '지정', go: this.go('compose'), dotStyle: 'width:7px;height:7px;border-radius:50%;background:var(--warn);margin-top:5px;flex:none' }
+      ],
+
+      channels: [
+        { tag: 'YT', name: '데일리 루틴 랩', sub: '구독 4.2만', state: '정상', chipStyle: chip('YT'), stateStyle: pill('#16261c', '#8fdca8') },
+        { tag: 'IG', name: '@daily.routine', sub: '팔로워 1.8만', state: '정상', chipStyle: chip('IG'), stateStyle: pill('#16261c', '#8fdca8') },
+        { tag: 'TT', name: '@routinelab', sub: '팔로워 3.1만', state: '정상', chipStyle: chip('TT'), stateStyle: pill('#16261c', '#8fdca8') },
+        { tag: 'TH', name: '@routinelab', sub: '팔로워 4.2천', state: '한도 근접', chipStyle: chip('TH'), stateStyle: pill('#2a2416', '#e8cf8c') },
+        { tag: 'NV', name: '루틴 기록 블로그', sub: '이웃 9.1천', state: '만료', chipStyle: chip('NV'), stateStyle: pill('#2c1a20', '#ff9c9c') }
+      ],
+
+      targets: [['YT', 'YouTube', '데일리 루틴 랩'], ['IG', 'Instagram', '@daily.routine'], ['TT', 'TikTok', '@routinelab'], ['TH', 'Threads', '@routinelab'], ['FB', 'Facebook', '루틴 페이지'], ['NV', 'Naver', '블로그']]
+        .map(([t, label, handle]) => {
+          const on = !s.off[t];
+          const [bg, fg] = PLAT[t];
+          return {
+            label, handle, toggle: () => this.setState(p => ({ off: { ...p.off, [t]: !p.off[t] } })),
+            style: `display:flex;align-items:center;gap:8px;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${on ? '#3a3f61' : '#23263c'};background:${on ? bg : 'transparent'};color:${on ? fg : '#5d6183'}`
+          };
+        }),
+
+      tabs: [['common', '공통'], ['YT', 'YouTube'], ['IG', 'Instagram'], ['TT', 'TikTok'], ['NV', 'Naver']].map(([id, label]) => ({
+        label, go: () => this.setState({ tab: id }),
+        style: `padding:11px 15px;font-size:12px;font-weight:${s.tab === id ? 700 : 500};color:${s.tab === id ? '#fff' : '#8f93b3'};cursor:pointer;white-space:nowrap;box-shadow:${s.tab === id ? 'inset 0 -2px 0 0 var(--ac)' : 'none'}`
+      })),
+
+      titleCount: '24 / 100',
+
+      fields: [
+        { label: '카테고리', value: '라이프스타일' }, { label: '공개 범위', value: '전체 공개' },
+        { label: '재생목록', value: '아침 루틴 시리즈' }, { label: '아동용 여부', value: '아동용 아님' }
+      ],
+
+      previewTabs: [['IG', 'Instagram'], ['TT', 'TikTok'], ['YT', 'YouTube']].map(([id, label]) => ({
+        label, go: () => this.setState({ preview: id }),
+        style: `font-size:11.5px;font-weight:600;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid ${s.preview === id ? '#3a3f61' : '#23263c'};color:${s.preview === id ? '#fff' : '#8f93b3'};background:${s.preview === id ? '#1f2233' : 'transparent'}`
+      })),
+
+      schedule: [['now', '지금 발행', '즉시'], ['best', '채널별 최적 시간', '09:00 · 12:30 · 19:00'], ['fix', '직접 지정', '8월 3일 21:00']].map(([id, label, hint]) => ({
+        label, hint, go: () => this.setState({ sched: id }),
+        style: `display:flex;align-items:center;gap:9px;border-radius:9px;padding:10px 11px;font-size:12.5px;font-weight:${s.sched === id ? 700 : 500};cursor:pointer;border:1px solid ${s.sched === id ? 'var(--ac)' : '#2b2f47'};color:${s.sched === id ? '#fff' : '#9598bb'};background:${s.sched === id ? 'var(--ac-dim)' : 'transparent'}`,
+        dot: `width:6px;height:6px;border-radius:50%;background:${s.sched === id ? 'var(--ac)' : 'transparent'}`
+      })),
+
+      filters: [['전체', '42'], ['멘션·질문', '11'], ['부정 감지', '6'], ['DM', '9'], ['협업 문의', '3'], ['처리 완료', '218']].map(([label, count]) => ({
+        label, count, go: () => this.setState({ filter: label }),
+        style: `display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:${s.filter === label ? 700 : 500};color:${s.filter === label ? '#fff' : '#9598bb'};background:${s.filter === label ? 'var(--ac-dim)' : 'transparent'}`
+      })),
+
+      macros: ['감사 인사', '루틴 리스트 안내', '협업 문의 회신', '재업로드 공지'],
+
+      threads: [
+        { tag: 'IG', author: '민지_daily', time: '4분', text: '루틴 리스트 어디서 볼 수 있어요? 매일 따라하고 있는데 정리된 버전이 있으면 좋겠어요!', video: '아침 5분 루틴으로…', flag: '질문', flagStyle: pill('#1e2233', '#9598bb') },
+        { tag: 'YT', author: '@morningfix', time: '12분', text: '3주차 영상 기다렸습니다. 실패한 날 이야기가 제일 도움돼요.', video: '루틴 3주차 기록', flag: '일반', flagStyle: pill('#1e2233', '#6c7093') },
+        { tag: 'TT', author: 'brandlab.kr', time: '38분', text: '협업 제안드리고 싶습니다. 담당자 메일로 자료 보내드려도 될까요?', video: '이 앱 하나로 채널 5개…', flag: '협업', flagStyle: pill('#16261c', '#8fdca8') },
+        { tag: 'IG', author: 'anon_9f2', time: '1시간', text: '이런 거 다 광고죠 결국', video: '아침 5분 루틴으로…', flag: '부정', flagStyle: pill('#2c1a20', '#ff9c9c') },
+        { tag: 'TH', author: '@sohee.log', time: '2시간', text: '템플릿 노션으로도 공유해주실 수 있나요?', video: '8월 루틴 템플릿', flag: '질문', flagStyle: pill('#1e2233', '#9598bb') },
+        { tag: 'YT', author: '@daybyday', time: '3시간', text: '자막 폰트 정보 알려주세요', video: '점심시간에 끝내는…', flag: '질문', flagStyle: pill('#1e2233', '#9598bb') },
+        { tag: 'FB', author: '김도현', time: '5시간', text: '루틴 시작 3일차인데 벌써 효과 보고 있어요. 감사합니다.', video: '아침 5분 루틴으로…', flag: '일반', flagStyle: pill('#1e2233', '#6c7093') }
+      ].map((t, i) => ({
+        ...t, chipStyle: chip(t.tag), go: () => this.setState({ thread: i }),
+        style: `padding:12px 13px;border-bottom:1px solid #202335;cursor:pointer;background:${s.thread === i ? '#1f2233' : 'transparent'};box-shadow:${s.thread === i ? 'inset 2px 0 0 0 var(--ac)' : 'none'}`
+      })),
+
+      messages: [
+        { who: '민지_daily · 4분 전 · Instagram 댓글', text: '루틴 리스트 어디서 볼 수 있어요? 매일 따라하고 있는데 정리된 버전이 있으면 좋겠어요!', style: 'border:1px solid #23263c;border-radius:11px;background:#1b1e2c;padding:13px 14px' },
+        { who: '이전 대화 · 7월 21일', text: '(영상 잘 보고 있어요! 다음 편도 기대합니다)', style: 'border:1px solid #202335;border-radius:11px;background:#171927;padding:13px 14px;opacity:0.72' }
+      ],
+
+      channelCards: [
+        { tag: 'YT', name: '데일리 루틴 랩', handle: 'youtube.com/@routinelab', state: '정상', note: '3분 전 동기화', stats: [{ k: '구독', v: '42.1K' }, { k: '30일 조회', v: '1.2M' }, { k: '예약', v: '3' }] },
+        { tag: 'IG', name: '@daily.routine', handle: 'instagram.com', state: '정상', note: '2분 전 동기화', stats: [{ k: '팔로워', v: '18.4K' }, { k: '30일 도달', v: '620K' }, { k: '예약', v: '4' }] },
+        { tag: 'TT', name: '@routinelab', handle: 'tiktok.com', state: '정상', note: '1분 전 동기화', stats: [{ k: '팔로워', v: '31.2K' }, { k: '30일 조회', v: '2.4M' }, { k: '예약', v: '4' }] },
+        { tag: 'TH', name: '@routinelab', handle: 'threads.net', state: '한도 근접', note: '일일 게시 한도 8/10', stats: [{ k: '팔로워', v: '4.2K' }, { k: '30일 노출', v: '88K' }, { k: '예약', v: '1' }] },
+        { tag: 'NV', name: '루틴 기록 블로그', handle: 'blog.naver.com', state: '만료', note: '재연결 필요 · 예약 2건 대기', stats: [{ k: '이웃', v: '9.1K' }, { k: '30일 방문', v: '41K' }, { k: '대기', v: '2' }] },
+        { tag: 'FB', name: '루틴 페이지', handle: 'facebook.com', state: '정상', note: '9분 전 동기화', stats: [{ k: '팬', v: '6.8K' }, { k: '30일 도달', v: '54K' }, { k: '예약', v: '1' }] }
+      ].map(c => ({
+        ...c, chipStyle: chip(c.tag),
+        stateStyle: c.state === '정상' ? pill('#16261c', '#8fdca8') : c.state === '만료' ? pill('#2c1a20', '#ff9c9c') : pill('#2a2416', '#e8cf8c')
+      })),
+
+      rules: [
+        { name: '숏폼 3종 세트', desc: 'YouTube Shorts · Instagram Reels · TikTok 동시 발행, 해시태그 자동 변환', on: true },
+        { name: '롱폼 + 요약', desc: 'YouTube 롱폼 발행 후 Threads·Facebook에 요약 링크 자동 게시', on: true },
+        { name: '블로그 아카이브', desc: '발행 완료된 영상을 주 1회 Naver 블로그로 묶어 정리', on: false }
+      ].map(r => ({
+        ...r,
+        toggleStyle: `width:36px;height:20px;border-radius:10px;padding:2px;display:flex;justify-content:${r.on ? 'flex-end' : 'flex-start'};background:${r.on ? 'var(--ac)' : '#2b2f47'};cursor:pointer`,
+        knobStyle: `width:16px;height:16px;border-radius:50%;background:${r.on ? '#101120' : '#6c7093'};display:block`
+      })),
+
+      map: [
+        { step: '01', title: '오늘 — 하루의 출발점', items: [{ n: '발행 큐', d: '시간순 타임라인 하나로 통합. 상태(검수·자막·오류)를 행 안에서 처리' }, { n: '확인 필요', d: '토큰 만료·부정 댓글·누락 썸네일을 한 카드에 모음' }, { n: '채널 상태 스트립', d: '연결 이상을 대시보드에서 바로 인지' }] },
+        { step: '02', title: '만들기 — 업로드/예약', items: [{ n: '단일 컴포저', d: '파일 → 대상 선택 → 공통/플랫폼 탭 → 예약. 단계 이동 없이 한 화면' }, { n: '플랫폼 규칙 경고', d: '길이·해시태그 한도를 입력 시점에 알림' }, { n: '채널 그룹 규칙', d: '자주 쓰는 조합을 한 번에 선택' }] },
+        { step: '03', title: '응답 — 인박스', items: [{ n: '3열 구조', d: '필터 / 스레드 / 상세. 목록에서 벗어나지 않고 연속 응답' }, { n: '저장된 답변 · AI 제안', d: '반복 질문은 2클릭으로 종료' }, { n: '⌘↵ 전송 후 다음', d: '키보드만으로 42건 처리' }] },
+        { step: '04', title: '확인 — 성과 / 설정', items: [{ n: '성과', d: '채널 비교보다 "어떤 영상이 통했나" 기준으로 재편' }, { n: '채널', d: '연결·한도·그룹 규칙을 한곳에서' }, { n: '설정', d: '결제·팀·알림은 사용 빈도가 낮으므로 하단 분리' }] }
+      ],
+
+      principles: [
+        { tag: 'DENSITY', t: '스크롤보다 한 화면', d: '파워유저 기준으로 행 높이 44~48px, 목록은 카드가 아닌 테이블 행. 정보는 줄이지 않고 여백만 줄였습니다.' },
+        { tag: 'STATE', t: '상태를 행 안에서 해결', d: '"검수 필요", "썸네일 대기" 같은 상태 배지를 클릭하면 해당 작업으로 바로 진입. 상세 페이지 왕복을 없앱니다.' },
+        { tag: 'KEYBOARD', t: '키보드 우선', d: '/ 검색, ⌘↵ 예약·전송, J/K 목록 이동. 매일 쓰는 사람의 손이 마우스를 떠나지 않게.' },
+        { tag: 'TRUST', t: '실패를 숨기지 않기', d: '자동화 SaaS의 신뢰는 실패 알림에서 나옵니다. 만료·한도·거부를 대시보드 최상단에 노출합니다.' }
+      ],
+
+      mobile: [
+        { k: '하단 탭 4개', v: '오늘 · 인박스 · 업로드(중앙 강조) · 채널. 성과와 설정은 프로필에서 진입' },
+        { k: '오늘 = 카드 리스트', v: '테이블 행이 카드로 전환되고, 상태 배지가 카드 우측 상단으로 이동' },
+        { k: '컴포저 = 단계형', v: '데스크톱의 2열이 모바일에서는 파일 → 대상 → 문구 → 예약 4단계 시트로 전환' },
+        { k: '인박스 = 2단', v: '목록 → 상세 푸시 전환, 스와이프로 완료/숨김. 답변 입력은 하단 고정' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

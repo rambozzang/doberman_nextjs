@@ -12,11 +12,10 @@ export const metadata: Metadata = {
 };
 
 export default function BossLayout({ children }: { children: React.ReactNode }) {
+  // 프레임 높이/배경은 BossChrome이 100vh 기준으로 직접 관리한다
   return (
-    <div className="min-h-screen bg-boss-bg text-boss-text">
-      <BossAuthGuard>
-        <BossChrome>{children}</BossChrome>
-      </BossAuthGuard>
-    </div>
+    <BossAuthGuard>
+      <BossChrome>{children}</BossChrome>
+    </BossAuthGuard>
   );
 }
