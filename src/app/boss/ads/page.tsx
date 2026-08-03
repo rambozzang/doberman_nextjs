@@ -13,6 +13,18 @@ import {
 import { toast } from "react-hot-toast";
 import { bossAdsApi } from "@/lib/api/boss/ads";
 import type { BossAd, BossAdCreateRequest } from "@/types/boss-ad";
+import {
+  Button,
+  ButtonLink,
+  StatCard,
+  StatusPill,
+  Chip,
+  chipToneOf,
+  MetricBox,
+  DashedCta,
+  AlertBanner,
+  RowSkeleton,
+} from "@/components/boss/ui";
 
 const SIDO_LIST = [
   "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시",
@@ -68,40 +80,83 @@ export default function BossAdsPage() {
     }
   };
 
-  return (
-    <div className="mx-auto max-w-5xl p-4 lg:p-6">
-      <div className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-bold text-white">
-            <Megaphone className="h-5 w-5 text-boss-warning" /> 지도 광고
-          </h1>
-          <p className="mt-1 text-sm text-boss-text-secondary">
-            도배업체 지도(/map)에서 우리 업체를 우선 노출합니다.
-            {vendorName && <span className="ml-1 text-boss-text-soft">· {vendorName}</span>}
-          </p>
-        </div>
-        {vendorId != null && (
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-boss-warning px-3 py-2 text-sm font-semibold text-white hover:bg-boss-warning"
-          >
-            <Plus className="h-4 w-4" /> 광고 등록
-          </button>
-        )}
-      </div>
+  // 집계 — 실데이터에서만 파생한다
+  const totals = ads.reduce(
+    (s, a) => ({ imp: s.imp + a.impCnt, click: s.click + a.clickCnt, live: s.live + (a.serving ? 1 : 0) }),
+    { imp: 0, click: 0, live: 0 }
+  );
+  const ctr = totals.imp > 0 ? (totals.click / totals.imp) * 100 : 0;
 
-      {loading && (
-        <div className="flex justify-center py-16 text-boss-text-secondary">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
+  return (
+    <div className="flex flex-col gap-3.5">
+      {/* ───── 최상단 배너 — 실패/차단은 숨기지 않는다 (시안 TRUST) ───── */}
+      {!loading && vendorId == null && (
+        <AlertBanner
+          tone="bad"
+          action={
+            <ButtonLink href="/boss/me/company" variant="primary" size="sm">
+              업체 등록
+            </ButtonLink>
+          }
+        >
+          지도에 등록된 업체가 없어 광고를 집행할 수 없습니다. 회사 주소를 등록하면 지도에
+          표시되고 그때부터 광고를 낼 수 있습니다.
+        </AlertBanner>
       )}
 
-      {!loading && vendorId == null && (
-        <div className="rounded-xl border border-boss-warning/40 bg-boss-warning/10 p-5 text-sm text-boss-warning">
-          <p className="font-semibold">아직 지도에 등록된 업체가 없습니다.</p>
-          <p className="mt-1 text-boss-warning/80">
-            설정에서 회사 주소를 등록하면 지도에 표시되고, 그 후 광고를 집행할 수 있습니다.
+      {/* ───── KPI 4장 ───── */}
+      {vendorId != null && (
+        <section className="grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
+          <StatCard
+            label="총 노출"
+            value={totals.imp.toLocaleString()}
+            delta={totals.live > 0 ? `노출 중 ${totals.live}` : undefined}
+            deltaTone="ok"
+            hint="집행 중인 광고 합계"
+            loading={loading}
+          />
+          <StatCard
+            label="총 클릭"
+            value={totals.click.toLocaleString()}
+            hint="지도에서 업체를 누른 횟수"
+            loading={loading}
+          />
+          <StatCard
+            label="클릭률"
+            value={`${ctr.toFixed(1)}%`}
+            delta={ctr >= 2 ? '양호' : ctr > 0 ? '개선 여지' : undefined}
+            deltaTone={ctr >= 2 ? 'ok' : 'warn'}
+            hint="클릭 ÷ 노출"
+            loading={loading}
+          />
+          <StatCard
+            label="집행 중"
+            value={String(totals.live)}
+            delta={`전체 ${ads.length}`}
+            deltaTone="neutral"
+            hint="현재 노출되는 광고"
+            loading={loading}
+          />
+        </section>
+      )}
+
+      {/* ───── 섹션 헤더 ───── */}
+      {vendorId != null && (
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className="text-[13px] font-bold text-boss-text">집행 광고 {ads.length}</h2>
+          <p className="text-[11.5px] text-boss-text-muted">
+            등급이 높을수록 지도 마커와 광고 슬롯에서 앞에 노출됩니다
+            {vendorName && ` · ${vendorName}`}
           </p>
+          <div className="flex-1" />
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Plus}
+            onClick={() => setShowForm((v) => !v)}
+          >
+            광고 등록
+          </Button>
         </div>
       )}
 
@@ -115,92 +170,81 @@ export default function BossAdsPage() {
         />
       )}
 
-      {!loading && vendorId != null && (
-        <div className="mt-5 space-y-3">
-          {ads.length === 0 && (
-            <p className="rounded-xl border border-boss-border bg-boss-elevated/50 p-8 text-center text-sm text-boss-text-secondary">
-              집행 중인 광고가 없습니다.
-            </p>
-          )}
-          {ads.map((ad) => (
-            <div
-              key={ad.adId}
-              className="rounded-xl border border-boss-border bg-boss-elevated/60 p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="truncate font-semibold text-white">{ad.title}</h3>
-                    {ad.serving ? (
-                      <span className="shrink-0 rounded-full bg-boss-primary/20 px-2 py-0.5 text-[10px] font-semibold text-boss-primary">
-                        노출중
-                      </span>
-                    ) : (
-                      <span className="shrink-0 rounded-full bg-boss-border-strong/40 px-2 py-0.5 text-[10px] font-semibold text-boss-text-secondary">
-                        {ad.status === "N" ? "중지" : "대기/종료"}
-                      </span>
-                    )}
-                    <span className="shrink-0 rounded bg-boss-elevated px-1.5 py-0.5 text-[10px] text-boss-text-soft">
-                      {TIERS.find((t) => t.value === ad.tier)?.label ?? ad.tier}
-                    </span>
-                  </div>
-                  {ad.body && <p className="mt-1 truncate text-sm text-boss-text-secondary">{ad.body}</p>}
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-boss-text-secondary">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {ad.regionSido
-                        ? `${ad.regionSido}${ad.regionSigungu ? " " + ad.regionSigungu : ""}`
-                        : "전국"}
-                    </span>
-                    <span>
-                      {ad.startDt} ~ {ad.endDt}
-                    </span>
-                  </div>
-                </div>
-                {ad.status === "Y" && (
-                  <button
-                    onClick={() => stop(ad.adId)}
-                    className="flex shrink-0 items-center gap-1 rounded-lg border border-boss-border-strong px-2.5 py-1.5 text-xs text-boss-text-soft hover:border-boss-error hover:text-boss-error"
-                  >
-                    <StopCircle className="h-3.5 w-3.5" /> 중지
-                  </button>
-                )}
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-boss-border pt-3">
-                <Stat icon={BarChart3} label="노출" value={ad.impCnt} />
-                <Stat icon={MousePointerClick} label="클릭" value={ad.clickCnt} />
-                <Stat
-                  icon={BarChart3}
-                  label="클릭률"
-                  value={ad.impCnt > 0 ? `${((ad.clickCnt / ad.impCnt) * 100).toFixed(1)}%` : "-"}
-                />
-              </div>
-            </div>
-          ))}
+      {/* ───── 광고 카드 그리드 — 시안 채널 카드 ───── */}
+      {loading ? (
+        <div className="boss-card-content">
+          <RowSkeleton rows={4} />
         </div>
-      )}
-    </div>
-  );
-}
+      ) : vendorId != null ? (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(268px,1fr))] gap-[11px]">
+          {ads.map((ad) => {
+            const tier = TIERS.find((t) => t.value === ad.tier)?.label ?? String(ad.tier);
+            const region = ad.regionSido
+              ? `${ad.regionSido}${ad.regionSigungu ? " " + ad.regionSigungu : ""}`
+              : "전국";
+            return (
+              <div
+                key={ad.adId}
+                className="flex flex-col gap-[11px] rounded-frame border border-boss-border bg-boss-surface p-3.5 transition-colors duration-[120ms] ease-out hover:border-boss-border-card-hover"
+              >
+                <div className="flex items-start gap-2.5">
+                  <Chip tone={chipToneOf(tier)}>{tier.charAt(0)}</Chip>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-boss-text">{ad.title}</p>
+                    <p className="mt-0.5 flex items-center gap-1 truncate text-[10.5px] text-boss-text-muted">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      {region}
+                    </p>
+                  </div>
+                  <StatusPill tone={ad.serving ? "ok" : ad.status === "N" ? "bad" : "neutral"}>
+                    {ad.serving ? "노출 중" : ad.status === "N" ? "중지" : "대기"}
+                  </StatusPill>
+                </div>
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof BarChart3;
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="text-center">
-      <p className="flex items-center justify-center gap-1 text-[10px] text-boss-text-muted">
-        <Icon className="h-3 w-3" /> {label}
-      </p>
-      <p className="mt-0.5 text-sm font-semibold text-white">
-        {typeof value === "number" ? value.toLocaleString() : value}
-      </p>
+                {ad.body && (
+                  <p className="line-clamp-2 text-[11.5px] leading-[1.55] text-boss-text-secondary">
+                    {ad.body}
+                  </p>
+                )}
+
+                {/* 3칸 지표 — 시안 채널 카드 stats */}
+                <div className="grid grid-cols-3 gap-[7px]">
+                  <MetricBox label="노출" value={ad.impCnt.toLocaleString()} />
+                  <MetricBox label="클릭" value={ad.clickCnt.toLocaleString()} />
+                  <MetricBox
+                    label="클릭률"
+                    value={ad.impCnt > 0 ? `${((ad.clickCnt / ad.impCnt) * 100).toFixed(1)}%` : "-"}
+                  />
+                </div>
+
+                <div className="flex items-center gap-[7px] text-[11px] text-boss-text-muted">
+                  <span className="min-w-0 flex-1 truncate font-boss-mono">
+                    {ad.startDt} ~ {ad.endDt}
+                  </span>
+                  {ad.status === "Y" && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={StopCircle}
+                      onClick={() => stop(ad.adId)}
+                    >
+                      중지
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* 마지막 점선 카드 — 시안 `+ 새 플랫폼 연결` */}
+          <DashedCta
+            onClick={() => setShowForm(true)}
+            className="min-h-[148px] !rounded-frame"
+          >
+            <Plus className="h-3.5 w-3.5" /> 새 광고 등록
+          </DashedCta>
+        </div>
+      ) : null}
     </div>
   );
 }

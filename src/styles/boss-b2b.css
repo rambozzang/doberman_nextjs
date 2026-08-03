@@ -10,10 +10,9 @@
  * sales/statistics 페이지가 rgb(var(--boss-primary)) 형태로 직접 참조한다.
  */
 
-/* 폰트: 본문 Pretendard, 숫자·시간·라벨 JetBrains Mono
- * 사내 정책상 셀프 호스팅이 권장되나 현재는 시안과 동일하게 CDN 사용 */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+/* 폰트(Pretendard · JetBrains Mono)는 여기서 @import 하지 않는다.
+ * 이 파일은 전역 CSS 번들에 포함되므로 @import 를 두면 /boss 밖 페이지에서도
+ * 폰트를 내려받게 된다. 로딩은 src/app/boss/layout.tsx 에서만 한다. */
 
 :root {
   /* ── 표면 ─────────────────────────────── */
