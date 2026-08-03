@@ -73,17 +73,17 @@ export default function BossAdsPage() {
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-white">
-            <Megaphone className="h-5 w-5 text-orange-400" /> 지도 광고
+            <Megaphone className="h-5 w-5 text-boss-warning" /> 지도 광고
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-boss-text-secondary">
             도배업체 지도(/map)에서 우리 업체를 우선 노출합니다.
-            {vendorName && <span className="ml-1 text-slate-300">· {vendorName}</span>}
+            {vendorName && <span className="ml-1 text-boss-text-soft">· {vendorName}</span>}
           </p>
         </div>
         {vendorId != null && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-boss-warning px-3 py-2 text-sm font-semibold text-white hover:bg-boss-warning"
           >
             <Plus className="h-4 w-4" /> 광고 등록
           </button>
@@ -91,15 +91,15 @@ export default function BossAdsPage() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-16 text-slate-400">
+        <div className="flex justify-center py-16 text-boss-text-secondary">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       )}
 
       {!loading && vendorId == null && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 text-sm text-amber-200">
+        <div className="rounded-xl border border-boss-warning/40 bg-boss-warning/10 p-5 text-sm text-boss-warning">
           <p className="font-semibold">아직 지도에 등록된 업체가 없습니다.</p>
-          <p className="mt-1 text-amber-200/80">
+          <p className="mt-1 text-boss-warning/80">
             설정에서 회사 주소를 등록하면 지도에 표시되고, 그 후 광고를 집행할 수 있습니다.
           </p>
         </div>
@@ -118,34 +118,34 @@ export default function BossAdsPage() {
       {!loading && vendorId != null && (
         <div className="mt-5 space-y-3">
           {ads.length === 0 && (
-            <p className="rounded-xl border border-slate-700 bg-slate-800/50 p-8 text-center text-sm text-slate-400">
+            <p className="rounded-xl border border-boss-border bg-boss-elevated/50 p-8 text-center text-sm text-boss-text-secondary">
               집행 중인 광고가 없습니다.
             </p>
           )}
           {ads.map((ad) => (
             <div
               key={ad.adId}
-              className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"
+              className="rounded-xl border border-boss-border bg-boss-elevated/60 p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate font-semibold text-white">{ad.title}</h3>
                     {ad.serving ? (
-                      <span className="shrink-0 rounded-full bg-emerald-600/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                      <span className="shrink-0 rounded-full bg-boss-primary/20 px-2 py-0.5 text-[10px] font-semibold text-boss-primary">
                         노출중
                       </span>
                     ) : (
-                      <span className="shrink-0 rounded-full bg-slate-600/40 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                      <span className="shrink-0 rounded-full bg-boss-border-strong/40 px-2 py-0.5 text-[10px] font-semibold text-boss-text-secondary">
                         {ad.status === "N" ? "중지" : "대기/종료"}
                       </span>
                     )}
-                    <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-300">
+                    <span className="shrink-0 rounded bg-boss-elevated px-1.5 py-0.5 text-[10px] text-boss-text-soft">
                       {TIERS.find((t) => t.value === ad.tier)?.label ?? ad.tier}
                     </span>
                   </div>
-                  {ad.body && <p className="mt-1 truncate text-sm text-slate-400">{ad.body}</p>}
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                  {ad.body && <p className="mt-1 truncate text-sm text-boss-text-secondary">{ad.body}</p>}
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-boss-text-secondary">
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
                       {ad.regionSido
@@ -160,14 +160,14 @@ export default function BossAdsPage() {
                 {ad.status === "Y" && (
                   <button
                     onClick={() => stop(ad.adId)}
-                    className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs text-slate-300 hover:border-red-500 hover:text-red-400"
+                    className="flex shrink-0 items-center gap-1 rounded-lg border border-boss-border-strong px-2.5 py-1.5 text-xs text-boss-text-soft hover:border-boss-error hover:text-boss-error"
                   >
                     <StopCircle className="h-3.5 w-3.5" /> 중지
                   </button>
                 )}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-700 pt-3">
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-boss-border pt-3">
                 <Stat icon={BarChart3} label="노출" value={ad.impCnt} />
                 <Stat icon={MousePointerClick} label="클릭" value={ad.clickCnt} />
                 <Stat
@@ -195,7 +195,7 @@ function Stat({
 }) {
   return (
     <div className="text-center">
-      <p className="flex items-center justify-center gap-1 text-[10px] text-slate-500">
+      <p className="flex items-center justify-center gap-1 text-[10px] text-boss-text-muted">
         <Icon className="h-3 w-3" /> {label}
       </p>
       <p className="mt-0.5 text-sm font-semibold text-white">
@@ -251,7 +251,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
   };
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+    <div className="rounded-xl border border-boss-border bg-boss-elevated/60 p-4">
       <h2 className="mb-3 text-sm font-bold text-white">새 광고</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="광고 제목" required>
@@ -260,14 +260,14 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             onChange={(e) => set("title", e.target.value)}
             maxLength={120}
             placeholder="강남 도배 20년 경력"
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
           />
         </Field>
         <Field label="노출 등급">
           <select
             value={form.tier}
             onChange={(e) => set("tier", Number(e.target.value))}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
           >
             {TIERS.map((t) => (
               <option key={t.value} value={t.value}>
@@ -282,14 +282,14 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             onChange={(e) => set("body", e.target.value)}
             maxLength={300}
             placeholder="합지·실크 전문, 당일 견적"
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
           />
         </Field>
         <Field label="노출 지역 (비우면 전국)">
           <select
             value={form.regionSido ?? ""}
             onChange={(e) => set("regionSido", e.target.value)}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
           >
             <option value="">전국</option>
             {SIDO_LIST.map((s) => (
@@ -305,7 +305,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             onChange={(e) => set("regionSigungu", e.target.value)}
             placeholder="강남구"
             disabled={!form.regionSido}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-orange-500 focus:ring-2 disabled:opacity-50"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2 disabled:opacity-50"
           />
         </Field>
         <Field label="게시 시작일">
@@ -313,7 +313,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             type="date"
             value={form.startDt}
             onChange={(e) => set("startDt", e.target.value)}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
           />
         </Field>
         <Field label="게시 종료일">
@@ -321,7 +321,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             type="date"
             value={form.endDt}
             onChange={(e) => set("endDt", e.target.value)}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
           />
         </Field>
         <Field label="이미지 URL (선택)">
@@ -329,7 +329,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             value={form.imageUrl ?? ""}
             onChange={(e) => set("imageUrl", e.target.value)}
             placeholder="https://..."
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
           />
         </Field>
         <Field label="클릭 시 이동 (비우면 업체 상세)">
@@ -337,7 +337,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
             value={form.landingUrl ?? ""}
             onChange={(e) => set("landingUrl", e.target.value)}
             placeholder="https://..."
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-orange-500 focus:ring-2"
+            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
           />
         </Field>
       </div>
@@ -346,13 +346,13 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
         <button
           onClick={submit}
           disabled={saving}
-          className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-60"
+          className="flex items-center gap-2 rounded-lg bg-boss-warning px-4 py-2 text-sm font-bold text-white hover:bg-boss-warning disabled:opacity-60"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin" />} 등록
         </button>
         <button
           onClick={onCancel}
-          className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-lg border border-boss-border-strong px-4 py-2 text-sm text-boss-text-soft hover:bg-boss-elevated"
         >
           취소
         </button>
@@ -374,9 +374,9 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="mb-1 block text-[11px] font-medium text-slate-400">
+      <label className="mb-1 block text-[11px] font-medium text-boss-text-secondary">
         {label}
-        {required && <span className="ml-0.5 text-orange-400">*</span>}
+        {required && <span className="ml-0.5 text-boss-warning">*</span>}
       </label>
       {children}
     </div>

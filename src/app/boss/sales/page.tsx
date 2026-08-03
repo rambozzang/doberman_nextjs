@@ -211,7 +211,7 @@ export default function BossSalesPage() {
       )}
 
       {/* ───── KPI 4장 ───── */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-2.5">
+      <section className="grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
         <StatCard
           label="총 매출"
           value={fmtWonShort(derived.total)}

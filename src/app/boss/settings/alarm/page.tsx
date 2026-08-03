@@ -116,7 +116,7 @@ export default function BossAlarmSettingPage() {
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold transition ${
               enabled
                 ? 'bg-boss-primary text-boss-text hover:bg-boss-primary-hover'
-                : 'bg-boss-elevated text-boss-text hover:bg-slate-600'
+                : 'bg-boss-elevated text-boss-text hover:bg-boss-border-strong'
             }`}
           >
             {enabled ? '끄기' : '켜기'}

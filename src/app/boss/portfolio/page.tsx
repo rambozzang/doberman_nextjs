@@ -185,7 +185,7 @@ export default function BossPortfolioListPage() {
   return (
     <div className="flex flex-col gap-3.5">
       {/* 시안 채널 화면: KPI → 섹션 헤더 → 카드 그리드 */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-2.5">
+      <section className="grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
         <StatCard
           label="등록된 사례"
           value={items.length.toLocaleString()}

@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import '@/styles/boss-b2b.css';
 import BossHeader from './BossHeader';
 import BossSidebar from './BossSidebar';
+import BossMobileTabs from './BossMobileTabs';
 import { BossSearchProvider } from './BossSearchContext';
 
 // 인증 화면(로그인/회원가입/아이디·비밀번호 찾기 등)에서는
@@ -46,6 +47,8 @@ export default function BossChrome({ children }: { children: React.ReactNode }) 
             <main className="boss-scroll flex-1 overflow-y-auto px-4 pb-10 pt-5 md:px-[22px]">
               {children}
             </main>
+            {/* 모바일 하단 탭 — 시안 모바일 규칙 (데스크톱에서는 숨김) */}
+            <BossMobileTabs />
           </div>
         </div>
       </div>

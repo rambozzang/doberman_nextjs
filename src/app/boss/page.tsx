@@ -278,7 +278,7 @@ export default function BossDashboardPage() {
       )}
 
       {/* ───── 1. KPI 4장 ───── */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-2.5">
+      <section className="grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
         <StatCard
           label="오늘 일정"
           value={String(events.length)}

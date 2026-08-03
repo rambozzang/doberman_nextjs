@@ -82,7 +82,7 @@ export default function HistoryView({
       </Link>
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-error/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div className="flex-1">{error}</div>
           <button
@@ -123,7 +123,7 @@ export default function HistoryView({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-800/70 text-sm">
+            <table className="min-w-full divide-y divide-boss-border-row/70 text-sm">
               <thead className="bg-boss-surface/80 text-xs uppercase tracking-wider text-boss-text-muted">
                 <tr>
                   <th className="px-5 py-3 text-left font-semibold">거래 ID</th>
@@ -135,7 +135,7 @@ export default function HistoryView({
                   <th className="px-5 py-3 text-left font-semibold">상태</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/70 text-boss-text">
+              <tbody className="divide-y divide-boss-border-row/70 text-boss-text">
                 {items.map((item, idx) => (
                   <tr
                     key={item.transactionId ?? `${item.productId ?? 'item'}-${idx}`}

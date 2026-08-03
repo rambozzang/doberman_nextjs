@@ -107,7 +107,7 @@ export default function BillingStatusPage() {
       <LinkBack />
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-error/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div className="flex-1">{error}</div>
           <button

@@ -81,7 +81,7 @@ export default function BossOnboardingPage() {
         <div className="w-10" />
       </div>
 
-      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-6">
+      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-boss-inset/40 p-6">
         <div className="flex items-center gap-2 text-xs font-semibold text-boss-primary">
           <CheckCircle2 size={14} /> WELCOME
         </div>

@@ -20,10 +20,10 @@ import { bossCalendarApi, parseBossDateTime } from '@/lib/api/boss/calendar';
 import type { CalendarEvent } from '@/types/boss-calendar';
 
 function eventColor(type?: string | null): string {
-  if (type === 'estimate') return '#3b82f6';
-  if (type === 'construction') return '#10b981';
-  if (type === 'appointment') return '#a855f7';
-  return '#64748b';
+  if (type === 'estimate') return '#8fb2ff';
+  if (type === 'construction') return '#8fdca8';
+  if (type === 'appointment') return '#c9cbe0';
+  return '#6c7093';
 }
 
 function eventLabel(type?: string | null): string {
@@ -172,7 +172,7 @@ export default function BossCalendarAlarmPage() {
             return (
               <li
                 key={ev.id}
-                className="rounded-2xl border border-boss-border bg-boss-surface p-4 transition-colors hover:border-amber-500/40"
+                className="rounded-2xl border border-boss-border bg-boss-surface p-4 transition-colors hover:border-boss-warning/40"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-boss-warning/10 text-boss-warning">
@@ -209,7 +209,7 @@ export default function BossCalendarAlarmPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(ev)}
-                    className="rounded-md border border-rose-800/40 bg-boss-error/10 px-3 py-1.5 text-[11px] text-boss-error hover:bg-boss-error/10"
+                    className="rounded-md border border-boss-error/40 bg-boss-error/10 px-3 py-1.5 text-[11px] text-boss-error hover:bg-boss-error/10"
                   >
                     삭제
                   </button>
