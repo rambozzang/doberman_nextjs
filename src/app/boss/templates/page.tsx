@@ -31,6 +31,7 @@ import {
   DataTable,
   EmptyState,
   Skeleton,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 const DEFAULT_TITLE = '견적서 보내드립니다.';
@@ -76,6 +77,8 @@ export default function BossTemplatesPage() {
     value: emptyForm,
   });
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<BossTemplate | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     const cid = getBossCustId();
@@ -206,20 +209,25 @@ export default function BossTemplatesPage() {
     }
   };
 
-  const handleDelete = async (t: BossTemplate) => {
-    if (t.isDefault) return;
+  // 템플릿 삭제 (확인 모달 → API → 목록 새로고침)
+  const handleDelete = async () => {
+    const t = pendingDelete;
+    if (!t || t.isDefault) return;
     if (!custId) return;
-    if (!confirm(`"${t.name}" 템플릿을 삭제하시겠습니까?`)) return;
+    setDeleting(true);
     try {
       const res = await bossTemplatesApi.remove(t.id, custId);
       if (res.success !== false) {
         toast.success('삭제 완료');
+        setPendingDelete(null);
         await load();
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');
       }
     } catch {
       toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -360,7 +368,7 @@ export default function BossTemplatesPage() {
                         <IconButton
                           icon={Trash2}
                           label="삭제"
-                          onClick={() => void handleDelete(t)}
+                          onClick={() => setPendingDelete(t)}
                         />
                       )}
                       {t.isDefault ? (
@@ -390,6 +398,16 @@ export default function BossTemplatesPage() {
           </tbody>
         </DataTable>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="템플릿 삭제"
+        description={`"${pendingDelete?.name ?? ''}" 템플릿을 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
 
       {/* 미리보기 모달 */}
       {previewTarget && (

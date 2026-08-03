@@ -274,7 +274,7 @@ export default function BossMyCompanyPage() {
               <button
                 type="button"
                 onClick={() => logoInputRef.current?.click()}
-                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-boss-border bg-boss-bg text-boss-text-muted transition-colors hover:border-slate-500 hover:text-boss-text-secondary"
+                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-boss-border bg-boss-bg text-boss-text-muted transition-colors hover:border-boss-border-hover hover:text-boss-text-secondary"
               >
                 {logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -308,7 +308,7 @@ export default function BossMyCompanyPage() {
               <button
                 type="button"
                 onClick={() => stampInputRef.current?.click()}
-                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-boss-border bg-boss-bg text-boss-text-muted transition-colors hover:border-slate-500 hover:text-boss-text-secondary"
+                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-boss-border bg-boss-bg text-boss-text-muted transition-colors hover:border-boss-border-hover hover:text-boss-text-secondary"
               >
                 {stamp ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -481,7 +481,7 @@ export default function BossMyCompanyPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-boss-primary to-boss-primary-hover text-sm font-semibold text-boss-text shadow-boss-md hover:from-boss-primary-hover hover:to-boss-primary disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:text-boss-text-muted"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-boss-primary to-boss-primary-hover text-sm font-semibold text-boss-text shadow-boss-md hover:from-boss-primary-hover hover:to-boss-primary disabled:cursor-not-allowed disabled:from-boss-elevated disabled:to-boss-elevated disabled:text-boss-text-muted"
           >
             {saving ? (
               <>

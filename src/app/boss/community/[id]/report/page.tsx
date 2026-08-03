@@ -97,7 +97,7 @@ export default function BossCommunityReportPage() {
             onChange={(e) => setReason(e.target.value)}
             rows={6}
             placeholder="신고 사유를 자세히 작성해주세요"
-            className="w-full resize-y rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/10"
+            className="w-full resize-y rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-warning/50 focus:outline-none focus:ring-2 focus:ring-boss-warning/10"
           />
         </div>
         <div className="flex justify-end">
@@ -105,7 +105,7 @@ export default function BossCommunityReportPage() {
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-boss-text hover:bg-amber-400 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-warning px-4 py-2 text-sm font-semibold text-boss-text hover:bg-boss-warning disabled:opacity-50"
           >
             <Flag size={14} /> {submitting ? '신고 중…' : '신고하기'}
           </button>

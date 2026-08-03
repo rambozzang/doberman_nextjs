@@ -22,10 +22,10 @@ import type { CalendarEvent } from '@/types/boss-calendar';
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function eventColor(type?: string | null): string {
-  if (type === 'estimate') return '#3b82f6';
-  if (type === 'construction') return '#10b981';
-  if (type === 'appointment') return '#a855f7';
-  return '#64748b';
+  if (type === 'estimate') return '#8fb2ff';
+  if (type === 'construction') return '#8fdca8';
+  if (type === 'appointment') return '#c9cbe0';
+  return '#6c7093';
 }
 
 function eventLabel(type?: string | null): string {

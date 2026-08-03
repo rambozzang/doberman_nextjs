@@ -377,7 +377,7 @@ export default function BossPortfolioNewPage() {
               <button
                 type="button"
                 onClick={addLink}
-                className="flex h-10 flex-shrink-0 items-center gap-1 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover"
+                className="flex h-10 flex-shrink-0 items-center gap-1 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-bg hover:bg-boss-primary-hover"
               >
                 <Plus size={14} /> 추가
               </button>
@@ -430,7 +430,7 @@ export default function BossPortfolioNewPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-slate-950 hover:bg-boss-primary-hover disabled:opacity-50"
+            className="flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-boss-bg hover:bg-boss-primary-hover disabled:opacity-50"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             등록

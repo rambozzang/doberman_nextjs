@@ -77,7 +77,7 @@ function ChipGroup({
               onClick={() => toggle(it.type)}
               className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                 active
-                  ? 'border-emerald-500/60 bg-boss-primary/15 text-boss-primary'
+                  ? 'border-boss-primary/60 bg-boss-primary/15 text-boss-primary'
                   : 'border-boss-border bg-boss-surface text-boss-text-secondary hover:border-boss-border'
               }`}
             >

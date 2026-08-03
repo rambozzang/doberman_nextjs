@@ -235,7 +235,7 @@ function ConstructionFormInner() {
           type="button"
           onClick={handleSave}
           disabled={saving || loadingDetail}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary-hover disabled:opacity-50"
         >
           <Save size={14} /> {isEditMode ? '수정 저장' : '시공 기록 등록'}
         </button>
@@ -294,7 +294,7 @@ function ConstructionFormInner() {
                   <button
                     type="button"
                     onClick={() => addImageUrl(section.key)}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary-hover"
                   >
                     <Plus size={14} /> 추가
                   </button>
@@ -410,7 +410,7 @@ function ConstructionFormInner() {
                 onClick={() => setStatus('진행중')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ring-1 ring-inset ${
                   status === '진행중'
-                    ? 'bg-boss-warning/20 text-boss-warning ring-amber-500/40'
+                    ? 'bg-boss-warning/20 text-boss-warning ring-boss-warning/40'
                     : 'bg-boss-elevated/60 text-boss-text-muted ring-boss-border'
                 }`}
               >
@@ -421,7 +421,7 @@ function ConstructionFormInner() {
                 onClick={() => setStatus('완료')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ring-1 ring-inset ${
                   status === '완료'
-                    ? 'bg-boss-primary/20 text-boss-primary ring-emerald-500/40'
+                    ? 'bg-boss-primary/20 text-boss-primary ring-boss-primary/40'
                     : 'bg-boss-elevated/60 text-boss-text-muted ring-boss-border'
                 }`}
               >
@@ -438,7 +438,7 @@ function ConstructionFormInner() {
           type="button"
           onClick={handleSave}
           disabled={saving || loadingDetail}
-          className="inline-flex h-11 items-center gap-2 rounded-lg bg-boss-primary px-6 text-sm font-semibold text-emerald-950 hover:bg-boss-primary-hover disabled:opacity-50"
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-boss-primary px-6 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary-hover disabled:opacity-50"
         >
           <Save size={16} /> {saving ? '저장 중...' : isEditMode ? '수정 저장' : '시공 기록 등록'}
         </button>

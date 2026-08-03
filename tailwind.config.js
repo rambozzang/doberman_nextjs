@@ -23,15 +23,31 @@ module.exports = {
     },
     extend: {
       colors: {
+        // /boss 디자인 토큰 — 정의는 src/styles/boss-b2b.css
         boss: {
           bg: 'rgb(var(--boss-bg) / <alpha-value>)',
+          shell: 'rgb(var(--boss-shell) / <alpha-value>)',
+          rail: 'rgb(var(--boss-rail) / <alpha-value>)',
           surface: 'rgb(var(--boss-surface) / <alpha-value>)',
+          inset: 'rgb(var(--boss-inset) / <alpha-value>)',
           elevated: 'rgb(var(--boss-elevated) / <alpha-value>)',
+          hover: 'rgb(var(--boss-hover) / <alpha-value>)',
           border: 'rgb(var(--boss-border) / <alpha-value>)',
+          'border-row': 'rgb(var(--boss-border-row) / <alpha-value>)',
+          'border-soft': 'rgb(var(--boss-border-soft) / <alpha-value>)',
           'border-strong': 'rgb(var(--boss-border-strong) / <alpha-value>)',
+          'border-hover': 'rgb(var(--boss-border-hover) / <alpha-value>)',
+          'border-card-hover': 'rgb(var(--boss-border-card-hover) / <alpha-value>)',
           text: 'rgb(var(--boss-text) / <alpha-value>)',
+          'text-bright': 'rgb(var(--boss-text-bright) / <alpha-value>)',
+          'text-soft': 'rgb(var(--boss-text-soft) / <alpha-value>)',
+          'text-dim': 'rgb(var(--boss-text-dim) / <alpha-value>)',
           'text-secondary': 'rgb(var(--boss-text-secondary) / <alpha-value>)',
+          'text-tertiary': 'rgb(var(--boss-text-tertiary) / <alpha-value>)',
+          'text-body': 'rgb(var(--boss-text-body) / <alpha-value>)',
           'text-muted': 'rgb(var(--boss-text-muted) / <alpha-value>)',
+          'text-faint': 'rgb(var(--boss-text-faint) / <alpha-value>)',
+          'text-ghost': 'rgb(var(--boss-text-ghost) / <alpha-value>)',
           primary: 'rgb(var(--boss-primary) / <alpha-value>)',
           'primary-hover': 'rgb(var(--boss-primary-hover) / <alpha-value>)',
           'primary-foreground': 'rgb(var(--boss-primary-foreground) / <alpha-value>)',
@@ -40,6 +56,17 @@ module.exports = {
           error: 'rgb(var(--boss-error) / <alpha-value>)',
           info: 'rgb(var(--boss-info) / <alpha-value>)',
           ring: 'rgb(var(--boss-ring) / <alpha-value>)',
+          // 상태 배지 색쌍
+          'pill-ok': 'rgb(var(--boss-pill-ok-bg) / <alpha-value>)',
+          'pill-ok-fg': 'rgb(var(--boss-pill-ok-fg) / <alpha-value>)',
+          'pill-warn': 'rgb(var(--boss-pill-warn-bg) / <alpha-value>)',
+          'pill-warn-fg': 'rgb(var(--boss-pill-warn-fg) / <alpha-value>)',
+          'pill-bad': 'rgb(var(--boss-pill-bad-bg) / <alpha-value>)',
+          'pill-bad-fg': 'rgb(var(--boss-pill-bad-fg) / <alpha-value>)',
+          'pill-neutral': 'rgb(var(--boss-pill-neutral-bg) / <alpha-value>)',
+          'pill-neutral-fg': 'rgb(var(--boss-pill-neutral-fg) / <alpha-value>)',
+          'pill-info': 'rgb(var(--boss-pill-info-bg) / <alpha-value>)',
+          'pill-info-fg': 'rgb(var(--boss-pill-info-fg) / <alpha-value>)',
         },
         primary: {
           50: '#eff6ff',
@@ -122,6 +149,23 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+        // /boss 전용 — 본문 Pretendard, 숫자·라벨 JetBrains Mono
+        boss: ['Pretendard', 'Helvetica', '-apple-system', 'sans-serif'],
+        'boss-mono': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      // 시안 스페이싱 — 홀수 기반 고밀도 스케일 (3·5·7·9·11·14·18·22)
+      spacing: {
+        3.25: '13px',
+        4.5: '18px',
+        5.5: '22px',
+      },
+      borderRadius: {
+        // 시안 radius — 4·5(배지) 6·7(칩) 8·9(컨트롤) 11·12(카드) 14(프레임)
+        pill: '5px',
+        chip: '7px',
+        control: '9px',
+        card: '11px',
+        frame: '14px',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

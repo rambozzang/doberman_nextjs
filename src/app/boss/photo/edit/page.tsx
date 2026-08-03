@@ -191,7 +191,7 @@ function BossPhotoEditInner() {
             type="button"
             onClick={handleSaveOrder}
             disabled={saving || total === 0}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/60 bg-boss-primary/20 px-3 text-sm font-semibold text-emerald-100 hover:bg-boss-primary/30 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/60 bg-boss-primary/20 px-3 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary/30 disabled:opacity-50"
           >
             <Save size={14} /> {saving ? '저장 중...' : '순서 저장'}
           </button>
@@ -309,7 +309,7 @@ function BossPhotoEditInner() {
                     type="button"
                     onClick={() => setCurrent(idx)}
                     className={`relative aspect-square overflow-hidden rounded-lg border ${
-                      active ? 'border-emerald-400 ring-2 ring-boss-primary/30' : 'border-boss-border'
+                      active ? 'border-boss-primary ring-2 ring-boss-primary/30' : 'border-boss-border'
                     }`}
                   >
                     {ok ? (

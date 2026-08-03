@@ -239,7 +239,7 @@ export default function BossSignatureCapturePage() {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-error px-3 py-1.5 text-xs font-bold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-rose-400 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-error px-3 py-1.5 text-xs font-bold text-boss-text shadow-boss-md shadow-rose-500/20 hover:bg-boss-error disabled:opacity-50"
           >
             <Save size={14} /> {isSaving ? '저장 중…' : '저장'}
           </button>
@@ -247,7 +247,7 @@ export default function BossSignatureCapturePage() {
       </div>
 
       {/* 안내 */}
-      <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-950/40 px-3 py-2 text-xs text-blue-200">
+      <div className="flex items-center gap-2 rounded-lg border border-boss-info/30 bg-boss-info/40 px-3 py-2 text-xs text-boss-info">
         <Info size={14} /> 시공 완료 후 고객님의 서명을 받아주세요.
       </div>
 
@@ -262,7 +262,7 @@ export default function BossSignatureCapturePage() {
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="고객 이름을 입력하세요"
-              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-error/50 focus:outline-none focus:ring-2 focus:ring-boss-error/10"
             />
           </div>
           <div>
@@ -272,7 +272,7 @@ export default function BossSignatureCapturePage() {
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="전화번호 (선택)"
               inputMode="tel"
-              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-error/50 focus:outline-none focus:ring-2 focus:ring-boss-error/10"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -283,7 +283,7 @@ export default function BossSignatureCapturePage() {
                 onChange={(e) => setOrderIdInput(e.target.value)}
                 placeholder="(선택)"
                 inputMode="numeric"
-                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-error/50 focus:outline-none focus:ring-2 focus:ring-boss-error/10"
               />
             </div>
             <div>
@@ -293,7 +293,7 @@ export default function BossSignatureCapturePage() {
                 onChange={(e) => setRecordIdInput(e.target.value)}
                 placeholder="(선택)"
                 inputMode="numeric"
-                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+                className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-error/50 focus:outline-none focus:ring-2 focus:ring-boss-error/10"
               />
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function BossSignatureCapturePage() {
               onChange={(e) => setMemo(e.target.value)}
               placeholder="메모 (선택)"
               rows={3}
-              className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-rose-500/50 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
+              className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-error/50 focus:outline-none focus:ring-2 focus:ring-boss-error/10"
             />
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-xs text-boss-text-muted">

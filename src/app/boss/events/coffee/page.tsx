@@ -35,7 +35,7 @@ export default function BossEventsCoffeePage() {
         ]}
       />
 
-      <div className="rounded-2xl border border-boss-warning/20 bg-gradient-to-br from-amber-500/10 to-slate-900/40 p-6">
+      <div className="rounded-2xl border border-boss-warning/20 bg-gradient-to-br from-boss-warning/10 to-boss-inset/40 p-6">
         <div className="flex items-start gap-4">
           <div className="rounded-xl bg-boss-warning/20 p-3 text-boss-warning">
             <Coffee size={28} />

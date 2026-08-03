@@ -7,8 +7,6 @@ import {
   ClipboardCheck,
   Plus,
   Printer,
-  Pencil,
-  Trash2,
   RefreshCw,
   Inbox,
 } from 'lucide-react';
@@ -24,6 +22,8 @@ import {
   Badge,
   EmptyState,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
@@ -101,19 +101,27 @@ export default function BossChecklistPage() {
     );
   }, [rows, keyword, customerId]);
 
-  const handleDelete = async (id: string) => {
+  const [pendingDelete, setPendingDelete] = useState<CheckData | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // 체크리스트 삭제 (확인 모달 → API → 목록 반영)
+  const handleDelete = async () => {
+    const id = pendingDelete?.customerId || customerId;
     if (!id) return;
-    if (!confirm('체크리스트를 삭제하시겠습니까?')) return;
+    setDeleting(true);
     try {
       const res = await bossChecklistApi.remove(id);
       if (res.success !== false) {
         toast.success('삭제되었습니다.');
         setData(null);
+        setPendingDelete(null);
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');
       }
     } catch {
       toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -237,14 +245,6 @@ export default function BossChecklistPage() {
                   >
                     <div className="inline-flex items-center gap-1">
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={Pencil}
-                        onClick={() => router.push('/boss/checklist/new?edit=1')}
-                      >
-                        수정
-                      </Button>
-                      <Button
                         variant="primary"
                         size="sm"
                         icon={Printer}
@@ -252,15 +252,11 @@ export default function BossChecklistPage() {
                       >
                         인쇄
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={Trash2}
-                        onClick={() => handleDelete(id)}
-                        className="text-boss-error hover:bg-boss-error/10"
-                      >
-                        삭제
-                      </Button>
+                      <RowActions
+                        onEdit={() => router.push('/boss/checklist/new?edit=1')}
+                        onDelete={() => setPendingDelete(item)}
+                        deleting={deleting && pendingDelete === item}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -269,6 +265,16 @@ export default function BossChecklistPage() {
           </tbody>
         </DataTable>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="체크리스트 삭제"
+        description="등록된 체크리스트를 삭제합니다. 삭제 후 복구할 수 없습니다."
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

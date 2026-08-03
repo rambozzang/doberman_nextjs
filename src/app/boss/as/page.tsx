@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, RefreshCw, Inbox, AlertTriangle, Link2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsRequestItem } from '@/types/boss-as';
 import {
@@ -17,6 +18,8 @@ import {
   Badge,
   EmptyState,
   Skeleton,
+  RowActions,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 type StatusFilter = '' | '접수' | '진행중' | '완료';
@@ -76,6 +79,34 @@ export default function BossAsListPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
   const [sortType, setSortType] = useState<SortType>('CREATED_DT');
   const [query, setQuery] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<AsRequestItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // AS 요청 삭제 (확인 모달 → API → 목록 반영)
+  const handleDelete = async () => {
+    const target = pendingDelete;
+    if (!target) return;
+    const custId = getBossCustId();
+    if (!custId) {
+      toast.error('로그인이 필요합니다.');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await bossAsApi.remove(target.id, custId);
+      if (res.success !== false) {
+        toast.success('AS 요청을 삭제했습니다.');
+        setItems((prev) => prev.filter((it) => it.id !== target.id));
+        setPendingDelete(null);
+      } else {
+        toast.error(res.message || '삭제에 실패했습니다.');
+      }
+    } catch {
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const load = useCallback(async () => {
     const custId = getBossCustId();
@@ -290,14 +321,12 @@ export default function BossAsListPage() {
                   <td className="whitespace-nowrap text-xs text-boss-text-muted">
                     {relativeTime(item.createdAt)}
                   </td>
-                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => router.push(`/boss/as/${item.id}`)}
-                    >
-                      상세
-                    </Button>
+                  <td className="whitespace-nowrap text-right">
+                    <RowActions
+                      onEdit={() => router.push(`/boss/as/${item.id}`)}
+                      onDelete={() => setPendingDelete(item)}
+                      deleting={deleting && pendingDelete?.id === item.id}
+                    />
                   </td>
                 </tr>
               );
@@ -305,6 +334,16 @@ export default function BossAsListPage() {
           </tbody>
         </DataTable>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="AS 요청 삭제"
+        description={`'${pendingDelete?.title ?? '선택한 AS 요청'}'을(를) 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

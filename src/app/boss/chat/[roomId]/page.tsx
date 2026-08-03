@@ -82,7 +82,7 @@ export default function BossChatRoomPage() {
                     }`}
                   >
                     <div className="whitespace-pre-wrap break-words">{m.message}</div>
-                    <div className={`mt-1 text-[10px] ${isMine ? 'text-emerald-100' : 'text-boss-text-muted'}`}>
+                    <div className={`mt-1 text-[10px] ${isMine ? 'text-boss-primary-foreground' : 'text-boss-text-muted'}`}>
                       {m.timeAgo}
                     </div>
                   </div>

@@ -242,7 +242,7 @@ function BossAsAddForm() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-emerald-400 hover:text-boss-text disabled:opacity-50"
+          className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-boss-primary hover:text-boss-text disabled:opacity-50"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           저장
@@ -271,7 +271,7 @@ function BossAsAddForm() {
             type="button"
             onClick={addImageUrl}
             disabled={defectImages.length >= 10}
-            className="h-9 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-emerald-400 disabled:opacity-50"
+            className="h-9 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-boss-primary disabled:opacity-50"
           >
             추가
           </button>
@@ -322,7 +322,7 @@ function BossAsAddForm() {
       <section className="space-y-3 rounded-2xl border border-boss-border bg-boss-surface p-4">
         {/* 주문 ID 연결 */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-pink-300">주문 ID 연결 (선택)</label>
+          <label className="mb-1 block text-xs font-semibold text-boss-primary">주문 ID 연결 (선택)</label>
           <input
             type="number"
             value={orderId ?? ''}
@@ -335,7 +335,7 @@ function BossAsAddForm() {
         {/* 요청일 + 우선순위 */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[160px]">
-            <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-indigo-300">
+            <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-boss-info">
               <Calendar size={12} /> 요청일
             </label>
             <input
