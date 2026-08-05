@@ -11,15 +11,20 @@ const getGoogleConfig = (): SocialAuthConfig => ({
 });
 
 // Kakao OAuth 설정
+// 폴백을 둔 이유: .env* 가 .gitignore 에 걸려 있어 Jenkins 빌드에 전달되지 않는다.
+// 그러면 clientId 가 '' 가 되고 authorize URL 의 client_id 가 비어 카카오가 즉시 거부한다.
+// (2026-08-05 운영 장애 — 구글만 폴백이 있어 구글만 동작했다)
+// 이 값은 브라우저 번들에 그대로 실리는 공개 식별자이며 비밀키가 아니다.
 const getKakaoConfig = (): SocialAuthConfig => ({
-  clientId: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '',
+  clientId: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '9420dfc85f523bd6bbcb2d33355dbc2f',
   redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/auth/kakao/callback` : '',
   scope: 'profile_nickname account_email'
 });
 
 // Naver OAuth 설정
+// 폴백 이유는 위 카카오 설정과 동일하다. 이 값도 공개 식별자다.
 const getNaverConfig = (): SocialAuthConfig => ({
-  clientId: process.env.NEXT_PUBLIC_NAVER_CLIENT_ID || '',
+  clientId: process.env.NEXT_PUBLIC_NAVER_CLIENT_ID || 'FHiFYY97sjoBqAvgX4Na',
   redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/auth/naver/callback` : '',
   scope: 'name email' // 네이버는 스코프 설정 방식이 구글/카카오와 다를 수 있으나 형식상 유지
 });
