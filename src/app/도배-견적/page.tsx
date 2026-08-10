@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "도배 견적 | 무료 도배 견적 상담 - 도베르만",
+  title: "도배 견적 | 무료 도배 견적 상담 - 도배르만",
   description: "도배 견적이 궁금하신가요? 전문 기사가 직접 방문하여 정확한 도배 견적을 무료로 산출해드립니다. 지금 바로 신청하세요!",
   keywords: "도배견적, 도배비용, 벽지견적, 도배가격, 무료견적, 도배상담, 인테리어견적, 리모델링견적",
   openGraph: {
-    title: "도배 견적 | 무료 도배 견적 상담 - 도베르만",
+    title: "도배 견적 | 무료 도배 견적 상담 - 도배르만",
     description: "전문 기사가 직접 방문하여 정확한 도배 견적을 무료로 산출해드립니다.",
     type: "website",
     locale: "ko_KR",
@@ -142,7 +142,7 @@ export default function DobaeGyeonjeokPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              왜 <span className="text-blue-400">도베르만 견적</span>을 선택해야 할까요?
+              왜 <span className="text-blue-400">도배르만 견적</span>을 선택해야 할까요?
             </h2>
             <p className="text-slate-300 text-lg">정확하고 투명한 견적으로 고객 만족도 1위를 달성했습니다</p>
           </div>

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "아파트 도배 | 아파트 전용 도배 시공 서비스 - 도베르만",
+  title: "아파트 도배 | 아파트 전용 도배 시공 서비스 - 도배르만",
   description: "아파트 도배 전문 서비스! 입주 전 도배, 거주 중 도배, 이사 전 도배까지. 아파트 특성에 맞는 완벽한 시공을 제공합니다.",
   keywords: "아파트도배, 아파트벽지, 입주전도배, 거주중도배, 이사전도배, 아파트인테리어, 아파트리모델링, 신축아파트도배",
   openGraph: {

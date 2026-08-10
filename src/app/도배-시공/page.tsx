@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "도배 시공 전문업체 | 전국 도배 시공 서비스 - 도베르만",
+  title: "도배 시공 전문업체 | 전국 도배 시공 서비스 - 도배르만",
   description: "전국 도배 시공 전문업체를 찾고 계신가요? 경험 풍부한 도배 기사들이 깔끔하고 완벽한 도배 시공을 제공합니다.",
   keywords: "도배시공, 도배업체, 도배기사, 벽지시공, 도배전문, 인테리어도배, 주택도배, 아파트도배, 상가도배",
   openGraph: {
-    title: "도배 시공 전문업체 | 도베르만",
+    title: "도배 시공 전문업체 | 도배르만",
     description: "전국 도배 시공 전문업체. 경험 풍부한 기사들의 완벽한 도배 시공 서비스",
     type: "website",
     locale: "ko_KR",

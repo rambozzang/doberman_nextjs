@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "저렴한 도배 | 합리적인 가격의 도배 서비스 - 도베르만",
+  title: "저렴한 도배 | 합리적인 가격의 도배 서비스 - 도배르만",
   description: "저렴한 도배를 찾고 계신가요? 품질은 유지하면서도 합리적인 가격으로 도배 시공을 받을 수 있는 방법을 알려드립니다.",
   keywords: "저렴한도배, 싼도배, 도배할인, 경제적도배, 저가도배, 가성비도배, 합리적가격도배, 도배비용절약",
   openGraph: {

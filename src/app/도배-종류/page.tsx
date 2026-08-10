@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "도배 종류 | 벽지 종류별 특징과 선택 가이드 - 도베르만",
+  title: "도배 종류 | 벽지 종류별 특징과 선택 가이드 - 도배르만",
   description: "도배 종류가 궁금하신가요? 일반지, 실크지, 합지 등 다양한 벽지 종류별 특징과 장단점을 상세히 비교해드립니다.",
   keywords: "도배종류, 벽지종류, 일반지, 실크지, 합지, 벽지선택, 벽지비교, 벽지특징, 인테리어벽지, 고급벽지",
   openGraph: {
@@ -233,7 +233,7 @@ export default function DobaeJongryuPage() {
     }
   ];
 
-  const trends2024 = [
+  const trends2026 = [
     {
       trend: "자연주의 컬러",
       description: "어스톤, 베이지, 그린 등 자연에서 영감을 받은 색상",
@@ -508,13 +508,13 @@ export default function DobaeJongryuPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              <span className="text-blue-400">2024년</span> 벽지 트렌드
+              <span className="text-blue-400">2026년</span> 벽지 트렌드
             </h2>
             <p className="text-slate-300 text-lg">올해 가장 인기 있는 벽지 트렌드</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {trends2024.map((trend, index) => (
+            {trends2026.map((trend, index) => (
               <div key={index} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-white">{trend.trend}</h3>

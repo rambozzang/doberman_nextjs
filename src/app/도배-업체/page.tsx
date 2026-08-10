@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "도배 업체 찾기 | 검증된 전문 도배 업체 추천 - 도베르만",
+  title: "도배 업체 찾기 | 검증된 전문 도배 업체 추천 - 도배르만",
   description: "신뢰할 수 있는 도배 업체를 찾고 계신가요? 검증된 전문 도배 업체들을 엄선하여 추천드립니다. 무료 견적 비교까지!",
   keywords: "도배업체, 도배업체추천, 도배전문업체, 신뢰할수있는도배업체, 검증된도배업체, 도배기사, 인테리어업체, 벽지업체",
   openGraph: {

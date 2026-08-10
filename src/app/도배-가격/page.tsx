@@ -16,12 +16,12 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "도배 가격 | 도배 비용 정보 - 도베르만",
-  description: "2024년 최신 도배 가격 정보! 평수별, 벽지별 도배 비용을 투명하게 공개합니다. 합리적인 도배 가격으로 만나보세요.",
+  title: "도배 가격 | 2026 평수·벽지별 도배 비용표 - 도배르만",
+  description: "2026년 전국 평균 기준 도배 가격표입니다. 평수·벽지 종류별 도배 비용과 지역별 차이, 추가 작업비를 투명하게 확인하세요.",
   keywords: "도배가격, 도배비용, 벽지가격, 도배단가, 평당도배비용, 도배시세, 인테리어비용, 리모델링비용",
   openGraph: {
-    title: "도배 가격 | 도배 비용 정보 - 도베르만",
-    description: "2024년 최신 도배 가격 정보. 평수별, 벽지별 투명한 도배 비용 공개",
+    title: "도배 가격 | 2026 평수·벽지별 도배 비용표 - 도배르만",
+    description: "2026년 전국 평균 기준 평수별·벽지별 도배 비용 공개",
     type: "website",
     locale: "ko_KR",
   },
@@ -153,7 +153,7 @@ export default function DobaeGagyeokPage() {
             </h1>
             
             <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-              2024년 최신 도배 가격 정보를 투명하게 공개합니다.<br />
+              2026년 전국 평균 기준 도배 가격 정보를 투명하게 공개합니다.<br />
               평수별, 벽지별 상세한 비용을 확인해보세요.
             </p>
             
