@@ -4,8 +4,10 @@ pipeline {
     environment {
         DEPLOY_DIR              = '/vdata/www/www.doberman.kr'
         PM2_APP_NAME            = 'doberman'
-        DEPLOY_USER             = 'ubuntu'
-        DEPLOY_PM2_HOME         = '/home/ubuntu/.pm2'
+        // 배포 서버는 Oracle Linux 라 'ubuntu' 계정이 없다. pm2 데몬은 opc 로 돌고 있다.
+        // (확인: PM2 v6.0.14 God Daemon (/home/opc/.pm2), 실행 계정 opc)
+        DEPLOY_USER             = 'opc'
+        DEPLOY_PM2_HOME         = '/home/opc/.pm2'
         NEXT_TELEMETRY_DISABLED = '1'
     }
 
@@ -40,6 +42,12 @@ pipeline {
 
                         sudo install -d -o ${DEPLOY_USER} -g ${DEPLOY_USER} ${DEPLOY_DIR}/logs
                         sudo chown -R ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR}/logs
+
+                        # rsync 는 jenkins 로 돌지만 Next.js 런타임은 ${DEPLOY_USER} 로 돈다.
+                        # .next/cache 는 런타임이 이미지 최적화 결과를 쓰는 경로라 소유권을 넘겨야 한다.
+                        # (안 하면 pm2 error 로그에 EACCES: mkdir '.next/cache/images' 가 계속 쌓인다)
+                        sudo install -d -o ${DEPLOY_USER} -g ${DEPLOY_USER} ${DEPLOY_DIR}/.next/cache
+                        sudo chown -R ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR}/.next/cache
                     """
 
                     // ── 2. PM2 재시작 ──────────────────────────────────────────
