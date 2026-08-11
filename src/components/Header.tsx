@@ -42,28 +42,28 @@ const defaultNavigationItems: NavigationItem[] = [
     icon: <Sparkles className="w-4 h-4" />,
   },
   {
-    title: "견적요청",
+    title: "견적 받기",
     icon: <FileText className="w-4 h-4" />,
     items: [
       {
-        title: "견적 요청하기",
+        title: "무료 견적 받기",
         href: "/quote-request",
       },
       {
-        title: "🤖 AI 견적 요청하기 NEW",
+        title: "AI로 견적 받기",
         href: "/quote-request-ai",
       },
       {
-        title: "전체 견적 리스트",
-        href: "/quote-request/list",
+        title: "도배 비용 계산하기",
+        href: "/quote-calculator",
       },
       {
-        title: "내 견적 요청",
+        title: "내 견적 관리",
         href: "/quote-request/my-quotes",
       },
       {
-        title: "🧮 견적 계산기",
-        href: "/quote-calculator",
+        title: "실제 견적 요청 보기",
+        href: "/quote-request/list",
       },
     ],
   },
@@ -652,4 +652,4 @@ const Header: React.FC<HeaderProps> = ({
   );
 };
 
-export default Header; 
+export default Header;
