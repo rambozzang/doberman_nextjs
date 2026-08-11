@@ -499,6 +499,7 @@ export default function QuoteRequestPage() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // 중복 제출 방지용
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false); // 자동 제출 처리 중
+  const [calculatorEstimate, setCalculatorEstimate] = useState<number | null>(null);
   // const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [formState, setFormState] = useState<FormState>(initialFormState);
 
@@ -786,6 +787,59 @@ export default function QuoteRequestPage() {
     return parseFloat((pyeong * 3.305785).toFixed(2));
   };
 
+  // 계산기에서 넘어온 조건을 신청서에 자동으로 채워 재입력 부담을 줄입니다.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') !== 'calculator') return;
+
+    const pyeong = Number(params.get('pyeong'));
+    if (!Number.isFinite(pyeong) || pyeong <= 0) return;
+
+    const housing = params.get('housing') || '';
+    const buildingType = housing.includes('빌라')
+      ? 'billa'
+      : housing.includes('오피스텔') || housing.includes('원룸')
+        ? 'officetel'
+        : housing.includes('단독')
+          ? 'house'
+          : housing.includes('사무실')
+            ? 'office'
+            : housing.includes('상가')
+              ? 'commercial'
+              : 'apartment';
+
+    const scope = params.get('scope') || '전체';
+    const constructionScope = scope === '거실만' ? ['living-room'] : ['all-rooms'];
+    const wallpaper = params.get('wallpaper') || '';
+    const wallpaperType = wallpaper.includes('수입')
+      ? 'premium'
+      : wallpaper.includes('친환경')
+        ? 'natural'
+        : wallpaper.includes('실크')
+          ? 'fabric'
+          : 'vinyl';
+    const validAdditionalRequests = new Set(additionalRequests.map((item) => item.value));
+    const additionalRequest = (params.get('extras') || '')
+      .split(',')
+      .filter((value) => validAdditionalRequests.has(value));
+    const estimate = Number(params.get('estimate'));
+
+    setFormState((prev) => ({
+      ...prev,
+      buildingType,
+      constructionScope,
+      area: {
+        pyeong,
+        squareMeter: calculateSquareMeters(pyeong),
+      },
+      wallpaperType,
+      additionalRequest,
+    }));
+    setCalculatorEstimate(Number.isFinite(estimate) && estimate > 0 ? estimate : null);
+    // 앞 단계의 필수 입력을 자동으로 채웠으므로 추가 요청사항부터 이어서 진행합니다.
+    setCurrentStep(4);
+  }, []);
+
   // 현재 단계 검증
   const validateCurrentStep = (): boolean => {
     switch (currentStep) {
@@ -902,7 +956,7 @@ export default function QuoteRequestPage() {
       return;
     }
 
-    if (!confirm('견적 요청을 신청하시겠습니까?')) {
+    if (!confirm('입력하신 조건으로 무료 비교견적을 신청하시겠습니까?')) {
       return;
     }
 
@@ -1258,6 +1312,21 @@ export default function QuoteRequestPage() {
       {/* 메인 콘텐츠 영역 */}
       <main className="quote-main-content flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800 pt-4 md:pt-0">
         <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+          {calculatorEstimate !== null && (
+            <div className="mb-5 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 md:p-5">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/20 text-lg text-emerald-300" aria-hidden="true">
+                  ✓
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">계산기 입력값을 불러왔습니다</p>
+                  <p className="mt-1 text-xs leading-5 text-emerald-100/80">
+                    {calculatorEstimate.toLocaleString('ko-KR')}원 기준으로 준비했습니다. 지역과 연락처를 입력하면 전문가 무료 비교견적을 받을 수 있습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             {/* 왼쪽 사이드바 - 데스크톱에서만 표시 */}
             <div className="hidden lg:block lg:col-span-1">
@@ -2018,7 +2087,7 @@ export default function QuoteRequestPage() {
                     ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
                       <>
                         <CheckIcon className="w-5 h-5 mr-2" />
-                        <span>견적 신청하기</span>
+                        <span>무료 비교견적 신청하기</span>
                       </>
                     ) : (
                       <>
@@ -2074,7 +2143,7 @@ export default function QuoteRequestPage() {
                         ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
                           <>
                             <CheckIcon className="w-5 h-5 mr-3" />
-                            <span>견적 신청하기</span>
+                            <span>무료 비교견적 신청하기</span>
                           </>
                         ) : (
                           <>
@@ -2093,4 +2162,4 @@ export default function QuoteRequestPage() {
       </main>
     </div>
   );
-} 
+}

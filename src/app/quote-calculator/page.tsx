@@ -79,6 +79,24 @@ export default function QuoteCalculatorPage() {
   const result = useMemo(() => calculateEstimate(input), [input]);
   const formulaText = useMemo(() => buildFormulaText(input, result), [input, result]);
   const quickRows = useMemo(() => calcQuickTable(), []);
+  const quoteRequestHref = useMemo(() => {
+    const extras = [
+      input.opFurn ? 'furniture-move' : '',
+      input.opDemo ? 'old-removal' : '',
+      input.opPutty > 0 ? 'wall-repair' : '',
+      input.opUrg ? 'quick-service' : '',
+    ].filter(Boolean);
+    const params = new URLSearchParams({
+      from: 'calculator',
+      housing: input.housing,
+      scope: input.scope,
+      pyeong: String(input.pyeong),
+      wallpaper: input.wpLiving,
+      estimate: String(Math.round(result.final)),
+    });
+    if (extras.length > 0) params.set('extras', extras.join(','));
+    return `/quote-request?${params.toString()}`;
+  }, [input, result.final]);
 
   // ===== 헬퍼 =====
   const set = <K extends keyof CalculatorInput>(key: K, value: CalculatorInput[K]) =>
@@ -125,8 +143,8 @@ export default function QuoteCalculatorPage() {
             {/* 첫 단락 내부 링크 */}
             <p className="mt-2 text-xs opacity-75">
               견적이 마음에 드셨다면{' '}
-              <Link href="/quote-request" className="underline underline-offset-2 hover:opacity-100 font-medium">
-                실제 견적 신청
+              <Link href={quoteRequestHref} className="underline underline-offset-2 hover:opacity-100 font-semibold">
+                계산 조건 그대로 무료 견적 받기
               </Link>
               {' '}또는{' '}
               <Link href="/quote-request-ai" className="underline underline-offset-2 hover:opacity-100 font-medium">
@@ -494,7 +512,7 @@ export default function QuoteCalculatorPage() {
             <section
               id="calculator-result"
               aria-labelledby="result-heading"
-              className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 print-card"
+              className="bg-slate-900/40 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 print-card lg:sticky lg:top-24"
             >
               <h2 id="result-heading" className="text-sm font-bold text-blue-400 border-b border-slate-700 pb-1.5 mb-4">
                 자동 산출 결과
@@ -561,6 +579,30 @@ export default function QuoteCalculatorPage() {
                   </tr>
                 </tbody>
               </table>
+
+              {/* 계산 결과에서 무료 견적 신청으로 연결 */}
+              <div className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-500/10 p-4 no-print">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-400/20 text-emerald-300" aria-hidden="true">
+                    ✓
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white">계산이 끝났다면 실제 견적을 받아보세요</p>
+                    <p className="mt-1 text-xs leading-5 text-emerald-100/80">
+                      지금 선택한 평수·주거 형태·벽지 조건을 그대로 전달해 무료 비교견적을 신청할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={quoteRequestHref}
+                  className="mt-3 flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-slate-900"
+                >
+                  이 조건으로 무료 견적 받기
+                </Link>
+                <p className="mt-2 text-center text-[11px] text-slate-400">
+                  계산기는 참고 금액이며 최종 견적은 전문가의 현장 확인 후 확정됩니다.
+                </p>
+              </div>
 
               {/* 계산식 보기 — 임시 비공개 (필요 시 주석 해제하여 노출)
               <details
@@ -634,6 +676,16 @@ export default function QuoteCalculatorPage() {
           </div>{/* /grid */}
         </div>{/* /max-w */}
       </main>
+
+      {/* 모바일에서 결과를 확인하는 동안 CTA를 계속 노출 */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-emerald-300/20 bg-slate-950/95 p-3 shadow-2xl backdrop-blur lg:hidden no-print">
+        <Link
+          href={quoteRequestHref}
+          className="flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+        >
+          이 조건으로 무료 견적 받기
+        </Link>
+      </div>
 
       {/* ===== SEO 강화 컨텐츠 ===== */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 pb-16">
