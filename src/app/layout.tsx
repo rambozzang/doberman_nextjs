@@ -49,10 +49,10 @@ export const metadata: Metadata = {
     siteName: "도배르만 - 도배 견적 비교 플랫폼",
     images: [
       {
-        url: "/logo.png",
+        url: "/og-dobae.jpg",
         width: 1200,
         height: 630,
-        alt: "도배르만 - 도배 견적 비교 전문 플랫폼",
+        alt: "도배르만 - 실제 도배 시공 현장과 무료 견적 비교",
       },
     ],
   },
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "도배 견적 비교 | 전국 300+ 검증된 도배 전문가",
     description: "도배 견적 비교! 24시간 내 최대 5개 견적 | 전국 300명+ 검증 전문가 | 아파트·빌라·오피스텔 도배",
-    images: ["/logo.png"],
+    images: ["/og-dobae.jpg"],
     creator: "@doberman",
   },
   robots: {
@@ -134,7 +134,7 @@ export default function RootLayout({
               "description": "전국 300명 이상의 검증된 도배 전문가들과 함께하는 무료 비교견적 플랫폼. 아파트·빌라·오피스텔 도배 견적, 벽지 교체 시공까지 한 번에!",
               "url": "https://www.doberman.kr",
               "logo": "https://www.doberman.kr/logo.png",
-              "image": "https://www.doberman.kr/logo.png",
+              "image": "https://www.doberman.kr/og-dobae.jpg",
               "priceRange": "무료",
               "telephone": "",
               "email": "",

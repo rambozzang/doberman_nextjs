@@ -38,10 +38,10 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/logo.png',
+        url: '/og-dobae.jpg',
         width: 1200,
         height: 630,
-        alt: '도배르만 견적 계산기 — 평형별 정밀 자동 견적',
+        alt: '도배르만 도배 견적 계산기 — 실제 도배 시공 현장',
       },
     ],
   },
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '도배 견적 계산기 — 도배르만',
     description: '평당·평형별 도배 견적 자동 산출. 합지·실크·천연·수입 모두 지원.',
-    images: ['/logo.png'],
+    images: ['/og-dobae.jpg'],
   },
   robots: {
     index: true,
