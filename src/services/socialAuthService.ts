@@ -29,6 +29,37 @@ const getNaverConfig = (): SocialAuthConfig => ({
   scope: 'name email' // 네이버는 스코프 설정 방식이 구글/카카오와 다를 수 있으나 형식상 유지
 });
 
+// 마지막으로 로그인한 소셜 계정 — 다음 로그인 때 계정 선택 화면을 건너뛰는 데 쓴다.
+//
+// 로그아웃(AuthManager.removeToken)해도 이 값은 지우지 않는다.
+// 지우면 다시 로그인할 때마다 계정 선택이 뜨는데, 그게 없애려는 동작이다.
+const LAST_SOCIAL_ACCOUNT_KEY = 'last_social_account';
+
+type SocialProvider = 'google' | 'kakao' | 'naver';
+
+// 직전에 같은 제공자로 로그인한 이메일을 돌려준다. 없으면 null.
+const getLastSocialEmail = (provider: SocialProvider): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(LAST_SOCIAL_ACCOUNT_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { provider?: string; email?: string };
+    return saved.provider === provider && saved.email ? saved.email : null;
+  } catch {
+    // 저장값이 깨졌으면 힌트 없이 진행한다(로그인 자체는 막지 않는다).
+    return null;
+  }
+};
+
+const setLastSocialEmail = (provider: SocialProvider, email?: string): void => {
+  if (typeof window === 'undefined' || !email) return;
+  try {
+    localStorage.setItem(LAST_SOCIAL_ACCOUNT_KEY, JSON.stringify({ provider, email }));
+  } catch {
+    // 저장 실패는 로그인 결과에 영향을 주지 않는다.
+  }
+};
+
 // 백엔드 소셜 로그인 응답 타입 (TbUser 엔티티 구조)
 interface BackendSocialLoginResponse {
   token: string;
@@ -62,8 +93,18 @@ class SocialAuthService {
     authUrl.searchParams.set('redirect_uri', config.redirectUri);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', config.scope);
-    authUrl.searchParams.set('access_type', 'offline');
-    authUrl.searchParams.set('prompt', 'consent');
+
+    // prompt=consent 를 주면 이미 동의한 사용자에게도 매번 동의 화면이 뜬다.
+    // 백엔드(SocialAuthSvc)는 access token 으로 프로필만 조회하고 refresh token 을
+    // 저장하지 않으므로 access_type=offline 도 필요 없다.
+    // 둘 다 빼면 구글이 기존 로그인 세션을 그대로 재사용한다.
+    //
+    // 다만 브라우저에 구글 계정이 여러 개 로그인돼 있으면 그래도 선택 화면이 뜬다.
+    // 직전에 쓴 계정을 login_hint 로 넘겨 그 경우까지 건너뛴다.
+    const lastEmail = getLastSocialEmail('google');
+    if (lastEmail) {
+      authUrl.searchParams.set('login_hint', lastEmail);
+    }
 
     // 팝업창 설정
     const width = 500;
@@ -299,6 +340,8 @@ class SocialAuthService {
         // 백엔드에서 받은 userInfo를 바로 저장
         const userInfo: UserInfo = response.data.userInfo;
         AuthManager.setUserInfo(userInfo);
+        // 다음 로그인 때 계정 선택 화면을 건너뛰기 위해 기억해 둔다.
+        setLastSocialEmail('google', userInfo.customerEmail);
 
         return {
           success: true,
@@ -344,6 +387,8 @@ class SocialAuthService {
         // 백엔드에서 받은 userInfo를 바로 저장
         const userInfo: UserInfo = response.data.userInfo;
         AuthManager.setUserInfo(userInfo);
+        // 다음 로그인 때 계정 선택 화면을 건너뛰기 위해 기억해 둔다.
+        setLastSocialEmail('kakao', userInfo.customerEmail);
 
         return {
           success: true,
@@ -388,6 +433,8 @@ class SocialAuthService {
         // 백엔드에서 받은 userInfo를 바로 저장
         const userInfo: UserInfo = response.data.userInfo;
         AuthManager.setUserInfo(userInfo);
+        // 다음 로그인 때 계정 선택 화면을 건너뛰기 위해 기억해 둔다.
+        setLastSocialEmail('naver', userInfo.customerEmail);
 
         return {
           success: true,
