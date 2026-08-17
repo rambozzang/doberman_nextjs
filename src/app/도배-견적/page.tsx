@@ -37,7 +37,7 @@ export default function DobaeGyeonjeokPage() {
     {
       icon: ClockIcon,
       title: "빠른 견적 산출",
-      description: "신청 후 24시간 내 전문 기사가 연락드려 빠르게 견적을 산출합니다."
+      description: "신청 내용을 확인한 전문 기사가 연락드려 견적을 산출합니다."
     },
     {
       icon: CheckCircleIcon,
@@ -275,7 +275,7 @@ export default function DobaeGyeonjeokPage() {
               },
               {
                 q: "견적 신청 후 얼마나 빨리 연락이 오나요?",
-                a: "견적 신청 후 24시간 내에 전문 상담사가 연락드립니다. 급한 경우 전화로 직접 상담받으실 수도 있습니다."
+                a: "신청 내용을 확인한 전문 상담사가 순차적으로 연락드립니다. 급한 경우 전화로 직접 상담받으시면 더 빠릅니다."
               },
               {
                 q: "현장 방문 없이 견적을 받을 수 있나요?",

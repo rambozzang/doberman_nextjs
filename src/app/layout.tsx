@@ -59,7 +59,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "도배 견적 비교 | 전국 300+ 검증된 도배 전문가",
-    description: "도배 견적 비교! 24시간 내 최대 5개 견적 | 전국 300명+ 검증 전문가 | 아파트·빌라·오피스텔 도배",
+    // "24시간 내 최대 5개 견적" 은 실측과 맞지 않아 뺐다(한 요청에 도착한 견적은 최대 1개).
+    description: "도배 견적 비교 | 한 번의 요청으로 여러 전문가 견적 무료 비교 | 아파트·빌라·오피스텔 도배",
     images: ["/og-dobae.jpg"],
     creator: "@doberman",
   },

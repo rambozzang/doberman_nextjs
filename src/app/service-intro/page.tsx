@@ -34,7 +34,8 @@ const serviceFeatures = [
   {
     icon: ClockIcon,
     title: "빠른 매칭 서비스",
-    description: "24시간 내 최적의 전문가 매칭 완료",
+    // 시간 보장 표현은 실측(요청의 상당수가 미응답)과 맞지 않아 뺐다.
+    description: "요청 내용을 확인한 지역 전문가에게 바로 전달",
     color: "from-purple-500 to-violet-500"
   },
   {
