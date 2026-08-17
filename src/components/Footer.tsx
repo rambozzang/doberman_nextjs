@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Github, Twitter, Linkedin, Mail, Phone, MapPin, ChevronDown, User } from "lucide-react";
 
 import Image from "next/image";
+import SeoLinkHub from "./seo/SeoLinkHub";
 
 interface FooterLink {
   title: string;
@@ -357,6 +358,9 @@ const Footer: React.FC<FooterProps> = ({
             )}
           </div>
         </div>
+
+        {/* 전체 링크 허브 — sitemap 에만 있고 내부 링크가 없던 페이지들을 연결한다. */}
+        <SeoLinkHub />
 
         {/* Bottom Bar */}
         <motion.div

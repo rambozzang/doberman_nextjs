@@ -246,16 +246,66 @@ export function getLocalLabel(region: ResolvedRegion): string {
     : region.district.name;
 }
 
+/**
+ * 시도명을 포함한 전체 지역명 — 예: "부산 서구".
+ *
+ * getLocalLabel 은 시군구명만 돌려주는데, 서구·중구·동구·북구·남구는 여러
+ * 광역시에 중복 존재한다. 그래서 부산 서구와 대구 서구의 title·H1 이 완전히
+ * 같아지는 문제가 있었다. 제목·설명·H1 에는 반드시 이 함수를 쓴다.
+ */
+export function getFullRegionLabel(region: ResolvedRegion): string {
+  return `${getRegionUrlLabel(region.region.id)} ${getLocalLabel(region)}`;
+}
+
+/**
+ * URL 경로는 전 구간 동일하게 인코딩한다.
+ *
+ * 예전에는 getRegionSeoPath 만 encodeURIComponent 를 쓰고
+ * getRegionScenarioPath 는 평형·'도배' 를 원문 한글로 남겨서, 같은 페이지가
+ * sitemap 안에서 두 가지 문자열로 표현됐다.
+ */
+function toPath(segments: string[]): string {
+  return `/${segments.map(encodeURIComponent).join('/')}`;
+}
+
 export function getRegionSeoPath(region: ResolvedRegion): string {
-  return `/${region.urlSegments.map(encodeURIComponent).join('/')}/도배`;
+  return toPath([...region.urlSegments, '도배']);
 }
 
 export function getRegionScenarioPath(region: ResolvedRegion, pyeong: number): string {
-  return `/${region.urlSegments.slice(0, 2).map(encodeURIComponent).join('/')}/${pyeong}평/도배`;
+  return toPath([...region.urlSegments.slice(0, 2), `${pyeong}평`, '도배']);
+}
+
+/** 시도 허브 페이지 — 하위 시군구로 내려가는 진입점. */
+export function getSidoPath(regionId: string): string {
+  return toPath([getRegionUrlLabel(regionId), '도배']);
 }
 
 export function getGlobalIntentPath(keyword: string): string {
-  return `/${encodeURIComponent(keyword)}-도배비용`;
+  // 슬러그 전체를 한 번에 인코딩한다. 예전에는 keyword 만 인코딩하고
+  // '-도배비용' 을 원문으로 남겨 한 URL 안에 두 표기가 섞였다.
+  return toPath([`${keyword}-도배비용`]);
+}
+
+/** 고정 경로도 같은 규칙으로 인코딩한다 (sitemap 과 내부 링크의 표기 통일). */
+export function encodePath(path: string): string {
+  if (!path) return '';
+  return toPath(path.replace(/^\//, '').split('/'));
+}
+
+/** 같은 시도의 다른 시군구 — 지역 페이지끼리 가로로 연결해 고아 페이지를 없앤다. */
+export function getSiblingDistricts(
+  region: ResolvedRegion,
+  limit = 8,
+): Array<{ name: string; href: string }> {
+  const sidoLabel = getRegionUrlLabel(region.region.id);
+  return region.region.districts
+    .filter((district) => district.id !== region.district.id)
+    .slice(0, limit)
+    .map((district) => ({
+      name: district.name,
+      href: toPath([sidoLabel, district.name, '도배']),
+    }));
 }
 
 export function getAllBaseRegionParams() {
@@ -265,6 +315,14 @@ export function getAllBaseRegionParams() {
       sigungu: district.name,
     })),
   );
+}
+
+/** 시도 허브 페이지용 파라미터 (/{시도}/도배) */
+export function getAllSidoParams() {
+  return REGION_DATA.map((region) => ({
+    sido: getRegionUrlLabel(region.id),
+    region,
+  }));
 }
 
 export function getAllRegionalSubareaParams() {

@@ -7,14 +7,19 @@ import {
   type PricePoint,
   formatPriceRange,
   formatWon,
+  getFullRegionLabel,
   getGlobalIntentPath,
   getLocalLabel,
   getPricePoint,
   getPriceTable,
   getRegionScenarioPath,
   getRegionSeoPath,
+  getSiblingDistricts,
+  getSidoPath,
+  getRegionUrlLabel,
 } from '@/lib/seo/dobaeLanding';
 import type { RegionalSignals } from '@/lib/seo/dobaeSignals';
+import { robotsMeta } from '@/lib/seo/regionIndexing';
 
 interface DobaeLandingPageProps {
   scenario: LandingScenario;
@@ -54,25 +59,38 @@ function PriceTable({ rows, selectedWallpaper }: { rows: PricePoint[]; selectedW
   );
 }
 
-function JsonLd({ scenario, title, description, canonical }: {
+function JsonLd({ scenario, title, description, canonical, signals }: {
   scenario: LandingScenario;
   title: string;
   description: string;
   canonical: string;
+  signals?: RegionalSignals;
 }) {
-  const areaName = scenario.region ? getLocalLabel(scenario.region) : '전국';
+  // 구조화 데이터의 FAQ 는 화면에 실제로 보이는 문답과 같아야 한다.
+  // 다르면 Google 이 구조화 데이터 위반으로 처리한다.
+  const areaName = scenario.region ? getFullRegionLabel(scenario.region) : '전국';
+  const sidoLabel = scenario.region ? getRegionUrlLabel(scenario.region.region.id) : '지역';
+  const vendorAnswer =
+    signals?.vendorCount != null && signals.vendorCount > 0
+      ? `현재 ${areaName}에 등록된 도배 업체는 ${signals.vendorCount.toLocaleString('ko-KR')}곳입니다.`
+      : `${areaName}은 아직 등록 업체 집계가 없습니다. 견적을 요청하시면 인접 지역 업체까지 함께 연결해 드립니다.`;
+  const requestAnswer =
+    signals?.requestCount != null && signals.requestCount > 0
+      ? ` 누적 견적 요청은 ${signals.requestCount.toLocaleString('ko-KR')}건입니다.`
+      : '';
+
   const questions = [
     {
-      question: `${areaName} 도배 비용은 어떻게 달라지나요?`,
-      answer: '평형, 벽지 종류, 철거·보수 여부, 가구 이동과 같은 현장 조건에 따라 달라집니다. 이 페이지의 가격은 2026 전국 평균표에 지역 보정계수를 적용한 참고 범위입니다.',
+      question: `${areaName}에 등록된 도배 업체는 몇 곳인가요?`,
+      answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다.`,
     },
     {
-      question: '계산기 가격과 실제 견적이 다른 이유는 무엇인가요?',
-      answer: '계산기는 입력한 조건의 기준가를 보여주며, 실제 견적은 벽면 상태·시공 범위·현장 접근성·부가 작업을 확인한 뒤 확정됩니다.',
+      question: `${areaName} 도배 비용은 어떤 기준으로 계산되나요?`,
+      answer: `2026 전국 평균표에 ${sidoLabel} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.`,
     },
     {
-      question: '도배 업체 비교견적은 무료인가요?',
-      answer: '도배르만에서 기본 견적 요청과 업체 비교를 무료로 신청할 수 있습니다. 최종 계약 전에는 작업 범위와 포함 옵션을 업체와 확인하세요.',
+      question: '계산기에서 나온 금액으로 바로 계약해도 되나요?',
+      answer: '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.',
     },
   ];
 
@@ -131,10 +149,22 @@ function JsonLd({ scenario, title, description, canonical }: {
   );
 }
 
-function buildTitle(scenario: LandingScenario): string {
-  const local = scenario.region ? getLocalLabel(scenario.region) : null;
-  if (local && scenario.pyeong) return `${local} ${scenario.pyeong}평 도배 비용 | 합지·실크 가격 비교 - 도배르만`;
-  if (local) return `${local} 도배 견적 | 평수별 도배 비용·업체 비교 - 도배르만`;
+/**
+ * 지역 규모를 제목·설명에 섞기 위한 꼬리표.
+ * 같은 시군구명이 여러 시도에 있어도 시도명 + 실수치로 문자열이 갈린다.
+ */
+function vendorSuffix(vendorCount?: number | null): string {
+  return vendorCount && vendorCount > 0 ? ` · 등록업체 ${vendorCount}곳` : '';
+}
+
+function buildTitle(scenario: LandingScenario, vendorCount?: number | null): string {
+  // 시도명을 반드시 포함한다. getLocalLabel 만 쓰면 부산 서구와 대구 서구의
+  // 제목이 완전히 같아져 Google 이 중복으로 판단한다.
+  const local = scenario.region ? getFullRegionLabel(scenario.region) : null;
+  if (local && scenario.pyeong) {
+    return `${local} ${scenario.pyeong}평 도배 비용 | 2026 기준가${vendorSuffix(vendorCount)} - 도배르만`;
+  }
+  if (local) return `${local} 도배 견적 | 평수별 비용${vendorSuffix(vendorCount)} - 도배르만`;
   if (scenario.pyeong) return `${scenario.pyeong}평 아파트 도배 비용 | 합지·실크 가격 비교 - 도배르만`;
   if (scenario.wallpaper) {
     const label = LANDING_WALLPAPERS.find((item) => item.key === scenario.wallpaper)?.label ?? '벽지';
@@ -144,14 +174,25 @@ function buildTitle(scenario: LandingScenario): string {
   return `${building} 도배 비용 | 평수별 가격·업체 비교 - 도배르만`;
 }
 
-function buildDescription(scenario: LandingScenario): string {
-  const local = scenario.region ? getLocalLabel(scenario.region) : '전국';
+function buildDescription(scenario: LandingScenario, signals?: RegionalSignals): string {
+  const local = scenario.region ? getFullRegionLabel(scenario.region) : '전국';
   const pyeong = scenario.pyeong ? `${scenario.pyeong}평 ` : '';
   const wallpaper = scenario.wallpaper
     ? `${LANDING_WALLPAPERS.find((item) => item.key === scenario.wallpaper)?.label ?? '벽지'} `
     : '합지·실크 벽지 ';
   const building = scenario.building ? `${scenario.building} ` : '';
-  return `${local} ${pyeong}${building}${wallpaper}도배 비용을 2026 전국 평균 단가와 비교해보세요. 평수별 기준가, 예상 범위, 업체 수와 무료 비교견적 신청 방법을 한 페이지에서 확인할 수 있습니다.`;
+
+  // 지역별로 다른 실수치를 문장에 넣어 설명문이 서로 겹치지 않게 한다.
+  const facts: string[] = [];
+  if (signals?.vendorCount != null && signals.vendorCount > 0) {
+    facts.push(`등록 업체 ${signals.vendorCount.toLocaleString('ko-KR')}곳`);
+  }
+  if (signals?.requestCount != null && signals.requestCount > 0) {
+    facts.push(`누적 견적 요청 ${signals.requestCount.toLocaleString('ko-KR')}건`);
+  }
+  const factText = facts.length > 0 ? ` ${local} ${facts.join(', ')} 기준입니다.` : '';
+
+  return `${local} ${pyeong}${building}${wallpaper}도배 비용을 2026 전국 평균 단가에 지역 보정을 적용해 확인하세요.${factText} 평형별 기준가와 예상 범위, 무료 비교견적 신청을 한 페이지에서 볼 수 있습니다.`;
 }
 
 function buildCanonical(scenario: LandingScenario): string {
@@ -167,15 +208,23 @@ function buildCanonical(scenario: LandingScenario): string {
   return `${BASE_URL}${getGlobalIntentPath(scenario.building ?? '아파트')}`;
 }
 
-export function getLandingMetadata(scenario: LandingScenario) {
-  const title = buildTitle(scenario);
-  const description = buildDescription(scenario);
+export interface LandingMetaOptions {
+  signals?: RegionalSignals;
+  /** false 면 noindex,follow 를 준다. 실데이터가 없는 지역 페이지가 여기 해당한다. */
+  indexable?: boolean;
+}
+
+export function getLandingMetadata(scenario: LandingScenario, options: LandingMetaOptions = {}) {
+  const { signals, indexable = true } = options;
+  const title = buildTitle(scenario, signals?.vendorCount);
+  const description = buildDescription(scenario, signals);
   const canonical = buildCanonical(scenario);
   return {
     title: { absolute: title },
     description,
     keywords: [title.replace(' - 도배르만', ''), '도배 견적', '도배 비용', '도배 업체 비교', '2026 도배 가격'],
     alternates: { canonical },
+    robots: robotsMeta(indexable),
     openGraph: { title, description, url: canonical, type: 'article' as const, locale: 'ko_KR' },
   };
 }
@@ -201,10 +250,13 @@ function getLocalLinks(scenario: LandingScenario) {
 }
 
 export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPageProps) {
-  const title = buildTitle(scenario);
-  const description = buildDescription(scenario);
+  const title = buildTitle(scenario, signals?.vendorCount);
+  const description = buildDescription(scenario, signals);
   const canonical = buildCanonical(scenario);
-  const local = scenario.region ? getLocalLabel(scenario.region) : '전국';
+  // 화면 문구도 시도명을 포함한 전체 지역명으로 통일한다.
+  const local = scenario.region ? getFullRegionLabel(scenario.region) : '전국';
+  const siblings = scenario.region ? getSiblingDistricts(scenario.region) : [];
+  const sidoLabel = scenario.region ? getRegionUrlLabel(scenario.region.region.id) : null;
   const rows = getMainRows(scenario);
   const mainPrice = scenario.pyeong
     ? getPricePoint(scenario.pyeong, scenario.wallpaper ?? 'silk', scenario.region?.region.id, scenario.building)
@@ -215,16 +267,26 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <JsonLd scenario={scenario} title={title} description={description} canonical={canonical} />
+      <JsonLd scenario={scenario} title={title} description={description} canonical={canonical} signals={signals} />
 
       <main className="pb-20 pt-20 lg:pt-24">
         <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          {/* 홈 → 지역 허브 → 시도 → 현재 페이지로 이어지는 계층.
+              지역 페이지가 sitemap 으로만 발견되던 고아 구조를 끊는다. */}
           <nav aria-label="현재 위치" className="mb-8 text-sm text-slate-400">
             <Link href="/" className="hover:text-white">도배르만</Link>
             <span className="px-2" aria-hidden="true">/</span>
-            <Link href="/quote-calculator" className="hover:text-white">도배 견적 계산기</Link>
+            <Link href="/regional-guide" className="hover:text-white">지역별 도배</Link>
+            {scenario.region && sidoLabel && (
+              <>
+                <span className="px-2" aria-hidden="true">/</span>
+                <Link href={getSidoPath(scenario.region.region.id)} className="hover:text-white">
+                  {sidoLabel}
+                </Link>
+              </>
+            )}
             <span className="px-2" aria-hidden="true">/</span>
-            <span className="text-slate-300">{local} 도배</span>
+            <span className="text-slate-300">{scenario.region ? getLocalLabel(scenario.region) : '전국'} 도배</span>
           </nav>
 
           <section className="border-b border-slate-800 pb-12">
@@ -321,20 +383,58 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
             </section>
           )}
 
+          {/* 같은 시도의 다른 시군구로 가로 연결. 지역마다 목록이 달라
+              페이지 간 본문 중복도 함께 낮아진다. */}
+          {siblings.length > 0 && sidoLabel && (
+            <section className="mt-14 border-t border-slate-800 pt-10">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <h2 className="text-xl font-bold text-white">{sidoLabel} 다른 지역 도배 비용</h2>
+                <Link
+                  href={getSidoPath(scenario.region!.region.id)}
+                  className="text-sm font-semibold text-blue-300 hover:text-blue-200"
+                >
+                  {sidoLabel} 전체 지역 보기 →
+                </Link>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {siblings.map((sibling) => (
+                  <Link
+                    key={sibling.href}
+                    href={sibling.href}
+                    className="rounded-full border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-blue-400 hover:text-white"
+                  >
+                    {sibling.name} 도배
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section className="mt-14">
             <h2 className="text-2xl font-bold text-white">{local} 도배 자주 묻는 질문</h2>
             <div className="mt-5 divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/60">
+              {/* 첫 문답은 해당 지역의 실제 집계를 인용해 지역마다 내용이 달라진다. */}
+              <details className="group p-5">
+                <summary className="cursor-pointer list-none pr-6 font-semibold text-white">{local}에 등록된 도배 업체는 몇 곳인가요?</summary>
+                <p className="mt-3 text-sm leading-7 text-slate-400">
+                  {signals?.vendorCount != null && signals.vendorCount > 0
+                    ? `현재 ${local}에 등록된 도배 업체는 ${signals.vendorCount.toLocaleString('ko-KR')}곳입니다.`
+                    : `${local}은 아직 등록 업체 집계가 없습니다. 견적을 요청하시면 인접 지역 업체까지 함께 연결해 드립니다.`}
+                  {signals?.requestCount != null && signals.requestCount > 0
+                    ? ` 누적 견적 요청은 ${signals.requestCount.toLocaleString('ko-KR')}건입니다.`
+                    : ''}
+                  {' '}업체 수는 등록 현황에 따라 계속 바뀝니다.
+                </p>
+              </details>
               <details className="group p-5">
                 <summary className="cursor-pointer list-none pr-6 font-semibold text-white">{local} 도배 비용은 어떤 기준으로 계산되나요?</summary>
-                <p className="mt-3 text-sm leading-7 text-slate-400">평형과 벽지 종류를 기본으로 계산한 뒤 지역, 주거 형태, 천장 높이, 철거·보수 등 추가 작업을 반영합니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.</p>
+                <p className="mt-3 text-sm leading-7 text-slate-400">
+                  2026 전국 평균표에 {sidoLabel ?? '지역'} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.
+                </p>
               </details>
               <details className="group p-5">
                 <summary className="cursor-pointer list-none pr-6 font-semibold text-white">계산기에서 나온 금액으로 바로 계약해도 되나요?</summary>
                 <p className="mt-3 text-sm leading-7 text-slate-400">계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.</p>
-              </details>
-              <details className="group p-5">
-                <summary className="cursor-pointer list-none pr-6 font-semibold text-white">도배르만에서 업체 비교견적을 신청할 수 있나요?</summary>
-                <p className="mt-3 text-sm leading-7 text-slate-400">네. 평형, 벽지, 주거 형태, 시공 지역을 입력하면 조건에 맞는 무료 비교견적을 신청할 수 있습니다.</p>
               </details>
             </div>
           </section>

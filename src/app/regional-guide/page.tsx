@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { REGION_DATA } from "@/lib/ai/data/regions";
+import { getRegionUrlLabel, getSidoPath } from "@/lib/seo/dobaeLanding";
 import { 
   MapPinIcon, 
   StarIcon,
@@ -477,6 +480,47 @@ export default function RegionalGuidePage() {
               </AnimatePresence>
             </motion.div>
           </div>
+
+          {/* 지역 페이지 링크 허브.
+              위쪽 지역 선택 UI 는 상태(selectedCityData)에 따라 렌더링되고
+              시군구를 링크가 아닌 표로만 보여줘, 크롤러 입장에서는 이 페이지에
+              지역 링크가 하나도 없었다. 그래서 1,000여 개 지역 페이지가
+              sitemap 으로만 발견되는 고아 상태였다.
+              아래 목록은 상태와 무관하게 항상 렌더링된다. */}
+          <section className="mt-16 border-t border-white/10 pt-12" aria-label="지역별 도배 페이지 목록">
+            <h2 className="text-2xl font-bold text-white">전국 지역별 도배 비용</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              시도를 선택하면 해당 지역의 시군구별 도배 기준가와 등록 업체 현황을 볼 수 있습니다.
+            </p>
+
+            <div className="mt-8 space-y-8">
+              {REGION_DATA.map((region) => {
+                const label = getRegionUrlLabel(region.id);
+                return (
+                  <div key={region.id}>
+                    <Link
+                      href={getSidoPath(region.id)}
+                      className="inline-flex items-center gap-2 text-lg font-bold text-white hover:text-blue-300"
+                    >
+                      {region.icon} {label} 도배
+                      <span aria-hidden="true">→</span>
+                    </Link>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {region.districts.map((district) => (
+                        <Link
+                          key={district.id}
+                          href={`/${encodeURIComponent(label)}/${encodeURIComponent(district.name)}/${encodeURIComponent("도배")}`}
+                          className="rounded-full border border-white/15 px-3 py-1.5 text-sm text-slate-300 transition hover:border-blue-400 hover:text-white"
+                        >
+                          {district.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
       </motion.main>
     </div>
