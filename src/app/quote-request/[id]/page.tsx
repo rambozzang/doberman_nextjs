@@ -2,28 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { 
+import {
   ArrowLeftIcon,
-  FileTextIcon, 
-  MapPinIcon,
-  CalendarIcon,
+  FileTextIcon,
   UserIcon,
-  BuildingIcon,
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
   AlertCircleIcon,
-  MessageCircleIcon,
   PhoneIcon,
   MailIcon,
-  HomeIcon,
-  PaletteIcon,
   RefreshCwIcon,
-  EyeIcon,
-  InfoIcon,
   StarIcon,
   XIcon,
-  MessageSquareIcon
+  MessageSquareIcon,
+  AlertTriangleIcon
 } from "lucide-react";
 import Link from "next/link";
 import { CustomerRequestService } from "@/services/customerRequestService";
@@ -31,37 +24,56 @@ import { CustomerRequest, CustomerRequestAnswer } from "@/types/api";
 import { toast } from "react-hot-toast";
 import { ChatModal, useChatLogic } from "@/components/chat";
 
-// 상태 매핑 설정 (리스트 페이지와 동일)
+// 상태 매핑 설정 (목록 페이지와 동일한 톤)
 const statusConfig = {
-  "검토중": { 
-    label: "검토중", 
-    color: "from-yellow-500 to-orange-500", 
-    bgColor: "bg-yellow-500/10", 
+  "검토중": {
+    label: "검토중",
+    bgColor: "bg-yellow-500/10 border-yellow-500/20",
     textColor: "text-yellow-400",
-    icon: ClockIcon 
+    icon: ClockIcon
   },
-  "진행중": { 
-    label: "진행중", 
-    color: "from-blue-500 to-cyan-500", 
-    bgColor: "bg-blue-500/10", 
+  "진행중": {
+    label: "진행중",
+    bgColor: "bg-blue-500/10 border-blue-500/20",
     textColor: "text-blue-400",
-    icon: AlertCircleIcon 
+    icon: AlertCircleIcon
   },
-  "채택 성공": { 
-    label: "채택 성공", 
-    color: "from-emerald-500 to-green-500", 
-    bgColor: "bg-emerald-500/10", 
+  "채택 성공": {
+    label: "채택 성공",
+    bgColor: "bg-emerald-500/10 border-emerald-500/20",
     textColor: "text-emerald-400",
-    icon: CheckCircleIcon 
+    icon: CheckCircleIcon
   },
-  "취소": { 
-    label: "취소", 
-    color: "from-red-500 to-pink-500", 
-    bgColor: "bg-red-500/10", 
+  "취소": {
+    label: "취소",
+    bgColor: "bg-red-500/10 border-red-500/20",
     textColor: "text-red-400",
-    icon: XCircleIcon 
+    icon: XCircleIcon
   }
 };
+
+// 문자열에서 대괄호 제거
+const removeBrackets = (str: string | null | undefined) => (str ? str.replace(/[[\]]/g, '') : '');
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  return date.toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+/** 정보 카드의 라벨/값 한 줄 */
+const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div className="flex items-start justify-between gap-3 py-1.5">
+    <dt className="text-xs text-slate-400 flex-shrink-0">{label}</dt>
+    <dd className="text-xs text-white text-right break-words">{value || '-'}</dd>
+  </div>
+);
 
 export default function QuoteRequestDetailPage() {
   const params = useParams();
@@ -70,7 +82,7 @@ export default function QuoteRequestDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAnswersLoading, setIsAnswersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 채택 확인 모달 상태
   const [showAdoptModal, setShowAdoptModal] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<CustomerRequestAnswer | null>(null);
@@ -79,7 +91,7 @@ export default function QuoteRequestDetailPage() {
   // 채팅 상태
   const [currentChatPartner, setCurrentChatPartner] = useState<CustomerRequestAnswer | undefined>(undefined);
   const [shouldOpenChat, setShouldOpenChat] = useState(false);
-  
+
   // ID 파라미터 추출
   const requestId = typeof params.id === 'string' ? parseInt(params.id) : null;
 
@@ -111,23 +123,11 @@ export default function QuoteRequestDetailPage() {
     if (!requestId) return;
 
     setIsAnswersLoading(true);
-    
+
     try {
       const response = await CustomerRequestService.getAnswerList(requestId);
-      
+
       if (response.success && response.data) {
-        console.log('답변 리스트 로딩 성공:', response.data);
-        // 각 답변의 구조 확인
-        response.data.forEach((answer, index) => {
-          console.log(`답변 ${index + 1}:`, {
-            answerId: answer.answerId,
-            id: answer.id,
-            userId: answer.userId,
-            userName: answer.userName,
-            companyName: answer.companyName,
-            answerTitle: answer.answerTitle
-          });
-        });
         setAnswers(response.data);
       } else {
         console.error("답변 리스트 로딩 실패:", response.error);
@@ -148,13 +148,13 @@ export default function QuoteRequestDetailPage() {
     }
 
     setIsLoading(true);
-    setError(null);
-    
+
     try {
       const response = await CustomerRequestService.getDetail(requestId);
-      
+
       if (response.success && response.data) {
         setCustomerRequest(response.data);
+        setError(null);
         // 상세 정보 로딩 후 답변 리스트도 로딩
         loadAnswers();
       } else {
@@ -162,7 +162,7 @@ export default function QuoteRequestDetailPage() {
       }
     } catch (error) {
       console.error("API 호출 오류:", error);
-      console.log("서버 연결에 실패했습니다.");
+      setError("서버 연결에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -180,10 +180,14 @@ export default function QuoteRequestDetailPage() {
     }
   }, [currentChatPartner, shouldOpenChat, openChat]);
 
-  // 새로고침
   const handleRefresh = () => {
     loadCustomerRequest();
     loadAnswers();
+  };
+
+  const handleStartChat = (answer: CustomerRequestAnswer) => {
+    setCurrentChatPartner(answer);
+    setShouldOpenChat(true);
   };
 
   // 채택하기 버튼 클릭
@@ -197,9 +201,8 @@ export default function QuoteRequestDetailPage() {
     if (!selectedAnswer || !requestId) return;
 
     setIsAdopting(true);
-    
+
     try {
-      // 실제 채택 API 호출
       const answerId = selectedAnswer.answerId || selectedAnswer.id;
       if (!answerId) {
         throw new Error("답변 ID를 찾을 수 없습니다.");
@@ -213,20 +216,17 @@ export default function QuoteRequestDetailPage() {
         setShowAdoptModal(false);
         setSelectedAnswer(null);
 
-        // 데이터 새로고침
         loadCustomerRequest();
         loadAnswers();
 
         // 채택 직후 대화를 바로 열어준다 (채택의 목적이 곧 상담이므로)
-        setCurrentChatPartner(adopted);
-        setShouldOpenChat(true);
+        handleStartChat(adopted);
       } else {
         throw new Error(response.error || "채택 처리에 실패했습니다.");
       }
     } catch (error) {
       console.error("채택 처리 오류:", error);
-      const errorMessage = error instanceof Error ? error.message : "채택 처리에 실패했습니다.";
-      toast.error(errorMessage);
+      toast.error(error instanceof Error ? error.message : "채택 처리에 실패했습니다.");
     } finally {
       setIsAdopting(false);
     }
@@ -238,44 +238,14 @@ export default function QuoteRequestDetailPage() {
     setSelectedAnswer(null);
   };
 
-  // 문자열에서 대괄호 제거 헬퍼 함수
-  const removeBrackets = (str: string) => {
-    return str.replace(/[\[\]]/g, '');
-  };
-
-  // 날짜 포맷팅 함수
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'short'
-    });
-  };
-
-  // 날짜와 시간 포맷팅 함수
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
-              <RefreshCwIcon className="w-8 h-8 text-blue-400 animate-spin" />
-            </div>
-            <p className="text-slate-300">견적 요청 정보를 불러오는 중...</p>
-          </div>
+      <div className="min-h-screen bg-slate-900 pt-16 sm:pt-20">
+        <div className="mx-auto w-full max-w-4xl px-4 py-6 space-y-3">
+          {/* 스켈레톤 - 실제 레이아웃과 비슷한 높이로 화면이 튀지 않게 한다 */}
+          <div className="h-12 bg-slate-800/40 rounded-lg animate-pulse"></div>
+          <div className="h-44 bg-slate-800/40 rounded-lg animate-pulse"></div>
+          <div className="h-28 bg-slate-800/40 rounded-lg animate-pulse"></div>
         </div>
       </div>
     );
@@ -283,25 +253,25 @@ export default function QuoteRequestDetailPage() {
 
   if (error || !customerRequest) {
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <FileTextIcon className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">견적 요청을 찾을 수 없습니다</h3>
-            <p className="text-slate-400 mb-6">{error}</p>
-            <div className="flex gap-4 justify-center">
+      <div className="min-h-screen bg-slate-900 pt-16 sm:pt-20">
+        <div className="mx-auto w-full max-w-4xl px-4 py-6">
+          <div className="text-center py-16 border border-dashed border-slate-700 rounded-lg">
+            <FileTextIcon className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+            <p className="text-sm text-slate-300 mb-1">견적 요청을 찾을 수 없습니다</p>
+            <p className="text-xs text-slate-500 mb-5">{error}</p>
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={handleRefresh}
-                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-blue-400"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
               >
-                <RefreshCwIcon className="w-4 h-4 inline mr-2" />
+                <RefreshCwIcon className="w-4 h-4" />
                 다시 시도
               </button>
               <Link
-                href="/quote-request/list"
-                className="px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 rounded-lg transition-all text-slate-300"
+                href="/quote-request/my-quotes"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-colors"
               >
-                <ArrowLeftIcon className="w-4 h-4 inline mr-2" />
+                <ArrowLeftIcon className="w-4 h-4" />
                 목록으로
               </Link>
             </div>
@@ -312,453 +282,302 @@ export default function QuoteRequestDetailPage() {
   }
 
   const statusConf = statusConfig[customerRequest.status as keyof typeof statusConfig] || {
-    label: "기타", 
-    color: "from-gray-500 to-slate-500", 
-    bgColor: "bg-gray-500/10", 
-    textColor: "text-gray-400",
+    label: customerRequest.status || "기타",
+    bgColor: "bg-slate-500/10 border-slate-500/20",
+    textColor: "text-slate-400",
     icon: AlertCircleIcon
   };
   const StatusIcon = statusConf.icon;
 
+  const isAdoptedRequest = customerRequest.status === "채택 성공";
+  const isUnderReview = customerRequest.status === "검토중";
+  const areaLabel = customerRequest.area
+    ? `${customerRequest.area}평 (${customerRequest.areaSize}㎡)`
+    : `${customerRequest.areaSize}㎡`;
+
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* 헤더 */}
-      <section className="w-full bg-gradient-to-br from-slate-900/95 via-blue-900/30 to-purple-900/30 relative overflow-hidden pt-16 backdrop-blur-sm">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/5 via-transparent to-transparent"></div>
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]"></div>
-        
-        <div className="container mx-auto px-4 py-4 sm:py-6 relative">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+    <div className="flex flex-col min-h-screen bg-slate-900">
+      <main className="flex-grow w-full pt-16 sm:pt-20">
+        <div className="mx-auto w-full max-w-4xl px-4 py-6">
+
+          {/* 페이지 헤더 */}
+          <div className="flex items-start gap-3 mb-4">
             <Link
-              href="/quote-request/list"
-              className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 text-slate-300 hover:text-white backdrop-blur-sm hover:scale-105 self-start"
+              href="/quote-request/my-quotes"
+              aria-label="목록으로"
+              className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-8 h-8 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
             >
-              <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeftIcon className="w-4 h-4" />
             </Link>
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl shadow-2xl shadow-blue-500/25 ring-1 ring-white/10">
-                  <EyeIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                    견적 요청 상세
-                  </h1>
-                  <p className="text-slate-400 font-medium text-sm sm:text-base">#{customerRequest.id}</p>
-                </div>
-              </div>
+
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-semibold text-white truncate">
+                {removeBrackets(customerRequest.buildingType)} {removeBrackets(customerRequest.constructionLocation)}
+              </h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                <span className="font-mono">#{customerRequest.id}</span>
+                <span className="mx-1.5 text-slate-600">·</span>
+                {formatDate(customerRequest.requestDate)}
+              </p>
             </div>
 
-            <div className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl ${statusConf.bgColor} ${statusConf.textColor} border border-current/20 backdrop-blur-sm shadow-lg self-start sm:self-auto`}>
-              <StatusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="font-semibold text-sm sm:text-base">{statusConf.label}</span>
-            </div>
-          </div>
-        </div>
-      </section>
+            <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium ${statusConf.bgColor} ${statusConf.textColor}`}>
+              <StatusIcon className="w-3.5 h-3.5" />
+              {statusConf.label}
+            </span>
 
-      {/* 메인 콘텐츠 */}
-      <main className="flex-grow w-full">
-        <div className="container mx-auto px-4 py-4 sm:py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            
-            {/* 왼쪽 컬럼 - 기본 정보 */}
-            <div className="lg:col-span-2 space-y-3">
-              
-              {/* 기본 정보 카드 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <h2 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg">
-                    <InfoIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                  </div>
-                  정보
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
-                  {/* 왼쪽 열 - 기본 정보 */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">건물 유형</span>
-                      <span className="text-xs text-white font-semibold">{removeBrackets(customerRequest.buildingType)}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">시공 위치</span>
-                      <span className="text-xs text-white font-semibold">{removeBrackets(customerRequest.constructionLocation)}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">면적</span>
-                      <span className="text-xs text-white font-semibold">{customerRequest.area}평({customerRequest.areaSize}㎡)</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">벽지 종류</span>
-                      <span className="text-xs text-white font-semibold">{removeBrackets(customerRequest.wallpaper)}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">지역</span>
-                      <span className="text-xs text-white font-semibold">{customerRequest.region}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">요청일</span>
-                      <span className="text-xs text-white font-semibold">{formatDate(customerRequest.requestDate)}</span>
-                    </div>
-                  </div>
-
-                  {/* 오른쪽 열 - 상세 정보 */}
-                  <div className="space-y-1">
-                    {/* 짐 보관 상태 */}
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">짐 보관</span>
-                      <span className="text-xs text-white font-semibold">{customerRequest.hasItems}</span>
-                    </div>
-                    
-                    {/* 천장 시공 여부 */}
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">천장 시공</span>
-                      <span className="text-xs text-white font-semibold">{customerRequest.ceiling}</span>
-                    </div>
-                    
-                    {/* 선호 일정 */}
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                      <span className="text-xs text-slate-400 font-medium">선호 일정</span>
-                      <span className="text-xs text-white font-semibold">{customerRequest.preferredDate}</span>
-                    </div>
-
-                    {/* 특이사항 */}
-                    {customerRequest.specialInfo && (
-                      <div className="flex items-start justify-between py-1 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                        <span className="text-xs text-slate-400 font-medium">특이사항</span>
-                        <span className="text-xs text-white text-right ml-2 flex-1 line-clamp-1">{customerRequest.specialInfo}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 오른쪽 컬럼 - 고객 정보 */}
-            <div className="space-y-3">
-              
-              {/* 고객 정보 카드 */}
-              <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <h2 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded-lg">
-                    <UserIcon className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
-                  </div>
-                  고객 정보
-                </h2>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                    <span className="text-xs text-slate-400 font-medium">이름</span>
-                    <span className="text-xs text-white font-semibold">{customerRequest.customerName}</span>
-                  </div>
-                  <div className="border-b border-white/5"></div>
-                  
-                  <div className="flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                    <span className="text-xs text-slate-400 font-medium">전화번호</span>
-                    <span className="text-xs text-white font-semibold">{customerRequest.customerPhone}</span>
-                  </div>
-                  <div className="border-b border-white/5"></div>
-                  
-                  <div className="flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg transition-colors">
-                    <span className="text-xs text-slate-400 font-medium">이메일</span>
-                    <span className="text-xs text-white font-semibold truncate">{customerRequest.customerEmail}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 액션 버튼 */}
-              {/* <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <div className="space-y-2">
-                  <button
-                    onClick={handleRefresh}
-                    className="group/btn w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border border-blue-500/30 hover:border-blue-400/50 rounded-lg transition-all duration-300 text-blue-400 hover:text-blue-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/20"
-                  >
-                    <RefreshCwIcon className="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
-                    새로고침
-                  </button>
-                  
-                  <button
-                    onClick={() => window.history.back()}
-                    className="group/btn w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-700/50 to-slate-600/50 hover:from-slate-600/60 hover:to-slate-500/60 border border-slate-600 hover:border-slate-500 rounded-lg transition-all duration-300 text-slate-300 hover:text-white hover:scale-[1.02] hover:shadow-lg"
-                  >
-                    <ArrowLeftIcon className="w-4 h-4 group-hover/btn:-translate-x-0.5 transition-transform" />
-                    뒤로가기
-                  </button>
-                </div>
-              </div> */}
-            </div>
+            <button
+              onClick={handleRefresh}
+              aria-label="새로고침"
+              title="새로고침"
+              className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-8 h-8 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 rounded-lg transition-colors"
+            >
+              <RefreshCwIcon className={`w-4 h-4 text-slate-400 ${isAnswersLoading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
 
-          {/* 답변 현황 섹션 */}
-          <div className="mt-6">
-            <div className="group bg-gradient-to-br from-white/10 via-white/5 to-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-violet-500/20 to-violet-600/20 rounded-lg">
-                    <MessageCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400" />
-                  </div>
-                  답변 현황
-                </h2>
-                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full border border-blue-400/20 shadow-lg">
-                  <MessageCircleIcon className="w-4 h-4 text-blue-400" />
-                  <span className="text-blue-400 font-semibold text-sm sm:text-base">{answers.length}개의 답변</span>
+          {/* 요청 정보 · 고객 정보 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <section className="md:col-span-2 bg-slate-800/40 border border-slate-800 rounded-lg p-4">
+              <h2 className="text-sm font-medium text-white mb-2">요청 정보</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 divide-y divide-slate-800/70 sm:divide-y-0">
+                <div className="sm:divide-y sm:divide-slate-800/70">
+                  <InfoRow label="건물 유형" value={removeBrackets(customerRequest.buildingType)} />
+                  <InfoRow label="시공 위치" value={removeBrackets(customerRequest.constructionLocation)} />
+                  <InfoRow label="면적" value={areaLabel} />
+                  <InfoRow label="벽지 종류" value={removeBrackets(customerRequest.wallpaper)} />
                 </div>
+                <div className="sm:divide-y sm:divide-slate-800/70">
+                  <InfoRow label="지역" value={customerRequest.region} />
+                  <InfoRow label="짐 보관" value={customerRequest.hasItems} />
+                  <InfoRow label="천장 시공" value={customerRequest.ceiling} />
+                  <InfoRow label="선호 일정" value={customerRequest.preferredDate} />
+                </div>
+              </dl>
+
+              {customerRequest.specialInfo && (
+                <div className="mt-3 pt-3 border-t border-slate-800">
+                  <p className="text-xs text-slate-400 mb-1">특이사항</p>
+                  <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{customerRequest.specialInfo}</p>
+                </div>
+              )}
+            </section>
+
+            <section className="bg-slate-800/40 border border-slate-800 rounded-lg p-4">
+              <h2 className="text-sm font-medium text-white mb-2">고객 정보</h2>
+              <dl className="divide-y divide-slate-800/70">
+                <InfoRow label="이름" value={customerRequest.customerName} />
+                <InfoRow
+                  label="전화번호"
+                  value={
+                    customerRequest.customerPhone ? (
+                      <a href={`tel:${customerRequest.customerPhone}`} className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300">
+                        <PhoneIcon className="w-3 h-3" />
+                        {customerRequest.customerPhone}
+                      </a>
+                    ) : null
+                  }
+                />
+                <InfoRow
+                  label="이메일"
+                  value={
+                    customerRequest.customerEmail ? (
+                      <a href={`mailto:${customerRequest.customerEmail}`} className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 break-all">
+                        <MailIcon className="w-3 h-3 flex-shrink-0" />
+                        {customerRequest.customerEmail}
+                      </a>
+                    ) : null
+                  }
+                />
+              </dl>
+            </section>
+          </div>
+
+          {/* 답변 섹션 */}
+          <section>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <h2 className="text-sm font-medium text-white">
+                받은 답변 <span className="text-blue-400">{answers.length}</span>
+              </h2>
+              {isUnderReview && answers.length > 0 && (
+                <span className="text-xs text-slate-500">한 곳을 채택하면 대화가 열립니다</span>
+              )}
+            </div>
+
+            {/* 주의사항 - 답변마다 반복하지 않고 섹션에 한 번만 노출 */}
+            {answers.length > 0 && (
+              <p className="flex items-start gap-1.5 mb-3 px-3 py-2 bg-amber-500/5 border border-amber-500/15 rounded-lg text-xs text-amber-200/80">
+                <AlertTriangleIcon className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                추가 요청사항에 따라 비용이 변동될 수 있습니다 (주차비, 인력 추가 투입 등).
+              </p>
+            )}
+
+            {isAnswersLoading && answers.length === 0 ? (
+              <div className="space-y-2">
+                {[0, 1].map((i) => (
+                  <div key={i} className="h-32 bg-slate-800/40 border border-slate-800 rounded-lg animate-pulse"></div>
+                ))}
               </div>
+            ) : answers.length === 0 ? (
+              <div className="text-center py-14 border border-dashed border-slate-700 rounded-lg">
+                <MessageSquareIcon className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+                <p className="text-sm text-slate-300 mb-1">아직 답변이 없습니다</p>
+                <p className="text-xs text-slate-500">업체들의 견적 답변을 기다리고 있습니다.</p>
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {answers.map((answer, index) => {
+                  // 기존 판정 조건을 그대로 유지 (서버가 '채택' / '채택 성공' 을 섞어 쓴다)
+                  const isAdopted = isAdoptedRequest && answer.status === '채택 성공';
+                  const canAdopt = isUnderReview && answer.status !== '채택';
+                  const expertName =
+                    answer.userName || answer.user?.userName || answer.webCustomer?.customerName || "익명";
+                  const contact = answer.companyPhone || answer.userPhone;
 
-              {/* 답변 리스트 */}
-              <div className="space-y-3">
-                {isAnswersLoading ? (
-                  <div className="text-center py-6">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full mb-2">
-                      <RefreshCwIcon className="w-6 h-6 text-blue-400 animate-spin" />
-                    </div>
-                    <div className="text-slate-400 text-sm font-medium">답변을 불러오는 중...</div>
-                  </div>
-                ) : answers.length > 0 ? (
-                  answers.map((answer, index) => (
-                    <div key={answer.answerId || answer.id} className={`group/answer rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
-                      customerRequest?.status === "채택 성공" && answer.status === '채택 성공'
-                        ? 'bg-gradient-to-r from-emerald-900/30 via-emerald-800/25 to-emerald-900/30 hover:from-emerald-900/40 hover:via-emerald-800/35 hover:to-emerald-900/40 border-emerald-700/50 hover:border-emerald-600/60'
-                        : 'bg-gradient-to-r from-slate-800/40 via-slate-700/40 to-slate-800/40 hover:from-slate-700/50 hover:via-slate-600/50 hover:to-slate-700/50 border-slate-700/50 hover:border-slate-600/60'
-                    }`}>
-                      {/* 헤더 - 답변 번호와 제목 */}
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full border border-blue-400/20 shadow-lg flex-shrink-0 mt-1">
-                          <span className="text-blue-400 font-bold text-sm sm:text-base">{index + 1}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {/* 제목과 배지 한 줄 */}
-                          <div className="flex items-center gap-2 mb-2 justify-between">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-white font-semibold text-base sm:text-lg group-hover/answer:text-blue-100 transition-colors">
-                                {answer.answerTitle || "견적서 보내드립니다."}
-                              </h4>
-                              {/* 채택된 항목 배지 */}
-                              {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-emerald-500/40 to-green-500/40 hover:from-emerald-500/50 hover:to-green-500/50 border border-emerald-400/60 rounded-full transition-all duration-200">
-                                  <CheckCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-300 flex-shrink-0" />
-                                  <span className="text-xs font-semibold text-emerald-300 whitespace-nowrap">채택됨</span>
-                                </div>
-                              )}
-                              {/* 채택 안된 항목 배지 - 검토중 상태에서 아직 채택되지 않은 답변 */}
-                              {customerRequest?.status === "검토중" && answer.status !== '채택' && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-slate-700/40 to-slate-600/40 hover:from-slate-700/50 hover:to-slate-600/50 border border-slate-500/60 rounded-full transition-all duration-200">
-                                  <XCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 flex-shrink-0" />
-                                  <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">검토 중</span>
-                                </div>
-                              )}
-                            </div>
-                            {/* 대화하기 버튼 - 채택 성공 상태이고 채택된 답변에만 표시 */}
-                            {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
-                              <button
-                                onClick={() => {
-                                  // 채팅 파트너 설정과 채팅 열기 플래그 설정
-                                  setCurrentChatPartner(answer);
-                                  setShouldOpenChat(true);
-                                }}
-                                className="group/chat flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 hover:from-emerald-500/50 hover:to-teal-500/50 border border-emerald-400/40 hover:border-emerald-300/60 rounded-lg transition-all duration-300 text-emerald-300 hover:text-emerald-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 backdrop-blur-sm text-xs sm:text-sm flex-shrink-0"
-                              >
-                                <MessageSquareIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/chat:scale-110 transition-transform flex-shrink-0" />
-                                <span className="font-semibold whitespace-nowrap">대화하기</span>
-                              </button>
-                            )}
-                          </div>
-                          {/* 사용자 정보 */}
-                          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-400">
-                            <div className="flex items-center gap-1.5">
-                              <div className="p-0.5 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded">
-                                <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" />
-                              </div>
-                              <span>{answer.userName || answer.user?.userName || answer.webCustomer?.customerName || "홍정수"}</span>
-                            </div>
-                            {answer.companyName && (
-                              <>
-                                <span className="text-slate-500">•</span>
-                                <span className="text-blue-400">{answer.companyName}</span>
-                              </>
-                            )}
-                            {customerRequest?.status === "채택 성공" && answer.status === '채택 성공' && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r   hover:from-emerald-500/50 hover:to-green-500/50">
-                                  <CheckCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5  flex-shrink-0" />
-                                  <span className="text-xs font-semibold  whitespace-nowrap">{answer.companyPhone || answer.userPhone}</span>
-                                </div>
-                              )}
-                            {answer.createdDt && (
-                              <>
-                                <span className="text-slate-500">•</span>
-                                <span>{formatDateTime(answer.createdDt)}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 서비스 내용 */}
-                      <div className="mb-1">
-                       
-                        {answer.answerBody ? (
-                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/30 hover:border-slate-600/40 transition-all duration-200">
-                            <div className="text-slate-300 leading-relaxed text-sm sm:text-base whitespace-pre-wrap">
-                              {answer.answerBody}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/30">
-                            <div className="text-slate-400 text-sm sm:text-base">
-                              서비스 내용이 아직 입력되지 않았습니다.
-                            </div>
-                          </div>
+                  return (
+                    <li
+                      key={answer.answerId || answer.id || index}
+                      className={`rounded-lg border p-4 transition-colors ${
+                        isAdopted
+                          ? 'bg-emerald-500/[0.07] border-emerald-500/30'
+                          : 'bg-slate-800/40 border-slate-800'
+                      }`}
+                    >
+                      {/* 상단: 전문가 · 배지 · 시각 */}
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mb-2">
+                        <span className="inline-flex items-center gap-1 text-sm text-white font-medium">
+                          <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                          {expertName}
+                        </span>
+                        {answer.companyName && (
+                          <span className="text-xs text-blue-400">{answer.companyName}</span>
+                        )}
+                        {isAdopted && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-[11px] font-medium text-emerald-300">
+                            <CheckCircleIcon className="w-3 h-3" />
+                            채택됨
+                          </span>
+                        )}
+                        {answer.createdDt && (
+                          <span className="ml-auto text-xs text-slate-500">{formatDateTime(answer.createdDt)}</span>
                         )}
                       </div>
 
-                      {/* 기타 안내사항 */}
-                      <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/30 mb-2">
-                        <h5 className="text-white font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
-                          <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                       주의사항
-                        </h5>
-                        <ul className="space-y-1 text-slate-300 text-sm sm:text-base">
-                          <li className="flex items-start gap-2">
-                            <span className="text-slate-500 mt-1">•</span>
-                            <span>추가 요청사항에 따라 비용이 변동될 수 있습니다.(주차비, 인력추가투입 등등)</span>
-                          </li>
-                          {/* <li className="flex items-start gap-2">
-                            <span className="text-slate-500 mt-1">•</span>
-                            <span>문의사항이 있으시면 언제든지 연락주세요.</span>
-                          </li> */}
-                        </ul>
-                      </div>
+                      {/* 제목 · 본문 */}
+                      <h3 className="text-sm font-medium text-white mb-1">
+                        {answer.answerTitle || "견적서 보내드립니다."}
+                      </h3>
+                      <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        {answer.answerBody || "서비스 내용이 아직 입력되지 않았습니다."}
+                      </p>
 
-                      {/* 견적 금액과 액션 버튼 - 하단에 배치 */}
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-700/30">
-                        {/* 견적 금액 */}
-                        {answer.cost && (
-                          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl px-4 py-3 border border-blue-400/20">
-                            <div className="text-xs sm:text-sm text-slate-400 font-medium mb-1">견적 금액</div>
-                            <div className="text-blue-400 font-bold text-xl sm:text-2xl">
+                      {/* 하단: 금액 · 액션 */}
+                      <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800">
+                        {answer.cost != null && (
+                          <div className="mr-auto">
+                            <span className="text-xs text-slate-400">견적 </span>
+                            <span className="text-base font-semibold text-blue-400">
                               {answer.cost.toLocaleString()}원
-                            </div>
+                            </span>
                           </div>
                         )}
 
-                        {/* 액션 버튼들 */}
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                          {/* 채택하기 버튼 - 검토중 상태이고 아직 채택되지 않은 답변에만 표시 */}
-                          {customerRequest?.status === "검토중" && answer.status !== '채택' && (
-                            <button
-                              onClick={() => handleAdoptClick(answer)}
-                              className="group/adopt flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500/20 to-green-500/20 hover:from-emerald-500/30 hover:to-green-500/30 border border-emerald-500/30 hover:border-emerald-400/50 rounded-lg transition-all duration-300 text-emerald-400 hover:text-emerald-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 w-full sm:w-auto"
-                            >
-                              <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover/adopt:rotate-12 transition-transform" />
-                              <span className="text-sm sm:text-base font-semibold">채택하기</span>
-                            </button>
-                          )}
-                        </div>
+                        {isAdopted && contact && (
+                          <a
+                            href={`tel:${contact}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-200 transition-colors"
+                          >
+                            <PhoneIcon className="w-3.5 h-3.5" />
+                            {contact}
+                          </a>
+                        )}
+
+                        {isAdopted && (
+                          <button
+                            onClick={() => handleStartChat(answer)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-medium text-white transition-colors"
+                          >
+                            <MessageSquareIcon className="w-3.5 h-3.5" />
+                            대화하기
+                          </button>
+                        )}
+
+                        {canAdopt && (
+                          <button
+                            onClick={() => handleAdoptClick(answer)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors"
+                          >
+                            <StarIcon className="w-3.5 h-3.5" />
+                            채택하기
+                          </button>
+                        )}
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-slate-800/50 to-slate-700/50 rounded-full mb-3 border border-slate-600/30">
-                      <MessageCircleIcon className="w-6 h-6 text-slate-500" />
-                    </div>
-                    <h3 className="text-base font-semibold text-white mb-1">아직 답변이 없습니다</h3>
-                    <p className="text-slate-400 text-sm">업체들의 견적 답변을 기다리고 있습니다.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </div>
       </main>
 
       {/* 채택 확인 모달 */}
       {showAdoptModal && selectedAnswer && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-slate-800/95 via-slate-700/95 to-slate-800/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300">
-            {/* 모달 헤더 */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-full">
-                  <StarIcon className="w-6 h-6 text-emerald-400" />
-                </div>
-                <h3 className="text-xl font-bold text-white">답변 채택</h3>
-              </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 max-w-sm w-full shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-white">답변 채택</h3>
               <button
                 onClick={handleAdoptCancel}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+                aria-label="닫기"
+                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
               >
-                <XIcon className="w-5 h-5" />
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 
-            {/* 모달 내용 */}
-            <div className="mb-6">
-              <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-lg p-4 border border-slate-600/30 mb-4">
-                <h4 className="text-white font-semibold mb-2">
-                  {selectedAnswer.answerTitle || "제목 없음"}
-                </h4>
-                <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
-                  <UserIcon className="w-4 h-4" />
-                  <span>{selectedAnswer.userName || selectedAnswer.user?.userName || selectedAnswer.webCustomer?.customerName || "익명"}</span>
-                  {selectedAnswer.companyName && (
-                    <>
-                      <span>•</span>
-                      <span className="text-blue-400">{selectedAnswer.companyName}</span>
-                    </>
-                  )}
-                  {selectedAnswer.cost && (
-                    <>
-                      <span>•</span>
-                      <span className="text-emerald-400 font-semibold">
-                        {selectedAnswer.cost.toLocaleString()}원
-                      </span>
-                    </>
-                  )}
-                </div>
-                {selectedAnswer.answerBody && (
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    {selectedAnswer.answerBody.length > 150 
-                      ? `${selectedAnswer.answerBody.substring(0, 150)}...` 
-                      : selectedAnswer.answerBody
-                    }
-                  </p>
+            <div className="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 mb-4">
+              <h4 className="text-sm font-medium text-white mb-1">
+                {selectedAnswer.answerTitle || "제목 없음"}
+              </h4>
+              <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-slate-400">
+                <span>{selectedAnswer.userName || selectedAnswer.user?.userName || selectedAnswer.webCustomer?.customerName || "익명"}</span>
+                {selectedAnswer.companyName && (
+                  <>
+                    <span className="text-slate-600">·</span>
+                    <span className="text-blue-400">{selectedAnswer.companyName}</span>
+                  </>
                 )}
-              </div>
-
-              <div className="text-center">
-                <p className="text-white font-semibold text-lg mb-2">
-                  해당 전문가를 채택하시겠습니까?
-                </p>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  채택 후에는 해당 전문가와 채팅을 통해<br />
-                  자세한 상담을 진행할 수 있습니다.
-                </p>
+                {selectedAnswer.cost != null && (
+                  <>
+                    <span className="text-slate-600">·</span>
+                    <span className="text-emerald-400 font-semibold">{selectedAnswer.cost.toLocaleString()}원</span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* 모달 버튼 */}
-            <div className="flex gap-3">
+            <p className="text-sm text-slate-200 mb-1">이 전문가를 채택할까요?</p>
+            <p className="text-xs text-slate-400 mb-5">채택하면 바로 대화창이 열립니다.</p>
+
+            <div className="flex gap-2">
               <button
                 onClick={handleAdoptCancel}
                 disabled={isAdopting}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-slate-600/50 to-slate-500/50 hover:from-slate-500/60 hover:to-slate-400/60 border border-slate-500/30 hover:border-slate-400/50 rounded-lg transition-all duration-300 text-slate-300 hover:text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-200 transition-colors disabled:opacity-50"
               >
                 취소
               </button>
               <button
                 onClick={handleAdoptConfirm}
                 disabled={isAdopting}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500/80 to-green-500/80 hover:from-emerald-500 hover:to-green-500 border border-emerald-400/30 hover:border-emerald-300/50 rounded-lg transition-all duration-300 text-white font-semibold hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
               >
                 {isAdopting ? (
-                  <div className="flex items-center justify-center gap-2">
+                  <span className="flex items-center justify-center gap-1.5">
                     <RefreshCwIcon className="w-4 h-4 animate-spin" />
-                    처리중...
-                  </div>
+                    처리중
+                  </span>
                 ) : (
                   "채택하기"
                 )}
@@ -768,29 +587,29 @@ export default function QuoteRequestDetailPage() {
         </div>
       )}
 
-              {/* 채팅 모달 */}
-        <ChatModal
-          isOpen={isChatOpen}
-          onClose={closeChat}
-          chatPartner={currentChatPartner}
-          messages={chatMessages as any}
-          newMessage={newMessage}
-          onMessageChange={handleMessageChange}
-          onSendMessage={sendMessage}
-          onKeyPress={handleKeyPress}
-          onFileUpload={uploadFile}
-          isLoading={isChatLoading}
-          isConnected={isConnected}
-          connectionError={null}
-          isTyping={partnerTyping}
-          uploadingFile={uploadingFile}
-          messagesEndRef={messagesEndRef}
-          observeMessage={observeMessage}
-          unobserveMessage={unobserveMessage}
-          hasMoreMessages={hasMoreMessages}
-          isLoadingMore={isChatLoadingMore}
-          onLoadMore={loadMoreMessages}
-        />
+      {/* 채팅 모달 */}
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={closeChat}
+        chatPartner={currentChatPartner}
+        messages={chatMessages}
+        newMessage={newMessage}
+        onMessageChange={handleMessageChange}
+        onSendMessage={sendMessage}
+        onKeyPress={handleKeyPress}
+        onFileUpload={uploadFile}
+        isLoading={isChatLoading}
+        isConnected={isConnected}
+        connectionError={null}
+        isTyping={partnerTyping}
+        uploadingFile={uploadingFile}
+        messagesEndRef={messagesEndRef}
+        observeMessage={observeMessage}
+        unobserveMessage={unobserveMessage}
+        hasMoreMessages={hasMoreMessages}
+        isLoadingMore={isChatLoadingMore}
+        onLoadMore={loadMoreMessages}
+      />
     </div>
   );
 }
