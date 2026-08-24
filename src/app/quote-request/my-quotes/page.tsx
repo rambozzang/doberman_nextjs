@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { 
-  UserIcon, 
-  SearchIcon, 
+import {
+  SearchIcon,
   MapPinIcon,
   CalendarIcon,
   BuildingIcon,
@@ -13,10 +12,9 @@ import {
   AlertCircleIcon,
   EditIcon,
   PlusIcon,
-  RefreshCwIcon,  
-  FilterIcon,
-  ChevronUpIcon,
-  ChevronDownIcon
+  RefreshCwIcon,
+  AlertTriangleIcon,
+  ChevronRightIcon
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/providers/AuthProvider";
@@ -24,56 +22,60 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { CustomerRequestService } from "@/services/customerRequestService";
 import { CustomerRequest } from "@/types/api";
 
-// 더미 데이터 제거 - 실제 API 사용
-
 // 상태 매핑 함수
 const getStatusConfig = (status: string) => {
   const statusMap: Record<string, {
     label: string;
-    color: string;
     bgColor: string;
     textColor: string;
-    icon: React.ComponentType;
-    description: string;
+    icon: React.ComponentType<{ className?: string }>;
   }> = {
-    "검토중": { 
-      label: "검토중", 
-      color: "from-yellow-500 to-orange-500", 
-      bgColor: "bg-yellow-500/10", 
+    "검토중": {
+      label: "검토중",
+      bgColor: "bg-yellow-500/10 border-yellow-500/20",
       textColor: "text-yellow-400",
-      icon: ClockIcon,
-      description: "전문가들이 검토중입니다"
+      icon: ClockIcon
     },
-    "진행중": { 
-      label: "진행중", 
-      color: "from-blue-500 to-cyan-500", 
-      bgColor: "bg-blue-500/10", 
+    "진행중": {
+      label: "진행중",
+      bgColor: "bg-blue-500/10 border-blue-500/20",
       textColor: "text-blue-400",
-      icon: AlertCircleIcon,
-      description: "시공이 진행중입니다"
+      icon: AlertCircleIcon
     },
-    "채택 성공": { 
-      label: "채택 성공", 
-      color: "from-emerald-500 to-green-500", 
-      bgColor: "bg-emerald-500/10", 
+    "채택 성공": {
+      label: "채택 성공",
+      bgColor: "bg-emerald-500/10 border-emerald-500/20",
       textColor: "text-emerald-400",
-      icon: CheckCircleIcon,
-      description: "시공이 성공적으로 완료되었습니다"
+      icon: CheckCircleIcon
     },
-    "취소": { 
-      label: "취소", 
-      color: "from-red-500 to-pink-500", 
-      bgColor: "bg-red-500/10", 
+    "취소": {
+      label: "취소",
+      bgColor: "bg-red-500/10 border-red-500/20",
       textColor: "text-red-400",
-      icon: XCircleIcon,
-      description: "견적 요청이 취소되었습니다"
+      icon: XCircleIcon
     }
   };
-  
+
   return statusMap[status] || statusMap["검토중"];
 };
 
-// priorityConfig 제거 - 실제 API에는 priority 필드가 없음
+const STATUS_TABS = [
+  { value: "all", label: "전체" },
+  { value: "검토중", label: "검토중" },
+  { value: "진행중", label: "진행중" },
+  { value: "채택 성공", label: "채택 성공" },
+  { value: "취소", label: "취소" }
+];
+
+// 대괄호 제거
+const removeBrackets = (text: string) => text.replace(/[[\]]/g, '');
+
+// 목록용 짧은 날짜 (YY.MM.DD)
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' });
+};
 
 export default function MyQuoteRequestsPage() {
   const [myQuoteRequests, setMyQuoteRequests] = useState<CustomerRequest[]>([]);
@@ -85,9 +87,8 @@ export default function MyQuoteRequestsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage] = useState(0);
   const [pageSize] = useState(10);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 인증 상태 확인
   const { user } = useAuth();
   const { isLoading: authLoading, shouldRender } = useAuthGuard({
@@ -102,6 +103,7 @@ export default function MyQuoteRequestsPage() {
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const response = await CustomerRequestService.getMyList({
         page: currentPage,
@@ -114,12 +116,10 @@ export default function MyQuoteRequestsPage() {
         setMyQuoteRequests(response.data.content);
         setFilteredRequests(response.data.content);
       } else {
-        console.log("데이터를 불러오는데 실패했습니다.");
         setError("데이터를 불러오는데 실패했습니다.");
       }
     } catch (error) {
       console.error("데이터 로딩 오류:", error);
-      console.log("데이터를 불러오는데 실패했습니다.");
       setError("데이터를 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -136,9 +136,8 @@ export default function MyQuoteRequestsPage() {
   useEffect(() => {
     let filtered = [...myQuoteRequests];
 
-    // 검색 필터
     if (searchTerm) {
-      filtered = filtered.filter(request => 
+      filtered = filtered.filter(request =>
         request.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.id.toString().includes(searchTerm.toLowerCase()) ||
         request.region.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,7 +147,6 @@ export default function MyQuoteRequestsPage() {
 
     // 상태 필터는 API에서 처리되므로 여기서는 제거
 
-    // 정렬
     filtered.sort((a, b) => {
       // "채택 성공" 상태를 최우선으로 정렬
       const isACompleted = a.status === "채택 성공";
@@ -156,9 +154,9 @@ export default function MyQuoteRequestsPage() {
 
       if (isACompleted && !isBCompleted) return -1;
       if (!isACompleted && isBCompleted) return 1;
-      
+
       let aValue, bValue;
-      
+
       switch (sortBy) {
         case "date":
           aValue = new Date(a.requestDate).getTime();
@@ -175,7 +173,7 @@ export default function MyQuoteRequestsPage() {
         default:
           return 0;
       }
-      
+
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
 
@@ -186,337 +184,229 @@ export default function MyQuoteRequestsPage() {
     await loadData();
   };
 
-  const getStatusCounts = () => {
-    const statusCounts: Record<string, number> = {};
-    myQuoteRequests.forEach(request => {
-      statusCounts[request.status] = (statusCounts[request.status] || 0) + 1;
-    });
-    
-    return {
-      total: myQuoteRequests.length,
-      pending: statusCounts["검토중"] || 0,
-      inProgress: statusCounts["진행중"] || 0,
-      completed: statusCounts["채택 성공"] || 0,
-      cancelled: statusCounts["취소"] || 0
-    };
-  };
+  // 상태별 건수는 '전체'로 조회했을 때만 정확하므로 그때만 노출한다
+  const statusCounts = myQuoteRequests.reduce<Record<string, number>>((acc, request) => {
+    acc[request.status] = (acc[request.status] || 0) + 1;
+    return acc;
+  }, {});
 
-  const statusCounts = getStatusCounts();
+  const countForTab = (value: string) =>
+    value === "all" ? myQuoteRequests.length : statusCounts[value] || 0;
 
-  // 로딩 중이거나 인증되지 않은 경우
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-          <span className="text-white text-lg">로딩 중...</span>
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+          <span className="text-slate-300 text-sm">로딩 중...</span>
         </div>
       </div>
     );
   }
 
-  // 인증되지 않은 경우
   if (!shouldRender) {
     return null;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-      {/* 헤더 */}
-      <section className="w-full bg-gradient-to-br from-slate-900 via-blue-900/50 to-purple-900/50 relative overflow-hidden pt-16 sm:pt-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent"></div>
-        
-        <div className="container mx-auto px-4 py-4 sm:py-6 relative">
-          <div className="text-left">
-            <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-5">
-              <div className="inline-flex items-center justify-center w-10 h-10 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-2xl shadow-blue-500/25">
-                <UserIcon className="w-5 h-5 md:w-8 md:h-8 text-white" />
-              </div>
-              
-              <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white">
-                <span className="bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent">
-                  내 견적 요청
-                </span>
-                <span className="block text-xs sm:text-sm text-slate-300 mt-1">
-                  총 {statusCounts.total}개의 견적
-                </span>
-              </h1>
+    <div className="flex flex-col min-h-screen bg-slate-900">
+      <main className="flex-grow w-full pt-16 sm:pt-20">
+        <div className="mx-auto w-full max-w-4xl px-4 py-6">
+          {/* 페이지 헤더 */}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h1 className="text-lg sm:text-xl font-semibold text-white">내 견적 요청</h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isLoading ? '불러오는 중' : `${filteredRequests.length}건`}
+              </p>
             </div>
-          
-            {/* 통계 정보 */}
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 max-w-3xl">
-              {[
-                { label: "전체", count: statusCounts.total, color: "from-blue-500 to-cyan-500" },
-                { label: "대기중", count: statusCounts.pending, color: "from-yellow-500 to-orange-500" },
-                { label: "진행중", count: statusCounts.inProgress, color: "from-purple-500 to-violet-500" },
-                { label: "완료", count: statusCounts.completed, color: "from-emerald-500 to-green-500" },
-                { label: "취소", count: statusCounts.cancelled, color: "from-red-500 to-pink-500" }
-              ].map((stat, index) => (
-                <div key={index} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-3">
-                  <div className={`text-lg sm:text-xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent text-center`}>
-                    {stat.count}
-                  </div>
-                  <div className="text-xs sm:text-sm text-slate-300 text-center mt-1">{stat.label}</div>
-                </div>
-              ))}
+            <Link
+              href="/quote-request"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+            >
+              <PlusIcon className="w-4 h-4" />
+              새 견적 요청
+            </Link>
+          </div>
+
+          {/* 상태 탭 - 통계 카드를 겸한다 */}
+          <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
+            {STATUS_TABS.map((tab) => {
+              const active = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs whitespace-nowrap transition-colors ${
+                    active
+                      ? 'bg-blue-600 border-blue-500 text-white font-medium'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                  {/* 상태별로 조회하면 다른 상태의 건수를 알 수 없어 '전체'일 때만 표시 */}
+                  {statusFilter === 'all' && (
+                    <span className={active ? 'text-blue-100' : 'text-slate-500'}>{countForTab(tab.value)}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 검색 · 정렬 툴바 */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <div className="relative flex-1">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="지역 · 시공위치 · 번호 검색"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 bg-slate-800/60 border border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white text-sm placeholder-slate-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <select
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [sort, order] = e.target.value.split('-');
+                  setSortBy(sort as "date" | "status" | "quotes");
+                  setSortOrder(order as "asc" | "desc");
+                }}
+                className="flex-1 sm:flex-none h-9 px-3 bg-slate-800/60 border border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-white text-sm transition-colors"
+              >
+                <option value="date-desc">최신순</option>
+                <option value="date-asc">오래된순</option>
+                <option value="status-asc">상태순</option>
+                <option value="quotes-desc">견적 많은순</option>
+                <option value="quotes-asc">견적 적은순</option>
+              </select>
+
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                aria-label="새로고침"
+                title="새로고침"
+                className="h-9 w-9 flex items-center justify-center bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCwIcon className={`w-4 h-4 text-slate-300 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* 메인 콘텐츠 */}
-      <main className="flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="container mx-auto px-4 py-8">
-          {/* 액션 바 */}
-          <section className="mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="w-full sm:w-auto">
-                <Link 
-                  href="/quote-request"
-                  className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 w-full sm:w-auto"
-                >
-                  <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  새 견적 요청
-                </Link>
+          {/* 오류 안내 */}
+          {error && (
+            <div className="flex items-center justify-between gap-3 mb-4 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-red-300">
+                <AlertTriangleIcon className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
-            </div>
-          </section>
-
-          {/* 검색 및 필터 섹션 */}
-          <section className="mb-8">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6">
-              <button 
-                className="w-full flex items-center justify-between lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-                onClick={() => setIsFilterVisible(!isFilterVisible)}
-              >
-                <div className="flex items-center gap-2">
-                  <FilterIcon className="w-5 h-5 text-blue-400" />
-                  <span className="font-semibold text-white">검색 조건</span>
-                </div>
-                {isFilterVisible ? <ChevronUpIcon className="w-5 h-5 text-slate-400" /> : <ChevronDownIcon className="w-5 h-5 text-slate-400" />}
+              <button onClick={handleRefresh} className="text-xs text-red-300 underline underline-offset-2 whitespace-nowrap">
+                다시 시도
               </button>
-
-              <div className={`mt-4 lg:mt-0 ${isFilterVisible ? 'block' : 'hidden'} lg:block`}>
-                <div className="space-y-4">
-                  {/* 검색 */}
-                  <div className="relative">
-                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="내 견적 요청 검색..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white placeholder-slate-400 text-sm sm:text-base"
-                    />
-                  </div>
-
-                  {/* 필터 및 정렬 - 모바일에서 세로 배치 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* 상태 필터 */}
-                    <div>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-3 sm:px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white text-sm sm:text-base"
-                      >
-                        <option value="all">모든 상태</option>
-                        <option value="검토중">검토중</option>
-                        <option value="진행중">진행중</option>
-                        <option value="채택 성공">채택 성공</option>
-                        <option value="취소">취소</option>
-                      </select>
-                    </div>
-
-                    {/* 정렬 */}
-                    <div>
-                      <select
-                        value={`${sortBy}-${sortOrder}`}
-                        onChange={(e) => {
-                          const [sort, order] = e.target.value.split('-');
-                          setSortBy(sort as "date" | "status" | "quotes");
-                          setSortOrder(order as "asc" | "desc");
-                        }}
-                        className="w-full px-3 sm:px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white text-sm sm:text-base"
-                      >
-                        <option value="date-desc">최신순</option>
-                        <option value="date-asc">오래된순</option>
-                        <option value="status-asc">상태순</option>
-                        <option value="quotes-desc">견적 많은순</option>
-                        <option value="quotes-asc">견적 적은순</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* 새로고침 버튼 */}
-                  <div className="flex justify-center sm:justify-end">
-                    <button
-                      onClick={handleRefresh}
-                      disabled={isLoading}
-                      className="flex items-center gap-2 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl transition-all disabled:opacity-50 text-sm sm:text-base"
-                    >
-                      <RefreshCwIcon className={`w-4 h-4 sm:w-5 sm:h-5 text-blue-400 ${isLoading ? 'animate-spin' : ''}`} />
-                      <span className="text-blue-400">새로고침</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
-          </section>
+          )}
 
           {/* 견적 요청 리스트 */}
-          <section>
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
-                  <RefreshCwIcon className="w-8 h-8 text-blue-400 animate-spin" />
-                </div>
-                <p className="text-slate-300">내 견적 요청을 불러오는 중...</p>
-              </div>
-            ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-12">
-                <SearchIcon className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">견적 요청이 없습니다</h3>
-                <p className="text-slate-400 mb-6">
-                  {searchTerm || statusFilter !== "all" 
-                    ? "검색 조건에 맞는 견적 요청이 없습니다." 
-                    : "첫 번째 견적 요청을 만들어보세요."
-                  }
-                </p>
-                {!searchTerm && statusFilter === "all" && (
-                  <Link 
-                    href="/quote-request"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300"
-                  >
-                    <PlusIcon className="w-5 h-5" />
-                    견적 요청하기
-                  </Link>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredRequests.map((request) => {
-                  const statusConfig = getStatusConfig(request.status);
-                  const StatusIcon = statusConfig.icon as React.ComponentType<{ className?: string }>;
-                  
-                  // 대괄호 제거 함수
-                  const removeBrackets = (text: string) => {
-                    return text.replace(/[\[\]]/g, '');
-                  };
+          {isLoading ? (
+            <div className="space-y-2">
+              {/* 스켈레톤 - 목록 높이를 유지해 화면이 튀지 않게 한다 */}
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-[104px] bg-slate-800/40 border border-slate-800 rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          ) : filteredRequests.length === 0 ? (
+            <div className="text-center py-16 border border-dashed border-slate-700 rounded-lg">
+              <SearchIcon className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+              <p className="text-sm text-slate-300 mb-1">견적 요청이 없습니다</p>
+              <p className="text-xs text-slate-500 mb-5">
+                {searchTerm || statusFilter !== "all"
+                  ? "검색 조건에 맞는 견적 요청이 없습니다."
+                  : "첫 번째 견적 요청을 만들어보세요."}
+              </p>
+              {!searchTerm && statusFilter === "all" && (
+                <Link
+                  href="/quote-request"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  견적 요청하기
+                </Link>
+              )}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {filteredRequests.map((request) => {
+                const statusConfig = getStatusConfig(request.status);
+                const StatusIcon = statusConfig.icon;
 
-                  // 날짜 포맷 함수
-                  const formatDate = (dateString: string) => {
-                    try {
-                      const date = new Date(dateString);
-                      return date.toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      });
-                    } catch {
-                      return dateString;
-                    }
-                  };
-                  
-                  return (
+                return (
+                  <li key={request.id}>
                     <Link
-                      key={request.id}
                       href={`/quote-request/${request.id}`}
-                      className="block bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                      className="group block bg-slate-800/40 border border-slate-800 hover:border-slate-700 hover:bg-slate-800/70 rounded-lg px-4 py-3 transition-colors"
                     >
-                      {/* 헤더 - ID와 상태 */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <span className="text-sm font-mono text-slate-400">#{request.id}</span>
-                          <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
-                            <StatusIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-                            {statusConfig.label}
-                          </div>
-                        </div>
+                      {/* 1행: 상태 · 번호 · 답변 수 */}
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusConfig.label}
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-500">#{request.id}</span>
+                        <span className="ml-auto text-xs text-slate-400">
+                          답변 <span className="text-blue-400 font-semibold">{request.answerCount}</span>
+                        </span>
+                        <ChevronRightIcon className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
                       </div>
 
-                      {/* 메인 제목 */}
-                      <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-3">
+                      {/* 2행: 제목 */}
+                      <h3 className="text-sm font-medium text-white truncate">
                         {removeBrackets(request.buildingType)} {request.constructionLocation}
                       </h3>
 
-                      {/* 상세 정보 - 모바일에서 세로 배치 */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-3">
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
-                          <BuildingIcon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{removeBrackets(request.buildingType)}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
-                          <span className="font-medium">{request.areaSize}㎡</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
-                          <MapPinIcon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{request.region}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-300">
-                          <CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{formatDate(request.requestDate)}</span>
-                        </div>
-                      </div>
-
-                      {/* 벽지 종류 및 특이사항 */}
-                      {(request.wallpaper || request.specialInfo) && (
-                        <div className="mb-3">
-                          {request.wallpaper && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              <span className="px-2 sm:px-3 py-1 bg-slate-700/50 text-xs sm:text-sm text-slate-300 rounded-full">
-                                {removeBrackets(request.wallpaper)}
-                              </span>
-                            </div>
-                          )}
-                          {request.specialInfo && (
-                            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{request.specialInfo}</p>
-                          )}
-                        </div>
+                      {/* 특이사항은 한 줄로 줄여 보여주고 상세는 상세 페이지에서 */}
+                      {request.specialInfo && (
+                        <p className="text-xs text-slate-500 truncate mt-0.5">{request.specialInfo}</p>
                       )}
 
-                      {/* 하단 액션 바 */}
-                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                        {/* 견적 정보 */}
-                        <div className="flex items-center gap-2">
-                          <div className="bg-slate-800/30 rounded-lg px-3 py-2">
-                            <div className="text-lg sm:text-xl font-bold text-blue-400">{request.answerCount}</div>
-                            <div className="text-xs sm:text-sm text-slate-400">답변</div>
-                          </div>
-                        </div>
-
-                        {/* 액션 버튼 */}
+                      {/* 3행: 메타 정보 한 줄 */}
+                      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5 text-xs text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPinIcon className="w-3.5 h-3.5 text-slate-500" />
+                          {request.region}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <BuildingIcon className="w-3.5 h-3.5 text-slate-500" />
+                          {request.areaSize}㎡
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
+                          {formatDate(request.requestDate)}
+                        </span>
+                        {request.wallpaper && (
+                          <span className="text-slate-500">{removeBrackets(request.wallpaper)}</span>
+                        )}
                         {request.status === '검토중' && (
-                          <button 
+                          <button
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               // TODO: 수정 기능 구현
                               console.log("수정할 ID:", request.id);
                             }}
-                            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg transition-all text-slate-300 hover:text-white text-xs sm:text-sm"
+                            className="ml-auto inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
                           >
-                            <EditIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <EditIcon className="w-3.5 h-3.5" />
                             수정
                           </button>
                         )}
                       </div>
                     </Link>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* 페이지네이션 영역 (추후 구현) */}
-          {filteredRequests.length > 0 && (
-            <div className="mt-8 text-center">
-              <div className="text-sm text-slate-400">
-                총 {filteredRequests.length}개의 견적 요청
-              </div>
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </main>
