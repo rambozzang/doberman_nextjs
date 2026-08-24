@@ -97,7 +97,8 @@ export const useChatMessages = (roomId: number | null) => {
       if (newMessage.messageId < 1000000000000) { // 서버 메시지 ID는 작은 숫자
         
         // 메시지 내용이 없는 경우 - message_sent 응답으로 isRead 상태 업데이트
-        if (!newMessage.message || !newMessage.message.trim()) {
+        // 첨부파일이 있으면 내용 없는 정상 메시지이므로 임시 메시지 교체 대상이 아니다
+        if ((!newMessage.message || !newMessage.message.trim()) && !newMessage.filePath) {
           console.log('임시 메시지 검색 조건:', {
             serverSenderType: newMessage.senderType,
             serverSenderId: newMessage.senderId,
@@ -174,8 +175,8 @@ export const useChatMessages = (roomId: number | null) => {
         }
       }
 
-      // 일반적인 새 메시지 추가 (빈 메시지 체크)
-      if (!newMessage.message || !newMessage.message.trim()) {
+      // 일반적인 새 메시지 추가 (빈 메시지 체크 - 첨부파일만 있는 경우는 허용)
+      if ((!newMessage.message || !newMessage.message.trim()) && !newMessage.filePath) {
         console.log('빈 메시지 추가 무시:', newMessage.messageId);
         return prevMessages;
       }

@@ -173,7 +173,8 @@ export class ChatWebSocketManager {
   }
 
   // 파일 메시지 전송
-  sendFileMessage(roomId: number, filePath: string, senderType: string, senderId: string): boolean {
+  // fileName을 message로 함께 보내야 상대(앱)에서도 파일명이 노출된다
+  sendFileMessage(roomId: number, filePath: string, senderType: string, senderId: string, fileName?: string): boolean {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       console.error('❌ WebSocket이 연결되지 않았습니다. readyState:', this.socket?.readyState);
       return false;
@@ -184,7 +185,8 @@ export class ChatWebSocketManager {
       roomId,
       senderType,
       senderId,
-      filePath
+      filePath,
+      message: fileName || ''
     };
 
     console.log('🔴 [WebSocket 전송] 파일:', {

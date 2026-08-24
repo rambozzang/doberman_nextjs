@@ -90,8 +90,10 @@ export default function QuoteRequestDetailPage() {
     closeChat,
     newMessage,
     isLoading: isChatLoading,
+    isLoadingMore: isChatLoadingMore,
+    hasMoreMessages,
+    loadMoreMessages,
     isConnected,
-    isTyping,
     partnerTyping,
     uploadingFile,
     messagesEndRef,
@@ -204,22 +206,27 @@ export default function QuoteRequestDetailPage() {
       }
 
       const response = await CustomerRequestService.adoptAnswer(requestId, answerId);
-      
+
       if (response.success) {
-        console.log(response.data?.message || "답변이 채택되었습니다!");
+        const adopted = selectedAnswer;
+        toast.success(response.data?.message || "채택되었습니다. 이제 전문가와 바로 대화할 수 있어요.");
         setShowAdoptModal(false);
         setSelectedAnswer(null);
-        
+
         // 데이터 새로고침
         loadCustomerRequest();
         loadAnswers();
+
+        // 채택 직후 대화를 바로 열어준다 (채택의 목적이 곧 상담이므로)
+        setCurrentChatPartner(adopted);
+        setShouldOpenChat(true);
       } else {
         throw new Error(response.error || "채택 처리에 실패했습니다.");
       }
     } catch (error) {
       console.error("채택 처리 오류:", error);
       const errorMessage = error instanceof Error ? error.message : "채택 처리에 실패했습니다.";
-      console.log(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsAdopting(false);
     }
@@ -780,6 +787,9 @@ export default function QuoteRequestDetailPage() {
           messagesEndRef={messagesEndRef}
           observeMessage={observeMessage}
           unobserveMessage={unobserveMessage}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isChatLoadingMore}
+          onLoadMore={loadMoreMessages}
         />
     </div>
   );

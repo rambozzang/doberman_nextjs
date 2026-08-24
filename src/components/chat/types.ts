@@ -5,8 +5,12 @@ export interface ChatMessage {
   senderName: string;
   senderType: 'customer' | 'expert';
   message: string;
+  /** 첨부파일 경로 (없으면 null) */
+  filePath: string | null;
   timestamp: string;
   isRead: boolean;
+  /** 전송 대기 중인 낙관적 메시지 여부 */
+  isPending: boolean;
 }
 
 // 채팅 시스템 전용 타입들 (개발가이드 기반)

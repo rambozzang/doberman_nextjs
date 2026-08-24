@@ -29,6 +29,9 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
   const {
     messages,
     isLoading,
+    isLoadingMore,
+    hasMoreMessages,
+    loadMoreMessages,
     addMessage,
     updateMessage,
     removeMessage,
@@ -58,6 +61,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     isConnected,
     connectionError,
     sendMessage: sendWebSocketMessage,
+    sendFileMessage: sendWebSocketFileMessage,
     sendTypingStatus
   } = useChatWebSocket(
     currentRoomId,
@@ -127,13 +131,8 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     }
   }, []);
 
-  // 메시지 목록이 변경될 때마다 스크롤
-  useEffect(() => {
-    if (isOpen && messages.length > 0) {
-      const timer = setTimeout(scrollToBottom, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [messages, isOpen, scrollToBottom]);
+  // 자동 스크롤은 ChatModal이 스크롤 위치를 보고 판단한다.
+  // (여기서 무조건 하단으로 내리면 이전 대화를 읽는 중에 화면이 끌려간다)
 
   // 채팅방이 열릴 때 읽음 처리 (상대방이 보낸 메시지만)
   useEffect(() => {
@@ -202,18 +201,12 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     };
   }, []);
 
-  // 메시지 입력 변경 핸들러
-  const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // 메시지 입력 변경 핸들러 (input/textarea 모두 지원)
+  const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.value;
-    console.log('⌨️ [useChatLogic] 메시지 입력 변경:', {
-      messageLength: value.length,
-      currentRoomId,
-      isConnected,
-      timestamp: new Date().toISOString()
-    });
     setNewMessage(value);
     handleTyping();
-  }, [handleTyping, currentRoomId, isConnected]);
+  }, [handleTyping]);
 
   // 채팅 모달 열기
   const openChat = useCallback(async () => {
@@ -352,24 +345,62 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
       return;
     }
 
+    if (!isConnected) {
+      toast.error('채팅방에 연결되지 않았습니다.');
+      return;
+    }
+
+    // 업로드 전 용량 제한 (10MB) - 서버 거부 후 실패하는 것보다 먼저 알려준다
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('10MB 이하 파일만 보낼 수 있습니다.');
+      return;
+    }
+
     setUploadingFile(true);
     try {
       const uploadResponse = await chatApi.uploadFile(currentRoomId, file);
 
-      if (uploadResponse.success && uploadResponse.data) {
-        // 파일 메시지 전송
-        sendWebSocketMessage(`[파일] ${uploadResponse.data.fileName}`);
-      } else {
+      if (!uploadResponse.success || !uploadResponse.data) {
         throw new Error(uploadResponse.error || '파일 업로드 실패');
       }
 
+      // 서버가 filePath / file_path 중 어느 쪽으로 내려줘도 받도록 처리
+      const uploaded = uploadResponse.data as { filePath?: string; file_path?: string; fileName?: string };
+      const filePath = uploaded.filePath || uploaded.file_path;
+      const fileName = uploaded.fileName || file.name;
+
+      if (!filePath) {
+        throw new Error('업로드된 파일 경로를 받지 못했습니다.');
+      }
+
+      // filePath를 실어서 전송해야 상대가 이미지/파일로 렌더링할 수 있다
+      const success = sendWebSocketFileMessage(filePath, fileName);
+
+      if (!success) {
+        throw new Error('파일 메시지 전송 실패');
+      }
+
+      // 낙관적 업데이트 - 전송 결과를 기다리지 않고 즉시 노출
+      addMessage({
+        messageId: Date.now(),
+        senderType: chatAuth.userType || 'WEB',
+        senderId: chatAuth.userId || '',
+        message: fileName,
+        filePath,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        timeAgo: '방금 전'
+      });
+
+      updateLastMessage(currentRoomId, fileName, new Date().toISOString());
     } catch (error) {
       console.error('파일 업로드 실패:', error);
       toast.error('파일 업로드에 실패했습니다.');
     } finally {
       setUploadingFile(false);
     }
-  }, [currentRoomId, uploadingFile, sendWebSocketMessage]);
+  }, [currentRoomId, uploadingFile, isConnected, sendWebSocketFileMessage, addMessage, updateLastMessage, chatAuth.userType, chatAuth.userId]);
 
   // Enter 키 핸들러
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
@@ -390,10 +421,13 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     isConnected,
     connectionError,
     isLoading,
+    isLoadingMore,
+    hasMoreMessages,
     messages,
     messagesEndRef,
 
     // 액션
+    loadMoreMessages,
     openChat,
     openChatByRoomId,
     closeChat,

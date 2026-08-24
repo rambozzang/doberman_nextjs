@@ -72,10 +72,10 @@ export const useChatWebSocket = (
 
     switch (data.type) {
       case 'message':
-        if (data.messageId && data.message && data.createdAt && callbacksRef.current.onNewMessage) {
-          // 빈 메시지 필터링
+        if (data.messageId && data.createdAt && callbacksRef.current.onNewMessage) {
+          // 빈 메시지 필터링 - 단, 첨부파일만 있는 메시지는 유효하므로 통과시킨다
           const messageContent = data.message === 'undefined' ? '' : (data.message || '');
-          if (!messageContent.trim()) {
+          if (!messageContent.trim() && !data.filePath) {
             console.log('빈 새 메시지 무시:', data.messageId);
             break;
           }
@@ -267,14 +267,14 @@ export const useChatWebSocket = (
   }, [isConnected, roomId, chatAuth.userId, chatAuth.userType]);
 
   // 파일 메시지 전송
-  const sendFileMessage = useCallback((filePath: string) => {
+  const sendFileMessage = useCallback((filePath: string, fileName?: string) => {
     if (!isConnected || !roomId || !chatAuth.userId || !chatAuth.userType) {
       console.error('파일 메시지 전송 불가: WebSocket 연결되지 않음 또는 필수 정보 누락');
       return false;
     }
 
-    console.log('파일 메시지 전송:', { roomId, filePath });
-    return chatWebSocket.sendFileMessage(roomId, filePath, chatAuth.userType, chatAuth.userId);
+    console.log('파일 메시지 전송:', { roomId, filePath, fileName });
+    return chatWebSocket.sendFileMessage(roomId, filePath, chatAuth.userType, chatAuth.userId, fileName);
   }, [isConnected, roomId, chatAuth.userId, chatAuth.userType]);
 
   // 타이핑 상태 전송
