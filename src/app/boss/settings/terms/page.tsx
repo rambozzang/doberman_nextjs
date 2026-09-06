@@ -1,9 +1,10 @@
-// 사장님 서비스 이용약관
+// 서비스 이용약관 — Industry 패턴
+//
+//   패널 하나: kicker(시행일) → 조항 제목 14px 700 + 본문 13.5px / 1.75.
+//   화면 제목은 헤더(PAGE_META)가 그린다. /boss/help/terms 도 이 화면을 그대로 쓴다.
+//
 // Flutter 원본: lib/app/setting/service_page.dart
-// 원본은 https://www.codelabtiger.com/doberman/service/ 를 WebView로 표시.
-// Next.js 에서는 정적 텍스트로 표시.
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+// 원본은 https://www.codelabtiger.com/doberman/service/ 를 WebView로 표시. 여기서는 정적 텍스트.
 
 const TERMS_SECTIONS: { title: string; body: string }[] = [
   {
@@ -50,31 +51,21 @@ const TERMS_SECTIONS: { title: string; body: string }[] = [
 
 export default function BossTermsPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss/settings"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 설정
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">서비스 이용약관</h1>
-        <div className="w-10" />
+    <article className="boss-card p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-boss-border pb-3">
+        <p className="boss-kicker">시행일 2024년 1월 1일</p>
+        <p className="text-[12px] text-boss-text-muted">코드랩타이거 · 도베르만 사장님</p>
       </div>
-
-      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-6">
-        <div className="border-b border-boss-border pb-3 text-xs text-boss-text-muted">
-          시행일: 2024년 1월 1일
-        </div>
+      <div className="mt-4 flex flex-col gap-5">
         {TERMS_SECTIONS.map((sec) => (
-          <section key={sec.title} className="space-y-2">
-            <h2 className="text-sm font-bold text-boss-primary">{sec.title}</h2>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-boss-text-secondary">
+          <section key={sec.title}>
+            <h2 className="text-[14px] font-bold text-boss-text">{sec.title}</h2>
+            <p className="mt-1.5 whitespace-pre-line text-[13.5px] leading-[1.75] text-boss-text-soft">
               {sec.body}
             </p>
           </section>
         ))}
       </div>
-    </div>
+    </article>
   );
 }

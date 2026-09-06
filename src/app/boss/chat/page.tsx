@@ -1,21 +1,24 @@
 'use client';
 
-// 고객 채팅 — onGo 리디자인 시안 `인박스` 화면
+// 고객 채팅 인박스 — Industry 패턴 (agent.opentohome.com)
 //
-// 레이아웃: grid 178px / minmax(0,340px) / minmax(0,1fr), 높이 100%
-//   1열 필터   : FILTER 라벨 + 분류, 하단 SAVED REPLY(저장된 답변)
-//   2열 스레드 : sticky 헤더, 행 padding 12px 13px, 선택 시 bg #1f2233 + inset 2px accent
-//   3열 상세   : 헤더(30px 아바타) → 메시지 → 하단 고정 답변 입력
+// 레이아웃(lg↑): boss-bleed 3열 grid 178px / minmax(0,340px) / minmax(0,1fr)
+//   셸이 페이지 스크롤이므로 컨테이너가 스스로 높이(100dvh − 헤더)를 잡고 각 열이 내부 스크롤한다.
+//   1열 필터   : SubNav(전체 · 미답변 · 접속 중 · 처리 완료 + 건수) + 저장된 답변
+//   2열 대화   : sticky 헤더(대화 n · 새로고침), 행 = 사각 Chip 아바타 + 이름 + 시간 + 미리보기,
+//                선택 행은 accent-100 배경 + 좌측 3px accent(레일과 같은 표시)
+//   3열 본문   : 헤더(아바타 · 이름 · 연결 상태) → 말풍선(사각 — 내 메시지 accent 채움 / 상대 패널+테두리)
+//                → 하단 고정 답변 입력
 //
-// 시안 핸들링 원칙
+// 처리 원칙
 //   - 목록을 벗어나지 않고 연속 처리한다 (상세 페이지 왕복 없음)
-//   - J/K 로 목록 이동, ⌘↵ 로 전송
-//   - 전송 후 자동으로 다음 미답변 스레드로 이동
+//   - J/K 로 목록 이동, ⌘↵ 로 전송, 전송 후 자동으로 다음 미답변으로
 //
-// 반응형: <1024 는 목록 단일 열 + 상세는 기존 /boss/chat/[roomId] 로 푸시 전환
+// 반응형: <lg 는 목록 단일 열 + 본문은 /boss/chat/[roomId] 로 이동
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { RefreshCw, Inbox, Send, ChevronRight } from 'lucide-react';
 import { useChatRooms } from '@/hooks/useChatRooms';
 import { useChatMessages } from '@/hooks/useChatMessages';
@@ -31,6 +34,7 @@ import {
   AlertBanner,
   MonoLabel,
   Skeleton,
+  SubNav,
 } from '@/components/boss/ui';
 import {
   useBossSearch,
@@ -47,7 +51,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'done', label: '처리 완료' },
 ];
 
-// 저장된 답변 — 반복 문의를 2클릭으로 끝내기 위한 매크로 (시안 SAVED REPLY)
+// 저장된 답변 — 반복 문의를 2클릭으로 끝내기 위한 매크로
 const SAVED_REPLIES: { label: string; text: string }[] = [
   {
     label: '견적 방문 안내',
@@ -75,6 +79,7 @@ function matchesFilter(room: ChatRoom, filter: FilterKey) {
 }
 
 export default function BossChatInboxPage() {
+  const router = useRouter();
   const { chatRooms, isLoading, error, refreshChatRooms } = useChatRooms();
   const { chatAuth } = useChatAuth();
   const { query } = useBossSearch('고객명 · 메시지');
@@ -134,7 +139,7 @@ export default function BossChatInboxPage() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // ── 전송 후 다음 미답변으로 (시안 핸들링 원칙) ──
+  // ── 전송 후 다음 미답변으로 ──
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text || !isConnected) return;
@@ -153,43 +158,41 @@ export default function BossChatInboxPage() {
     inputRef.current?.focus();
   };
 
-  return (
-    <div className="boss-bleed grid grid-cols-1 lg:grid-cols-[178px_minmax(0,340px)_minmax(0,1fr)]">
-      {/* ───── 1열 필터 ───── */}
-      <div className="hidden flex-col gap-[3px] border-r border-boss-border px-3 py-[15px] lg:flex">
-        <MonoLabel className="px-2 pb-2">Filter</MonoLabel>
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            aria-current={filter === f.key}
-            onClick={() => setFilter(f.key)}
-            className="boss-subnav-item text-left"
-          >
-            <span className="min-w-0 flex-1 truncate">{f.label}</span>
-            <span className="font-boss-mono text-[10px] opacity-70">{counts[f.key]}</span>
-          </button>
-        ))}
+  const isFiltered = filter !== 'all' || query.trim().length > 0;
 
-        <MonoLabel className="px-2 pb-2 pt-4">Saved Reply</MonoLabel>
+  return (
+    // 헤더(부제 포함) 높이 ≈ 111px. lg 에서만 고정 높이 + 내부 스크롤. boss-bleed 의 min-height 는 여기서 끈다.
+    <div className="boss-bleed grid grid-cols-1 lg:h-[calc(100dvh-112px)] lg:!min-h-0 lg:grid-cols-[178px_minmax(0,340px)_minmax(0,1fr)] lg:overflow-hidden">
+      {/* ───── 1열 필터 ───── */}
+      <div className="boss-scroll hidden min-h-0 flex-col overflow-y-auto border-r border-boss-border py-[15px] lg:flex">
+        <SubNav
+          label="필터"
+          items={FILTERS.map((f) => ({ key: f.key, label: f.label, count: counts[f.key] }))}
+          value={filter}
+          onChange={(k) => setFilter(k as FilterKey)}
+        />
+
+        <MonoLabel className="px-3 pb-2 pt-5">저장된 답변</MonoLabel>
         {SAVED_REPLIES.map((r) => (
           <button
             key={r.label}
             type="button"
             onClick={() => applyReply(r.text)}
             disabled={!roomId}
-            className="rounded-chip px-2 py-[7px] text-left text-[12px] text-boss-text-tertiary transition-colors duration-[120ms] ease-out hover:bg-boss-hover hover:text-white disabled:opacity-40"
+            title={r.text}
+            className="px-3 py-[7px] text-left text-[12.5px] text-boss-text-secondary transition-colors duration-[120ms] ease-out hover:bg-boss-elevated hover:text-boss-text disabled:opacity-40"
           >
             {r.label}
           </button>
         ))}
       </div>
 
-      {/* ───── 2열 스레드 목록 ───── */}
+      {/* ───── 2열 대화 목록 ───── */}
       <div className="boss-scroll flex min-h-0 flex-col overflow-y-auto border-r border-boss-border">
-        <div className="sticky top-0 z-10 flex items-center gap-[9px] border-b border-boss-border bg-boss-shell px-[13px] py-[11px]">
-          <p className="flex-1 text-[12px] font-bold text-boss-text">
-            {filter === 'unread' ? '미답변' : '대화'} {rooms.length}
+        <div className="sticky top-0 z-10 flex items-center gap-[9px] border-b border-boss-border bg-boss-bg px-[13px] py-[9px]">
+          <p className="flex-1 text-[12.5px] font-semibold text-boss-text">
+            {filter === 'unread' ? '미답변' : '대화'}{' '}
+            <span className="font-boss-head tabular-nums text-boss-text-secondary">{rooms.length}</span>
           </p>
           <Button
             variant="ghost"
@@ -197,6 +200,7 @@ export default function BossChatInboxPage() {
             icon={RefreshCw}
             onClick={refreshChatRooms}
             disabled={isLoading}
+            className="-mr-2"
           >
             새로고침
           </Button>
@@ -224,13 +228,26 @@ export default function BossChatInboxPage() {
             ))}
           </div>
         ) : rooms.length === 0 ? (
-          <div className="p-4">
-            <EmptyState
-              icon={Inbox}
-              title="표시할 대화가 없습니다"
-              description="고객이 상담을 요청하면 여기에 표시됩니다."
-            />
-          </div>
+          error ? null : (
+            <div className="p-4">
+              <EmptyState
+                icon={Inbox}
+                title={isFiltered ? '조건에 맞는 대화가 없습니다' : '아직 대화가 없습니다'}
+                description={
+                  isFiltered
+                    ? "필터를 '전체'로 바꾸거나 검색어를 지워 보세요."
+                    : '고객이 앱에서 상담을 시작하면 여기에 쌓입니다.'
+                }
+                action={
+                  isFiltered ? (
+                    <Button variant="secondary" size="sm" onClick={() => setFilter('all')}>
+                      전체 보기
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </div>
+          )
         ) : (
           rooms.map((room, i) => {
             const active = i === index;
@@ -238,29 +255,42 @@ export default function BossChatInboxPage() {
               <button
                 key={room.roomId}
                 type="button"
-                onClick={() => setIndex(i)}
+                aria-current={active}
+                onClick={() => {
+                  setIndex(i);
+                  // 좁은 화면에서는 본문 열이 숨겨져 있다 — 대화 화면으로 이동한다
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                    router.push(`/boss/chat/${room.roomId}`);
+                  }
+                }}
                 className={`border-b border-boss-border-row px-[13px] py-3 text-left transition-colors duration-[120ms] ease-out ${
                   active
-                    ? 'bg-boss-elevated shadow-[inset_2px_0_0_0_rgb(var(--boss-primary))]'
-                    : 'hover:bg-boss-hover'
+                    ? 'bg-boss-elevated shadow-[inset_3px_0_0_0_rgb(var(--boss-primary))]'
+                    : 'hover:bg-boss-inset'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <Chip tone={chipToneOf(room.partnerName)} size={22}>
                     {room.partnerName.charAt(0)}
                   </Chip>
-                  <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-boss-text">
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-boss-text">
                     {room.partnerName}
                   </span>
-                  <span className="font-boss-mono text-[10px] text-boss-text-muted">
+                  <span className="font-boss-head text-[11px] tabular-nums text-boss-text-muted">
                     {room.lastMessageTime ?? ''}
                   </span>
                 </div>
-                <p className="mt-1.5 line-clamp-2 text-[12px] leading-[1.5] text-boss-text-body">
+                <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-[1.5] text-boss-text-body">
                   {room.lastMessage ?? '아직 메시지가 없습니다.'}
                 </p>
                 <div className="mt-[7px] flex items-center gap-[7px]">
-                  <span className="min-w-0 flex-1 truncate text-[10.5px] text-boss-text-muted">
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[11px] text-boss-text-muted">
+                    <span
+                      aria-hidden
+                      className={`inline-block h-[6px] w-[6px] rounded-full ${
+                        room.partnerStatus === 'ONLINE' ? 'bg-boss-success' : 'bg-boss-text-ghost'
+                      }`}
+                    />
                     {room.partnerStatus === 'ONLINE' ? '접속 중' : '오프라인'}
                   </span>
                   {room.unreadCount > 0 && (
@@ -273,45 +303,50 @@ export default function BossChatInboxPage() {
         )}
       </div>
 
-      {/* ───── 3열 상세 ───── */}
+      {/* ───── 3열 본문 ───── */}
       <div className="hidden min-h-0 flex-col lg:flex">
         {!selected ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <p className="text-[12px] text-boss-text-muted">
-              왼쪽에서 대화를 선택하세요 · J / K 로 이동
-            </p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-1 p-6 text-center">
+            <p className="text-[13px] text-boss-text-secondary">왼쪽에서 대화를 선택하세요</p>
+            <p className="font-boss-head text-[11.5px] text-boss-text-muted">J / K 이동 · ⌘↵ 전송</p>
           </div>
         ) : (
           <>
             {/* 헤더 */}
-            <div className="flex flex-none items-center gap-2.5 border-b border-boss-border px-[18px] py-3.5">
-              <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[#2b2f47] text-[11px] text-boss-text-dim">
+            <div className="flex flex-none items-center gap-2.5 border-b border-boss-border px-[18px] py-3">
+              <Chip tone={chipToneOf(selected.partnerName)} size={30}>
                 {selected.partnerName.charAt(0)}
-              </span>
+              </Chip>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-bold text-boss-text">
+                <p className="truncate text-[14px] font-semibold text-boss-text">
                   {selected.partnerName}
                 </p>
-                <p className="text-[11px] text-boss-text-muted">
+                <p className="flex items-center gap-1.5 text-[11.5px] text-boss-text-muted">
+                  <span
+                    aria-hidden
+                    className={`inline-block h-[6px] w-[6px] rounded-full ${
+                      isConnected ? 'bg-boss-success' : 'bg-boss-warning'
+                    }`}
+                  />
                   {isConnected ? '연결됨' : (connectionError ?? '연결 중…')}
                   {selected.unreadCount > 0 && ` · 미답변 ${selected.unreadCount}`}
                 </p>
               </div>
               <Link
                 href={`/boss/chat/${selected.roomId}`}
-                className="boss-btn boss-btn-sm boss-btn-outline"
+                className="boss-btn boss-btn-sm boss-btn-secondary"
               >
                 단독 보기 <ChevronRight size={12} />
               </Link>
             </div>
 
             {/* 메시지 */}
-            <div className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-[18px]">
+            <div className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-boss-bg p-[18px]">
               {msgLoading && messages.length === 0 ? (
-                <p className="text-center text-[12px] text-boss-text-muted">불러오는 중…</p>
+                <p className="text-center text-[12.5px] text-boss-text-secondary">불러오는 중…</p>
               ) : messages.length === 0 ? (
-                <p className="text-center text-[12px] text-boss-text-muted">
-                  아직 메시지가 없습니다.
+                <p className="text-center text-[12.5px] text-boss-text-secondary">
+                  아직 주고받은 메시지가 없습니다. 아래에서 첫 답변을 보내세요.
                 </p>
               ) : (
                 messages
@@ -321,16 +356,20 @@ export default function BossChatInboxPage() {
                     return (
                       <div
                         key={m.messageId}
-                        className={`max-w-[75%] rounded-card border px-3.5 py-3 ${
+                        className={`max-w-[75%] px-3.5 py-2.5 ${
                           mine
-                            ? 'self-end border-boss-primary/30 bg-[var(--boss-ac-dim)]'
-                            : 'self-start border-boss-border bg-boss-surface'
+                            ? 'self-end bg-boss-primary text-boss-primary-foreground'
+                            : 'self-start border border-boss-border bg-boss-surface text-boss-text'
                         }`}
                       >
-                        <p className="whitespace-pre-wrap break-words text-[13px] leading-[1.65] text-boss-text-soft">
+                        <p className="whitespace-pre-wrap break-words text-[13.5px] leading-[1.6]">
                           {m.message}
                         </p>
-                        <p className="mt-1.5 font-boss-mono text-[10px] text-boss-text-muted">
+                        <p
+                          className={`mt-1 font-boss-head text-[10.5px] tabular-nums ${
+                            mine ? 'text-boss-primary-foreground/70' : 'text-boss-text-muted'
+                          }`}
+                        >
                           {m.timeAgo}
                         </p>
                       </div>
@@ -340,18 +379,19 @@ export default function BossChatInboxPage() {
               <div ref={endRef} />
             </div>
 
-            {/* 하단 고정 답변 입력 — 시안: border #2e3250 / radius 11px / 본문 min 62px */}
-            <div className="flex-none p-[18px] pt-0">
-              <div className="overflow-hidden rounded-card border border-boss-border-strong bg-boss-inset">
+            {/* 하단 고정 답변 입력 */}
+            <div className="flex-none border-t border-boss-border bg-boss-surface p-[14px]">
+              <div className="border border-boss-border-strong bg-boss-inset transition-colors duration-[120ms] ease-out focus-within:border-boss-primary">
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={isConnected ? '답변을 입력하세요' : '연결 중…'}
+                  aria-label="답변 입력"
                   disabled={!isConnected}
-                  className="min-h-[62px] w-full resize-none bg-transparent px-3.5 py-3 text-[13px] leading-[1.6] text-boss-text-soft outline-none placeholder:text-boss-text-muted disabled:opacity-50"
+                  className="min-h-[62px] w-full resize-none bg-transparent px-3.5 py-3 text-[13.5px] leading-[1.6] text-boss-text outline-none placeholder:text-boss-text-faint disabled:opacity-50"
                 />
-                <div className="flex items-center gap-[7px] border-t border-boss-border px-[11px] py-[9px]">
+                <div className="flex items-center gap-[7px] border-t border-boss-border px-[11px] py-[8px]">
                   <select
                     value=""
                     onChange={(e) => {
@@ -359,7 +399,8 @@ export default function BossChatInboxPage() {
                       if (r) applyReply(r.text);
                     }}
                     aria-label="저장된 답변"
-                    className="rounded-[6px] border border-boss-border-strong bg-transparent px-2 py-[5px] text-[11px] text-boss-text-tertiary outline-none"
+                    disabled={!isConnected}
+                    className="border border-boss-border bg-boss-bg px-2 py-[4px] text-[11.5px] text-boss-text-dim outline-none focus:border-boss-primary disabled:opacity-50"
                   >
                     <option value="">저장된 답변</option>
                     {SAVED_REPLIES.map((r) => (
@@ -369,8 +410,8 @@ export default function BossChatInboxPage() {
                     ))}
                   </select>
                   <div className="flex-1" />
-                  <span className="hidden font-boss-mono text-[10px] text-boss-text-muted xl:block">
-                    ⌘↵ 전송 후 다음
+                  <span className="hidden font-boss-head text-[11px] text-boss-text-muted xl:block">
+                    ⌘↵ 전송 후 다음 미답변으로
                   </span>
                   <Button
                     variant="primary"

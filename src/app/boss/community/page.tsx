@@ -1,37 +1,39 @@
 'use client';
 
-// 사장님 커뮤니티 게시글 목록 — B2B 데이터 그리드
+// 사장님 커뮤니티 게시글 목록 — Industry 패턴 (agent.opentohome.com)
+//
+// 구조
+//   필터 줄(게시판 Seg + 제목·작성자 검색 + 우측 n건 · 새로고침 · 내 글 · 차단 관리)
+//   → 표(제목 · 작성자 · 댓글 · 조회 · 날짜) — 행 전체가 상세로 가는 링크
+//   → 페이지네이션
+//
+// 화면 제목과 «글쓰기» 버튼은 셸 헤더(PAGE_META)가 그린다.
+// 검색은 현재 페이지 안에서만 거른다(API 검색이 아니다) — 그 사실을 우측에 적는다.
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
   ListTabs,
   DataTable,
-  Badge,
+  StatusPill,
   EmptyState,
+  AlertBanner,
   Pagination,
-  Skeleton,
+  RowSkeleton,
+  ContentCard,
+  type StatusTone,
 } from '@/components/boss/ui';
-import {
-  RefreshCw,
-  Inbox,
-  PenSquare,
-  User as UserIcon,
-  ShieldOff,
-  MessageCircle,
-  Eye,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
 type CategoryCode = 'ALL' | 'FREE' | 'JOB' | 'ANON';
-type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
 
 const CATEGORY_TABS: { key: CategoryCode; label: string }[] = [
   { key: 'ALL', label: '전체' },
@@ -46,12 +48,12 @@ function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
   return payload.list ?? payload.content ?? [];
 }
 
-function categoryMeta(item: BbsData): { label: string; tone: BadgeTone } {
+function categoryMeta(item: BbsData): { label: string; tone: StatusTone } {
   const code = item.typeDtCd;
   const label =
     item.typeDtNm ??
     (code === 'FREE' ? '자유' : code === 'JOB' ? '구인/구직' : code === 'ANON' ? '익명' : '게시글');
-  const tone: BadgeTone = code === 'JOB' ? 'amber' : code === 'ANON' ? 'violet' : 'sky';
+  const tone: StatusTone = code === 'JOB' ? 'warn' : code === 'ANON' ? 'neutral' : 'info';
   return { label, tone };
 }
 
@@ -136,133 +138,144 @@ export default function BossCommunityListPage() {
   const isFiltering = keyword.trim().length > 0;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="사장님 커뮤니티"
-        description="도배 사장님들과 정보를 공유하는 커뮤니티입니다."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/boss/community/my"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-elevated px-3 text-xs font-medium text-boss-text-secondary transition-colors hover:border-boss-border-strong hover:bg-boss-surface hover:text-boss-text"
-            >
-              <UserIcon size={13} /> 내 글
-            </Link>
-            <Link
-              href="/boss/community/blocks"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-elevated px-3 text-xs font-medium text-boss-text-secondary transition-colors hover:border-boss-border-strong hover:bg-boss-surface hover:text-boss-text"
-            >
-              <ShieldOff size={13} /> 차단 관리
-            </Link>
-          </div>
-        }
-      />
-
-      <Toolbar>
+    <div className="flex flex-col gap-4">
+      {/* ───── 필터 줄 ───── */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={CATEGORY_TABS}
+          active={category}
+          onChange={(next) => {
+            setCategory(next);
+            setPage(1);
+          }}
+        />
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="제목·작성자 검색"
-          className="w-full max-w-xs"
+          placeholder="제목 · 작성자"
+          className="w-56"
+          hint={false}
         />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={() => void load(page)}
-          disabled={loading}
-          className={loading ? '[&>svg]:animate-spin' : ''}
-        >
-          새로고침
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={PenSquare}
-          className="ml-auto"
-          onClick={() => router.push('/boss/community/new')}
-        >
-          글쓰기
-        </Button>
-      </Toolbar>
-
-      <ListTabs
-        tabs={CATEGORY_TABS}
-        active={category}
-        onChange={(next) => {
-          setCategory(next);
-          setPage(1);
-        }}
-      />
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span
+            className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+            aria-live="polite"
+          >
+            {loading
+              ? '불러오는 중…'
+              : isFiltering
+                ? `${filtered.length}건 · 이 페이지 안에서 검색`
+                : `${page} 페이지 · ${items.length}건`}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
+            onClick={() => void load(page)}
+            disabled={loading}
+          >
+            새로고침
+          </Button>
+          <ButtonLink href="/boss/community/my" variant="secondary" size="sm">
+            내 글
+          </ButtonLink>
+          <ButtonLink href="/boss/community/blocks" variant="secondary" size="sm">
+            차단 관리
+          </ButtonLink>
+        </div>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => void load(page)}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
+      {/* ───── 표 ───── */}
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
+        <ContentCard>
+          <RowSkeleton rows={8} />
+        </ContentCard>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="게시글이 없습니다"
-          description="검색어를 확인하거나 첫 게시글을 작성하세요."
-        />
+        error ? (
+          <EmptyState
+            title="게시글을 불러오지 못했습니다"
+            description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => void load(page)}>
+                다시 시도
+              </Button>
+            }
+          />
+        ) : isFiltering ? (
+          <EmptyState
+            title={`'${keyword.trim()}' 에 맞는 글이 이 페이지에 없습니다`}
+            description="검색은 현재 페이지 안에서만 됩니다. 검색어를 바꾸거나 다른 페이지를 확인해 보세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setKeyword('')}>
+                검색 지우기
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title={category === 'ALL' ? '아직 게시글이 없습니다' : '이 게시판에 글이 없습니다'}
+            description="첫 글을 올리면 다른 사장님들이 답을 달 수 있습니다."
+            action={
+              <ButtonLink href="/boss/community/new" variant="primary" size="sm">
+                글쓰기
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
               <th>제목</th>
-              <th className="whitespace-nowrap">작성자</th>
-              <th className="text-center whitespace-nowrap">댓글 / 조회</th>
-              <th className="whitespace-nowrap">작성일</th>
-              <th />
+              <th>작성자</th>
+              <th className="num">댓글</th>
+              <th className="num">좋아요</th>
+              <th className="num">조회</th>
+              <th>날짜</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => {
               const cat = categoryMeta(item);
+              const href = `/boss/community/${item.boardId}`;
               return (
                 <tr
                   key={item.boardId}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/boss/community/${item.boardId}`)}
+                  onClick={() => router.push(href)}
                 >
-                  <td>
+                  <td className="wrap max-w-[520px]">
                     <div className="flex items-center gap-2">
-                      <Badge tone={cat.tone}>{cat.label}</Badge>
-                      <span className="line-clamp-1 font-medium text-boss-text">
+                      <StatusPill tone={cat.tone}>{cat.label}</StatusPill>
+                      <Link
+                        href={href}
+                        className="line-clamp-1 min-w-0 font-semibold !text-boss-text hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {item.subject ?? '(제목 없음)'}
-                      </span>
-                      {typeof item.replyCnt === 'number' && item.replyCnt > 0 ? (
-                        <span className="text-xs text-boss-primary">[{item.replyCnt}]</span>
-                      ) : null}
+                      </Link>
+                      
                     </div>
                   </td>
-                  <td className="whitespace-nowrap text-boss-text-secondary">
-                    {authorName(item)}
-                  </td>
-                  <td className="whitespace-nowrap text-center text-xs text-boss-text-muted">
-                    <span className="inline-flex items-center gap-1">
-                      <MessageCircle size={11} /> {item.replyCnt ?? 0}
-                    </span>
-                    <span className="mx-1.5 text-boss-border-strong">·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Eye size={11} /> {item.viewCnt ?? 0}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                  <td className="text-boss-text-secondary">{authorName(item)}</td>
+                  <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
+                  <td className="num text-boss-text-secondary">{item.likeCnt ?? 0}</td>
+                  <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
                     {relativeTime(item.crtDtm)}
-                  </td>
-                  <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => router.push(`/boss/community/${item.boardId}`)}
-                    >
-                      보기
-                    </Button>
                   </td>
                 </tr>
               );
@@ -271,19 +284,13 @@ export default function BossCommunityListPage() {
         </DataTable>
       )}
 
-      {!isFiltering ? (
+      {!isFiltering && (
         <Pagination
           page={page}
           totalPages={hasMore ? page + 1 : page}
           onChange={setPage}
           disabled={loading}
         />
-      ) : (
-        <div className="flex justify-end border-t border-boss-border pt-3">
-          <span className="rounded-md bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-muted">
-            현재 페이지 내 필터
-          </span>
-        </div>
       )}
     </div>
   );

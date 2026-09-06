@@ -1,22 +1,26 @@
 'use client';
 
+// 고객 관리 목록 — Industry 패턴 (참조 customers 표)
+// 화면 제목 · 부제는 셸 헤더(nav.ts PAGE_META)가 담당한다.
+// 필터 한 줄: 검색 + 우측 "전체 n명" + 고객 등록. 목록은 표, 삭제는 ConfirmDialog.
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
   DataTable,
   Badge,
   EmptyState,
   Pagination,
-  Skeleton,
+  RowSkeleton,
   RowActions,
   ConfirmDialog,
+  AlertBanner,
 } from '@/components/boss/ui';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import type { BossCustomerData } from '@/types/boss-customer';
-import { RefreshCw, Users, Phone, Mail } from 'lucide-react';
+import { RefreshCw, Phone, Mail, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
@@ -42,6 +46,10 @@ function formatDate(input?: string): string {
   if (digits.length < 8) return input;
   return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6, 8)}`;
 }
+
+// 행 안 아이콘 액션(전화 · 메일) — 사각 28px
+const ICON_BTN =
+  'inline-flex h-7 w-7 items-center justify-center !text-boss-text-muted transition-colors duration-[120ms] ease-out hover:bg-boss-elevated hover:!text-boss-text';
 
 export default function BossCustomerListPage() {
   const [items, setItems] = useState<BossCustomerData[]>([]);
@@ -114,59 +122,95 @@ export default function BossCustomerListPage() {
     [filtered, page],
   );
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="고객 관리"
-        description="등록된 고객 정보를 조회하고 연락합니다."
-      />
+  const isFiltering = keyword.trim().length > 0;
 
-      <Toolbar>
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 필터 한 줄 — 검색 · 우측 건수 · 고객 등록 */}
+      <div className="flex flex-wrap items-center gap-2.5">
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="이름·연락처·이메일 검색"
-          className="w-full max-w-xs"
+          placeholder="이름 · 연락처 · 이메일"
+          hint={false}
+          className="w-full sm:w-[260px]"
         />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={() => load()}
-          disabled={loading}
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
         >
+          {loading
+            ? '불러오는 중…'
+            : isFiltering
+              ? `${filtered.length.toLocaleString()}명 일치 · 전체 ${items.length.toLocaleString()}명`
+              : `전체 ${items.length.toLocaleString()}명`}
+        </span>
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => load()} disabled={loading}>
           새로고침
         </Button>
-        <div className="ml-auto">
-          <span className="rounded-md bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-muted">
-            총 {filtered.length.toLocaleString()}명
-          </span>
-        </div>
-      </Toolbar>
+        <ButtonLink href="/boss/orders/quick" variant="primary" size="sm" icon={Plus}>
+          주문과 함께 등록
+        </ButtonLink>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => load()}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
+        <div className="boss-card-content">
+          <RowSkeleton rows={8} />
+        </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="표시할 고객이 없습니다"
-          description="검색 조건을 변경하거나 새로고침하세요."
-        />
+        error ? (
+          <EmptyState
+            title="고객 목록을 불러오지 못했습니다"
+            description="네트워크 상태를 확인한 뒤 다시 시도하세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => load()}>
+                다시 시도
+              </Button>
+            }
+          />
+        ) : isFiltering ? (
+          <EmptyState
+            title="검색어에 맞는 고객이 없습니다"
+            description="이름 · 연락처 · 이메일로만 찾습니다. 검색어를 지우면 전체가 보입니다."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setKeyword('')}>
+                검색어 지우기
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="아직 등록된 고객이 없습니다"
+            description="주문을 등록하면 고객이 함께 만들어집니다. 첫 주문부터 시작해 보세요."
+            action={
+              <ButtonLink href="/boss/orders/quick" variant="primary" size="sm" icon={Plus}>
+                주문과 함께 등록
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
               <th>이름</th>
-              <th className="whitespace-nowrap">연락처</th>
+              <th>연락처</th>
               <th>이메일</th>
               <th>주소</th>
-              <th className="whitespace-nowrap">견적일</th>
+              <th>견적일</th>
               <th>상태</th>
               <th />
             </tr>
@@ -177,42 +221,42 @@ export default function BossCustomerListPage() {
               const fullAddr = [item.address1, item.address2].filter(Boolean).join(' ');
               return (
                 <tr key={item.id ?? `${item.phone}-${item.name}`}>
-                  <td className="font-medium text-boss-text">{item.name ?? '-'}</td>
-                  <td className="whitespace-nowrap text-boss-text-secondary">
-                    {item.phone ?? '-'}
+                  <td className="font-semibold text-boss-text">{item.name ?? '-'}</td>
+                  <td className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+                    {item.phone ? (
+                      <a href={`tel:${item.phone}`} aria-label={`${item.name ?? '고객'}에게 전화 ${item.phone}`}>
+                        {item.phone}
+                      </a>
+                    ) : (
+                      '-'
+                    )}
                   </td>
                   <td className="max-w-[200px]">
-                    <span className="block truncate text-boss-text-secondary">
-                      {item.email || '-'}
-                    </span>
+                    <span className="block truncate text-boss-text-secondary">{item.email || '-'}</span>
                   </td>
                   <td className="max-w-[240px]">
-                    <span className="block truncate text-boss-text-secondary">
-                      {fullAddr || '-'}
-                    </span>
+                    <span className="block truncate text-boss-text-secondary">{fullAddr || '-'}</span>
                   </td>
-                  <td className="whitespace-nowrap text-boss-text-secondary">
+                  <td className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
                     {formatDate(item.estimateDate ?? item.workDate)}
                   </td>
-                  <td>{badge ? <Badge tone={badge.tone}>{badge.label}</Badge> : <span className="text-boss-text-muted">-</span>}</td>
-                  <td className="whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1">
+                  <td>
+                    {badge ? (
+                      <Badge tone={badge.tone}>{badge.label}</Badge>
+                    ) : (
+                      <span className="text-boss-text-muted">-</span>
+                    )}
+                  </td>
+                  <td className="text-right">
+                    <div className="flex items-center justify-end gap-0.5">
                       {item.phone ? (
-                        <a
-                          href={`tel:${item.phone}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-secondary transition-colors hover:bg-boss-elevated hover:text-boss-text"
-                          title="전화"
-                        >
-                          <Phone size={14} />
+                        <a href={`tel:${item.phone}`} className={ICON_BTN} title="전화" aria-label="전화">
+                          <Phone size={14} strokeWidth={1.75} />
                         </a>
                       ) : null}
                       {item.email ? (
-                        <a
-                          href={`mailto:${item.email}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-boss-text-secondary transition-colors hover:bg-boss-elevated hover:text-boss-text"
-                          title="이메일"
-                        >
-                          <Mail size={14} />
+                        <a href={`mailto:${item.email}`} className={ICON_BTN} title="이메일" aria-label="이메일">
+                          <Mail size={14} strokeWidth={1.75} />
                         </a>
                       ) : null}
                       <RowActions
@@ -232,11 +276,11 @@ export default function BossCustomerListPage() {
         <Pagination page={page} totalPages={totalPages} onChange={setPage} disabled={loading} />
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 — 되돌릴 수 없는 액션 */}
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="고객 삭제"
-        description={`'${pendingDelete?.name ?? '선택한 고객'}'을(를) 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        title="이 고객을 삭제할까요?"
+        description={`'${pendingDelete?.name ?? '선택한 고객'}'의 정보가 지워집니다. 삭제 후 복구할 수 없습니다.`}
         loading={deleting}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => void handleDelete()}

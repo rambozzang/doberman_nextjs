@@ -1,32 +1,31 @@
 'use client';
 
+// 체크리스트 목록 — Industry 패턴
+//   체크리스트는 고객(사장님) 1인당 1건이라 표는 0 / 1 행이다.
+//   필터 줄(검색 + 새로고침 + 우측 전체 n건) → 표(DataTable). 화면 제목 · "새 체크리스트" 버튼은 셸 헤더가 그린다.
+//   첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import {
-  ClipboardCheck,
-  Plus,
-  Printer,
-  RefreshCw,
-  Inbox,
-} from 'lucide-react';
+import { Plus, Printer, RefreshCw, Inbox } from 'lucide-react';
 import { bossChecklistApi } from '@/lib/api/boss/checklist';
 import { getBossCustId } from '@/lib/api/boss/as';
 import type { CheckData } from '@/types/boss-checklist';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
   DataTable,
-  Badge,
+  ContentCard,
+  StatusPill,
+  Bar,
   EmptyState,
-  Skeleton,
+  AlertBanner,
+  RowSkeleton,
   RowActions,
   ConfirmDialog,
+  type StatusTone,
 } from '@/components/boss/ui';
-
-type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
 
 function fmtMoney(v?: string): string {
   if (!v) return '0';
@@ -48,9 +47,9 @@ function filledRooms(rooms: CheckData['roomsInfo']): number {
   ).length;
 }
 
-function statusBadge(data: CheckData): { label: string; tone: BadgeTone } {
-  if (hasMoney(data.totalPrice)) return { label: '견적완료', tone: 'violet' };
-  return { label: '작성됨', tone: 'emerald' };
+function statusBadge(data: CheckData): { label: string; tone: StatusTone } {
+  if (hasMoney(data.totalPrice)) return { label: '견적 완료', tone: 'info' };
+  return { label: '작성됨', tone: 'ok' };
 }
 
 export default function BossChecklistPage() {
@@ -126,77 +125,80 @@ export default function BossChecklistPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="체크리스트"
-        description="현장 실측 체크리스트를 작성하고 인쇄용으로 출력하세요."
-      />
-
-      <Toolbar>
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-wrap items-center gap-2.5">
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="주거형태·면적·고객 검색"
-          className="w-full max-w-xs"
+          placeholder="주거 형태 · 면적 · 비고 검색"
+          className="w-full sm:w-72"
+          hint={false}
         />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={load}
-          disabled={loading}
-        >
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
           새로고침
         </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={Plus}
-          onClick={() => router.push('/boss/checklist/new')}
-          className="ml-auto"
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
         >
-          새 체크리스트
-        </Button>
-      </Toolbar>
+          {loading && !data ? '불러오는 중…' : `전체 ${filtered.length}건`}
+        </span>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button size="sm" variant="secondary" onClick={load} disabled={loading}>
+              다시 불러오기
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {loading && !data ? (
-        <Skeleton className="h-40 rounded-lg" />
+        <ContentCard>
+          <RowSkeleton rows={2} />
+        </ContentCard>
+      ) : error && rows.length === 0 ? (
+        <EmptyState
+          icon={Inbox}
+          title="체크리스트를 불러오지 못했습니다"
+          description="네트워크 상태를 확인한 뒤 다시 불러와 주세요. 작성한 내용이 사라진 것은 아닙니다."
+        />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={Inbox}
-          title="등록된 체크리스트가 없습니다"
-          description="새 체크리스트를 작성해 보세요."
+          title="아직 작성한 체크리스트가 없습니다"
+          description="현장 실측값 · 벽지 품번 · 금액을 한 장에 정리해 두면 인쇄해서 고객과 바로 확인할 수 있습니다."
           action={
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={() => router.push('/boss/checklist/new')}
-            >
-              새 체크리스트
-            </Button>
+            <ButtonLink href="/boss/checklist/new" variant="primary" size="sm" icon={Plus}>
+              체크리스트 작성하기
+            </ButtonLink>
           }
         />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Inbox}
-          title="검색 결과가 없습니다"
-          description="검색어를 변경해 보세요."
+          title="검색어와 맞는 체크리스트가 없습니다"
+          description="주거 형태 · 면적 · 비고에서 찾습니다. 검색어를 바꿔 보세요."
+          action={
+            <Button size="sm" variant="secondary" onClick={() => setKeyword('')}>
+              검색 지우기
+            </Button>
+          }
         />
       ) : (
         <DataTable>
           <thead>
             <tr>
-              <th>제목 / 현장</th>
-              <th className="whitespace-nowrap">항목수 / 진행</th>
+              <th>현장</th>
+              <th>실측</th>
+              <th className="text-right">총액</th>
               <th>상태</th>
-              <th className="whitespace-nowrap">날짜</th>
               <th />
             </tr>
           </thead>
@@ -208,44 +210,44 @@ export default function BossChecklistPage() {
               const pct = Math.round((filled / 4) * 100);
               const printHref = `/boss/checklist/${encodeURIComponent(id)}/print`;
               return (
-                <tr
-                  key={id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(printHref)}
-                >
-                  <td>
-                    <div className="flex items-center gap-2">
+                <tr key={id} className="cursor-pointer" onClick={() => router.push(printHref)}>
+                  <td className="wrap">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
                       <span className="font-medium text-boss-text">
                         {item.housingType || '체크리스트'}
                       </span>
                       {item.areaText ? (
-                        <span className="text-boss-text-secondary">· {item.areaText}㎡</span>
+                        <span className="font-boss-head tabular-nums text-boss-text-secondary">
+                          {item.areaText}㎡
+                        </span>
                       ) : null}
                     </div>
-                    <span className="text-xs text-boss-text-muted">고객 ID: {id || '-'}</span>
+                    <span className="text-[12px] text-boss-text-muted">고객 ID {id || '-'}</span>
                   </td>
-                  <td className="whitespace-nowrap">
-                    <span className="text-boss-text-secondary">방 {filled}개</span>
-                    <span className="ml-1 text-xs text-boss-text-muted">/ {pct}% 작성</span>
+                  <td className="min-w-[160px]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-boss-head text-[13px] tabular-nums text-boss-text">
+                        {filled} / 4 방
+                      </span>
+                      <span className="w-20">
+                        <Bar pct={pct} height={4} />
+                      </span>
+                    </div>
+                  </td>
+                  <td className="num">
                     {hasMoney(item.totalPrice) ? (
-                      <div className="text-[11px] text-boss-text-muted">
-                        총액 {fmtMoney(item.totalPrice)}원
-                      </div>
-                    ) : null}
+                      `${fmtMoney(item.totalPrice)}원`
+                    ) : (
+                      <span className="text-boss-text-ghost">—</span>
+                    )}
                   </td>
                   <td>
-                    <Badge tone={badge.tone}>
-                      <ClipboardCheck size={10} /> {badge.label}
-                    </Badge>
+                    <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
                   </td>
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">-</td>
-                  <td
-                    className="whitespace-nowrap text-right"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="inline-flex items-center gap-1">
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         size="sm"
                         icon={Printer}
                         onClick={() => router.push(printHref)}
@@ -266,7 +268,7 @@ export default function BossChecklistPage() {
         </DataTable>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="체크리스트 삭제"

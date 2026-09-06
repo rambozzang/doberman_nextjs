@@ -1,34 +1,24 @@
 'use client';
 
+// 사장님 가입 신청 — Industry 패턴 (참조 agent/apply/page.tsx 와 같은 조판)
+//
+// 로그인 전 화면이라 레일(BossChrome)이 없다. AuthFrame(wide 620px) 안에
+// 번호 kicker(01·02·03)를 단 패널 세 장 — 계정 · 담당자 · 회사 — 과 하단 액션 패널.
+// 단계 전환은 없다(한 번에 제출). 검증·API 순서(가입 → 회사 생성 → 사용자 갱신)는 그대로다.
+
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { Eye, EyeOff } from 'lucide-react';
 import { bossAuthApi } from '@/lib/api/boss/auth';
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { bossUserApi } from '@/lib/api/boss/user';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { ensureDeviceId } from '@/lib/bossDeviceId';
 import type { BossSignupRequest, BossCompanyData, BossUserInfo } from '@/types/boss';
-import {
-  Building2,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  Mail,
-  Phone,
-  CheckCircle2,
-  XCircle,
-  IdCard,
-  ArrowLeft,
-  Briefcase,
-  MapPin,
-  FileText,
-} from 'lucide-react';
+import { Button, ButtonLink, Field, FieldLabel } from '@/components/boss/ui';
+import { AuthFrame } from '@/components/boss/AuthFrame';
 
 export default function BossSignupPage() {
   const router = useRouter();
@@ -197,359 +187,247 @@ export default function BossSignupPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-boss-bg">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-boss-primary/20 blur-[120px]" />
-        <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-boss-info/10 blur-[120px]" />
-      </div>
-
-      <div className="relative grid min-h-screen lg:grid-cols-2">
-        <aside className="hidden flex-col justify-between border-r border-boss-border p-12 lg:flex">
-          <Link href="/boss" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-boss-primary-hover shadow-boss-md shadow-emerald-500/30">
-              <Building2 size={20} className="text-boss-text" />
-            </div>
-            <div className="leading-tight">
-              <p className="text-base font-bold text-boss-text">도배르만</p>
-              <p className="text-[11px] font-medium text-boss-primary">PRO Workspace</p>
-            </div>
+    <AuthFrame
+      title="사장님 가입 신청"
+      description="계정 · 담당자 · 회사 정보를 입력하면 바로 사용할 수 있습니다"
+      width="wide"
+      footer={
+        <>
+          가입하면{' '}
+          <Link
+            href="/boss/help/terms"
+            className="underline underline-offset-2 !text-boss-text-secondary hover:!text-boss-text"
+          >
+            이용약관
           </Link>
-
-          <div className="space-y-6">
-            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-boss-primary/20 bg-boss-primary/5 px-3 py-1">
-              <Sparkles size={11} className="text-boss-primary" />
-              <span className="text-[11px] font-medium text-boss-primary">무료로 시작하세요</span>
+          과{' '}
+          <Link
+            href="/boss/help/privacy"
+            className="underline underline-offset-2 !text-boss-text-secondary hover:!text-boss-text"
+          >
+            개인정보처리방침
+          </Link>
+          에 동의하게 됩니다.
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Section kicker="01" title="계정">
+          {/* 아이디 + 중복확인 — 아이디를 고치면 확인 결과를 지운다 */}
+          <div>
+            <FieldLabel required htmlFor="userId">
+              아이디
+            </FieldLabel>
+            <div className="flex gap-2">
+              <input
+                id="userId"
+                type="text"
+                autoComplete="username"
+                value={userId}
+                onChange={(e) => {
+                  setUserId(e.target.value);
+                  setIsIdChecked(false);
+                  setIdCheckOk(false);
+                  setIdCheckMessage(null);
+                }}
+                className="boss-input min-w-0 flex-1"
+                placeholder="영문 · 숫자 6자 이상"
+              />
+              <Button
+                variant="secondary"
+                onClick={handleCheckId}
+                disabled={checkingId}
+                className="h-9 shrink-0"
+              >
+                {checkingId ? '확인 중…' : '중복 확인'}
+              </Button>
             </div>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-boss-text">
-              지금 가입하고
-              <br />
-              <span className="bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
-                도배 사업을 키우세요
-              </span>
-            </h1>
-            <p className="max-w-md text-sm leading-relaxed text-boss-text-muted">
-              가입 후 바로 견적·시공·매출 관리 도구를 사용할 수 있습니다.
+            <p
+              className={`mt-1 text-[12px] leading-relaxed ${
+                idCheckMessage
+                  ? idCheckOk
+                    ? 'text-boss-pill-ok-fg'
+                    : 'text-boss-error'
+                  : 'text-boss-text-secondary'
+              }`}
+            >
+              {idCheckMessage ?? '중복 확인을 거쳐야 가입할 수 있습니다.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-boss-text-muted">
-            <ShieldCheck size={13} className="text-boss-primary" />
-            <span>SSL 암호화 · 안전한 가입 절차</span>
-          </div>
-        </aside>
-
-        <section className="flex items-center justify-center px-6 py-12 sm:px-12">
-          <div className="w-full max-w-md">
-            <Link
-              href="/boss/login"
-              className="mb-6 inline-flex items-center gap-1.5 text-xs text-boss-text-muted hover:text-boss-primary"
-            >
-              <ArrowLeft size={13} /> 로그인으로 돌아가기
-            </Link>
-
-            <div className="mb-7">
-              <h2 className="text-2xl font-bold tracking-tight text-boss-text">사장님 회원가입</h2>
-              <p className="mt-2 text-sm text-boss-text-muted">도배 사장님 전용 계정을 만드세요.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* 아이디 + 중복확인 */}
-              <div>
-                <label htmlFor="userId" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                  아이디
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <IdCard
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="userId"
-                      type="text"
-                      value={userId}
-                      onChange={(e) => {
-                        setUserId(e.target.value);
-                        setIsIdChecked(false);
-                        setIdCheckOk(false);
-                        setIdCheckMessage(null);
-                      }}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="영문/숫자 6자 이상"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCheckId}
-                    disabled={checkingId}
-                    className="h-11 shrink-0 rounded-lg border border-boss-border bg-boss-surface px-4 text-xs font-semibold text-boss-text hover:border-boss-primary/30 hover:text-boss-primary disabled:opacity-50"
-                  >
-                    {checkingId ? '확인 중' : '중복확인'}
-                  </button>
-                </div>
-                {idCheckMessage && (
-                  <p
-                    className={`mt-1.5 flex items-center gap-1 text-[11px] ${
-                      idCheckOk ? 'text-boss-primary' : 'text-boss-error'
-                    }`}
-                  >
-                    {idCheckOk ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                    {idCheckMessage}
-                  </p>
-                )}
-              </div>
-
-              {/* 비밀번호 */}
-              <div>
-                <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                  비밀번호
-                </label>
-                <div className="relative">
-                  <Lock
-                    size={15}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                  />
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-10 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                    placeholder="6자 이상"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-boss-text-muted hover:text-boss-text-secondary"
-                  >
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* 이름 + 전화 */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    이름
-                  </label>
-                  <div className="relative">
-                    <User
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="홍길동"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="phone" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    전화번호
-                  </label>
-                  <div className="relative">
-                    <Phone
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="phone"
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={11}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="01012345678"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 이메일 */}
-              <div>
-                <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                  이메일
-                </label>
-                <div className="relative">
-                  <Mail
-                    size={15}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                  />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                    placeholder="example@email.com"
-                  />
-                </div>
-              </div>
-
-              {/* 회사 정보 */}
-              <div className="pt-2">
-                <div className="mb-3 flex items-center gap-2">
-                  <Briefcase size={14} className="text-boss-primary" />
-                  <h3 className="text-xs font-semibold text-boss-text-secondary">회사 정보</h3>
-                  <span className="text-[10px] text-boss-text-muted">가입 후 대시보드에 표시됩니다</span>
-                </div>
-                <div className="space-y-4 rounded-xl border border-boss-border bg-boss-surface/50 p-4">
-                  <div>
-                    <label
-                      htmlFor="companyName"
-                      className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
-                    >
-                      회사명 <span className="text-boss-error">*</span>
-                    </label>
-                    <div className="relative">
-                      <Building2
-                        size={15}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                      />
-                      <input
-                        id="companyName"
-                        type="text"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                        placeholder="(주) 도배륜"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label
-                        htmlFor="companyOwner"
-                        className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
-                      >
-                        대표자명 <span className="text-boss-error">*</span>
-                      </label>
-                      <div className="relative">
-                        <User
-                          size={15}
-                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                        />
-                        <input
-                          id="companyOwner"
-                          type="text"
-                          value={companyOwner}
-                          onChange={(e) => setCompanyOwner(e.target.value)}
-                          className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                          placeholder="홍길동"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="companyBizno"
-                        className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
-                      >
-                        사업자번호 <span className="text-boss-error">*</span>
-                      </label>
-                      <div className="relative">
-                        <FileText
-                          size={15}
-                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                        />
-                        <input
-                          id="companyBizno"
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={12}
-                          value={companyBizno}
-                          onChange={(e) => setCompanyBizno(e.target.value.replace(/[^\d-]/g, ''))}
-                          className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                          placeholder="000-00-00000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="companyPhone"
-                      className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
-                    >
-                      회사 전화번호
-                    </label>
-                    <div className="relative">
-                      <Phone
-                        size={15}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                      />
-                      <input
-                        id="companyPhone"
-                        type="tel"
-                        inputMode="numeric"
-                        maxLength={11}
-                        value={companyPhone}
-                        onChange={(e) => setCompanyPhone(e.target.value.replace(/\D/g, ''))}
-                        className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                        placeholder="0212345678"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="companyAddress1"
-                      className="mb-1.5 block text-xs font-medium text-boss-text-secondary"
-                    >
-                      기본 주소
-                    </label>
-                    <div className="relative">
-                      <MapPin
-                        size={15}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                      />
-                      <input
-                        id="companyAddress1"
-                        type="text"
-                        value={companyAddress1}
-                        onChange={(e) => setCompanyAddress1(e.target.value)}
-                        className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                        placeholder="서울시 강남구 ..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+          <div>
+            <FieldLabel required htmlFor="password">
+              비밀번호
+            </FieldLabel>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="boss-input pr-10"
+                placeholder="6자 이상"
+              />
               <button
-                type="submit"
-                disabled={loading}
-                className="group relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-boss-primary to-boss-primary-hover text-sm font-semibold text-boss-text shadow-boss-md transition-all hover:from-boss-primary-hover hover:to-boss-primary disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700"
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-boss-text-muted hover:text-boss-text"
+                aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
               >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    가입 중...
-                  </span>
+                {showPassword ? (
+                  <EyeOff size={15} strokeWidth={1.75} />
                 ) : (
-                  <>
-                    가입하기
-                    <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                  </>
+                  <Eye size={15} strokeWidth={1.75} />
                 )}
               </button>
-            </form>
-
-            <p className="mt-6 text-center text-[11px] text-boss-text-muted">
-              이미 계정이 있으신가요?{' '}
-              <Link href="/boss/login" className="font-medium text-boss-primary hover:text-boss-primary">
-                로그인
-              </Link>
-            </p>
+            </div>
           </div>
-        </section>
-      </div>
-    </div>
+        </Section>
+
+        <Section kicker="02" title="담당자">
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <Field
+              id="name"
+              label="이름"
+              required
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="홍길동"
+            />
+            <Field
+              id="phone"
+              label="휴대폰"
+              required
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              maxLength={11}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+              placeholder="01012345678"
+              hint="- 없이 숫자 11자리"
+            />
+          </div>
+          <Field
+            id="email"
+            label="이메일"
+            required
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="example@email.com"
+            hint="아이디 찾기 안내를 받을 주소입니다."
+          />
+        </Section>
+
+        <Section
+          kicker="03"
+          title="회사 정보"
+          description="대시보드와 견적서에 표시됩니다. 가입 후 설정에서 바꿀 수 있습니다."
+        >
+          <Field
+            id="companyName"
+            label="회사명"
+            required
+            type="text"
+            autoComplete="organization"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            placeholder="(주) 도배르만"
+          />
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <Field
+              id="companyOwner"
+              label="대표자명"
+              required
+              type="text"
+              value={companyOwner}
+              onChange={(e) => setCompanyOwner(e.target.value)}
+              placeholder="홍길동"
+            />
+            <Field
+              id="companyBizno"
+              label="사업자등록번호"
+              required
+              type="text"
+              inputMode="numeric"
+              maxLength={12}
+              value={companyBizno}
+              onChange={(e) => setCompanyBizno(e.target.value.replace(/[^\d-]/g, ''))}
+              placeholder="000-00-00000"
+            />
+          </div>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <Field
+              id="companyPhone"
+              label="회사 전화"
+              type="tel"
+              inputMode="numeric"
+              maxLength={11}
+              value={companyPhone}
+              onChange={(e) => setCompanyPhone(e.target.value.replace(/\D/g, ''))}
+              placeholder="0212345678"
+            />
+            <Field
+              id="companyAddress1"
+              label="기본 주소"
+              type="text"
+              autoComplete="street-address"
+              value={companyAddress1}
+              onChange={(e) => setCompanyAddress1(e.target.value)}
+              placeholder="서울시 강남구 …"
+            />
+          </div>
+        </Section>
+
+        {/* 하단 액션 패널 — 참조 ListingForm 하단 바 */}
+        <div className="boss-card flex flex-wrap items-center gap-2.5 px-4 py-3.5">
+          <span className="text-[12.5px] text-boss-text-secondary">
+            <span className="text-boss-error">*</span> 표시는 필수 항목입니다
+          </span>
+          <ButtonLink href="/boss/login" variant="secondary" className="ml-auto">
+            취소
+          </ButtonLink>
+          <Button type="submit" variant="primary" disabled={loading}>
+            {loading ? '가입 중…' : '가입하기'}
+          </Button>
+        </div>
+
+        <p className="text-center text-[12.5px] text-boss-text-secondary">
+          이미 계정이 있으신가요?{' '}
+          <Link href="/boss/login" className="font-semibold text-boss-primary underline underline-offset-2">
+            로그인
+          </Link>
+        </p>
+      </form>
+    </AuthFrame>
+  );
+}
+
+/** 번호 kicker + 17px 제목을 단 패널 — 참조 apply 의 Section */
+function Section({
+  kicker,
+  title,
+  description,
+  children,
+}: {
+  kicker: string;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="boss-card p-5">
+      <p className="boss-kicker">{kicker}</p>
+      <h2 className="boss-section-title">{title}</h2>
+      {description && (
+        <p className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">{description}</p>
+      )}
+      <div className="mt-3.5 flex flex-col gap-3.5">{children}</div>
+    </section>
   );
 }

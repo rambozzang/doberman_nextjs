@@ -1,23 +1,21 @@
 'use client';
 
+// 비밀번호 찾기 — Industry 패턴 (AuthFrame 380px 열)
+//
+// 두 단계: 본인 확인(아이디·이름·휴대폰) → 새 비밀번호. 상단에 사각 Seg 스타일 스텝 표시
+// (완료 = accent 채움, 현재 = accent-100). 검증·API 는 그대로다.
+
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { Check, Eye, EyeOff } from 'lucide-react';
 import { bossAuthApi } from '@/lib/api/boss/auth';
 import type { BossCheckUserInfoRequest, BossChangePasswordRequest } from '@/types/boss';
-import {
-  Building2,
-  User,
-  Phone,
-  Lock,
-  IdCard,
-  ArrowRight,
-  ArrowLeft,
-  ShieldCheck,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
+import { Button, Field, FieldLabel } from '@/components/boss/ui';
+import { AuthFrame } from '@/components/boss/AuthFrame';
+
+const STEPS = ['본인 확인', '새 비밀번호'];
 
 export default function BossFindPasswordPage() {
   const router = useRouter();
@@ -89,227 +87,163 @@ export default function BossFindPasswordPage() {
     }
   };
 
+  const current = step === 'verify' ? 0 : 1;
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-boss-bg">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-boss-primary/20 blur-[120px]" />
-        <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-boss-info/10 blur-[120px]" />
-      </div>
-
-      <div className="relative grid min-h-screen lg:grid-cols-2">
-        <aside className="hidden flex-col justify-between border-r border-boss-border p-12 lg:flex">
-          <Link href="/boss" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-boss-primary-hover shadow-boss-md shadow-emerald-500/30">
-              <Building2 size={20} className="text-boss-text" />
-            </div>
-            <div className="leading-tight">
-              <p className="text-base font-bold text-boss-text">도배르만</p>
-              <p className="text-[11px] font-medium text-boss-primary">PRO Workspace</p>
-            </div>
+    <AuthFrame
+      title="비밀번호 찾기"
+      description={
+        step === 'verify'
+          ? '가입 정보로 본인을 확인한 뒤 새 비밀번호를 정합니다'
+          : `${userId.trim()} 계정의 새 비밀번호를 입력해 주세요`
+      }
+      footer={
+        <>
+          아이디도 잊으셨나요?{' '}
+          <Link
+            href="/boss/find-id"
+            className="font-semibold !text-boss-primary underline underline-offset-2"
+          >
+            아이디 찾기
           </Link>
+        </>
+      }
+    >
+      <Steps items={STEPS} current={current} />
 
-          <div>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-boss-text">
-              비밀번호를
-              <br />
-              <span className="bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
-                재설정하세요
-              </span>
-            </h1>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-boss-text-muted">
-              본인 확인 후 새 비밀번호로 변경할 수 있습니다.
-            </p>
-          </div>
+      {step === 'verify' ? (
+        <form onSubmit={handleVerify} className="boss-card p-6">
+          <Field
+            id="userId"
+            label="아이디"
+            required
+            type="text"
+            autoComplete="username"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            autoFocus
+          />
+          <Field
+            id="name"
+            label="이름"
+            required
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="홍길동"
+            className="mt-4"
+          />
+          <Field
+            id="phone"
+            label="휴대폰 번호"
+            required
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={11}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+            placeholder="01012345678"
+            hint="- 없이 숫자 11자리"
+            className="mt-4"
+          />
 
-          <div className="flex items-center gap-2 text-xs text-boss-text-muted">
-            <ShieldCheck size={13} className="text-boss-primary" />
-            <span>안전한 본인 확인 절차로 보호됩니다.</span>
-          </div>
-        </aside>
+          <Button type="submit" variant="primary" disabled={loading} className="mt-5 w-full py-3">
+            {loading ? '확인 중…' : '본인 확인'}
+          </Button>
 
-        <section className="flex items-center justify-center px-6 py-12 sm:px-12">
-          <div className="w-full max-w-sm">
+          <p className="mt-5 border-t border-boss-border pt-4 text-center text-[12.5px] text-boss-text-secondary">
             <Link
               href="/boss/login"
-              className="mb-6 inline-flex items-center gap-1.5 text-xs text-boss-text-muted hover:text-boss-primary"
+              className="font-semibold text-boss-primary underline underline-offset-2"
             >
-              <ArrowLeft size={13} /> 로그인으로 돌아가기
+              로그인으로 돌아가기
             </Link>
-
-            <div className="mb-7">
-              <h2 className="text-2xl font-bold tracking-tight text-boss-text">비밀번호 찾기</h2>
-              <p className="mt-2 text-sm text-boss-text-muted">
-                {step === 'verify' ? '본인 확인 후 비밀번호를 재설정합니다.' : '새 비밀번호를 입력해주세요.'}
-              </p>
-            </div>
-
-            {/* Step indicator */}
-            <div className="mb-6 flex items-center gap-2">
-              <div
-                className={`h-1 flex-1 rounded-full ${
-                  step === 'verify' ? 'bg-boss-primary' : 'bg-emerald-700'
-                }`}
+          </p>
+        </form>
+      ) : (
+        <form onSubmit={handleReset} className="boss-card p-6">
+          <div>
+            <FieldLabel required htmlFor="newPw">
+              새 비밀번호
+            </FieldLabel>
+            <div className="relative">
+              <input
+                id="newPw"
+                type={showPw ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="boss-input pr-10"
+                placeholder="6자 이상"
+                autoFocus
               />
-              <div
-                className={`h-1 flex-1 rounded-full ${
-                  step === 'reset' ? 'bg-boss-primary' : 'bg-boss-elevated'
-                }`}
-              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-boss-text-muted hover:text-boss-text"
+                aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'}
+              >
+                {showPw ? <EyeOff size={15} strokeWidth={1.75} /> : <Eye size={15} strokeWidth={1.75} />}
+              </button>
             </div>
-
-            {step === 'verify' ? (
-              <form onSubmit={handleVerify} className="space-y-4">
-                <div>
-                  <label htmlFor="userId" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    아이디
-                  </label>
-                  <div className="relative">
-                    <IdCard
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="userId"
-                      type="text"
-                      value={userId}
-                      onChange={(e) => setUserId(e.target.value)}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="아이디"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    이름
-                  </label>
-                  <div className="relative">
-                    <User
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="홍길동"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    휴대폰 번호
-                  </label>
-                  <div className="relative">
-                    <Phone
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="phone"
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={11}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="01012345678"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-boss-primary to-boss-primary-hover text-sm font-semibold text-boss-text shadow-boss-md hover:from-boss-primary-hover hover:to-boss-primary disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      확인 중...
-                    </span>
-                  ) : (
-                    <>
-                      본인 확인
-                      <ArrowRight size={15} />
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleReset} className="space-y-4">
-                <div>
-                  <label htmlFor="newPw" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    새 비밀번호
-                  </label>
-                  <div className="relative">
-                    <Lock
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="newPw"
-                      type={showPw ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-10 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="6자 이상"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-boss-text-muted hover:text-boss-text-secondary"
-                    >
-                      {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="confirmPw" className="mb-1.5 block text-xs font-medium text-boss-text-secondary">
-                    비밀번호 확인
-                  </label>
-                  <div className="relative">
-                    <Lock
-                      size={15}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-boss-text-muted"
-                    />
-                    <input
-                      id="confirmPw"
-                      type={showPw ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-11 w-full rounded-lg border border-boss-border bg-boss-surface pl-10 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:bg-boss-surface focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                      placeholder="다시 입력"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-boss-primary to-boss-primary-hover text-sm font-semibold text-boss-text shadow-boss-md hover:from-boss-primary-hover hover:to-boss-primary disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      변경 중...
-                    </span>
-                  ) : (
-                    <>
-                      비밀번호 변경
-                      <ArrowRight size={15} />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
           </div>
-        </section>
-      </div>
-    </div>
+
+          <Field
+            id="confirmPw"
+            label="비밀번호 확인"
+            required
+            type={showPw ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="한 번 더 입력"
+            hint={
+              confirmPassword.length > 0 && confirmPassword !== newPassword ? (
+                <span className="text-boss-error">비밀번호가 일치하지 않습니다.</span>
+              ) : undefined
+            }
+            className="mt-4"
+          />
+
+          <Button type="submit" variant="primary" disabled={loading} className="mt-5 w-full py-3">
+            {loading ? '변경 중…' : '비밀번호 변경'}
+          </Button>
+        </form>
+      )}
+    </AuthFrame>
+  );
+}
+
+/** 사각 Seg 모양의 단계 표시 — 완료 = accent 채움, 현재 = accent-100 + 굵게, 이후 = 면색 */
+function Steps({ items, current }: { items: string[]; current: number }) {
+  return (
+    <ol className="mb-4 flex border border-boss-border" aria-label="진행 단계">
+      {items.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <li
+            key={label}
+            aria-current={active ? 'step' : undefined}
+            className={`flex flex-1 items-center gap-2 px-3 py-[7px] text-[13px] ${
+              i > 0 ? 'border-l border-boss-border' : ''
+            } ${
+              done
+                ? 'bg-boss-primary text-boss-primary-foreground'
+                : active
+                  ? 'bg-boss-elevated font-semibold text-boss-pill-info-fg'
+                  : 'bg-boss-bg text-boss-text-muted'
+            }`}
+          >
+            <span className="grid h-4 w-4 flex-none place-items-center font-boss-head text-[12px] tabular-nums">
+              {done ? <Check size={12} strokeWidth={2.5} /> : i + 1}
+            </span>
+            {label}
+          </li>
+        );
+      })}
+    </ol>
   );
 }

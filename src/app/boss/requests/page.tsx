@@ -1,15 +1,16 @@
 'use client';
 
-// 견적 요청 — onGo 리디자인 시안의 목록 패턴
-// 화면 제목/부제는 상단바(BossHeader)가 담당하므로 페이지 내 헤더를 두지 않는다.
+// 견적 요청 목록 — Industry 패턴 (참조 leads 표)
+// 화면 제목 · 부제 · "내 답변" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
+// 필터 한 줄: 상태 탭(ListTabs) + 헤더 검색 + 우측 "전체 n건". 목록은 표, 행 CTA 는 답변 화면으로 바로 진입.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import type { BossRequestListItem } from '@/types/boss';
 import {
-  Toolbar,
   Button,
+  ButtonLink,
   ListTabs,
   DataTable,
   Badge,
@@ -20,7 +21,7 @@ import {
   AlertBanner,
 } from '@/components/boss/ui';
 import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
-import { RefreshCw, Inbox } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 type StatusFilter = 'all' | 'new' | 'progress' | 'done';
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet';
@@ -135,10 +136,30 @@ export default function BossRequestListPage() {
   const isFiltering = tab !== 'all' || keyword.trim().length > 0;
 
   return (
-    <div className="flex flex-col gap-3.5">
-      <Toolbar>
+    <div className="flex flex-col gap-4">
+      {/* 필터 한 줄 — 상태 탭 · (헤더 검색) · 우측 건수 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={STATUS_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
+          active={tab}
+          onChange={setTab}
+        />
+        {isFiltering && (
+          <span className="text-[12px] text-boss-text-secondary">
+            <span className="font-boss-head text-[13px] font-semibold tabular-nums text-boss-primary">
+              {filtered.length}
+            </span>
+            건 일치 · 현재 페이지 안에서만 거릅니다
+          </span>
+        )}
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
+        >
+          {loading ? '불러오는 중…' : `전체 ${items.length.toLocaleString('ko-KR')}건`}
+        </span>
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           icon={RefreshCw}
           onClick={() => (page === 1 ? load(1) : setPage(1))}
@@ -146,22 +167,7 @@ export default function BossRequestListPage() {
         >
           새로고침
         </Button>
-        {isFiltering && (
-          <span className="text-[11px] text-boss-text-muted">
-            <span className="font-boss-mono text-boss-primary">{filtered.length}</span> 건 일치 ·
-            현재 페이지 내 필터
-          </span>
-        )}
-        <span className="ml-auto font-boss-mono text-[10.5px] text-boss-text-muted">
-          전체 {items.length.toLocaleString('ko-KR')}
-        </span>
-      </Toolbar>
-
-      <ListTabs
-        tabs={STATUS_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
-        active={tab}
-        onChange={setTab}
-      />
+      </div>
 
       {error && (
         <AlertBanner
@@ -177,26 +183,52 @@ export default function BossRequestListPage() {
       )}
 
       {loading && items.length === 0 ? (
-        <div className="rounded-card border border-boss-border bg-boss-surface">
+        <div className="boss-card-content">
           <RowSkeleton rows={8} />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="표시할 견적 요청이 없습니다"
-          description="필터 조건을 변경하거나 새로고침하세요."
-        />
+        error ? (
+          <EmptyState
+            title="견적 요청을 불러오지 못했습니다"
+            description="네트워크 상태를 확인한 뒤 다시 시도하세요. 서버 응답이 없으면 잠시 후에 다시 열어 주세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => load(page)}>
+                다시 시도
+              </Button>
+            }
+          />
+        ) : isFiltering ? (
+          <EmptyState
+            title="조건에 맞는 견적 요청이 없습니다"
+            description="다른 상태 탭을 고르거나 검색어를 지워 보세요. 필터는 현재 페이지 안에서만 적용됩니다."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
+                전체 보기
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="아직 들어온 견적 요청이 없습니다"
+            description="고객이 견적을 요청하면 여기에 쌓입니다. 포트폴리오를 채워 두면 요청이 늘어납니다."
+            action={
+              <ButtonLink href="/boss/portfolio" variant="secondary" size="sm">
+                포트폴리오 관리
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
-              <th className="whitespace-nowrap">#</th>
+              <th>번호</th>
               <th>유형</th>
               <th>지역</th>
-              <th className="whitespace-nowrap">희망일</th>
+              <th>희망일</th>
               <th>상태</th>
-              <th className="text-center whitespace-nowrap">답변</th>
-              <th className="whitespace-nowrap">접수</th>
+              <th className="text-right">답변</th>
+              <th>접수</th>
               <th />
             </tr>
           </thead>
@@ -209,7 +241,7 @@ export default function BossRequestListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/requests/${item.id}`)}
                 >
-                  <td className="whitespace-nowrap font-boss-mono text-[11px] text-boss-text-muted">
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
                     {item.id}
                   </td>
                   <td>
@@ -217,18 +249,18 @@ export default function BossRequestListPage() {
                       {item.buildingType ?? '견적 요청'}
                     </span>
                     {item.areaSize ? (
-                      <span className="ml-1.5 font-boss-mono text-[11px] text-boss-text-secondary">
+                      <span className="ml-1.5 font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
                         {item.areaSize}㎡
                       </span>
                     ) : null}
                     {item.roomCount ? (
-                      <span className="ml-1.5 text-[11px] text-boss-text-muted">
+                      <span className="ml-1.5 text-[12px] text-boss-text-secondary">
                         방 {item.roomCount}개
                       </span>
                     ) : null}
                   </td>
                   <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
-                  <td className="whitespace-nowrap font-boss-mono text-[12px] text-boss-text-secondary">
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
                     {item.preferredDate ?? '-'}
                   </td>
                   <td>
@@ -239,13 +271,13 @@ export default function BossRequestListPage() {
                       ? item.answerCount
                       : '-'}
                   </td>
-                  <td className="whitespace-nowrap font-boss-mono text-[11px] text-boss-text-muted">
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
                     {relativeTime(item.createdDt ?? item.requestDate)}
                   </td>
-                  <td className="whitespace-nowrap text-right">
+                  <td className="text-right">
                     <RowActions
                       editLabel="답변"
-                      onEdit={() => router.push(`/boss/requests/${item.id}`)}
+                      onEdit={() => router.push(`/boss/requests/${item.id}/answer`)}
                     />
                   </td>
                 </tr>

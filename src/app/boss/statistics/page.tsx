@@ -1,14 +1,22 @@
 'use client';
 
+// 종합 통계 — Industry 패턴 (agent.opentohome.com)
+//
+// 구조
+//   필터 줄(기준 설명 + 우측 새로고침)
+//   → KPI 4장 (StatCard · 전월 대비 델타는 응답에 있는 값만 쓴다)
+//   → 2열: 좌 매출 추이(recharts Line) / 우 이번 달 상태 분포(누적 막대 + 행)
+//   → 월별 건수(recharts Bar)
+//
+// 차트 규칙: 선·막대 accent, 축 글자 text-muted, 그리드 border-row, 툴팁은 패널색 사각 테두리.
+// 그라데이션 · 글로우 없음, 막대 radius 0. 숫자는 Barlow Condensed.
+
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -16,16 +24,16 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import toast from 'react-hot-toast';
-import { BarChart3, RefreshCw, TrendingUp, FileText, Hammer, CheckCircle2 } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { bossStatsApi, buildRecentMonthsParams } from '@/lib/api/boss/stats';
 import type { BossMonthlyStat, BossCurrentMonthStats } from '@/types/boss-stats';
 import {
-  PageHeader,
-  Card,
+  ContentCard,
+  CardHead,
   StatCard,
-  SectionHeader,
-  EmptyState,
   Button,
+  AlertBanner,
+  Skeleton,
 } from '@/components/boss/ui';
 
 function extractList(data: unknown): BossMonthlyStat[] {
@@ -51,13 +59,51 @@ function fmtWon(n?: number): string {
   return `₩${n.toLocaleString('ko-KR')}`;
 }
 
-const CHART_STYLE = {
-  grid: 'rgb(var(--boss-border))',
+/** 전월 대비 증감률. 기준값이 없거나 0 이면 그리지 않는다(지어내지 않는다). */
+function deltaOf(cur?: number, prev?: number): number | undefined {
+  if (cur == null || prev == null || prev === 0) return undefined;
+  return ((cur - prev) / prev) * 100;
+}
+
+// ── 차트 스타일 (boss 토큰을 rgb(var()) 로 직접 참조) ──
+const CHART = {
+  primary: 'rgb(var(--boss-primary))',
+  grid: 'rgb(var(--boss-border-row))',
   axis: 'rgb(var(--boss-text-muted))',
-  tooltipBg: 'rgb(var(--boss-surface))',
-  tooltipBorder: 'rgb(var(--boss-border))',
-  tooltipLabel: 'rgb(var(--boss-text-secondary))',
+  cursor: 'rgb(var(--boss-elevated))',
 };
+
+const AXIS_TICK = { fontSize: 11, fontFamily: 'var(--boss-font-head)', fill: CHART.axis };
+
+const TOOLTIP_STYLE = {
+  background: 'rgb(var(--boss-surface))',
+  border: '1px solid rgb(var(--boss-border))',
+  borderRadius: 0,
+  boxShadow: 'var(--boss-shadow)',
+  fontSize: '12px',
+  padding: '6px 10px',
+  color: 'rgb(var(--boss-text))',
+};
+
+const TOOLTIP_LABEL_STYLE = {
+  color: 'rgb(var(--boss-text-secondary))',
+  marginBottom: '2px',
+  fontFamily: 'var(--boss-font-head)',
+};
+
+const TOOLTIP_ITEM_STYLE = {
+  color: 'rgb(var(--boss-text))',
+  fontFamily: 'var(--boss-font-head)',
+  fontVariantNumeric: 'tabular-nums',
+};
+
+// 상태 분포 — 막대 색은 boss 토큰 클래스
+const STATUS_BAR: { key: keyof BossCurrentMonthStats; name: string; cls: string }[] = [
+  { key: 'inProgressCount', name: '진행 중', cls: 'bg-boss-primary' },
+  { key: 'collectingCount', name: '수금 중', cls: 'bg-boss-warning' },
+  { key: 'completedCount', name: '완료', cls: 'bg-boss-success' },
+  { key: 'canceledCount', name: '취소', cls: 'bg-boss-text-ghost' },
+];
 
 export default function BossStatisticsPage() {
   const [loading, setLoading] = useState(true);
@@ -112,25 +158,28 @@ export default function BossStatisticsPage() {
     [monthly],
   );
 
-  const statusData = useMemo(() => {
-    const c = current;
-    return [
-      { name: '진행중', value: c?.inProgressCount ?? 0, color: 'rgb(var(--boss-info))' },
-      { name: '수금중', value: c?.collectingCount ?? 0, color: 'rgb(var(--boss-warning))' },
-      { name: '완료', value: c?.completedCount ?? 0, color: 'rgb(var(--boss-primary))' },
-      { name: '취소', value: c?.canceledCount ?? 0, color: 'rgb(var(--boss-text-muted))' },
-    ];
-  }, [current]);
+  const statusData = useMemo(
+    () =>
+      STATUS_BAR.map((s) => ({
+        ...s,
+        value: (current?.[s.key] as number | undefined) ?? 0,
+      })),
+    [current],
+  );
 
   const statusTotal = statusData.reduce((s, d) => s + d.value, 0);
 
+  const emptyText = (what: string) =>
+    error
+      ? `${what}을(를) 불러오지 못했습니다. 위의 다시 시도를 눌러 주세요.`
+      : `아직 집계된 ${what}이(가) 없습니다. 주문이 등록되면 다음 집계부터 표시됩니다.`;
+
   return (
-    <div className="space-y-4">
-      <PageHeader
-        eyebrow="종합 통계"
-        title="통계 대시보드"
-        description="최근 12개월의 매출 추이와 현재월 상태를 한눈에 확인하세요."
-        actions={
+    <div className="flex flex-col gap-4">
+      {/* ───── 필터 줄 ───── */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <p className="text-[12px] text-boss-text-muted">최근 12개월 · 이번 달은 오늘까지 집계</p>
+        <div className="ml-auto">
           <Button
             variant="secondary"
             size="sm"
@@ -140,118 +189,186 @@ export default function BossStatisticsPage() {
           >
             새로고침
           </Button>
-        }
-      />
-
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="이번달 수금" value={fmtWon(current?.collectedAmount)} icon={TrendingUp} loading={loading} />
-        <StatCard label="이번달 건수" value={`${(current?.totalCount ?? 0).toLocaleString('ko-KR')}건`} icon={FileText} loading={loading} />
-        <StatCard label="진행 중" value={`${(current?.inProgressCount ?? 0).toLocaleString('ko-KR')}건`} icon={Hammer} loading={loading} />
-        <StatCard label="완료" value={`${(current?.completedCount ?? 0).toLocaleString('ko-KR')}건`} icon={CheckCircle2} loading={loading} />
-      </section>
+        </div>
+      </div>
 
       {error && !loading && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => fetchAll()}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <SectionHeader title="매출 트렌드" description="최근 12개월 매출 합계" />
-          {loading ? (
-            <div className="h-56 animate-pulse rounded-lg bg-boss-elevated" />
-          ) : chartData.length === 0 ? (
-            <EmptyState icon={TrendingUp} title="데이터가 없습니다" description="통계가 집계되면 표시됩니다." />
-          ) : (
-            <ResponsiveContainer width="100%" height={256}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="statRevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(var(--boss-primary))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="rgb(var(--boss-primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="2 4" stroke={CHART_STYLE.grid} vertical={false} />
-                <XAxis dataKey="label" stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${Math.round(v / 10000)}만`} />
-                <Tooltip
-                  contentStyle={{ background: CHART_STYLE.tooltipBg, border: `1px solid ${CHART_STYLE.tooltipBorder}`, borderRadius: '6px', fontSize: '11px', padding: '6px 10px' }}
-                  labelStyle={{ color: CHART_STYLE.tooltipLabel, marginBottom: '2px' }}
-                  formatter={(v) => fmtWon(Number(v))}
-                />
-                <Area type="monotone" dataKey="amount" stroke="rgb(var(--boss-primary))" strokeWidth={1.5} fill="url(#statRevGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
-
-        <Card>
-          <SectionHeader
-            title="상태 분포"
-            description={statusTotal > 0 ? `총 ${statusTotal}건` : '이번 달 기준'}
-          />
-          {loading ? (
-            <div className="h-44 animate-pulse rounded-lg bg-boss-elevated" />
-          ) : statusTotal === 0 ? (
-            <div className="flex h-44 items-center justify-center text-xs text-boss-text-muted">
-              데이터가 없습니다
-            </div>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie data={statusData} dataKey="value" innerRadius={48} outerRadius={72} paddingAngle={2} strokeWidth={0}>
-                    {statusData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: CHART_STYLE.tooltipBg, border: `1px solid ${CHART_STYLE.tooltipBorder}`, borderRadius: '6px', fontSize: '11px', padding: '6px 10px' }}
-                    labelStyle={{ color: CHART_STYLE.tooltipLabel }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <ul className="mt-3 space-y-1.5 border-t border-boss-border pt-3">
-                {statusData.map((s) => (
-                  <li key={s.name} className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-boss-text-muted">
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
-                      {s.name}
-                    </span>
-                    <span className="font-mono font-semibold tabular-nums text-boss-text">
-                      {s.value}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </Card>
+      {/* ───── KPI 4장 ───── */}
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard
+          label="이번 달 수금"
+          value={fmtWon(current?.collectedAmount)}
+          delta={deltaOf(current?.collectedAmount, current?.lastMonthCollectedAmount)}
+          hint="전월 같은 기준 대비"
+          loading={loading}
+        />
+        <StatCard
+          label="이번 달 건수"
+          value={`${(current?.totalCount ?? 0).toLocaleString('ko-KR')}건`}
+          delta={deltaOf(current?.totalCount, current?.lastMonthTotalCount)}
+          hint="등록된 주문 수"
+          loading={loading}
+        />
+        <StatCard
+          label="진행 중"
+          value={`${(current?.inProgressCount ?? 0).toLocaleString('ko-KR')}건`}
+          hint="시공 중인 현장"
+          loading={loading}
+        />
+        <StatCard
+          label="완료"
+          value={`${(current?.completedCount ?? 0).toLocaleString('ko-KR')}건`}
+          delta={deltaOf(current?.completedCount, current?.lastMonthCompletedCount)}
+          hint="이번 달 마무리한 현장"
+          loading={loading}
+        />
       </section>
 
-      <Card>
-        <SectionHeader title="월별 건수" description="최근 12개월 시공 건수" />
-        {loading ? (
-          <div className="h-48 animate-pulse rounded-lg bg-boss-elevated" />
-        ) : chartData.length === 0 ? (
-          <EmptyState icon={BarChart3} title="데이터가 없습니다" description="통계가 집계되면 표시됩니다." />
-        ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke={CHART_STYLE.grid} vertical={false} />
-              <XAxis dataKey="label" stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke={CHART_STYLE.axis} fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip
-                cursor={{ fill: 'rgb(var(--boss-primary) / 0.04)' }}
-                contentStyle={{ background: CHART_STYLE.tooltipBg, border: `1px solid ${CHART_STYLE.tooltipBorder}`, borderRadius: '6px', fontSize: '11px', padding: '6px 10px' }}
-                labelStyle={{ color: CHART_STYLE.tooltipLabel }}
-              />
-              <Bar dataKey="count" fill="rgb(var(--boss-info))" radius={[4, 4, 0, 0]} maxBarSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </Card>
+      {/* ───── 2열: 매출 추이 / 상태 분포 ───── */}
+      <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+        <ContentCard className="lg:col-span-2">
+          <CardHead title="매출 추이" meta="최근 12개월 수금액" />
+          <div className="p-5">
+            {loading ? (
+              <Skeleton className="h-[240px]" />
+            ) : chartData.length === 0 ? (
+              <p className="py-10 text-center text-[13px] text-boss-text-secondary">
+                {emptyText('매출')}
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid stroke={CHART.grid} vertical={false} />
+                  <XAxis dataKey="label" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis
+                    tick={AXIS_TICK}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => `${Math.round(v / 10000)}만`}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: CHART.grid }}
+                    contentStyle={TOOLTIP_STYLE}
+                    labelStyle={TOOLTIP_LABEL_STYLE}
+                    itemStyle={TOOLTIP_ITEM_STYLE}
+                    formatter={(v) => [fmtWon(Number(v)), '수금']}
+                  />
+                  <Line
+                    type="linear"
+                    dataKey="amount"
+                    stroke={CHART.primary}
+                    strokeWidth={1.5}
+                    dot={{ r: 2.5, fill: CHART.primary, strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: CHART.primary, strokeWidth: 0 }}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </ContentCard>
+
+        <ContentCard>
+          <CardHead
+            title="상태 분포"
+            meta="이번 달"
+            count={statusTotal > 0 ? `${statusTotal.toLocaleString('ko-KR')}건` : undefined}
+            countTone="muted"
+          />
+          <div className="p-5">
+            {loading ? (
+              <Skeleton className="h-[176px]" />
+            ) : statusTotal === 0 ? (
+              <p className="py-10 text-center text-[13px] text-boss-text-secondary">
+                {emptyText('주문')}
+              </p>
+            ) : (
+              <>
+                {/* 누적 막대 — 참조 게이지 */}
+                <div className="flex h-2 w-full overflow-hidden bg-[#d4d4d7]">
+                  {statusData
+                    .filter((s) => s.value > 0)
+                    .map((s) => (
+                      <span
+                        key={s.name}
+                        className={`block h-full ${s.cls}`}
+                        style={{ width: `${(s.value / statusTotal) * 100}%` }}
+                        title={`${s.name} ${s.value}건`}
+                      />
+                    ))}
+                </div>
+                <dl className="mt-3 flex flex-col">
+                  {statusData.map((s) => (
+                    <div
+                      key={s.name}
+                      className="flex items-center justify-between gap-3 border-b border-boss-border-row py-2 text-[13px] last:border-b-0"
+                    >
+                      <dt className="flex items-center gap-2 text-boss-text-secondary">
+                        <span className={`h-[7px] w-[7px] flex-none ${s.cls}`} />
+                        {s.name}
+                      </dt>
+                      <dd className="font-boss-head text-[15px] font-semibold tabular-nums text-boss-text">
+                        {s.value.toLocaleString('ko-KR')}
+                        <span className="ml-1.5 text-[11px] font-normal text-boss-text-muted">
+                          {((s.value / statusTotal) * 100).toFixed(0)}%
+                        </span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+          </div>
+        </ContentCard>
+      </section>
+
+      {/* ───── 월별 건수 ───── */}
+      <ContentCard>
+        <CardHead title="월별 건수" meta="최근 12개월 시공 건수" />
+        <div className="p-5">
+          {loading ? (
+            <Skeleton className="h-[200px]" />
+          ) : chartData.length === 0 ? (
+            <p className="py-10 text-center text-[13px] text-boss-text-secondary">
+              {emptyText('건수')}
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke={CHART.grid} vertical={false} />
+                <XAxis dataKey="label" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip
+                  cursor={{ fill: CHART.cursor }}
+                  contentStyle={TOOLTIP_STYLE}
+                  labelStyle={TOOLTIP_LABEL_STYLE}
+                  itemStyle={TOOLTIP_ITEM_STYLE}
+                  formatter={(v) => [`${Number(v).toLocaleString('ko-KR')}건`, '건수']}
+                />
+                <Bar
+                  dataKey="count"
+                  fill={CHART.primary}
+                  radius={0}
+                  maxBarSize={40}
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </ContentCard>
     </div>
   );
 }

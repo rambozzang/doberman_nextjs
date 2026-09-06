@@ -1,31 +1,43 @@
 'use client';
 
-// 사장님 일간 캘린더 — Flutter `day_view_page.dart` 대응
-// 24시간 시간대를 세로 grid 로 그리고, 해당 날짜의 이벤트를 시간대 위치에 절대배치한다.
+// 사장님 일별 일정 — Industry 패턴 (agent.opentohome.com)
+// Flutter `day_view_page.dart` 대응. 24시간 세로 그리드에 그날 일정을 절대배치한다.
+//
+//   상단 : ‹ › + 날짜(Barlow Condensed) + 오늘 + 날짜 입력 · 우측 보기 전환(월간/주간/일간) + 새로고침
+//   본문 : 패널 안 시간 열(11px 숫자) + 일정 블록(사각 · 좌측 3px 종류 색 · Tag 색쌍 배경)
+//
+// 화면 제목은 셸 헤더(PAGE_META)가 그린다.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  CalendarDays,
-  Clock,
   MapPin,
   Phone,
   Bell,
   Repeat,
 } from 'lucide-react';
+import {
+  AlertBanner,
+  Button,
+  ButtonLink,
+  ContentCard,
+  Segmented,
+  type StatusTone,
+} from '@/components/boss/ui';
 import { bossCalendarApi, parseBossDateTime, formatLocalDate } from '@/lib/api/boss/calendar';
 import type { CalendarEvent } from '@/types/boss-calendar';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-function eventColor(type?: string | null): string {
-  if (type === 'estimate') return '#8fb2ff';
-  if (type === 'construction') return '#8fdca8';
-  if (type === 'appointment') return '#c9cbe0';
-  return '#6c7093';
+// 종류 → Tag 색쌍 (월간 화면과 같은 매핑)
+function eventTone(type?: string | null): StatusTone {
+  if (type === 'estimate') return 'info';
+  if (type === 'construction') return 'ok';
+  return 'neutral';
 }
 
 function eventLabel(type?: string | null): string {
@@ -35,7 +47,17 @@ function eventLabel(type?: string | null): string {
   return '기타';
 }
 
+// 블록 색 — 배경은 Tag 색쌍, 좌측 선은 시맨틱 색
+const BLOCK_CLS: Record<StatusTone, string> = {
+  ok: 'bg-boss-pill-ok text-boss-pill-ok-fg border-l-boss-success',
+  warn: 'bg-boss-pill-warn text-boss-pill-warn-fg border-l-boss-warning',
+  bad: 'bg-boss-pill-bad text-boss-pill-bad-fg border-l-boss-error',
+  neutral: 'bg-boss-inset text-boss-text border-l-boss-text-ghost',
+  info: 'bg-boss-pill-info text-boss-pill-info-fg border-l-boss-primary',
+};
+
 export default function BossCalendarDayPage() {
+  const router = useRouter();
   const [date, setDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,90 +128,90 @@ export default function BossCalendarDayPage() {
   };
   const goToday = () => setDate(new Date());
 
-  return (
-    <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-boss-text">
-            <CalendarDays size={20} className="text-boss-primary" /> 일간 일정
-          </h1>
-          <p className="text-sm text-boss-text-muted">하루 단위로 시간대별 일정을 확인하세요.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
-          </button>
-          <Link
-            href="/boss/calendar"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-          >
-            월간
-          </Link>
-          <Link
-            href="/boss/calendar/week"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-          >
-            주간
-          </Link>
-        </div>
-      </div>
+  const today = new Date();
+  const isToday =
+    today.getFullYear() === date.getFullYear() &&
+    today.getMonth() === date.getMonth() &&
+    today.getDate() === date.getDate();
 
-      {/* 날짜 네비게이션 */}
-      <div className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface px-4 py-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={goPrev}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <h2 className="min-w-[180px] text-center text-lg font-semibold text-boss-text">
-            {date.getFullYear()}.{date.getMonth() + 1}.{date.getDate()} (
-            {['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})
-          </h2>
-          <button
-            type="button"
-            onClick={goNext}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={goToday}
-            className="ml-2 rounded-md border border-boss-border bg-boss-surface px-3 py-1.5 text-xs text-boss-text-secondary hover:text-boss-text"
-          >
-            오늘
-          </button>
+  return (
+    <div className="flex flex-col gap-3.5">
+      {/* 상단 컨트롤 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="inline-flex">
+          <Button variant="secondary" size="sm" onClick={goPrev} aria-label="전날">
+            <ChevronLeft size={13} />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goNext} aria-label="다음 날" className="-ml-px">
+            <ChevronRight size={13} />
+          </Button>
         </div>
+        <h2 className="whitespace-nowrap font-boss-head text-[20px] font-semibold tabular-nums tracking-[-0.01em] text-boss-text">
+          {date.getFullYear()}.{date.getMonth() + 1}.{date.getDate()}{' '}
+          <span className="text-[15px] font-medium text-boss-text-secondary">
+            {WEEK_LABELS[date.getDay()]}
+            {isToday ? ' · 오늘' : ''}
+          </span>
+        </h2>
+        <Button variant="secondary" size="sm" onClick={goToday}>
+          오늘
+        </Button>
         <input
           type="date"
+          aria-label="날짜 선택"
           value={dateKey}
           onChange={(e) => {
             const [y, m, d] = e.target.value.split('-').map(Number);
             setDate(new Date(y, (m ?? 1) - 1, d ?? 1));
           }}
-          className="h-9 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
+          className="boss-input !h-[30px] !w-auto text-[12.5px]"
         />
+        <div className="flex-1" />
+        <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+          {loading ? '불러오는 중…' : `${positioned.length}건`}
+        </span>
+        <Segmented
+          ariaLabel="보기 전환"
+          value="day"
+          onChange={(k) => {
+            if (k === 'month') router.push('/boss/calendar');
+            if (k === 'week') router.push('/boss/calendar/week');
+          }}
+          options={[
+            { key: 'month', label: '월간' },
+            { key: 'week', label: '주간' },
+            { key: 'day', label: '일간' },
+          ]}
+        />
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={() => void load()}
+          disabled={loading}
+        >
+          새로고침
+        </Button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => void load()}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {/* 24시간 타임라인 */}
-      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
+      <ContentCard>
         <div className="relative flex">
-          {/* 시간 컬럼 */}
-          <div className="w-14 shrink-0 border-r border-boss-border bg-boss-surface text-xs text-boss-text-muted">
+          {/* 시간 열 */}
+          <div className="w-14 shrink-0 border-r border-boss-border bg-boss-inset font-boss-head text-[11px] tabular-nums text-boss-text-muted">
             {HOURS.map((h) => (
               <div
                 key={h}
@@ -200,13 +222,13 @@ export default function BossCalendarDayPage() {
               </div>
             ))}
           </div>
-          {/* 이벤트 영역 */}
+          {/* 일정 영역 */}
           <div className="relative flex-1">
             {HOURS.map((h) => (
               <div
                 key={h}
                 style={{ height: `${HOUR_HEIGHT}px` }}
-                className="border-b border-boss-border/60"
+                className="border-b border-boss-border-row last:border-b-0"
               />
             ))}
             {positioned.map(({ ev, top, height, start, end }, idx) => {
@@ -215,53 +237,58 @@ export default function BossCalendarDayPage() {
                 start && end
                   ? `${pad(start.getHours())}:${pad(start.getMinutes())} ~ ${pad(end.getHours())}:${pad(end.getMinutes())}`
                   : '';
+              const tone = eventTone(ev.eventType);
               return (
                 <div
                   key={`${ev.id}-${idx}`}
-                  style={{
-                    top: `${top}px`,
-                    height: `${height}px`,
-                    backgroundColor: eventColor(ev.eventType) + '20',
-                    borderLeftColor: eventColor(ev.eventType),
-                  }}
-                  className="absolute left-2 right-2 overflow-hidden rounded-lg border-l-4 border-boss-border bg-boss-surface p-2 text-xs"
+                  style={{ top: `${top}px`, height: `${height}px` }}
+                  className={`absolute left-2 right-2 overflow-hidden border-l-[3px] px-2.5 py-1.5 text-[12px] ${BLOCK_CLS[tone]}`}
+                  title={ev.title ?? ''}
                 >
-                  <div className="mb-0.5 flex items-center gap-1.5">
-                    <span className="text-[10px] font-semibold text-boss-text-muted">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10.5px] font-semibold uppercase tracking-[0.06em] opacity-80">
                       {eventLabel(ev.eventType)}
                     </span>
-                    {ev.isrepeat && <Repeat size={10} className="text-boss-text-muted" />}
-                    {ev.isreminder && <Bell size={10} className="text-boss-warning" />}
+                    <span className="font-boss-head text-[11px] tabular-nums opacity-80">{timeStr}</span>
+                    {ev.isrepeat && <Repeat size={10} aria-label="반복" />}
+                    {ev.isreminder && <Bell size={10} aria-label="알림" />}
                   </div>
-                  <div className="truncate text-sm font-semibold text-boss-text">
-                    {ev.title || '제목 없음'}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-boss-text-muted">
-                    <span className="flex items-center gap-1">
-                      <Clock size={9} /> {timeStr}
-                    </span>
-                    {ev.location && (
-                      <span className="flex items-center gap-1 truncate">
-                        <MapPin size={9} /> {ev.location}
-                      </span>
-                    )}
-                    {ev.phone && (
-                      <span className="flex items-center gap-1">
-                        <Phone size={9} /> {ev.phone}
-                      </span>
-                    )}
-                  </div>
+                  <div className="truncate text-[13.5px] font-semibold">{ev.title || '제목 없음'}</div>
+                  {(ev.location || ev.phone) && (
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11.5px] opacity-80">
+                      {ev.location && (
+                        <span className="flex min-w-0 items-center gap-1 truncate">
+                          <MapPin size={10} /> {ev.location}
+                        </span>
+                      )}
+                      {ev.phone && (
+                        <span className="flex items-center gap-1 font-boss-head tabular-nums">
+                          <Phone size={10} /> {ev.phone}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
-            {positioned.length === 0 && !loading && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-boss-text-muted">
-                등록된 일정이 없습니다.
+            {loading && positioned.length === 0 && (
+              <div className="absolute inset-x-0 top-0 flex h-[224px] items-center justify-center text-[13px] text-boss-text-secondary">
+                불러오는 중…
+              </div>
+            )}
+            {positioned.length === 0 && !loading && !error && (
+              <div className="absolute inset-x-0 top-0 flex h-[224px] flex-col items-center justify-center gap-3 text-center">
+                <p className="text-[13px] text-boss-text-secondary">
+                  {isToday ? '오늘' : '이 날'}은 잡힌 일정이 없습니다.
+                </p>
+                <ButtonLink href="/boss/calendar" variant="secondary" size="sm">
+                  월간 화면에서 등록
+                </ButtonLink>
               </div>
             )}
           </div>
         </div>
-      </div>
+      </ContentCard>
     </div>
   );
 }

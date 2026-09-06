@@ -1,8 +1,12 @@
 'use client';
 
-// 사장님 포트폴리오 목록
-// Flutter `lib/app/portfolio/portfolio_list_page.dart` 의 기능을
-// B2B 다크 톤으로 재구성한다. 실 API: GET /portfolios/{custId}
+// 사장님 포트폴리오 목록 — Industry 패턴
+// Flutter `lib/app/portfolio/portfolio_list_page.dart` 의 기능. 실 API: GET /portfolios/{custId}
+//
+// 사진이 주인공인 유일한 목록이라 카드 그리드를 허용한다 — 사각 썸네일(4:3) + 아래 제목 · 메타 · 태그.
+// hover 는 테두리만 진해진다. 필터 줄 한 줄: ListTabs(공개 상태) + 정렬 Seg + 우측 "전체 n건".
+// 검색은 헤더 검색(`/`)을 그대로 쓴다. 표 보기(ViewToggle)도 남긴다.
+
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,28 +14,15 @@ import toast from 'react-hot-toast';
 import { bossPortfolioApi } from '@/lib/api/boss/portfolio';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossPortfolioItem } from '@/types/boss-portfolio';
-import {
-  Image as ImageIcon,
-  RefreshCw,
-  Plus,
-  Eye,
-  EyeOff,
-  MapPin,
-  Ruler,
-  Calendar,
-  Inbox,
-  Link as LinkIcon,
-} from 'lucide-react';
+import { Image as ImageIcon, RefreshCw, Plus, Link as LinkIcon } from 'lucide-react';
 import {
   Toolbar,
   Button,
+  ButtonLink,
   ListTabs,
   DataTable,
-  Card,
-  Badge,
-  StatCard,
   StatusPill,
-  MetricBox,
+  TagPill,
   DashedCta,
   AlertBanner,
   Segmented,
@@ -182,46 +173,25 @@ export default function BossPortfolioListPage() {
   );
   const privateCount = items.length - publicCount;
 
+  // 첫 조회 실패(아무것도 못 받음)와 0건은 다르게 말한다
+  const failedEmpty = !!error && items.length === 0;
+  const filtered = keyword.trim().length > 0 || tab !== 'all';
+
   return (
     <div className="flex flex-col gap-3.5">
-      {/* 시안 채널 화면: KPI → 섹션 헤더 → 카드 그리드 */}
-      <section className="grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
-        <StatCard
-          label="등록된 사례"
-          value={items.length.toLocaleString()}
-          delta={publicCount > 0 ? `공개 ${publicCount}` : undefined}
-          deltaTone="ok"
-          hint="전체 포트폴리오"
-          loading={loading}
-        />
-        <StatCard
-          label="비공개"
-          value={privateCount.toLocaleString()}
-          delta={privateCount > 0 ? '노출 안 됨' : undefined}
-          deltaTone="warn"
-          hint="고객에게 보이지 않습니다"
-          loading={loading}
-        />
-        <StatCard
-          label="공개율"
-          value={`${items.length > 0 ? Math.round((publicCount / items.length) * 100) : 0}%`}
-          hint="공개 사례가 많을수록 문의가 늘어납니다"
-          loading={loading}
-        />
-      </section>
-
-      <ListTabs
-        tabs={[
-          { key: 'all', label: '전체', count: items.length },
-          { key: 'public', label: '공개', count: publicCount },
-          { key: 'private', label: '비공개', count: privateCount },
-        ]}
-        active={tab}
-        onChange={setTab}
-      />
-
+      {/* 필터 줄 — 참조 06-leads: Seg + … + 우측 건수 */}
       <Toolbar>
+        <ListTabs
+          tabs={[
+            { key: 'all', label: '전체', count: items.length },
+            { key: 'public', label: '공개', count: publicCount },
+            { key: 'private', label: '비공개', count: privateCount },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
         <Segmented
+          ariaLabel="정렬"
           value={sort}
           onChange={(k) => setSort(k as typeof sort)}
           options={[
@@ -229,13 +199,15 @@ export default function BossPortfolioListPage() {
             { key: 'WORK_DATE', label: '시공일순' },
           ]}
         />
-        <Button variant="outline" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
           새로고침
         </Button>
-        <p className="text-[11.5px] text-boss-text-muted">
-          공개 사례는 고객 검색 결과에 노출됩니다
-        </p>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+            {filtered && !loading
+              ? `${sortedFiltered.length.toLocaleString()}건 표시 · 전체 ${items.length.toLocaleString()}건`
+              : `전체 ${items.length.toLocaleString()}건`}
+          </span>
           <ViewToggle value={view} onChange={setView} />
         </div>
       </Toolbar>
@@ -255,19 +227,25 @@ export default function BossPortfolioListPage() {
 
       {loading && items.length === 0 ? (
         view === 'grid' ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-lg border border-boss-border" />
+              <div key={i} className="boss-card">
+                <Skeleton className="aspect-[4/3] w-full" />
+                <div className="flex flex-col gap-2 p-3.5">
+                  <Skeleton className="h-3.5 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <DataTable>
             <thead>
               <tr>
-                <th>포트폴리오</th>
+                <th>사례</th>
                 <th>지역</th>
-                <th>평형</th>
-                <th>시공일</th>
+                <th className="num">평형</th>
+                <th className="num">시공일</th>
                 <th>상태</th>
               </tr>
             </thead>
@@ -284,87 +262,121 @@ export default function BossPortfolioListPage() {
             </tbody>
           </DataTable>
         )
+      ) : failedEmpty ? (
+        // 실패는 위 AlertBanner 가 말한다 — 여기서 "없다"고 하면 거짓말이 된다
+        <EmptyState
+          icon={ImageIcon}
+          title="목록을 불러오지 못했습니다"
+          description="네트워크나 로그인 상태를 확인한 뒤 다시 시도해 주세요."
+        />
       ) : sortedFiltered.length === 0 ? (
-        <Card className="py-12">
+        filtered ? (
           <EmptyState
-            icon={Inbox}
-            title={keyword || tab !== 'all' ? '검색 결과가 없습니다' : '등록된 포트폴리오가 없습니다'}
-            description={keyword || tab !== 'all' ? '조건을 변경해 다시 검색하세요.' : '새 시공 사례를 등록해 포트폴리오를 시작하세요.'}
+            icon={ImageIcon}
+            title="조건에 맞는 사례가 없습니다"
+            description="다른 상태 탭을 고르거나 검색어를 지워 보세요."
             action={
-              <Link href="/boss/portfolio/new" passHref>
-                <Button variant="primary" icon={Plus}>
-                  포트폴리오 등록
-                </Button>
-              </Link>
+              <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
+                전체 보기
+              </Button>
             }
           />
-        </Card>
+        ) : (
+          <EmptyState
+            icon={ImageIcon}
+            title="아직 등록한 시공 사례가 없습니다"
+            description="시공 전·후 사진을 올리면 고객 검색 결과에 노출됩니다. 첫 사례를 등록해 보세요."
+            action={
+              <ButtonLink href="/boss/portfolio/new" variant="primary" icon={Plus}>
+                새 사례 등록
+              </ButtonLink>
+            }
+          />
+        )
       ) : view === 'grid' ? (
-        // 시안 채널 카드 그리드: repeat(auto-fill, minmax(268px,1fr)) / gap 11px
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(268px,1fr))] gap-[11px]">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
           {sortedFiltered.map((item) => {
             const isPublic = normalizeIsPublic(item.isPublic);
             const thumb = getThumbnail(item);
             const { before, after } = splitImages(item);
             const linkCount = (item.links ?? item.externalLinks ?? []).length;
+            const href = `/boss/portfolio/${item.id}`;
             return (
-              <div
+              <article
                 key={item.id}
-                className="flex flex-col gap-[11px] rounded-frame border border-boss-border bg-boss-surface p-3.5 transition-colors duration-[120ms] ease-out hover:border-boss-border-card-hover"
+                className="boss-card flex flex-col transition-colors duration-[120ms] ease-out hover:border-boss-border-hover"
               >
-                {/* 헤더: 썸네일 칩 + 제목/설명 + 상태 배지 */}
-                <div className="flex items-start gap-2.5">
-                  <Link
-                    href={`/boss/portfolio/${item.id}`}
-                    className="boss-placeholder h-[42px] w-[42px] flex-none overflow-hidden rounded-chip"
-                  >
-                    {thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumb} alt={item.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-boss-text-muted">
-                        <ImageIcon size={16} />
+                {/* 사각 썸네일 4:3 — 시공 후 사진이 대표 */}
+                <Link
+                  href={href}
+                  className="boss-placeholder relative block aspect-[4/3] w-full overflow-hidden border-b border-boss-border"
+                >
+                  {thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumb} alt={item.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-boss-text-muted">
+                      <ImageIcon size={18} strokeWidth={1.5} />
+                      <span className="font-boss-head text-[11px] uppercase tracking-[0.08em]">
+                        사진 없음
                       </span>
-                    )}
-                  </Link>
-                  <Link href={`/boss/portfolio/${item.id}`} className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-bold !text-boss-text">
+                    </span>
+                  )}
+                  <span className="absolute left-2 top-2">
+                    <StatusPill tone={isPublic ? 'ok' : 'neutral'}>
+                      {isPublic ? '공개' : '비공개'}
+                    </StatusPill>
+                  </span>
+                </Link>
+
+                <div className="flex flex-1 flex-col gap-2 p-3.5">
+                  <Link href={href} className="min-w-0">
+                    <p className="truncate text-[14px] font-bold !text-boss-text">
                       {item.title || '제목 없음'}
                     </p>
-                    <p className="mt-0.5 truncate text-[10.5px] !text-boss-text-muted">
+                    <p className="mt-0.5 truncate text-[12px] !text-boss-text-secondary">
                       {item.region ?? '지역 미입력'}
-                      {item.area != null && ` · ${Math.round(item.area)}평`}
+                      {item.area != null && (
+                        <>
+                          {' · '}
+                          <span className="font-boss-head tabular-nums">{Math.round(item.area)}</span>평
+                        </>
+                      )}
+                      {' · '}
+                      <span className="font-boss-head tabular-nums">{formatDate(item.workDate)}</span>
                     </p>
                   </Link>
-                  <StatusPill tone={isPublic ? 'ok' : 'neutral'}>
-                    {isPublic ? '공개' : '비공개'}
-                  </StatusPill>
-                </div>
 
-                {/* 3칸 지표 — 시안 채널 카드 stats */}
-                <div className="grid grid-cols-3 gap-[7px]">
-                  <MetricBox label="시공 전" value={before.length} />
-                  <MetricBox label="시공 후" value={after.length} />
-                  <MetricBox label="링크" value={linkCount} />
-                </div>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {item.buildingType && <TagPill>{item.buildingType}</TagPill>}
+                    {item.wallpaperType && <TagPill>{item.wallpaperType}</TagPill>}
+                  </div>
 
-                {/* 하단: 노트 + 액션 */}
-                <div className="flex items-center gap-[7px] text-[11px] text-boss-text-muted">
-                  <span className="min-w-0 flex-1 truncate">
-                    {formatDate(item.workDate)} 시공
-                  </span>
-                  <RowActions
-                    onEdit={() => router.push(`/boss/portfolio/${item.id}`)}
-                    onDelete={() => setPendingDelete(item)}
-                    deleting={deleting && pendingDelete?.id === item.id}
-                  />
+                  <div className="mt-auto flex items-center gap-2 border-t border-boss-border-row pt-2 text-[11.5px] text-boss-text-muted">
+                    <span className="font-boss-head tabular-nums">
+                      전 {before.length} · 후 {after.length}
+                    </span>
+                    {linkCount > 0 && (
+                      <span className="inline-flex items-center gap-0.5 font-boss-head tabular-nums">
+                        <LinkIcon size={10} /> {linkCount}
+                      </span>
+                    )}
+                    <span className="ml-auto">
+                      <RowActions
+                        onEdit={() => router.push(href)}
+                        onDelete={() => setPendingDelete(item)}
+                        deleting={deleting && pendingDelete?.id === item.id}
+                        editLabel="보기"
+                      />
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </article>
             );
           })}
 
-          {/* 마지막 점선 카드 — 시안 `+ 새 플랫폼 연결` */}
-          <DashedCta href="/boss/portfolio/new" className="min-h-[148px] !rounded-frame">
+          {/* 마지막 점선 슬롯 — 다음 사례 등록 */}
+          <DashedCta href="/boss/portfolio/new" className="min-h-[200px]">
             <Plus size={13} /> 새 시공 사례 등록
           </DashedCta>
         </div>
@@ -372,11 +384,12 @@ export default function BossPortfolioListPage() {
         <DataTable>
           <thead>
             <tr>
-              <th>포트폴리오</th>
+              <th>사례</th>
+              <th>유형</th>
               <th>지역</th>
-              <th>평형</th>
-              <th>시공일</th>
-              <th>이미지</th>
+              <th className="num">평형</th>
+              <th className="num">시공일</th>
+              <th className="num">사진</th>
               <th>상태</th>
               <th />
             </tr>
@@ -386,26 +399,31 @@ export default function BossPortfolioListPage() {
               const isPublic = normalizeIsPublic(item.isPublic);
               const { before, after } = splitImages(item);
               const linkCount = (item.links ?? item.externalLinks ?? []).length;
+              const href = `/boss/portfolio/${item.id}`;
               return (
-                <tr key={item.id} className="cursor-pointer">
-                  <td>
-                    <Link
-                      href={`/boss/portfolio/${item.id}`}
-                      className="block font-medium text-boss-text hover:text-boss-primary"
-                    >
+                <tr key={item.id}>
+                  <td className="wrap">
+                    <Link href={href} className="block font-semibold !text-boss-text hover:!text-boss-primary">
                       {item.title || '제목 없음'}
                     </Link>
                     {item.description && (
-                      <p className="line-clamp-1 text-xs text-boss-text-muted">{item.description}</p>
+                      <p className="line-clamp-1 text-[12px] text-boss-text-muted">{item.description}</p>
                     )}
                   </td>
-                  <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
-                  <td className="text-boss-text-secondary">
-                    {item.area != null ? `${Math.round(item.area)}평` : '-'}
+                  <td>
+                    <span className="inline-flex flex-wrap gap-1">
+                      {item.buildingType && <TagPill>{item.buildingType}</TagPill>}
+                      {item.wallpaperType && <TagPill>{item.wallpaperType}</TagPill>}
+                      {!item.buildingType && !item.wallpaperType && (
+                        <span className="text-boss-text-muted">-</span>
+                      )}
+                    </span>
                   </td>
-                  <td className="text-boss-text-secondary">{formatDate(item.workDate)}</td>
-                  <td className="text-boss-text-secondary">
-                    전 {before.length} / 후 {after.length}
+                  <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
+                  <td className="num">{item.area != null ? Math.round(item.area) : '-'}</td>
+                  <td className="num">{formatDate(item.workDate)}</td>
+                  <td className="num">
+                    {before.length} / {after.length}
                     {linkCount > 0 && (
                       <span className="ml-1.5 inline-flex items-center gap-0.5 text-boss-text-muted">
                         <LinkIcon size={10} /> {linkCount}
@@ -413,16 +431,16 @@ export default function BossPortfolioListPage() {
                     )}
                   </td>
                   <td>
-                    <Badge tone={isPublic ? 'emerald' : 'default'}>
-                      {isPublic ? <Eye size={10} /> : <EyeOff size={10} />}
+                    <StatusPill tone={isPublic ? 'ok' : 'neutral'}>
                       {isPublic ? '공개' : '비공개'}
-                    </Badge>
+                    </StatusPill>
                   </td>
-                  <td className="whitespace-nowrap text-right">
+                  <td className="text-right">
                     <RowActions
-                      onEdit={() => router.push(`/boss/portfolio/${item.id}`)}
+                      onEdit={() => router.push(href)}
                       onDelete={() => setPendingDelete(item)}
                       deleting={deleting && pendingDelete?.id === item.id}
+                      editLabel="보기"
                     />
                   </td>
                 </tr>
@@ -432,7 +450,7 @@ export default function BossPortfolioListPage() {
         </DataTable>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="포트폴리오 삭제"

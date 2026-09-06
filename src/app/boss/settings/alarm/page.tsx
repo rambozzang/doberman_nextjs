@@ -1,16 +1,22 @@
 'use client';
 
-// 사장님 알림(시간) 설정
+// 알림 설정(수신 시간) — Industry 패턴
+//
+//   패널 안 토글 행(제목 13.5px 600 + 설명 12.5px + 우측 Toggle) → 시간대 행(시작 · 종료 select)
+//   → 하단 액션 패널(저장 primary 우측). 화면 제목은 헤더(PAGE_META)가 그린다.
+//
 // Flutter 원본: lib/app/setting/alram_setting_page.dart
 // 백엔드 API: bossUserApi.setAlarmTime (PUT /user/alramTime)
+
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, BellOff, BellRing, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossUserApi } from '@/lib/api/boss/user';
+import { Button, ButtonLink, ContentCard, Toggle } from '@/components/boss/ui';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 const MINUTES = ['00', '10', '20', '30', '40', '50'];
+
+const timeSelect = 'boss-input w-auto min-w-[68px] cursor-pointer';
 
 export default function BossAlarmSettingPage() {
   const [enabled, setEnabled] = useState(true);
@@ -81,133 +87,102 @@ export default function BossAlarmSettingPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss/settings"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 설정
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">알림 설정</h1>
-        <div className="w-10" />
-      </div>
-
-      <div className="rounded-2xl border border-boss-border bg-boss-surface p-5">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-              enabled ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated/40 text-boss-text-muted'
-            }`}
-          >
-            {enabled ? <BellRing size={20} /> : <BellOff size={20} />}
+    <div className="flex flex-col gap-4">
+      <ContentCard>
+        {/* 토글 행 */}
+        <div className="flex items-center gap-3.5 border-b border-boss-border-row px-[15px] py-[14px]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-semibold text-boss-text">
+              {enabled ? '알림이 켜져 있습니다' : '알림이 꺼져 있습니다'}
+            </p>
+            <p className="mt-[3px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
+              견적 요청 · 채팅 · AS 접수 알림을 정한 시간대에만 받습니다. 꺼 두면 시간을 저장할 수 없습니다.
+            </p>
           </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-boss-text">
-              {enabled ? '알림이 켜져있습니다.' : '알림이 꺼져있습니다.'}
-            </div>
-            <div className="text-xs text-boss-text-muted">
-              브라우저 알림 권한 및 알림 수신 시간을 설정할 수 있습니다.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setEnabled((v) => !v)}
-            className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              enabled
-                ? 'bg-boss-primary text-boss-text hover:bg-boss-primary-hover'
-                : 'bg-boss-elevated text-boss-text hover:bg-boss-border-strong'
-            }`}
-          >
-            {enabled ? '끄기' : '켜기'}
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-5">
-        <div>
-          <h2 className="text-sm font-semibold text-boss-text">알림 수신 시간</h2>
-          <p className="mt-1 text-xs text-boss-text-muted">
-            아래 시간 동안에만 알림을 수신합니다. 형식: HHmm-HHmm
-          </p>
+          <Toggle checked={enabled} onChange={setEnabled} label="알림 수신" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-boss-text-muted">시작 시간</label>
-            <div className="flex gap-2">
-              <select
-                value={startHour}
-                onChange={(e) => setStartHour(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
-              >
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {h}시
-                  </option>
-                ))}
-              </select>
-              <select
-                value={startMin}
-                onChange={(e) => setStartMin(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
-              >
-                {MINUTES.map((m) => (
-                  <option key={m} value={m}>
-                    {m}분
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* 시간대 행 */}
+        <div className="flex flex-wrap items-center gap-3.5 px-[15px] py-[14px]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-semibold text-boss-text">수신 시간대</p>
+            <p className="mt-[3px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
+              이 시간 밖에 발생한 알림은 다음 시작 시각에 모아서 보냅니다.
+            </p>
           </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-boss-text-muted">종료 시간</label>
-            <div className="flex gap-2">
-              <select
-                value={endHour}
-                onChange={(e) => setEndHour(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
-              >
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {h}시
-                  </option>
-                ))}
-              </select>
-              <select
-                value={endMin}
-                onChange={(e) => setEndMin(e.target.value)}
-                className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-2 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
-              >
-                {MINUTES.map((m) => (
-                  <option key={m} value={m}>
-                    {m}분
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <select
+              value={startHour}
+              onChange={(e) => setStartHour(e.target.value)}
+              disabled={!enabled}
+              aria-label="시작 시"
+              className={timeSelect}
+            >
+              {HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {h}시
+                </option>
+              ))}
+            </select>
+            <select
+              value={startMin}
+              onChange={(e) => setStartMin(e.target.value)}
+              disabled={!enabled}
+              aria-label="시작 분"
+              className={timeSelect}
+            >
+              {MINUTES.map((m) => (
+                <option key={m} value={m}>
+                  {m}분
+                </option>
+              ))}
+            </select>
+            <span className="px-1 font-boss-head text-[12px] text-boss-text-muted">—</span>
+            <select
+              value={endHour}
+              onChange={(e) => setEndHour(e.target.value)}
+              disabled={!enabled}
+              aria-label="종료 시"
+              className={timeSelect}
+            >
+              {HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {h}시
+                </option>
+              ))}
+            </select>
+            <select
+              value={endMin}
+              onChange={(e) => setEndMin(e.target.value)}
+              disabled={!enabled}
+              aria-label="종료 분"
+              className={timeSelect}
+            >
+              {MINUTES.map((m) => (
+                <option key={m} value={m}>
+                  {m}분
+                </option>
+              ))}
+            </select>
           </div>
         </div>
+      </ContentCard>
 
-        <div className="rounded-lg border border-boss-border/60 bg-boss-bg/40 px-3 py-2 text-xs text-boss-text-muted">
-          현재 설정:
-          <span className="ml-2 font-mono text-boss-primary">
-            {startHour}
-            {startMin} - {endHour}
-            {endMin}
+      {/* 하단 액션 패널 */}
+      <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+        <p className="text-[12.5px] text-boss-text-secondary">
+          현재 설정{' '}
+          <span className="font-boss-head text-[13.5px] font-semibold tabular-nums text-boss-text">
+            {startHour}:{startMin} – {endHour}:{endMin}
           </span>
-        </div>
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-primary px-4 py-2 text-sm font-semibold text-boss-text hover:bg-boss-primary-hover disabled:opacity-50"
-          >
-            <Save size={14} /> {saving ? '저장 중…' : '저장'}
-          </button>
+        </p>
+        <div className="flex items-center gap-2">
+          <ButtonLink href="/boss/settings" variant="secondary">
+            취소
+          </ButtonLink>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            {saving ? '저장 중…' : '저장'}
+          </Button>
         </div>
       </div>
     </div>

@@ -1,21 +1,29 @@
 'use client';
 
+// 내 글 — Industry 패턴 (agent.opentohome.com)
+//
+// 필터 줄(검색 + 우측 전체 n건 · 새로고침 · 글쓰기)
+// → 표(제목 · 게시판 · 댓글 · 조회 · 작성일 · 수정) — 행 전체가 상세로 가는 링크
+// 화면 제목과 «← 커뮤니티» 는 셸 헤더가 그린다.
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
   DataTable,
-  Badge,
+  StatusPill,
   EmptyState,
-  Skeleton,
+  AlertBanner,
+  ContentCard,
+  RowSkeleton,
 } from '@/components/boss/ui';
-import { RefreshCw, Eye, MessageCircle, Inbox } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 100;
 
@@ -82,99 +90,125 @@ export default function BossCommunityMyPage() {
     );
   }, [items, keyword]);
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="내가 쓴 글"
-        description="내가 작성한 커뮤니티 게시글을 관리합니다."
-        breadcrumbs={[{ label: '커뮤니티', href: '/boss/community' }, { label: '내 글' }]}
-      />
+  const isFiltering = keyword.trim().length > 0;
 
-      <Toolbar>
+  return (
+    <div className="flex flex-col gap-4">
+      {/* ───── 필터 줄 ───── */}
+      <div className="flex flex-wrap items-center gap-2.5">
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="제목·내용·유형 검색"
-          className="w-full max-w-xs"
+          placeholder="제목 · 내용 · 게시판"
+          className="w-56"
+          hint={false}
         />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={() => void load()}
-          disabled={loading}
-        >
-          새로고침
-        </Button>
-      </Toolbar>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+            {loading ? '불러오는 중…' : isFiltering ? `${filtered.length}건 · 전체 ${items.length}건` : `전체 ${items.length}건`}
+          </span>
+          <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => void load()} disabled={loading}>
+            새로고침
+          </Button>
+          <ButtonLink href="/boss/community/new" variant="primary" size="sm">
+            글쓰기
+          </ButtonLink>
+        </div>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => void load()}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
+      {/* ───── 표 ───── */}
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
+        <ContentCard>
+          <RowSkeleton rows={6} />
+        </ContentCard>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title={keyword.trim() ? '검색 결과가 없습니다' : '아직 작성한 글이 없습니다'}
-          description={
-            keyword.trim()
-              ? '검색어를 변경해보세요.'
-              : '커뮤니티에서 첫 글을 작성해보세요.'
-          }
-        />
+        error ? (
+          <EmptyState
+            title="내 글을 불러오지 못했습니다"
+            description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+          />
+        ) : isFiltering ? (
+          <EmptyState
+            title={`'${keyword.trim()}' 에 맞는 글이 없습니다`}
+            description="제목 · 내용 · 게시판 이름으로 검색합니다. 검색어를 바꿔 보세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setKeyword('')}>
+                검색 지우기
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="아직 작성한 글이 없습니다"
+            description="질문이나 현장 이야기를 올리면 다른 사장님들의 답을 받을 수 있습니다."
+            action={
+              <ButtonLink href="/boss/community/new" variant="primary" size="sm">
+                첫 글 쓰기
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
               <th>제목</th>
-              <th className="text-center whitespace-nowrap">댓글/조회</th>
-              <th className="whitespace-nowrap">작성일</th>
+              <th>게시판</th>
+              <th className="num">댓글</th>
+              <th className="num">조회</th>
+              <th>작성일</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {filtered.map((item) => (
-              <tr
-                key={item.boardId}
-                className="cursor-pointer"
-                onClick={() => router.push(`/boss/community/${item.boardId}`)}
-              >
-                <td>
-                  <div className="flex items-center gap-2">
-                    {item.typeDtNm ? <Badge tone="default">{item.typeDtNm}</Badge> : null}
-                    <span className="font-medium text-boss-text">
+            {filtered.map((item) => {
+              const href = `/boss/community/${item.boardId}`;
+              return (
+                <tr key={item.boardId} className="cursor-pointer" onClick={() => router.push(href)}>
+                  <td className="wrap max-w-[520px]">
+                    <Link
+                      href={href}
+                      className="line-clamp-1 min-w-0 font-semibold !text-boss-text hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {item.subject ?? '(제목 없음)'}
-                    </span>
-                  </div>
-                </td>
-                <td className="whitespace-nowrap text-center text-boss-text-secondary">
-                  <span className="inline-flex items-center gap-3">
-                    <span className="inline-flex items-center gap-0.5">
-                      <MessageCircle size={11} /> {item.replyCnt ?? 0}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5">
-                      <Eye size={11} /> {item.viewCnt ?? 0}
-                    </span>
-                  </span>
-                </td>
-                <td className="whitespace-nowrap text-xs text-boss-text-muted">
-                  {relativeTime(item.crtDtm)}
-                </td>
-                <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => router.push(`/boss/community/${item.boardId}`)}
-                  >
-                    보기
-                  </Button>
-                </td>
-              </tr>
-            ))}
+                    </Link>
+                  </td>
+                  <td>
+                    {item.typeDtNm ? (
+                      <StatusPill tone={item.typeDtCd === 'JOB' ? 'warn' : item.typeDtCd === 'ANON' ? 'neutral' : 'info'}>
+                        {item.typeDtNm}
+                      </StatusPill>
+                    ) : (
+                      <span className="text-boss-text-muted">-</span>
+                    )}
+                  </td>
+                  <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
+                  <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
+                    {relativeTime(item.crtDtm)}
+                  </td>
+                  <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <ButtonLink href={`${href}/edit`} variant="ghost" size="sm">
+                      수정
+                    </ButtonLink>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </DataTable>
       )}

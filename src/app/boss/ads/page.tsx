@@ -1,18 +1,21 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import {
-  BarChart3,
-  Loader2,
-  MapPin,
-  Megaphone,
-  MousePointerClick,
-  Plus,
-  StopCircle,
-} from "lucide-react";
-import { toast } from "react-hot-toast";
-import { bossAdsApi } from "@/lib/api/boss/ads";
-import type { BossAd, BossAdCreateRequest } from "@/types/boss-ad";
+// 지도 광고 — Industry 패턴 (agent.opentohome.com)
+//
+// 구조
+//   (업체 미등록) 배너 — 실패·차단은 숨기지 않는다
+//   → KPI 4장 (StatCard · 실데이터에서만 집계)
+//   → 섹션 줄(집행 광고 n · 등급 안내 · 우측 광고 등록)
+//   → (열렸을 때) 새 광고 패널: 2열 Field/SelectField + 하단 액션
+//   → 광고 표(등급 · 광고 · 지역 · 기간 · 노출 · 클릭 · 클릭률 · 상태 · 중지)
+//
+// 게시 중지는 ConfirmDialog 를 거친다. 화면 제목은 셸 헤더가 그린다.
+
+import { useCallback, useEffect, useState } from 'react';
+import { Plus, RefreshCw } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { bossAdsApi } from '@/lib/api/boss/ads';
+import type { BossAd, BossAdCreateRequest } from '@/types/boss-ad';
 import {
   Button,
   ButtonLink,
@@ -20,23 +23,28 @@ import {
   StatusPill,
   Chip,
   chipToneOf,
-  MetricBox,
-  DashedCta,
   AlertBanner,
+  ConfirmDialog,
+  ContentCard,
+  CardHead,
+  EmptyState,
   RowSkeleton,
-} from "@/components/boss/ui";
+  Panel,
+  Field,
+  SelectField,
+} from '@/components/boss/ui';
 
 const SIDO_LIST = [
-  "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시",
-  "울산광역시", "세종특별자치시", "경기도", "강원특별자치도", "충청북도", "충청남도",
-  "전북특별자치도", "전라남도", "경상북도", "경상남도", "제주특별자치도",
+  '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시',
+  '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도',
+  '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도',
 ];
 
 // 등급이 높으면 지도 마커와 광고 슬롯에서 더 앞에 노출된다
 const TIERS = [
-  { value: 1, label: "기본" },
-  { value: 2, label: "우선" },
-  { value: 3, label: "최우선" },
+  { value: 1, label: '기본' },
+  { value: 2, label: '우선' },
+  { value: 3, label: '최우선' },
 ];
 
 function today(offsetDays = 0) {
@@ -45,24 +53,43 @@ function today(offsetDays = 0) {
   return d.toISOString().slice(0, 10);
 }
 
+function adStatus(ad: BossAd): { label: string; tone: 'ok' | 'bad' | 'neutral' } {
+  if (ad.serving) return { label: '노출 중', tone: 'ok' };
+  if (ad.status === 'N') return { label: '중지', tone: 'bad' };
+  return { label: '대기', tone: 'neutral' };
+}
+
 export default function BossAdsPage() {
   const [ads, setAds] = useState<BossAd[]>([]);
   const [vendorName, setVendorName] = useState<string | null>(null);
   const [vendorId, setVendorId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  // 중지 확인창에 올라간 광고
+  const [stopTarget, setStopTarget] = useState<BossAd | null>(null);
+  const [stopping, setStopping] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await bossAdsApi.myList();
-    if (res.success && res.data) {
-      setAds(res.data.ads ?? []);
-      setVendorName(res.data.vendorName);
-      setVendorId(res.data.vendorId);
-    } else {
-      toast.error(res.message || res.error || "광고 목록을 불러오지 못했습니다.");
+    setLoadError(null);
+    try {
+      const res = await bossAdsApi.myList();
+      if (res.success && res.data) {
+        setAds(res.data.ads ?? []);
+        setVendorName(res.data.vendorName);
+        setVendorId(res.data.vendorId);
+      } else {
+        const msg = res.message || res.error || '광고 목록을 불러오지 못했습니다.';
+        setLoadError(msg);
+        toast.error(msg);
+      }
+    } catch {
+      setLoadError('네트워크 오류로 광고 목록을 불러오지 못했습니다.');
+    } finally {
+      // 예외가 나도 스피너에 갇히지 않는다
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -70,13 +97,21 @@ export default function BossAdsPage() {
   }, [load]);
 
   const stop = async (adId: number) => {
-    if (!confirm("이 광고 게시를 중지하시겠습니까?")) return;
-    const res = await bossAdsApi.stop(adId);
-    if (res.success) {
-      toast.success("게시를 중지했습니다.");
-      load();
-    } else {
-      toast.error(res.message || res.error || "중지에 실패했습니다.");
+    setStopping(true);
+    try {
+      const res = await bossAdsApi.stop(adId);
+      if (res.success) {
+        toast.success('게시를 중지했습니다.');
+        load();
+      } else {
+        toast.error(res.message || res.error || '중지에 실패했습니다.');
+      }
+    } catch {
+      toast.error('네트워크 오류로 중지하지 못했습니다.');
+    } finally {
+      // 실패해도 다이얼로그가 잠기지 않도록 여기서 반드시 푼다
+      setStopping(false);
+      setStopTarget(null);
     }
   };
 
@@ -88,11 +123,25 @@ export default function BossAdsPage() {
   const ctr = totals.imp > 0 ? (totals.click / totals.imp) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-3.5">
-      {/* ───── 최상단 배너 — 실패/차단은 숨기지 않는다 (시안 TRUST) ───── */}
-      {!loading && vendorId == null && (
+    <div className="flex flex-col gap-4">
+      {/* ───── 조회 실패 ───── */}
+      {loadError && !loading && (
         <AlertBanner
           tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => load()}>
+              다시 시도
+            </Button>
+          }
+        >
+          {loadError}
+        </AlertBanner>
+      )}
+
+      {/* ───── 업체 미등록 — 실패/차단은 숨기지 않는다 ───── */}
+      {!loading && !loadError && vendorId == null && (
+        <AlertBanner
+          tone="warn"
           action={
             <ButtonLink href="/boss/me/company" variant="primary" size="sm">
               업체 등록
@@ -105,14 +154,14 @@ export default function BossAdsPage() {
       )}
 
       {/* ───── KPI 4장 ───── */}
-      {vendorId != null && (
-        <section className="grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
+      {(loading || vendorId != null) && (
+        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <StatCard
             label="총 노출"
             value={totals.imp.toLocaleString()}
             delta={totals.live > 0 ? `노출 중 ${totals.live}` : undefined}
             deltaTone="ok"
-            hint="집행 중인 광고 합계"
+            hint="집행한 광고의 지도 노출 합계"
             loading={loading}
           />
           <StatCard
@@ -134,29 +183,35 @@ export default function BossAdsPage() {
             value={String(totals.live)}
             delta={`전체 ${ads.length}`}
             deltaTone="neutral"
-            hint="현재 노출되는 광고"
+            hint="지금 지도에 노출되는 광고"
             loading={loading}
           />
         </section>
       )}
 
-      {/* ───── 섹션 헤더 ───── */}
+      {/* ───── 섹션 줄 ───── */}
       {vendorId != null && (
         <div className="flex flex-wrap items-center gap-2.5">
-          <h2 className="text-[13px] font-bold text-boss-text">집행 광고 {ads.length}</h2>
-          <p className="text-[11.5px] text-boss-text-muted">
+          <p className="text-[12px] text-boss-text-muted">
             등급이 높을수록 지도 마커와 광고 슬롯에서 앞에 노출됩니다
             {vendorName && ` · ${vendorName}`}
           </p>
-          <div className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            icon={Plus}
-            onClick={() => setShowForm((v) => !v)}
-          >
-            광고 등록
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+              {loading ? '불러오는 중…' : `전체 ${ads.length}건`}
+            </span>
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => load()} disabled={loading}>
+              새로고침
+            </Button>
+            <Button
+              variant={showForm ? 'secondary' : 'primary'}
+              size="sm"
+              icon={Plus}
+              onClick={() => setShowForm((v) => !v)}
+            >
+              {showForm ? '등록 닫기' : '광고 등록'}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -170,81 +225,106 @@ export default function BossAdsPage() {
         />
       )}
 
-      {/* ───── 광고 카드 그리드 — 시안 채널 카드 ───── */}
+      {/* ───── 광고 표 ───── */}
       {loading ? (
-        <div className="boss-card-content">
+        <ContentCard>
           <RowSkeleton rows={4} />
-        </div>
+        </ContentCard>
       ) : vendorId != null ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(268px,1fr))] gap-[11px]">
-          {ads.map((ad) => {
-            const tier = TIERS.find((t) => t.value === ad.tier)?.label ?? String(ad.tier);
-            const region = ad.regionSido
-              ? `${ad.regionSido}${ad.regionSigungu ? " " + ad.regionSigungu : ""}`
-              : "전국";
-            return (
-              <div
-                key={ad.adId}
-                className="flex flex-col gap-[11px] rounded-frame border border-boss-border bg-boss-surface p-3.5 transition-colors duration-[120ms] ease-out hover:border-boss-border-card-hover"
-              >
-                <div className="flex items-start gap-2.5">
-                  <Chip tone={chipToneOf(tier)}>{tier.charAt(0)}</Chip>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-bold text-boss-text">{ad.title}</p>
-                    <p className="mt-0.5 flex items-center gap-1 truncate text-[10.5px] text-boss-text-muted">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      {region}
-                    </p>
-                  </div>
-                  <StatusPill tone={ad.serving ? "ok" : ad.status === "N" ? "bad" : "neutral"}>
-                    {ad.serving ? "노출 중" : ad.status === "N" ? "중지" : "대기"}
-                  </StatusPill>
-                </div>
-
-                {ad.body && (
-                  <p className="line-clamp-2 text-[11.5px] leading-[1.55] text-boss-text-secondary">
-                    {ad.body}
-                  </p>
-                )}
-
-                {/* 3칸 지표 — 시안 채널 카드 stats */}
-                <div className="grid grid-cols-3 gap-[7px]">
-                  <MetricBox label="노출" value={ad.impCnt.toLocaleString()} />
-                  <MetricBox label="클릭" value={ad.clickCnt.toLocaleString()} />
-                  <MetricBox
-                    label="클릭률"
-                    value={ad.impCnt > 0 ? `${((ad.clickCnt / ad.impCnt) * 100).toFixed(1)}%` : "-"}
-                  />
-                </div>
-
-                <div className="flex items-center gap-[7px] text-[11px] text-boss-text-muted">
-                  <span className="min-w-0 flex-1 truncate font-boss-mono">
-                    {ad.startDt} ~ {ad.endDt}
-                  </span>
-                  {ad.status === "Y" && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      icon={StopCircle}
-                      onClick={() => stop(ad.adId)}
-                    >
-                      중지
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* 마지막 점선 카드 — 시안 `+ 새 플랫폼 연결` */}
-          <DashedCta
-            onClick={() => setShowForm(true)}
-            className="min-h-[148px] !rounded-frame"
-          >
-            <Plus className="h-3.5 w-3.5" /> 새 광고 등록
-          </DashedCta>
-        </div>
+        ads.length === 0 ? (
+          <EmptyState
+            title="아직 등록한 광고가 없습니다"
+            description="광고를 등록하면 게시 기간 동안 지도 마커와 광고 슬롯에 업체가 앞서 노출됩니다. 노출 · 클릭은 여기서 집계됩니다."
+            action={
+              !showForm ? (
+                <Button variant="primary" size="sm" icon={Plus} onClick={() => setShowForm(true)}>
+                  첫 광고 등록
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <ContentCard>
+            <CardHead title="집행 광고" meta="최근 등록 순" count={`${ads.length}건`} countTone="muted" />
+            <div className="boss-scroll overflow-x-auto">
+              <table className="boss-table">
+                <thead>
+                  <tr>
+                    <th>등급</th>
+                    <th>광고</th>
+                    <th>지역</th>
+                    <th>기간</th>
+                    <th className="num">노출</th>
+                    <th className="num">클릭</th>
+                    <th className="num">클릭률</th>
+                    <th>상태</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {ads.map((ad) => {
+                    const tier = TIERS.find((t) => t.value === ad.tier)?.label ?? String(ad.tier);
+                    const region = ad.regionSido
+                      ? `${ad.regionSido}${ad.regionSigungu ? ' ' + ad.regionSigungu : ''}`
+                      : '전국';
+                    const status = adStatus(ad);
+                    return (
+                      <tr key={ad.adId}>
+                        <td>
+                          <span className="flex items-center gap-2">
+                            <Chip tone={chipToneOf(tier)}>{tier.charAt(0)}</Chip>
+                            <span className="text-boss-text-secondary">{tier}</span>
+                          </span>
+                        </td>
+                        <td className="wrap min-w-[220px] max-w-[360px]">
+                          <p className="font-semibold text-boss-text">{ad.title}</p>
+                          {ad.body && (
+                            <p className="mt-0.5 line-clamp-1 text-[12px] text-boss-text-secondary">{ad.body}</p>
+                          )}
+                        </td>
+                        <td className="text-boss-text-secondary">{region}</td>
+                        <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
+                          {ad.startDt} ~ {ad.endDt}
+                        </td>
+                        <td className="num">{ad.impCnt.toLocaleString()}</td>
+                        <td className="num">{ad.clickCnt.toLocaleString()}</td>
+                        <td className="num">
+                          {ad.impCnt > 0 ? `${((ad.clickCnt / ad.impCnt) * 100).toFixed(1)}%` : '—'}
+                        </td>
+                        <td>
+                          <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                        </td>
+                        <td className="text-right">
+                          {ad.status === 'Y' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setStopTarget(ad)}
+                              className="!text-boss-text-muted hover:!text-boss-error"
+                            >
+                              중지
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </ContentCard>
+        )
       ) : null}
+
+      <ConfirmDialog
+        open={stopTarget !== null}
+        title={stopTarget ? `«${stopTarget.title}» 게시를 중지할까요?` : ''}
+        description="중지하면 지도에서 바로 내려가며 다시 켤 수 없습니다. 다시 노출하려면 새 광고를 등록해야 합니다."
+        confirmLabel="게시 중지"
+        loading={stopping}
+        onConfirm={() => stopTarget && void stop(stopTarget.adId)}
+        onCancel={() => setStopTarget(null)}
+      />
     </div>
   );
 }
@@ -252,12 +332,12 @@ export default function BossAdsPage() {
 function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void }) {
   const [form, setForm] = useState<BossAdCreateRequest>({
     tier: 1,
-    title: "",
-    body: "",
-    landingUrl: "",
-    imageUrl: "",
-    regionSido: "",
-    regionSigungu: "",
+    title: '',
+    body: '',
+    landingUrl: '',
+    imageUrl: '',
+    regionSido: '',
+    regionSigungu: '',
     startDt: today(),
     endDt: today(30),
   });
@@ -268,11 +348,11 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
 
   const submit = async () => {
     if (!form.title.trim()) {
-      toast.error("광고 제목을 입력해 주세요.");
+      toast.error('광고 제목을 입력해 주세요.');
       return;
     }
     if (form.endDt < form.startDt) {
-      toast.error("종료일이 시작일보다 앞설 수 없습니다.");
+      toast.error('종료일이 시작일보다 앞설 수 없습니다.');
       return;
     }
     setSaving(true);
@@ -287,142 +367,109 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
     });
     setSaving(false);
     if (res.success) {
-      toast.success("광고를 등록했습니다.");
+      toast.success('광고를 등록했습니다.');
       onDone();
     } else {
-      toast.error(res.message || res.error || "등록에 실패했습니다.");
+      toast.error(res.message || res.error || '등록에 실패했습니다.');
     }
   };
 
   return (
-    <div className="rounded-xl border border-boss-border bg-boss-elevated/60 p-4">
-      <h2 className="mb-3 text-sm font-bold text-white">새 광고</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="광고 제목" required>
-          <input
-            value={form.title}
-            onChange={(e) => set("title", e.target.value)}
-            maxLength={120}
-            placeholder="강남 도배 20년 경력"
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
-          />
-        </Field>
-        <Field label="노출 등급">
-          <select
-            value={form.tier}
-            onChange={(e) => set("tier", Number(e.target.value))}
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
-          >
-            {TIERS.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="광고 문구" className="sm:col-span-2">
-          <input
-            value={form.body ?? ""}
-            onChange={(e) => set("body", e.target.value)}
-            maxLength={300}
-            placeholder="합지·실크 전문, 당일 견적"
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
-          />
-        </Field>
-        <Field label="노출 지역 (비우면 전국)">
-          <select
-            value={form.regionSido ?? ""}
-            onChange={(e) => set("regionSido", e.target.value)}
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
-          >
-            <option value="">전국</option>
-            {SIDO_LIST.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="시군구 (비우면 시도 전체)">
-          <input
-            value={form.regionSigungu ?? ""}
-            onChange={(e) => set("regionSigungu", e.target.value)}
-            placeholder="강남구"
-            disabled={!form.regionSido}
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2 disabled:opacity-50"
-          />
-        </Field>
-        <Field label="게시 시작일">
-          <input
-            type="date"
-            value={form.startDt}
-            onChange={(e) => set("startDt", e.target.value)}
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
-          />
-        </Field>
-        <Field label="게시 종료일">
-          <input
-            type="date"
-            value={form.endDt}
-            onChange={(e) => set("endDt", e.target.value)}
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white outline-none ring-boss-warning focus:ring-2"
-          />
-        </Field>
-        <Field label="이미지 URL (선택)">
-          <input
-            value={form.imageUrl ?? ""}
-            onChange={(e) => set("imageUrl", e.target.value)}
-            placeholder="https://..."
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
-          />
-        </Field>
-        <Field label="클릭 시 이동 (비우면 업체 상세)">
-          <input
-            value={form.landingUrl ?? ""}
-            onChange={(e) => set("landingUrl", e.target.value)}
-            placeholder="https://..."
-            className="w-full rounded-lg bg-boss-inset px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-boss-warning focus:ring-2"
-          />
-        </Field>
+    <Panel kicker="새 광고" title="광고 등록">
+      <div className="grid gap-3.5 md:grid-cols-2">
+        <Field
+          id="ad-title"
+          label="광고 제목"
+          required
+          value={form.title}
+          onChange={(e) => set('title', e.target.value)}
+          maxLength={120}
+          placeholder="강남 도배 20년 경력"
+        />
+        <SelectField
+          id="ad-tier"
+          label="노출 등급"
+          value={form.tier}
+          onChange={(e) => set('tier', Number(e.target.value))}
+          hint="등급이 높을수록 지도에서 앞에 나옵니다"
+        >
+          {TIERS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </SelectField>
+        <Field
+          id="ad-body"
+          label="광고 문구"
+          className="md:col-span-2"
+          value={form.body ?? ''}
+          onChange={(e) => set('body', e.target.value)}
+          maxLength={300}
+          placeholder="합지 · 실크 전문, 당일 견적"
+        />
+        <SelectField
+          id="ad-sido"
+          label="노출 지역"
+          value={form.regionSido ?? ''}
+          onChange={(e) => set('regionSido', e.target.value)}
+          hint="비우면 전국에 노출됩니다"
+        >
+          <option value="">전국</option>
+          {SIDO_LIST.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </SelectField>
+        <Field
+          id="ad-sigungu"
+          label="시군구"
+          value={form.regionSigungu ?? ''}
+          onChange={(e) => set('regionSigungu', e.target.value)}
+          placeholder="강남구"
+          disabled={!form.regionSido}
+          hint="비우면 시도 전체에 노출됩니다"
+        />
+        <Field
+          id="ad-start"
+          label="게시 시작일"
+          type="date"
+          value={form.startDt}
+          onChange={(e) => set('startDt', e.target.value)}
+        />
+        <Field
+          id="ad-end"
+          label="게시 종료일"
+          type="date"
+          value={form.endDt}
+          onChange={(e) => set('endDt', e.target.value)}
+        />
+        <Field
+          id="ad-image"
+          label="이미지 URL (선택)"
+          value={form.imageUrl ?? ''}
+          onChange={(e) => set('imageUrl', e.target.value)}
+          placeholder="https://..."
+        />
+        <Field
+          id="ad-landing"
+          label="클릭 시 이동 (선택)"
+          value={form.landingUrl ?? ''}
+          onChange={(e) => set('landingUrl', e.target.value)}
+          placeholder="https://..."
+          hint="비우면 지도의 업체 상세로 이동합니다"
+        />
       </div>
 
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={submit}
-          disabled={saving}
-          className="flex items-center gap-2 rounded-lg bg-boss-warning px-4 py-2 text-sm font-bold text-white hover:bg-boss-warning disabled:opacity-60"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />} 등록
-        </button>
-        <button
-          onClick={onCancel}
-          className="rounded-lg border border-boss-border-strong px-4 py-2 text-sm text-boss-text-soft hover:bg-boss-elevated"
-        >
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-boss-border pt-4">
+        <Button variant="secondary" onClick={onCancel} disabled={saving}>
           취소
-        </button>
+        </Button>
+        <Button variant="primary" onClick={submit} disabled={saving}>
+          {saving ? '등록 중…' : '등록'}
+        </Button>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  required,
-  className = "",
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={className}>
-      <label className="mb-1 block text-[11px] font-medium text-boss-text-secondary">
-        {label}
-        {required && <span className="ml-0.5 text-boss-warning">*</span>}
-      </label>
-      {children}
-    </div>
+    </Panel>
   );
 }

@@ -1,3 +1,6 @@
+/* /boss 디자인 토큰 — Tailwind 유틸리티보다 먼저 와야 유틸리티로 덮어쓸 수 있다 */
+@import '../styles/boss-b2b.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

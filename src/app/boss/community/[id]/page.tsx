@@ -1,39 +1,55 @@
 'use client';
 
-// 사장님 커뮤니티 게시글 상세 + 댓글 + 좋아요 (컴팩트 B2B 레이아웃)
+// 사장님 커뮤니티 게시글 상세 — Industry 패턴 (agent.opentohome.com)
 // Flutter `bbs_view_page.dart` 를 Next.js 로 포팅.
+//
+// 구조: 2열 lg:grid-cols-[minmax(0,1fr)_320px]
+//   좌 — 본문 패널(게시판 태그 · 제목 · 본문 · 첨부) → (구인구직) 연락 요청 패널 → 댓글 패널(입력 + 행 리스트)
+//   우 — 정보 패널(DescRow: 작성자 · 게시판 · 작성일 · 조회 · 댓글 · 좋아요) + 좋아요 버튼
+//        관리 패널(내 글: 수정 · 삭제 / 남의 글: 신고)
+//
+// 화면 제목과 «← 커뮤니티» 는 셸 헤더가 그린다. 삭제는 ConfirmDialog 를 거친다.
+
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import {
-  Heart,
-  Eye,
-  MessageCircle,
-  Send,
-  Trash2,
-  Pencil,
-  Flag,
-  Phone,
-  X,
-  User,
-  Calendar,
-} from 'lucide-react';
+import { Heart, Pencil, Trash2, Flag, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import { bossCommentApi } from '@/lib/api/boss/comment';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BbsData } from '@/types/boss-community';
-import { PageHeader, Card, Button, Badge, EmptyState, Skeleton } from '@/components/boss/ui';
+import {
+  ContentCard,
+  CardHead,
+  Panel,
+  DescRow,
+  Button,
+  ButtonLink,
+  StatusPill,
+  AlertBanner,
+  ConfirmDialog,
+  Skeleton,
+  type StatusTone,
+} from '@/components/boss/ui';
 
-type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
-
-const CATEGORY_TONE: Record<string, BadgeTone> = {
-  FREE: 'emerald',
-  JOB: 'sky',
-  ANON: 'violet',
-  NOTICE: 'amber',
+const CATEGORY_TONE: Record<string, StatusTone> = {
+  FREE: 'info',
+  JOB: 'warn',
+  ANON: 'neutral',
+  NOTICE: 'ok',
 };
+
+// RichEditor(TipTap) 가 만든 HTML 본문 — 라이트 패널 위 기본 조판
+const HTML_BODY_CLS =
+  'text-[14px] leading-[1.7] text-boss-text ' +
+  '[&_p]:my-2 [&_h1]:mt-4 [&_h1]:text-[20px] [&_h1]:font-semibold [&_h2]:mt-4 [&_h2]:text-[18px] [&_h2]:font-semibold ' +
+  '[&_h3]:mt-3 [&_h3]:text-[16px] [&_h3]:font-semibold [&_h4]:mt-3 [&_h4]:font-semibold ' +
+  '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 ' +
+  '[&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-boss-primary [&_blockquote]:pl-3 [&_blockquote]:text-boss-text-secondary ' +
+  '[&_a]:text-boss-primary [&_a]:underline [&_a]:underline-offset-2 ' +
+  '[&_code]:bg-boss-inset [&_code]:px-1 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:bg-boss-inset [&_pre]:p-3 ' +
+  '[&_hr]:my-3 [&_hr]:border-boss-border [&_strong]:font-semibold';
 
 function formatDate(input?: string): string {
   if (!input) return '-';
@@ -64,6 +80,12 @@ export default function BossCommunityDetailPage() {
   const [contactOpen, setContactOpen] = useState(false);
   const [contactMsg, setContactMsg] = useState('');
   const [contactSending, setContactSending] = useState(false);
+
+  // 확인창 — 글 삭제 · 댓글 삭제
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [commentDeleteId, setCommentDeleteId] = useState<number | null>(null);
+  const [commentDeleting, setCommentDeleting] = useState(false);
 
   const myUserId = BossAuthManager.getUserInfo()?.userId ?? '';
 
@@ -136,7 +158,7 @@ export default function BossCommunityDetailPage() {
 
   const onDelete = async () => {
     if (!boardId) return;
-    if (!confirm('정말 삭제하시겠습니까?')) return;
+    setDeleting(true);
     try {
       const res = await bossCommunityApi.remove(boardId);
       if (res.success !== false) {
@@ -147,6 +169,9 @@ export default function BossCommunityDetailPage() {
       }
     } catch {
       toast.error('네트워크 오류');
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -180,9 +205,10 @@ export default function BossCommunityDetailPage() {
     }
   };
 
-  const onDeleteComment = async (cBoardId?: number) => {
+  const onDeleteComment = async () => {
+    const cBoardId = commentDeleteId;
     if (!cBoardId) return;
-    if (!confirm('댓글을 삭제하시겠습니까?')) return;
+    setCommentDeleting(true);
     try {
       const res = await bossCommentApi.remove(cBoardId);
       if (res.success !== false) {
@@ -192,6 +218,9 @@ export default function BossCommunityDetailPage() {
       }
     } catch {
       toast.error('네트워크 오류');
+    } finally {
+      setCommentDeleting(false);
+      setCommentDeleteId(null);
     }
   };
 
@@ -216,267 +245,303 @@ export default function BossCommunityDetailPage() {
 
   const isMine = !!(post?.crtCustId && myUserId && post.crtCustId === myUserId);
   const isJobPost = post?.typeDtCd === 'JOB';
-  const categoryTone: BadgeTone = CATEGORY_TONE[post?.typeDtCd ?? ''] ?? 'default';
+  const categoryTone: StatusTone = CATEGORY_TONE[post?.typeDtCd ?? ''] ?? 'neutral';
+  const liked = post?.likeYn === 'Y';
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="커뮤니티 글 상세"
-        breadcrumbs={[{ label: '커뮤니티', href: '/boss/community' }, { label: '상세' }]}
-        actions={
-          post && (
-            <>
-              {isMine ? (
-                <>
-                  <Link href={`/boss/community/${boardId}/edit`}>
-                    <Button variant="secondary" icon={Pencil}>
-                      수정
-                    </Button>
-                  </Link>
-                  <Button variant="danger" icon={Trash2} onClick={onDelete}>
-                    삭제
-                  </Button>
-                </>
-              ) : (
-                <Link href={`/boss/community/${boardId}/report`}>
-                  <Button variant="secondary" icon={Flag}>
-                    신고
-                  </Button>
-                </Link>
-              )}
-            </>
-          )
-        }
-      />
-
+    <div className="flex flex-col gap-4">
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <div className="flex items-center gap-2">
+              <Button variant="primary" size="sm" onClick={() => void loadDetail()}>
+                다시 시도
+              </Button>
+              <ButtonLink href="/boss/community" variant="secondary" size="sm">
+                목록으로
+              </ButtonLink>
+            </div>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {loading || !post ? (
         !error && (
-          <div className="space-y-5">
-            <Skeleton className="h-28 w-full rounded-xl" />
-            <Skeleton className="h-64 w-full rounded-xl" />
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="flex flex-col gap-4">
+              <Skeleton className="h-[320px]" />
+              <Skeleton className="h-[200px]" />
+            </div>
+            <Skeleton className="h-[260px]" />
           </div>
         )
       ) : (
-        <>
-          {/* 개요 카드 — 작성자 / 카테고리 / 작성일 / 조회 / 댓글 / 좋아요 */}
-          <Card className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                {post.typeDtNm && <Badge tone={categoryTone}>{post.typeDtNm}</Badge>}
-                <span className="text-xs text-boss-text-muted">#{boardId}</span>
-              </div>
-              <h2 className="break-words text-lg font-semibold text-boss-text">
-                {post.subject ?? '(제목 없음)'}
-              </h2>
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-boss-text-muted">
-                <span className="inline-flex items-center gap-1">
-                  <User size={13} /> {displayName(post)}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Calendar size={13} /> {formatDate(post.crtDtm)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-4 text-sm">
-              <div className="text-center">
-                <p className="flex items-center justify-center gap-1 text-xs text-boss-text-muted">
-                  <Eye size={12} /> 조회
-                </p>
-                <p className="font-semibold text-boss-text">{post.viewCnt ?? 0}</p>
-              </div>
-              <div className="text-center">
-                <p className="flex items-center justify-center gap-1 text-xs text-boss-text-muted">
-                  <MessageCircle size={12} /> 댓글
-                </p>
-                <p className="font-semibold text-boss-text">{comments.length}</p>
-              </div>
-              <button
-                type="button"
-                onClick={onToggleLike}
-                disabled={likePending}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:opacity-60 ${
-                  post.likeYn === 'Y'
-                    ? 'bg-boss-error/15 text-boss-error'
-                    : 'bg-boss-elevated text-boss-text-secondary hover:text-boss-text'
-                }`}
-              >
-                <Heart size={14} className={post.likeYn === 'Y' ? 'fill-current' : ''} />
-                좋아요 {post.likeCnt ?? 0}
-              </button>
-            </div>
-          </Card>
-
-          {/* 본문 카드 */}
-          <Card>
-            {looksLikePlainText(post.contents) ? (
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-boss-text">
-                {post.contents ?? ''}
-              </div>
-            ) : (
-              <div
-                className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-headings:text-boss-text prose-strong:text-boss-text prose-a:text-boss-primary prose-blockquote:border-l-emerald-500"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.contents) }}
-              />
-            )}
-
-            {post.fileList && post.fileList.length > 0 && (
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {post.fileList.map((f) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={f.id}
-                    src={f.filePath ?? ''}
-                    alt={f.fileNm ?? ''}
-                    className="h-32 w-full rounded-lg border border-boss-border object-cover"
-                  />
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* 구인구직 연락 요청 */}
-          {isJobPost && !isMine && (
-            <Section title="작성자에게 연락 요청" icon={Phone}>
-              {!contactOpen ? (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs text-boss-text-muted">
-                    버튼을 누르면 작성자에게 푸시 알림이 전송됩니다.
-                  </p>
-                  <Button variant="primary" icon={Phone} onClick={() => setContactOpen(true)}>
-                    연락 요청
-                  </Button>
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          {/* ───── 좌: 본문 ───── */}
+          <div className="flex min-w-0 flex-col gap-4">
+            <ContentCard>
+              <div className="border-b border-boss-border px-5 py-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {post.typeDtNm && <StatusPill tone={categoryTone}>{post.typeDtNm}</StatusPill>}
+                  <span className="font-boss-head text-[12px] tabular-nums text-boss-text-muted">
+                    #{boardId}
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-boss-text-secondary">연락 요청 메시지</span>
-                    <button
-                      type="button"
-                      onClick={() => setContactOpen(false)}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
-                    >
-                      <X size={14} />
-                    </button>
+                <h2 className="mt-2 break-words font-boss-head text-[22px] font-semibold leading-tight tracking-[0.01em] text-boss-text">
+                  {post.subject ?? '(제목 없음)'}
+                </h2>
+                <p className="mt-1.5 text-[12.5px] text-boss-text-secondary">
+                  {displayName(post)}
+                  <span className="mx-1.5 text-boss-text-ghost">·</span>
+                  <span className="font-boss-head tabular-nums">{formatDate(post.crtDtm)}</span>
+                </p>
+              </div>
+
+              <div className="px-5 py-5">
+                {looksLikePlainText(post.contents) ? (
+                  <div className="whitespace-pre-wrap text-[14px] leading-[1.7] text-boss-text">
+                    {post.contents ?? ''}
                   </div>
-                  <textarea
-                    value={contactMsg}
-                    onChange={(e) => setContactMsg(e.target.value)}
-                    placeholder="전달할 메시지를 입력하세요. (선택, 예: 오전에 통화 가능합니다)"
-                    rows={3}
-                    maxLength={200}
-                    className="w-full resize-none rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                ) : (
+                  <div
+                    className={HTML_BODY_CLS}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.contents) }}
                   />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-boss-text-muted">{contactMsg.length}/200</span>
-                    <div className="flex items-center gap-2">
-                      <Button variant="secondary" onClick={() => setContactOpen(false)}>
-                        취소
-                      </Button>
-                      <Button
-                        variant="primary"
-                        icon={Send}
-                        onClick={onContactRequest}
-                        disabled={contactSending}
-                      >
-                        {contactSending ? '전송 중…' : '보내기'}
-                      </Button>
-                    </div>
+                )}
+              </div>
+
+              {post.fileList && post.fileList.length > 0 && (
+                <div className="border-t border-boss-border px-5 py-4">
+                  <p className="boss-mono-label mb-2">첨부 {post.fileList.length}</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {post.fileList.map((f) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={f.id}
+                        src={f.filePath ?? ''}
+                        alt={f.fileNm ?? ''}
+                        className="h-32 w-full border border-boss-border object-cover"
+                      />
+                    ))}
                   </div>
                 </div>
               )}
-            </Section>
-          )}
+            </ContentCard>
 
-          {/* 댓글 영역 */}
-          <Section title={`댓글 (${comments.length})`} icon={MessageCircle}>
-            <div className="flex items-start gap-2">
-              <textarea
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                placeholder="댓글을 입력하세요"
-                rows={2}
-                className="flex-1 resize-none rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-              />
-              <Button
-                variant="primary"
-                size="md"
-                icon={Send}
-                onClick={onSubmitComment}
-                disabled={submittingComment}
-              >
-                등록
-              </Button>
-            </div>
+            {/* 구인구직 연락 요청 */}
+            {isJobPost && !isMine && (
+              <ContentCard>
+                <CardHead title="작성자에게 연락 요청" meta="푸시 알림으로 전달됩니다" />
+                <div className="px-5 py-4">
+                  {!contactOpen ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-[13px] text-boss-text-secondary">
+                        버튼을 누르면 작성자에게 연락 요청 푸시가 갑니다. 연락처는 작성자가 직접
+                        답할 때 공유됩니다.
+                      </p>
+                      <Button variant="primary" icon={Phone} onClick={() => setContactOpen(true)}>
+                        연락 요청
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <label htmlFor="contactMsg" className="boss-label">
+                          전달할 메시지 (선택)
+                        </label>
+                        <textarea
+                          id="contactMsg"
+                          value={contactMsg}
+                          onChange={(e) => setContactMsg(e.target.value)}
+                          placeholder="예: 오전에 통화 가능합니다"
+                          rows={3}
+                          maxLength={200}
+                          className="boss-input resize-none"
+                        />
+                        <p className="mt-1 text-right font-boss-head text-[11px] tabular-nums text-boss-text-muted">
+                          {contactMsg.length} / 200
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="secondary" onClick={() => setContactOpen(false)}>
+                          취소
+                        </Button>
+                        <Button variant="primary" onClick={onContactRequest} disabled={contactSending}>
+                          {contactSending ? '전송 중…' : '보내기'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ContentCard>
+            )}
 
-            {comments.length === 0 ? (
-              <EmptyState
-                icon={MessageCircle}
-                title="아직 댓글이 없습니다"
-                description="첫 번째 댓글을 남겨보세요."
-              />
-            ) : (
-              <ul className="divide-y divide-boss-border">
-                {comments.map((c) => {
-                  const cMine = !!(c.crtCustId && myUserId && c.crtCustId === myUserId);
-                  return (
-                    <li key={c.boardId} className="py-3">
-                      <div className="mb-1 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs text-boss-text-muted">
-                          <span className="font-semibold text-boss-text-secondary">
-                            {displayName(c)}
-                          </span>
-                          <span>·</span>
-                          <span>{formatDate(c.crtDtm)}</span>
+            {/* 댓글 */}
+            <ContentCard>
+              <CardHead title="댓글" count={comments.length} countTone="muted" />
+              <div className="flex items-start gap-2 border-b border-boss-border px-5 py-4">
+                <textarea
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  placeholder="댓글을 입력하세요"
+                  rows={2}
+                  aria-label="댓글 입력"
+                  className="boss-input !min-h-[60px] flex-1 resize-none"
+                />
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={onSubmitComment}
+                  disabled={submittingComment}
+                  className="h-[60px]"
+                >
+                  {submittingComment ? '등록 중…' : '등록'}
+                </Button>
+              </div>
+
+              {comments.length === 0 ? (
+                <p className="px-5 py-8 text-center text-[13px] text-boss-text-secondary">
+                  아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.
+                </p>
+              ) : (
+                <div>
+                  {comments.map((c) => {
+                    const cMine = !!(c.crtCustId && myUserId && c.crtCustId === myUserId);
+                    return (
+                      <div
+                        key={c.boardId}
+                        className="flex items-start gap-3 border-b border-boss-border-row px-5 py-3 last:border-b-0"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] text-boss-text-secondary">
+                            <span className="font-semibold text-boss-text">{displayName(c)}</span>
+                            <span className="mx-1.5 text-boss-text-ghost">·</span>
+                            <span className="font-boss-head tabular-nums">{formatDate(c.crtDtm)}</span>
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-[1.6] text-boss-text">
+                            {c.contents ?? ''}
+                          </p>
                         </div>
                         {cMine && (
                           <button
                             type="button"
-                            onClick={() => onDeleteComment(c.boardId)}
-                            className="inline-flex items-center gap-1 text-xs text-boss-text-muted hover:text-boss-error"
+                            onClick={() => setCommentDeleteId(c.boardId ?? null)}
+                            className="boss-btn boss-btn-sm boss-btn-ghost -mr-2 !text-boss-text-muted hover:!text-boss-error"
                           >
-                            <Trash2 size={12} /> 삭제
+                            삭제
                           </button>
                         )}
                       </div>
-                      <p className="whitespace-pre-wrap text-sm text-boss-text">{c.contents ?? ''}</p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Section>
-        </>
-      )}
-    </div>
-  );
-}
+                    );
+                  })}
+                </div>
+              )}
+            </ContentCard>
+          </div>
 
-// ───────────────────────────────────────────
-// 로컬 헬퍼: Section (아이콘 + 타이틀 카드)
-// ───────────────────────────────────────────
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
-        <Icon size={15} className="text-boss-primary" />
-        {title}
-      </h3>
-      <div className="space-y-3">{children}</div>
-    </Card>
+          {/* ───── 우: 정보 · 관리 ───── */}
+          <div className="flex flex-col gap-4">
+            <Panel kicker="게시글" title="정보">
+              <dl>
+                <DescRow label="작성자" value={displayName(post)} />
+                <DescRow
+                  label="게시판"
+                  value={post.typeDtNm ?? post.typeDtCd ?? '-'}
+                />
+                <DescRow
+                  label="작성일"
+                  value={<span className="font-boss-head tabular-nums">{formatDate(post.crtDtm)}</span>}
+                />
+                <DescRow
+                  label="조회"
+                  value={<span className="font-boss-head tabular-nums">{post.viewCnt ?? 0}</span>}
+                />
+                <DescRow
+                  label="댓글"
+                  value={<span className="font-boss-head tabular-nums">{comments.length}</span>}
+                />
+                <DescRow
+                  label="좋아요"
+                  value={<span className="font-boss-head tabular-nums">{post.likeCnt ?? 0}</span>}
+                />
+              </dl>
+              <Button
+                variant={liked ? 'primary' : 'secondary'}
+                icon={Heart}
+                onClick={onToggleLike}
+                disabled={likePending}
+                aria-pressed={liked}
+                className="mt-4 w-full"
+              >
+                {liked ? '좋아요 취소' : '좋아요'}
+              </Button>
+            </Panel>
+
+            <Panel kicker="관리" title={isMine ? '내 글' : '문제가 있는 글인가요?'}>
+              {isMine ? (
+                <div className="flex flex-col gap-2">
+                  <ButtonLink
+                    href={`/boss/community/${boardId}/edit`}
+                    variant="secondary"
+                    icon={Pencil}
+                    className="w-full"
+                  >
+                    수정
+                  </ButtonLink>
+                  <Button
+                    variant="danger"
+                    icon={Trash2}
+                    onClick={() => setDeleteOpen(true)}
+                    className="w-full"
+                  >
+                    삭제
+                  </Button>
+                  <p className="text-[12px] leading-relaxed text-boss-text-secondary">
+                    삭제한 글과 댓글은 되돌릴 수 없습니다.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <ButtonLink
+                    href={`/boss/community/${boardId}/report`}
+                    variant="secondary"
+                    icon={Flag}
+                    className="w-full"
+                  >
+                    신고
+                  </ButtonLink>
+                  <p className="text-[12px] leading-relaxed text-boss-text-secondary">
+                    광고 · 욕설 · 개인정보 노출 등 규정 위반 글을 신고하면 운영팀이 확인합니다.
+                  </p>
+                </div>
+              )}
+            </Panel>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="이 글을 삭제할까요?"
+        description="글과 달린 댓글이 함께 사라지며 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        loading={deleting}
+        onConfirm={() => void onDelete()}
+        onCancel={() => setDeleteOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={commentDeleteId !== null}
+        title="댓글을 삭제할까요?"
+        description="삭제한 댓글은 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        loading={commentDeleting}
+        onConfirm={() => void onDeleteComment()}
+        onCancel={() => setCommentDeleteId(null)}
+      />
+    </div>
   );
 }

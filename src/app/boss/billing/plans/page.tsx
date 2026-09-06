@@ -1,27 +1,25 @@
 'use client';
 
+// 요금제 — Industry 패턴 (참조 agent/billing 의 광고 상품 카드)
+//
+//   BillingNav(Seg) + 새로고침 → 사각 플랜 패널 나열(sm 2열 · lg 3열).
+//   추천 플랜은 accent 테두리 + outline 태그(Badge tone="violet"). 가격은 26px Barlow Condensed.
+//   화면 제목은 헤더(PAGE_META)가 그린다. 신청이 성공하면 셸의 구독 정보도 갱신한다.
+
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  AlertCircle,
-  ArrowLeft,
-  CheckCircle2,
-  CreditCard,
-  Layers,
-  Loader2,
-  RefreshCw,
-  Sparkles,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossBillingApi } from '@/lib/api/boss/billing';
 import type { BossBillingPlan } from '@/types/boss-billing';
-import { PageHeader, Card, Button, EmptyState, Skeleton } from '@/components/boss/ui';
+import { AlertBanner, Badge, Button, EmptyState, Skeleton } from '@/components/boss/ui';
+import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import BillingNav from '../BillingNav';
 import { formatPrice, formatPeriod } from '../utils';
 
 export default function BillingPlansPage() {
   const router = useRouter();
+  const { refreshSubscription } = useBossPortal();
   const [plans, setPlans] = useState<BossBillingPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,110 +55,94 @@ export default function BillingPlansPage() {
         toast.success(res.data?.message ?? '구독이 신청되었습니다.');
         router.refresh();
         await load();
+        refreshSubscription();
       }
       setActionPlanId(null);
     },
-    [load, router],
+    [load, router, refreshSubscription],
   );
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeader
-        eyebrow="Billing"
-        title="요금제"
-        description="이용 가능한 요금제를 비교하고 선택하세요."
-        breadcrumbs={[{ label: '결제 관리', href: '/boss/billing' }, { label: '요금제' }]}
-        actions={
-          <Button
-            variant="secondary"
-            icon={isLoading ? Loader2 : RefreshCw}
-            onClick={() => void load()}
-            disabled={isLoading}
-          >
-            새로 고침
-          </Button>
-        }
-      />
-
-      <BillingNav />
-
-      <Link
-        href="/boss/billing"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-      >
-        <ArrowLeft size={14} /> 결제 관리로 돌아가기
-      </Link>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <BillingNav />
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={() => void load()}
+          disabled={isLoading}
+        >
+          새로고침
+        </Button>
+      </div>
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-error/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <div className="flex-1">{error}</div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="text-xs font-medium text-boss-error hover:text-boss-error"
-          >
-            다시 시도
-          </button>
-        </div>
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void load()}>
+              다시 시도
+            </Button>
+          }
+        >
+          {error}
+        </AlertBanner>
       )}
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <PlanSkeleton />
           <PlanSkeleton />
           <PlanSkeleton />
         </div>
       ) : plans.length === 0 ? (
         <EmptyState
-          icon={Layers}
-          title="이용 가능한 요금제가 없습니다"
-          description="잠시 후 다시 확인해주세요."
+          title={error ? '요금제를 불러오지 못했습니다' : '지금 신청할 수 있는 요금제가 없습니다'}
+          description={
+            error
+              ? '네트워크 상태를 확인하고 새로고침해주세요.'
+              : '판매 중인 요금제가 없습니다. 잠시 후 다시 확인하거나 고객센터로 문의해주세요.'
+          }
           action={
-            <Button variant="secondary" icon={RefreshCw} onClick={() => void load()}>
-              새로 고침
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => void load()}>
+              새로고침
             </Button>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => {
             const isProcessing = actionPlanId === plan.planId;
             return (
-              <Card
+              <section
                 key={plan.planId}
-                className={`relative flex flex-col rounded-2xl border-boss-border bg-boss-surface p-6 ${
-                  plan.isPopular
-                    ? 'border-boss-primary/30 shadow-boss-md shadow-emerald-500/10'
-                    : ''
+                className={`boss-card flex flex-col gap-2.5 p-5 ${
+                  plan.isPopular ? '!border-boss-primary' : ''
                 }`}
               >
-                {plan.isPopular && (
-                  <div className="absolute -top-3 left-5">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-boss-primary/20 bg-boss-primary/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-boss-primary">
-                      <Sparkles size={10} />
-                      인기
-                    </span>
-                  </div>
-                )}
-
-                <h3 className="text-lg font-bold text-boss-text">{plan.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="boss-section-title">{plan.title}</h3>
+                  {plan.isPopular && <Badge tone="violet">추천</Badge>}
+                </div>
                 {plan.description && (
-                  <p className="mt-1 text-sm text-boss-text-muted">{plan.description}</p>
+                  <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+                    {plan.description}
+                  </p>
                 )}
 
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-boss-primary">
+                <div className="flex items-baseline gap-1">
+                  <span className="font-boss-head text-[26px] font-semibold leading-none tabular-nums text-boss-text">
                     {formatPrice(plan)}
                   </span>
-                  <span className="text-xs text-boss-text-muted">{formatPeriod(plan)}</span>
+                  <span className="text-[12px] text-boss-text-muted">{formatPeriod(plan)}</span>
                 </div>
 
                 {plan.features && plan.features.length > 0 && (
-                  <ul className="mt-4 flex-1 space-y-2 text-sm text-boss-text-secondary">
+                  <ul className="flex-1 space-y-1.5 border-t border-boss-border-row pt-2.5 text-[12.5px] leading-relaxed text-boss-text-secondary">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-boss-primary" />
+                      <li key={feature} className="flex items-start gap-1.5">
+                        <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -168,36 +150,39 @@ export default function BillingPlansPage() {
                 )}
 
                 <Button
-                  variant="primary"
+                  variant={plan.isPopular ? 'primary' : 'secondary'}
                   size="md"
-                  icon={isProcessing ? Loader2 : CreditCard}
-                  className="mt-6 w-full"
+                  className="mt-2 w-full"
                   onClick={() => void handleSelect(plan)}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? '처리 중...' : '선택'}
+                  {isProcessing ? '처리 중…' : '이 플랜 신청'}
                 </Button>
-              </Card>
+              </section>
             );
           })}
         </div>
       )}
+
+      <p className="text-[12px] leading-relaxed text-boss-text-muted">
+        신청하면 자동 갱신으로 시작됩니다. 구독 취소는 구독 상태 화면에서 할 수 있습니다.
+      </p>
     </div>
   );
 }
 
 function PlanSkeleton() {
   return (
-    <Card className="rounded-2xl border-boss-border bg-boss-surface p-6">
+    <div className="boss-card p-5" aria-busy>
       <Skeleton className="mb-2 h-5 w-24" />
       <Skeleton className="mb-4 h-4 w-full" />
-      <Skeleton className="mb-6 h-8 w-32" />
-      <div className="mb-6 space-y-2">
+      <Skeleton className="mb-5 h-8 w-32" />
+      <div className="mb-5 space-y-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
         <Skeleton className="h-4 w-4/6" />
       </div>
-      <Skeleton className="h-10 w-full" />
-    </Card>
+      <Skeleton className="h-9 w-full" />
+    </div>
   );
 }

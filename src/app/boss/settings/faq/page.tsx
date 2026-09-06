@@ -1,10 +1,16 @@
 'use client';
 
-// 사장님 FAQ
+// 자주 묻는 질문 — Industry 패턴
+//
+//   필터 줄: ListTabs(카테고리) + 검색(boss-input) + 우측 "전체 n건"
+//   → 패널 안 행 리스트(사각 아코디언). 행 = 카테고리 태그 + 질문 + ›(펼침 시 ⌄)
+//   화면 제목은 헤더(PAGE_META)가 그린다. /boss/help/faq 도 이 화면을 그대로 쓴다.
+//
 // Flutter 원본: lib/app/setting/faq_page.dart
+
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, ChevronDown, Search } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { ContentCard, EmptyState, ListTabs, SearchInput, Tag } from '@/components/boss/ui';
 
 type FaqItem = {
   category: string;
@@ -76,6 +82,8 @@ const FAQ_LIST: FaqItem[] = [
   },
 ];
 
+const CATEGORY_TABS = FAQ_CATEGORIES.map((c) => ({ key: c, label: c }));
+
 export default function BossFaqPage() {
   const [selected, setSelected] = useState('전체');
   const [keyword, setKeyword] = useState('');
@@ -91,74 +99,65 @@ export default function BossFaqPage() {
   }, [selected, keyword]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss/settings"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 설정
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">자주 묻는 질문</h1>
-        <div className="w-10" />
-      </div>
-
-      <div className="rounded-2xl border border-boss-border bg-boss-surface p-4">
-        <div className="relative">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted"
-          />
-          <input
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-col gap-2.5">
+        <ListTabs tabs={CATEGORY_TABS} active={selected} onChange={setSelected} />
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <SearchInput
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="궁금한 것을 빠르게 검색해보세요."
-            className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/40 pl-9 pr-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
+            onChange={setKeyword}
+            placeholder="질문 · 답변 검색"
+            hint={false}
+            className="w-full sm:w-[280px]"
           />
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {FAQ_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelected(cat)}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                selected === cat
-                  ? 'bg-boss-primary text-boss-text'
-                  : 'border border-boss-border bg-boss-elevated/40 text-boss-text-secondary hover:bg-boss-elevated/40'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+            전체 {filtered.length}건
+          </span>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
+      <ContentCard>
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-boss-text-muted">검색 결과가 없습니다.</div>
+          <div className="p-5">
+            <EmptyState
+              title="맞는 질문이 없습니다"
+              description={
+                keyword.trim()
+                  ? `"${keyword.trim()}" 이(가) 들어간 질문이 없습니다. 다른 단어로 검색하거나 카테고리를 전체로 바꿔보세요.`
+                  : '이 카테고리에는 아직 등록된 질문이 없습니다. 전체 카테고리에서 찾아보세요.'
+              }
+            />
+          </div>
         ) : (
           filtered.map((item, idx) => {
             const open = openIdx === idx;
             return (
-              <div key={`${item.q}-${idx}`} className="border-b border-boss-border/70 last:border-b-0">
+              <div key={`${item.q}-${idx}`} className="border-b border-boss-border-row last:border-b-0">
                 <button
                   type="button"
+                  aria-expanded={open}
                   onClick={() => setOpenIdx(open ? null : idx)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-boss-elevated/40"
+                  className={`flex w-full items-center gap-3 px-5 py-3 text-left transition-colors duration-[120ms] ease-out hover:bg-boss-elevated ${
+                    open ? 'bg-boss-elevated' : ''
+                  }`}
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-boss-primary">{item.category}</div>
-                    <div className="mt-0.5 text-sm font-semibold text-boss-text">{item.q}</div>
-                  </div>
+                  <Tag tone="neutral" className="w-[64px] justify-center">
+                    {item.category}
+                  </Tag>
+                  <span className="min-w-0 flex-1 text-[13.5px] font-semibold text-boss-text">
+                    {item.q}
+                  </span>
                   <ChevronDown
-                    size={16}
-                    className={`shrink-0 text-boss-text-muted transition ${open ? 'rotate-180' : ''}`}
+                    size={15}
+                    strokeWidth={1.75}
+                    className={`flex-none text-boss-text-ghost transition-transform duration-[120ms] ${
+                      open ? 'rotate-180 text-boss-text-secondary' : ''
+                    }`}
                   />
                 </button>
                 {open && (
-                  <div className="border-t border-boss-border/70 bg-boss-bg/40 px-4 py-4 text-sm leading-relaxed text-boss-text-secondary">
+                  <div className="border-t border-boss-border-row bg-boss-inset px-5 py-4 text-[13.5px] leading-[1.75] text-boss-text-soft">
                     {item.a}
                   </div>
                 )}
@@ -166,7 +165,7 @@ export default function BossFaqPage() {
             );
           })
         )}
-      </div>
+      </ContentCard>
     </div>
   );
 }

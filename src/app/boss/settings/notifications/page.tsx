@@ -1,11 +1,19 @@
 'use client';
 
-// 사장님 설정 → 알림 설정
+// 푸시 알림(기기별) 설정 — Industry 패턴
+//
+//   패널 안 토글 행(제목 13.5px 600 + 설명 12.5px + 우측 Toggle) 세 줄
+//   → 수신 시각 행(boss-input type=time) → 하단 액션 패널(취소 secondary / 저장 primary 우측)
+//   화면 제목은 헤더(PAGE_META)가 그린다.
+//
+//   PUSH · 마케팅 수신 여부는 기기(OS · 브라우저) 설정이 정한다 — 여기서는 켜져 있음을 보여 주되
+//   토글을 잠근다. 눌러도 아무 일도 안 일어나는 토글보다 잠긴 토글이 덜 속인다.
+//
 // Flutter 원본: lib/app/setting/noti_page.dart
+
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, Save, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { PageHeader, Card, Button } from '@/components/boss/ui';
+import { Button, ButtonLink, ContentCard, Panel, Skeleton, Toggle } from '@/components/boss/ui';
 import { bossUserApi } from '@/lib/api/boss/user';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossUserInfo } from '@/types/boss';
@@ -30,6 +38,31 @@ function parseAlarmTime(value?: string): string {
 
 function isValidTime(value: string): boolean {
   return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+}
+
+// 토글 행 — 제목 13.5px 600 + 설명 12.5px + 우측 Toggle
+function ToggleRow({
+  label,
+  description,
+  enabled,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  description: string;
+  enabled: boolean;
+  onChange: (value: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3.5 border-b border-boss-border-row px-[15px] py-[14px] last:border-b-0">
+      <div className="min-w-0 flex-1">
+        <p className="text-[13.5px] font-semibold text-boss-text">{label}</p>
+        <p className="mt-[3px] text-[12.5px] leading-[1.55] text-boss-text-secondary">{description}</p>
+      </div>
+      <Toggle checked={enabled} onChange={onChange} label={label} disabled={disabled} />
+    </div>
+  );
 }
 
 export default function BossNotificationsSettingPage() {
@@ -109,127 +142,69 @@ export default function BossNotificationsSettingPage() {
     }
   };
 
-  const ToggleRow = ({
-    label,
-    description,
-    enabled,
-    onChange,
-  }: {
-    label: string;
-    description: string;
-    enabled: boolean;
-    onChange: (value: boolean) => void;
-  }) => (
-    <div className="flex items-center justify-between gap-3 py-1">
-      <div>
-        <div className="text-sm font-semibold text-boss-text">{label}</div>
-        <div className="text-xs text-boss-text-muted">{description}</div>
-      </div>
-      <button
-        type="button"
-        onClick={() => onChange(!enabled)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-          enabled ? 'bg-boss-primary' : 'bg-boss-elevated'
-        }`}
-        aria-pressed={enabled}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-boss-surface transition ${
-            enabled ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </button>
-    </div>
-  );
-
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <PageHeader
-        title="알림 설정"
-        description="PUSH 및 마케팅 알림, 알림 수신 시간을 관리합니다."
-        breadcrumbs={[
-          { label: '설정', href: '/boss/settings' },
-          { label: '알림 설정' },
-        ]}
-      />
+    <div className="flex flex-col gap-4">
+      <Panel kicker="이 기기" title={pushEnabled ? '푸시 알림이 켜져 있습니다' : '푸시 알림이 꺼져 있습니다'}>
+        <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+          신규 견적 · 댓글 · 공지 같은 소식을 이 기기로 받습니다. PUSH · 마케팅 수신 자체는 브라우저 ·
+          OS 알림 설정이 정하므로 여기서는 바꿀 수 없습니다.
+        </p>
+      </Panel>
 
-      <Card>
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-              pushEnabled ? 'bg-boss-primary/20 text-boss-primary' : 'bg-boss-elevated/40 text-boss-text-muted'
-            }`}
-          >
-            {pushEnabled ? <Bell size={20} /> : <BellOff size={20} />}
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-boss-text">
-              {pushEnabled ? 'PUSH 알림이 켜져있습니다.' : 'PUSH 알림이 꺼져있습니다.'}
-            </div>
-            <div className="text-xs text-boss-text-muted">
-              신규 견적, 댓글, 공지사항 등 중요한 소식을 PUSH로 받아보세요.
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="space-y-4">
+      <ContentCard>
         <ToggleRow
           label="구인 / 구직 지역 알림"
-          description="내 회사 지역과 일치하는 구인/구직 글이 올라오면 PUSH로 알려줍니다."
+          description="내 회사 지역과 일치하는 구인 · 구직 글이 올라오면 알려줍니다."
           enabled={jobAlarmEnabled}
           onChange={setJobAlarmEnabled}
         />
-        <div className="border-t border-boss-border/70" />
         <ToggleRow
           label="PUSH 알림"
-          description="신규글, 좋아요, 댓글 등 활동 알림을 수신합니다. (기기 설정에서 변경)"
+          description="신규 글 · 좋아요 · 댓글 등 활동 알림. 기기 설정에서 바꿉니다."
           enabled={pushEnabled}
           onChange={() => {}}
+          disabled
         />
-        <div className="border-t border-boss-border/70" />
         <ToggleRow
           label="마케팅 알림"
-          description="프로모션, 이벤트, 혜택 정보를 수신합니다. (기기 설정에서 변경)"
+          description="프로모션 · 이벤트 · 혜택 안내. 기기 설정에서 바꿉니다."
           enabled={marketingEnabled}
           onChange={() => {}}
+          disabled
         />
-        <p className="text-xs text-boss-text-muted">
-          PUSH/마케팅 수신 여부는 웹 브라우저/OS 기기 설정에서 변경할 수 있습니다.
-        </p>
-      </Card>
+      </ContentCard>
 
-      <Card className="space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-boss-text">알림 수신 시간</h2>
-          <p className="mt-1 text-xs text-boss-text-muted">
-            설정한 시간에 맞춰 알림을 수신합니다. HH:MM 형식으로 입력해주세요.
-          </p>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center gap-2 text-sm text-boss-text-muted">
-            <Loader2 size={16} className="animate-spin" />
-            알림 설정을 불러오는 중...
+      <ContentCard>
+        <div className="flex flex-wrap items-center gap-3.5 px-[15px] py-[14px]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-semibold text-boss-text">수신 시각</p>
+            <p className="mt-[3px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
+              정한 시각에 맞춰 알림을 받습니다. 저장 형식은 HHMM 입니다.
+            </p>
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
+          {loading ? (
+            <Skeleton className="h-9 w-[120px]" />
+          ) : (
             <input
               type="time"
               value={alarmTime}
               onChange={(e) => setAlarmTime(e.target.value)}
-              className="h-10 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+              aria-label="알림 수신 시각"
+              className="boss-input w-auto min-w-[120px] font-boss-head tabular-nums"
             />
-            <span className="text-sm text-boss-text-muted">에 알림 수신</span>
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <Button icon={Save} onClick={handleSave} disabled={saving || loading}>
-            {saving ? '저장 중...' : '저장'}
-          </Button>
+          )}
         </div>
-      </Card>
+      </ContentCard>
+
+      {/* 하단 액션 패널 */}
+      <div className="boss-card flex flex-wrap items-center justify-end gap-2 px-5 py-3.5">
+        <ButtonLink href="/boss/settings" variant="secondary">
+          취소
+        </ButtonLink>
+        <Button variant="primary" onClick={handleSave} disabled={saving || loading}>
+          {saving ? '저장 중…' : '저장'}
+        </Button>
+      </div>
     </div>
   );
 }

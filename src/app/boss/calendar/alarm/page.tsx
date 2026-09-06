@@ -1,29 +1,37 @@
 'use client';
 
-// 사장님 일정 알람 — Flutter `alram_page.dart` 대응
-// 알람(isreminder=true)이 설정된 이벤트만 모아 보여준다.
+// 사장님 일정 알림 — Industry 패턴 (agent.opentohome.com)
+// Flutter `alram_page.dart` 대응. 월간 일정 중 알림(isreminder=true)을 켠 것만 표로 모아 본다.
+//
+//   상단 : ‹ › + 월(Barlow Condensed) · 우측 "알림 n건" + 일정으로 + 새로고침
+//   본문 : 표 — 종류 Tag · 제목 · 날짜 · 시간 · 장소 · 삭제(ghost)
+//   삭제는 ConfirmDialog. 첫 조회 실패(AlertBanner + 다시 시도)와 0건(안내 + 다음 행동)을 구분한다.
+//
+// 화면 제목은 셸 헤더(PAGE_META)가 그린다.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { Bell, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
-  Bell,
-  RefreshCw,
-  Clock,
-  MapPin,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Inbox,
-} from 'lucide-react';
+  AlertBanner,
+  Button,
+  ButtonLink,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  RowSkeleton,
+  ContentCard,
+  Tag,
+  type StatusTone,
+} from '@/components/boss/ui';
 import { bossCalendarApi, parseBossDateTime } from '@/lib/api/boss/calendar';
 import type { CalendarEvent } from '@/types/boss-calendar';
 
-function eventColor(type?: string | null): string {
-  if (type === 'estimate') return '#8fb2ff';
-  if (type === 'construction') return '#8fdca8';
-  if (type === 'appointment') return '#c9cbe0';
-  return '#6c7093';
+// 종류 → Tag 색쌍 (월간 화면과 같은 매핑)
+function eventTone(type?: string | null): StatusTone {
+  if (type === 'estimate') return 'info';
+  if (type === 'construction') return 'ok';
+  return 'neutral';
 }
 
 function eventLabel(type?: string | null): string {
@@ -38,11 +46,15 @@ function formatYyyyMM(d: Date): string {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}`;
 }
 
+const WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+
 export default function BossCalendarAlarmPage() {
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CalendarEvent | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,148 +89,157 @@ export default function BossCalendarAlarmPage() {
   }, [events]);
 
   const handleDelete = async (ev: CalendarEvent) => {
-    if (!confirm('알람이 설정된 일정을 삭제할까요?')) return;
+    setDeleting(true);
     try {
       const res = await bossCalendarApi.delete(ev.id);
       if (res.success) {
         toast.success('삭제되었습니다.');
+        setPendingDelete(null);
         await load();
       } else {
         toast.error(res.message || '삭제 실패');
       }
     } catch {
       toast.error('네트워크 오류');
+    } finally {
+      setDeleting(false);
     }
   };
 
   const goPrev = () => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1));
   const goNext = () => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1));
 
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-boss-text">
-            <Bell size={20} className="text-boss-warning" /> 일정 알람
-          </h1>
-          <p className="text-sm text-boss-text-muted">알람이 설정된 일정 목록입니다.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
-          </button>
-          <Link
-            href="/boss/calendar"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:text-boss-text"
-          >
-            <CalendarDays size={14} /> 캘린더
-          </Link>
-        </div>
-      </div>
+  const pad = (n: number) => String(n).padStart(2, '0');
 
-      {/* 월 네비 */}
-      <div className="flex items-center justify-between rounded-2xl border border-boss-border bg-boss-surface px-4 py-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={goPrev}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <h2 className="min-w-[140px] text-center text-lg font-semibold text-boss-text">
-            {cursor.getFullYear()}년 {cursor.getMonth() + 1}월
-          </h2>
-          <button
-            type="button"
-            onClick={goNext}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
-          >
-            <ChevronRight size={16} />
-          </button>
+  return (
+    <div className="flex flex-col gap-3.5">
+      {/* 상단 컨트롤 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="inline-flex">
+          <Button variant="secondary" size="sm" onClick={goPrev} aria-label="이전 달">
+            <ChevronLeft size={13} />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goNext} aria-label="다음 달" className="-ml-px">
+            <ChevronRight size={13} />
+          </Button>
         </div>
-        <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
-          알람 {alarms.length}건
+        <h2 className="whitespace-nowrap font-boss-head text-[20px] font-semibold tabular-nums tracking-[-0.01em] text-boss-text">
+          {cursor.getFullYear()}년 {cursor.getMonth() + 1}월
+        </h2>
+        <div className="flex-1" />
+        <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+          {loading ? '불러오는 중…' : `알림 ${alarms.length}건`}
         </span>
+        <ButtonLink href="/boss/calendar" variant="secondary" size="sm">
+          일정으로
+        </ButtonLink>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={() => void load()}
+          disabled={loading}
+        >
+          새로고침
+        </Button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => void load()}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
-      {alarms.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-boss-elevated text-boss-text-muted">
-            <Inbox size={20} />
-          </div>
-          <p className="text-sm font-medium text-boss-text">등록된 알람이 없습니다.</p>
-          <p className="mt-1 text-xs text-boss-text-muted">캘린더에서 일정을 등록할 때 알람을 켜보세요.</p>
-        </div>
+      {loading && events.length === 0 ? (
+        <ContentCard>
+          <RowSkeleton rows={5} />
+        </ContentCard>
+      ) : alarms.length === 0 ? (
+        error ? null : (
+          <EmptyState
+            icon={Bell}
+            title={`${cursor.getMonth() + 1}월에 알림을 켠 일정이 없습니다`}
+            description="일정을 등록하거나 수정할 때 '일정 전 알림' 을 켜면 여기에 모입니다."
+            action={
+              <ButtonLink href="/boss/calendar" variant="primary" size="sm">
+                일정 등록하러 가기
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
-        <ul className="space-y-2">
-          {alarms.map(({ ev, start }) => {
-            const end = parseBossDateTime(ev.endDate);
-            const pad = (n: number) => String(n).padStart(2, '0');
-            const dateStr = `${start.getFullYear()}.${pad(start.getMonth() + 1)}.${pad(start.getDate())}`;
-            const timeStr = end
-              ? `${pad(start.getHours())}:${pad(start.getMinutes())} ~ ${pad(end.getHours())}:${pad(end.getMinutes())}`
-              : `${pad(start.getHours())}:${pad(start.getMinutes())}`;
-            return (
-              <li
-                key={ev.id}
-                className="rounded-2xl border border-boss-border bg-boss-surface p-4 transition-colors hover:border-boss-warning/40"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-boss-warning/10 text-boss-warning">
-                    <Bell size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center gap-2">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: eventColor(ev.eventType) }}
-                      />
-                      <span className="text-[10px] font-semibold text-boss-text-muted">
-                        {eventLabel(ev.eventType)}
-                      </span>
-                      <span className="text-[10px] text-boss-text-muted">#{ev.id}</span>
-                    </div>
-                    <h3 className="mb-1 truncate text-sm font-semibold text-boss-text">
+        <DataTable>
+          <thead>
+            <tr>
+              <th>종류</th>
+              <th>제목</th>
+              <th>날짜</th>
+              <th>시간</th>
+              <th>장소</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {alarms.map(({ ev, start }) => {
+              const end = parseBossDateTime(ev.endDate);
+              const dateStr = `${start.getFullYear()}.${pad(start.getMonth() + 1)}.${pad(start.getDate())}`;
+              const timeStr = ev.isallday
+                ? '종일'
+                : end
+                  ? `${pad(start.getHours())}:${pad(start.getMinutes())} ~ ${pad(end.getHours())}:${pad(end.getMinutes())}`
+                  : `${pad(start.getHours())}:${pad(start.getMinutes())}`;
+              return (
+                <tr key={ev.id}>
+                  <td>
+                    <Tag tone={eventTone(ev.eventType)}>{eventLabel(ev.eventType)}</Tag>
+                  </td>
+                  <td className="wrap max-w-[320px]">
+                    <span className="line-clamp-2 font-medium text-boss-text">
                       {ev.title || '제목 없음'}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-boss-text-muted">
-                      <span className="flex items-center gap-1">
-                        <CalendarDays size={11} /> {dateStr}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={11} /> {timeStr}
-                      </span>
-                      {ev.location && (
-                        <span className="flex items-center gap-1 truncate">
-                          <MapPin size={11} /> {ev.location}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(ev)}
-                    className="rounded-md border border-boss-error/40 bg-boss-error/10 px-3 py-1.5 text-[11px] text-boss-error hover:bg-boss-error/10"
-                  >
-                    삭제
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                    </span>
+                  </td>
+                  <td className="font-boss-head tabular-nums">
+                    {dateStr}{' '}
+                    <span className="text-boss-text-muted">({WEEK_LABELS[start.getDay()]})</span>
+                  </td>
+                  <td className="font-boss-head tabular-nums">{timeStr}</td>
+                  <td className="wrap max-w-[260px] text-boss-text-secondary">
+                    <span className="line-clamp-1">{ev.location || '—'}</span>
+                  </td>
+                  <td className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="!text-boss-text-muted hover:!text-boss-error"
+                      onClick={() => setPendingDelete(ev)}
+                    >
+                      삭제
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="알림이 켜진 일정을 삭제할까요?"
+        description={`${pendingDelete?.title || '제목 없음'} — 알림만 끄려면 일정 화면에서 수정하세요. 삭제한 일정은 되돌릴 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) void handleDelete(pendingDelete);
+        }}
+      />
     </div>
   );
 }

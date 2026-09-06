@@ -1,16 +1,28 @@
 'use client';
 
-// AS 요청 등록/수정 페이지
-// Flutter: as_request_add_page.dart 포팅
-import { Suspense, useEffect, useRef, useState } from 'react';
+// AS 요청 등록/수정 — Industry 패턴 (참조 ListingForm 조판)
+//   좌: 패널 섹션(요청 정보 · 하자 내용 · 하자 사진) + 하단 액션 패널 / 우: 필수 누락 · 안내 패널.
+//   화면 제목은 셸 헤더(PAGE_META)가 그린다.
+// Flutter: as_request_add_page.dart 포팅 — 사진은 URL 입력 + 로컬 파일(dataURL). 수정 시 수리 사진은 원본 유지.
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Loader2, Calendar, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsPriority, AsRequestImage, AsRequestItem } from '@/types/boss-as';
+import {
+  Panel,
+  Field,
+  TextareaField,
+  FieldLabel,
+  Segmented,
+  Button,
+  ButtonLink,
+  Skeleton,
+} from '@/components/boss/ui';
 
 const PRIORITIES: AsPriority[] = ['긴급', '보통', '낮음'];
+const PRIORITY_OPTIONS = PRIORITIES.map((p) => ({ key: p, label: p }));
 
 function todayStr(): string {
   const d = new Date();
@@ -138,6 +150,14 @@ function BossAsAddForm() {
     }
   };
 
+  // 우측 안내 패널용 — 아직 채우지 않은 필수 항목
+  const missing = useMemo(() => {
+    const list: string[] = [];
+    if (!title.trim()) list.push('제목');
+    if (!customerName.trim()) list.push('고객명');
+    return list;
+  }, [title, customerName]);
+
   const handleSave = async () => {
     if (!title.trim()) {
       toast.error('제목을 입력해주세요');
@@ -219,217 +239,238 @@ function BossAsAddForm() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center text-boss-text-muted">
-        <Loader2 size={24} className="animate-spin" />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+        <Skeleton className="h-40" />
       </div>
     );
   }
 
+  const cancelHref = isEditMode ? `/boss/as/${editId}` : '/boss/as';
+  const repairCount = isEditMode && original ? (original.images || []).filter((i) => i.imageType === 'REPAIR').length : 0;
+
   return (
-    <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Link
-            href={isEditMode ? `/boss/as/${editId}` : '/boss/as'}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text"
-          >
-            <ArrowLeft size={16} />
-          </Link>
-          <h1 className="text-xl font-bold text-boss-text">{isEditMode ? 'AS 요청 수정' : 'AS 요청 등록'}</h1>
-        </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-boss-primary hover:text-boss-text disabled:opacity-50"
-        >
-          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-          저장
-        </button>
-      </div>
-
-      {/* 하자 사진 섹션 */}
-      <section className="space-y-2 rounded-2xl border border-boss-border bg-boss-surface p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-1.5 text-sm font-bold text-boss-error">
-            <ImageIcon size={14} /> 하자 사진
-            <span className="text-xs text-boss-text-muted">{defectImages.length}/10</span>
-          </h2>
-        </div>
-
-        {/* URL / 파일 입력 */}
-        <div className="flex items-center gap-2">
-          <input
-            type="url"
-            value={imageInput}
-            onChange={(e) => setImageInput(e.target.value)}
-            placeholder="이미지 URL 추가 (https://...)"
-            className="h-9 flex-1 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={addImageUrl}
-            disabled={defectImages.length >= 10}
-            className="h-9 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 text-xs font-bold text-boss-primary hover:border-boss-primary disabled:opacity-50"
-          >
-            추가
-          </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={defectImages.length >= 10}
-            className="h-9 rounded-lg border border-boss-border bg-boss-elevated px-3 text-xs font-bold text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
-          >
-            파일
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
-
-        {/* 썸네일 목록 */}
-        {defectImages.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {defectImages.map((url, idx) => (
-              <div key={`${url}-${idx}`} className="relative h-20 w-20 flex-shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`하자 ${idx + 1}`}
-                  className="h-full w-full rounded-lg border border-boss-border object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(idx)}
-                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-boss-error/100 text-boss-text shadow"
-                  aria-label="삭제"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 메인 폼 */}
-      <section className="space-y-3 rounded-2xl border border-boss-border bg-boss-surface p-4">
-        {/* 주문 ID 연결 */}
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-primary">주문 ID 연결 (선택)</label>
-          <input
-            type="number"
-            value={orderId ?? ''}
-            onChange={(e) => setOrderId(e.target.value ? Number(e.target.value) : null)}
-            placeholder="연결할 주문 ID"
-            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
-        </div>
-
-        {/* 요청일 + 우선순위 */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[160px]">
-            <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-boss-info">
-              <Calendar size={12} /> 요청일
-            </label>
-            <input
-              type="date"
-              value={requestDate}
-              onChange={(e) => setRequestDate(e.target.value)}
-              className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none"
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+      {/* ── 좌: 폼 ── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        {/* 요청 정보 */}
+        <Panel title="요청 정보" kicker={isEditMode ? 'EDIT' : 'NEW'}>
+          <div className="flex flex-col gap-4">
+            <Field
+              id="title"
+              label="제목"
+              required
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="예: 안방 벽지 들뜸 재시공"
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field
+                id="customerName"
+                label="고객명"
+                required
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="고객 이름"
+              />
+              <Field
+                id="customerPhone"
+                label="연락처"
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="010-0000-0000"
+              />
+            </div>
+            <Field
+              id="address"
+              label="주소"
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="시공 현장 주소"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-boss-text-muted">우선순위</label>
-            <div className="flex gap-1">
-              {PRIORITIES.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPriority(p)}
-                  className={`h-9 rounded-md px-3 text-xs font-bold ${
-                    priority === p
-                      ? 'bg-boss-surface text-boss-text'
-                      : 'border border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+        </Panel>
+
+        {/* 하자 내용 */}
+        <Panel title="하자 내용" kicker="DEFECT">
+          <div className="flex flex-col gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field
+                id="requestDate"
+                label="요청일"
+                type="date"
+                value={requestDate}
+                onChange={(e) => setRequestDate(e.target.value)}
+              />
+              <div>
+                <FieldLabel>우선순위</FieldLabel>
+                <Segmented
+                  ariaLabel="우선순위"
+                  options={PRIORITY_OPTIONS}
+                  value={priority}
+                  onChange={setPriority}
+                />
+              </div>
             </div>
+            <Field
+              id="orderId"
+              label="연결할 주문 번호"
+              type="number"
+              value={orderId ?? ''}
+              onChange={(e) => setOrderId(e.target.value ? Number(e.target.value) : null)}
+              placeholder="예: 1234"
+              hint="주문 관리의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다."
+              className="md:w-1/2 md:pr-2"
+            />
+            <TextareaField
+              id="description"
+              label="하자 설명"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="위치 · 증상 · 발생 시점을 적어 두면 재방문 때 도움이 됩니다"
+            />
           </div>
-        </div>
+        </Panel>
 
-        {/* 제목 */}
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">
-            제목 <span className="text-boss-error">*</span>
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="AS 요청 제목"
-            className="h-10 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-base font-bold text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
-        </div>
+        {/* 하자 사진 */}
+        <Panel
+          title="하자 사진"
+          kicker="PHOTOS"
+          right={
+            <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+              {defectImages.length} / 10
+            </span>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            {/* URL / 파일 입력 */}
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="url"
+                aria-label="하자 사진 URL"
+                value={imageInput}
+                onChange={(e) => setImageInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addImageUrl();
+                  }
+                }}
+                placeholder="https:// 로 시작하는 이미지 주소"
+                className="boss-input min-w-0 flex-1"
+              />
+              <Button
+                variant="secondary"
+                icon={Plus}
+                onClick={addImageUrl}
+                disabled={defectImages.length >= 10}
+              >
+                추가
+              </Button>
+              <Button
+                variant="secondary"
+                icon={Upload}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={defectImages.length >= 10 || saving}
+              >
+                파일 선택
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
 
-        {/* 고객명 */}
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">
-            고객명 <span className="text-boss-error">*</span>
-          </label>
-          <input
-            type="text"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="고객명"
-            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
-        </div>
+            {/* 썸네일 목록 */}
+            {defectImages.length === 0 ? (
+              <div className="boss-dashed-cta flex flex-col items-center justify-center py-8 text-center">
+                <ImageIcon size={22} strokeWidth={1.5} className="mb-2 text-boss-text-muted" />
+                <p className="text-[12.5px] text-boss-text-secondary">
+                  하자 사진이 아직 없습니다 — 주소를 넣거나 파일을 골라 추가하세요
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                {defectImages.map((url, idx) => (
+                  <div
+                    key={`${url}-${idx}`}
+                    className="group relative aspect-square overflow-hidden border border-boss-border bg-boss-bg"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`하자 ${idx + 1}`} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center bg-boss-error text-boss-primary-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                      aria-label={`하자 사진 ${idx + 1} 삭제`}
+                    >
+                      <X size={12} />
+                    </button>
+                    <span className="absolute bottom-1 left-1 bg-boss-text/75 px-1.5 py-px font-boss-head text-[10px] font-semibold text-boss-bg">
+                      {idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Panel>
 
-        {/* 전화 */}
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">전화번호</label>
-          <input
-            type="tel"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="010-0000-0000"
-            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
+        {/* 하단 액션 패널 */}
+        <div className="boss-card flex flex-wrap items-center gap-2.5 px-4 py-3.5">
+          <span className="text-[12.5px] text-boss-text-secondary">
+            {missing.length > 0 ? `필수 ${missing.length}항목 남음` : '저장할 준비가 됐습니다'}
+          </span>
+          <ButtonLink href={cancelHref} variant="secondary" className="ml-auto">
+            취소
+          </ButtonLink>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            {saving ? '저장 중…' : isEditMode ? '수정 저장' : 'AS 접수'}
+          </Button>
         </div>
+      </div>
 
-        {/* 주소 */}
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">주소</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="주소 입력"
-            className="h-9 w-full rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
-        </div>
+      {/* ── 우: 안내 ── */}
+      <div className="flex flex-col gap-4">
+        <Panel kicker="필수 누락">
+          {missing.length === 0 ? (
+            <p className="text-[13px] text-boss-success">필수 항목을 모두 채웠습니다.</p>
+          ) : (
+            <ul className="flex flex-col gap-1 text-[13px] text-boss-error">
+              {missing.map((m) => (
+                <li key={m}>· {m}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            연락처 · 주소 · 사진은 선택이지만, 재방문 일정을 잡으려면 연락처는 꼭 남겨 두세요.
+          </p>
+        </Panel>
 
-        {/* 하자 설명 */}
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">하자 설명</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            placeholder="하자 내용을 자세히 설명해주세요"
-            className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none"
-          />
-        </div>
-      </section>
+        <Panel kicker="안내">
+          <p className="text-[12.5px] leading-[1.7] text-boss-text-soft">
+            접수한 요청은 <strong className="font-semibold">접수</strong> 상태로 시작합니다. 상세 화면에서
+            진행 → 완료로 바꿀 수 있고, 되돌릴 수는 없습니다.
+          </p>
+          {isEditMode && (
+            <p className="mt-2 text-[12.5px] leading-[1.7] text-boss-text-soft">
+              수리 사진 {repairCount}장은 여기서 바꾸지 않아도 그대로 유지됩니다.
+            </p>
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }
@@ -439,8 +480,12 @@ export default function BossAsAddPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-64 items-center justify-center text-boss-text-muted">
-          <Loader2 size={24} className="animate-spin" />
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+          </div>
+          <Skeleton className="h-40" />
         </div>
       }
     >

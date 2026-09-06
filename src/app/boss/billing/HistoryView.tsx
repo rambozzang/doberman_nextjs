@@ -1,37 +1,36 @@
 'use client';
 
+// 결제 내역 · 갱신 관리 공용 표 — Industry 패턴 (참조 agent/billing 의 내 광고 현황 표)
+//
+//   BillingNav(Seg) + 우측 "전체 n건" + 새로고침 → 패널 안 표(DataTable).
+//   화면 제목은 헤더(PAGE_META)가 그린다. 첫 조회 실패와 0건은 문구를 달리 한다.
+//   /boss/billing/history 와 /boss/billing/renewals 가 같은 API(getHistory)를 본다.
+
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import {
-  AlertCircle,
-  ArrowLeft,
-  Clock,
-  Loader2,
-  Receipt,
-  RefreshCw,
-  Store,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { bossBillingApi } from '@/lib/api/boss/billing';
 import type { BossPurchaseHistoryItem } from '@/types/boss-billing';
-import { PageHeader, Card, Button, EmptyState, Skeleton, Badge } from '@/components/boss/ui';
+import {
+  AlertBanner,
+  Button,
+  CardHead,
+  ContentCard,
+  DataTable,
+  EmptyState,
+  RowSkeleton,
+  Tag,
+} from '@/components/boss/ui';
 import BillingNav from './BillingNav';
-import { formatDate } from './utils';
+import { formatAmount, formatDate, historyStatusTone } from './utils';
 
 interface HistoryViewProps {
+  /** 표 패널 제목 (예: 결제 내역 · 갱신 관리) */
   title: string;
-  description: string;
-  eyebrow?: string;
-  breadcrumbLabel: string;
-  icon?: React.ElementType;
+  /** 0건일 때 안내 — 화면마다 "왜 비었는지" 가 다르다 */
+  emptyDescription: string;
 }
 
-export default function HistoryView({
-  title,
-  description,
-  eyebrow = 'Billing',
-  breadcrumbLabel,
-  icon: HeaderIcon = Receipt,
-}: HistoryViewProps) {
+export default function HistoryView({ title, emptyDescription }: HistoryViewProps) {
   const [items, setItems] = useState<BossPurchaseHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,133 +53,94 @@ export default function HistoryView({
   }, [load]);
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeader
-        eyebrow={eyebrow}
-        title={title}
-        description={description}
-        breadcrumbs={[{ label: '결제 관리', href: '/boss/billing' }, { label: breadcrumbLabel }]}
-        actions={
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <BillingNav />
+        <div className="flex items-center gap-3">
+          {!isLoading && !error && (
+            <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+              전체 {items.length.toLocaleString('ko-KR')}건
+            </span>
+          )}
           <Button
             variant="secondary"
-            icon={isLoading ? Loader2 : RefreshCw}
+            size="sm"
+            icon={RefreshCw}
             onClick={() => void load()}
             disabled={isLoading}
           >
-            새로 고침
+            새로고침
           </Button>
-        }
-      />
-
-      <BillingNav />
-
-      <Link
-        href="/boss/billing"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-      >
-        <ArrowLeft size={14} /> 결제 관리로 돌아가기
-      </Link>
+        </div>
+      </div>
 
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-error/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <div className="flex-1">{error}</div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="text-xs font-medium text-boss-error hover:text-boss-error"
-          >
-            다시 시도
-          </button>
-        </div>
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void load()}>
+              다시 시도
+            </Button>
+          }
+        >
+          {error}
+        </AlertBanner>
       )}
 
-      <Card className="rounded-2xl border-boss-border bg-boss-surface p-0">
-        <div className="flex items-center gap-2 border-b border-boss-border/70 px-5 py-4 text-boss-text">
-          <HeaderIcon className="h-5 w-5 text-boss-primary" />
-          <h2 className="text-base font-semibold">{title}</h2>
-        </div>
+      <ContentCard>
+        <CardHead title={title} />
 
         {isLoading ? (
-          <div className="p-5">
-            <Skeleton className="mb-3 h-8 w-full" />
-            <Skeleton className="mb-3 h-8 w-full" />
-            <Skeleton className="mb-3 h-8 w-full" />
-            <Skeleton className="h-8 w-5/6" />
-          </div>
-        ) : items.length === 0 ? (
+          <RowSkeleton rows={4} />
+        ) : error ? (
           <div className="p-5">
             <EmptyState
-              icon={Receipt}
-              title="내역이 없습니다"
-              description="결제 및 갱신 내역이 여기에 표시됩니다."
+              title="내역을 불러오지 못했습니다"
+              description="네트워크 상태를 확인하고 다시 시도해주세요. 계속 실패하면 고객센터로 문의해주세요."
               action={
-                <Button variant="secondary" icon={RefreshCw} onClick={() => void load()}>
-                  새로 고침
+                <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => void load()}>
+                  다시 시도
                 </Button>
               }
             />
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-boss-border-row/70 text-sm">
-              <thead className="bg-boss-surface/80 text-xs uppercase tracking-wider text-boss-text-muted">
-                <tr>
-                  <th className="px-5 py-3 text-left font-semibold">거래 ID</th>
-                  <th className="px-5 py-3 text-left font-semibold">상품</th>
-                  <th className="px-5 py-3 text-left font-semibold">결제일</th>
-                  <th className="px-5 py-3 text-left font-semibold">만료일</th>
-                  <th className="px-5 py-3 text-right font-semibold">금액</th>
-                  <th className="px-5 py-3 text-left font-semibold">스토어</th>
-                  <th className="px-5 py-3 text-left font-semibold">상태</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-boss-border-row/70 text-boss-text">
-                {items.map((item, idx) => (
-                  <tr
-                    key={item.transactionId ?? `${item.productId ?? 'item'}-${idx}`}
-                    className="hover:bg-boss-elevated"
-                  >
-                    <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-boss-text-muted">
-                      {item.transactionId ?? '-'}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="font-medium text-boss-text">
-                        {item.productName ?? item.productId ?? '-'}
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-boss-text-secondary">
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-boss-text-muted" />
-                        {formatDate(item.purchaseDate)}
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-boss-text-secondary">
-                      {formatDate(item.expirationDate)}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-right font-medium text-boss-text">
-                      {item.amount != null
-                        ? `${item.amount.toLocaleString('ko-KR')} ${item.currency ?? ''}`.trim()
-                        : '-'}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3">
-                      <div className="flex items-center gap-1.5 text-xs text-boss-text-muted">
-                        <Store size={13} />
-                        {item.store ?? '-'}
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3">
-                      <Badge tone={item.status === 'SUCCESS' ? 'emerald' : 'default'}>
-                        {item.status ?? '-'}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        ) : items.length === 0 ? (
+          <div className="p-5">
+            <EmptyState title="아직 내역이 없습니다" description={emptyDescription} />
           </div>
+        ) : (
+          <DataTable className="border-0 shadow-none">
+            <thead>
+              <tr>
+                <th>거래 ID</th>
+                <th>상품</th>
+                <th>결제일</th>
+                <th>만료일</th>
+                <th className="text-right">금액</th>
+                <th>스토어</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, idx) => (
+                <tr key={item.transactionId ?? `${item.productId ?? 'item'}-${idx}`}>
+                  <td className="font-boss-head text-[12.5px] text-boss-text-muted">
+                    {item.transactionId ?? '-'}
+                  </td>
+                  <td className="font-medium">{item.productName ?? item.productId ?? '-'}</td>
+                  <td className="font-boss-head tabular-nums">{formatDate(item.purchaseDate)}</td>
+                  <td className="font-boss-head tabular-nums">{formatDate(item.expirationDate)}</td>
+                  <td className="num font-semibold">{formatAmount(item.amount, item.currency)}</td>
+                  <td className="text-[12.5px] text-boss-text-secondary">{item.store ?? '-'}</td>
+                  <td>
+                    <Tag tone={historyStatusTone(item.status)}>{item.status ?? '-'}</Tag>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
         )}
-      </Card>
+      </ContentCard>
     </div>
   );
 }

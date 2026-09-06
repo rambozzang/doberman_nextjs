@@ -1,27 +1,32 @@
 'use client';
 
+// 회사 정보 — Industry 패턴 (참조 04 매물 등록 : 긴 폼 + 우측 안내 패널)
+//
+//   lg↑ grid minmax(0,1fr) + 280px
+//   좌: 로고 · 도장(사각 자리표시자) → 사업자 정보 → 연락처 → 주소 → 소개, 각각 패널 + 2열 grid(Field)
+//       → 하단 액션 패널(취소 secondary / 저장 primary 우측)
+//   우: 안내 패널(어디에 쓰이는지 · 필수 항목)
+//   화면 제목은 헤더(PAGE_META)가 그린다. 회사가 없으면 같은 폼이 등록 모드로 열린다.
+//
+//   로고 · 도장 업로드는 회사 id 가 있어야 동작한다(API 가 companyId 를 받는다) —
+//   등록 전에는 버튼을 잠그고 그 이유를 적는다.
+
 import { FormEvent, useEffect, useState, useCallback, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossCompanyData } from '@/types/boss';
 import {
-  ArrowLeft,
-  Building2,
-  Phone,
-  Mail,
-  MapPin,
-  User,
-  FileText,
-  Save,
-  Loader2,
-  Hash,
-  Stamp,
-  Image as ImageIcon,
-  Globe,
-} from 'lucide-react';
+  Button,
+  ButtonLink,
+  Field,
+  FieldLabel,
+  Panel,
+  Placeholder,
+  Skeleton,
+  TextareaField,
+} from '@/components/boss/ui';
 
 export default function BossMyCompanyPage() {
   const router = useRouter();
@@ -243,305 +248,350 @@ export default function BossMyCompanyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-boss-bg">
-        <Loader2 className="h-6 w-6 animate-spin text-boss-primary" />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]" aria-busy>
+        <div className="flex flex-col gap-4">
+          <div className="boss-card p-5">
+            <Skeleton className="h-5 w-24" />
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+            </div>
+          </div>
+          <div className="boss-card p-5">
+            <Skeleton className="h-5 w-24" />
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-14" />
+              <Skeleton className="h-14" />
+              <Skeleton className="h-14" />
+              <Skeleton className="h-14" />
+            </div>
+          </div>
+        </div>
+        <div className="boss-card p-5">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="mt-3 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-5/6" />
+        </div>
       </div>
     );
   }
 
+  // 로고 · 도장 업로드 API 는 companyId 를 받는다 — 등록 전에는 올릴 수 없다
+  const canUploadImages = Boolean(companyId);
+
   return (
-    <div className="min-h-screen bg-boss-bg">
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/boss/me"
-            className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-primary"
-          >
-            <ArrowLeft size={15} /> 뒤로
-          </Link>
-          <h1 className="text-xl font-bold text-boss-text">{isEdit ? '회사 정보 수정' : '회사 등록'}</h1>
-          <div className="w-12" />
-        </div>
+    <form onSubmit={handleSubmit} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+      {/* 좌: 폼 */}
+      <div className="flex min-w-0 flex-col gap-4">
+        {!isEdit && (
+          <div className="border border-boss-primary/35 bg-boss-pill-info px-4 py-3 text-[13px] leading-relaxed text-boss-pill-info-fg">
+            <span className="font-bold">아직 등록된 회사가 없습니다.</span> 회사명만 있어도 등록됩니다 —
+            나머지는 나중에 채워도 됩니다.
+          </div>
+        )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl bg-boss-surface p-6 shadow-boss ring-1 ring-boss-border"
-        >
-          {/* 로고 / 도장 */}
+        {/* 로고 · 도장 */}
+        <Panel kicker="브랜딩" title="로고 · 도장">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-boss-text-muted">회사 로고</label>
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-boss-border bg-boss-bg text-boss-text-muted transition-colors hover:border-boss-border-hover hover:text-boss-text-secondary"
-              >
-                {logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logo} alt="logo" className="h-full w-full object-contain" />
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <ImageIcon size={24} />
-                    <p className="mt-1 text-[11px]">로고 없음</p>
-                  </div>
-                )}
-              </button>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleLogoFile(e.target.files?.[0])}
-              />
-              {logo && isEdit && (
-                <button
-                  type="button"
-                  onClick={handleDeleteLogo}
-                  className="mt-2 w-full rounded-lg border border-boss-error/20 bg-boss-error/10 py-1.5 text-[11px] font-medium text-boss-error hover:bg-boss-error/20"
-                >
-                  로고 삭제
-                </button>
-              )}
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-boss-text-muted">회사 도장</label>
-              <button
-                type="button"
-                onClick={() => stampInputRef.current?.click()}
-                className="relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-boss-border bg-boss-bg text-boss-text-muted transition-colors hover:border-boss-border-hover hover:text-boss-text-secondary"
-              >
-                {stamp ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={stamp} alt="stamp" className="h-full w-full object-contain" />
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <Stamp size={24} />
-                    <p className="mt-1 text-[11px]">도장 없음</p>
-                  </div>
-                )}
-              </button>
-              <input
-                ref={stampInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleStampFile(e.target.files?.[0])}
-              />
-              {stamp && isEdit && (
-                <button
-                  type="button"
-                  onClick={handleDeleteStamp}
-                  className="mt-2 w-full rounded-lg border border-boss-error/20 bg-boss-error/10 py-1.5 text-[11px] font-medium text-boss-error hover:bg-boss-error/20"
-                >
-                  도장 삭제
-                </button>
-              )}
-            </div>
+            <ImageSlot
+              label="회사 로고"
+              placeholderLabel="LOGO"
+              src={logo}
+              alt="회사 로고"
+              inputRef={logoInputRef}
+              onFile={handleLogoFile}
+              onDelete={handleDeleteLogo}
+              canUpload={canUploadImages}
+              canDelete={Boolean(logo && isEdit)}
+            />
+            <ImageSlot
+              label="회사 도장"
+              placeholderLabel="STAMP"
+              src={stamp}
+              alt="회사 도장"
+              inputRef={stampInputRef}
+              onFile={handleStampFile}
+              onDelete={handleDeleteStamp}
+              canUpload={canUploadImages}
+              canDelete={Boolean(stamp && isEdit)}
+            />
           </div>
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            {canUploadImages
+              ? '이미지를 고르면 바로 저장됩니다(별도 저장 버튼 없음). PNG · JPG 권장.'
+              : '로고 · 도장은 회사를 먼저 등록한 뒤 올릴 수 있습니다.'}
+          </p>
+        </Panel>
 
+        {/* 사업자 정보 */}
+        <Panel kicker="사업자" title="사업자 정보">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <CompanyField label="회사명" icon={Building2}>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="company-input"
-                placeholder="(주)도배르만"
-              />
-            </CompanyField>
-            <CompanyField label="대표자명" icon={User}>
-              <input
-                type="text"
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-                className="company-input"
-                placeholder="홍길동"
-              />
-            </CompanyField>
-            <CompanyField label="사업자등록번호" icon={Hash}>
-              <input
-                type="text"
-                value={bizno}
-                onChange={(e) => setBizno(e.target.value)}
-                className="company-input"
-                placeholder="123-45-67890"
-              />
-            </CompanyField>
-            <CompanyField label="대표 전화" icon={Phone}>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="company-input"
-                placeholder="02-1234-5678"
-              />
-            </CompanyField>
-            <CompanyField label="팩스" icon={Phone}>
-              <input
-                type="tel"
-                value={fax}
-                onChange={(e) => setFax(e.target.value)}
-                className="company-input"
-                placeholder="02-1234-5679"
-              />
-            </CompanyField>
-            <CompanyField label="이메일" icon={Mail}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="company-input"
-                placeholder="company@example.com"
-              />
-            </CompanyField>
-            <CompanyField label="업태" icon={FileText}>
-              <input
-                type="text"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="company-input"
-                placeholder="서비스업"
-              />
-            </CompanyField>
-            <CompanyField label="종목" icon={FileText}>
-              <input
-                type="text"
-                value={kind}
-                onChange={(e) => setKind(e.target.value)}
-                className="company-input"
-                placeholder="도배"
-              />
-            </CompanyField>
-            <CompanyField label="우편번호" icon={MapPin}>
-              <input
-                type="text"
-                value={post}
-                onChange={(e) => setPost(e.target.value)}
-                className="company-input"
-                placeholder="12345"
-              />
-            </CompanyField>
-            <CompanyField label="활동 지역" icon={MapPin}>
-              <input
-                type="text"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="company-input"
-                placeholder="서울 강남구"
-              />
-            </CompanyField>
+            <Field
+              id="co-name"
+              label="회사명"
+              required
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="(주)도배르만"
+              autoFocus={!isEdit}
+            />
+            <Field
+              id="co-owner"
+              label="대표자명"
+              type="text"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              placeholder="홍길동"
+            />
+            <Field
+              id="co-bizno"
+              label="사업자등록번호"
+              type="text"
+              value={bizno}
+              onChange={(e) => setBizno(e.target.value)}
+              placeholder="123-45-67890"
+              className="[&_input]:font-boss-head [&_input]:tabular-nums"
+            />
+            <Field
+              id="co-region"
+              label="활동 지역"
+              type="text"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="서울 강남구"
+              hint="견적 요청 알림을 받을 지역입니다."
+            />
+            <Field
+              id="co-type"
+              label="업태"
+              type="text"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              placeholder="서비스업"
+            />
+            <Field
+              id="co-kind"
+              label="종목"
+              type="text"
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+              placeholder="도배"
+            />
           </div>
+        </Panel>
 
-          <CompanyField label="주소" icon={MapPin}>
-            <input
-              type="text"
-              value={address1}
-              onChange={(e) => setAddress1(e.target.value)}
-              className="company-input"
-              placeholder="기본 주소"
+        {/* 연락처 */}
+        <Panel kicker="연락처" title="연락처">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Field
+              id="co-phone"
+              label="대표 전화"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="02-1234-5678"
             />
-          </CompanyField>
-          <CompanyField label="상세 주소" icon={MapPin}>
-            <input
-              type="text"
-              value={address2}
-              onChange={(e) => setAddress2(e.target.value)}
-              className="company-input"
-              placeholder="상세 주소"
+            <Field
+              id="co-fax"
+              label="팩스"
+              type="tel"
+              value={fax}
+              onChange={(e) => setFax(e.target.value)}
+              placeholder="02-1234-5679"
             />
-          </CompanyField>
-          <CompanyField label="홈페이지" icon={Globe}>
-            <input
+            <Field
+              id="co-email"
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="company@example.com"
+            />
+            <Field
+              id="co-url"
+              label="홈페이지"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="company-input"
               placeholder="https://example.com"
             />
-          </CompanyField>
-          <CompanyField label="회사 소개">
-            <textarea
+          </div>
+        </Panel>
+
+        {/* 주소 */}
+        <Panel kicker="주소" title="사업장 주소">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)]">
+            <Field
+              id="co-post"
+              label="우편번호"
+              type="text"
+              inputMode="numeric"
+              value={post}
+              onChange={(e) => setPost(e.target.value)}
+              placeholder="12345"
+            />
+            <Field
+              id="co-address1"
+              label="주소"
+              type="text"
+              value={address1}
+              onChange={(e) => setAddress1(e.target.value)}
+              placeholder="도로명 또는 지번 주소"
+            />
+            <Field
+              id="co-address2"
+              label="상세 주소"
+              type="text"
+              value={address2}
+              onChange={(e) => setAddress2(e.target.value)}
+              placeholder="층 · 호수 등"
+              className="md:col-span-2"
+            />
+          </div>
+        </Panel>
+
+        {/* 소개 */}
+        <Panel kicker="소개" title="회사 소개">
+          <div className="flex flex-col gap-4">
+            <TextareaField
+              id="co-intro"
+              label="회사 소개"
               value={intro}
               onChange={(e) => setIntro(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text focus:border-boss-primary focus:outline-none focus:ring-2 focus:ring-boss-primary/20"
-              placeholder="회사를 소개해주세요"
+              placeholder="고객에게 보여 줄 한두 문장. 시공 경력 · 주력 공종 · 지역을 적으면 좋습니다."
             />
-          </CompanyField>
-          <CompanyField label="비고">
-            <textarea
+            <TextareaField
+              id="co-bigo"
+              label="비고"
               value={bigo}
               onChange={(e) => setBigo(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-boss-border bg-boss-surface px-3 py-2 text-sm text-boss-text focus:border-boss-primary focus:outline-none focus:ring-2 focus:ring-boss-primary/20"
-              placeholder="추가 메모"
+              placeholder="내부 메모 (고객에게 보이지 않습니다)"
             />
-          </CompanyField>
+          </div>
+        </Panel>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-boss-primary to-boss-primary-hover text-sm font-semibold text-boss-text shadow-boss-md hover:from-boss-primary-hover hover:to-boss-primary disabled:cursor-not-allowed disabled:from-boss-elevated disabled:to-boss-elevated disabled:text-boss-text-muted"
-          >
-            {saving ? (
-              <>
-                <Loader2 size={15} className="animate-spin" />
-                저장 중...
-              </>
-            ) : (
-              <>
-                <Save size={15} />
-                {isEdit ? '회사 정보 저장' : '회사 등록'}
-              </>
-            )}
-          </button>
-        </form>
+        {/* 하단 액션 패널 */}
+        <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <p className="text-[12.5px] text-boss-text-secondary">
+            {isEdit ? '변경한 내용은 저장을 눌러야 반영됩니다.' : '회사명은 필수입니다.'}
+          </p>
+          <div className="flex items-center gap-2">
+            <ButtonLink href="/boss/me" variant="secondary">
+              취소
+            </ButtonLink>
+            <Button type="submit" variant="primary" disabled={saving}>
+              {saving ? '저장 중…' : isEdit ? '저장' : '회사 등록'}
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <style jsx>{`
-        :global(.company-input) {
-          height: 2.75rem;
-          width: 100%;
-          border-radius: 0.5rem;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          background-color: rgba(15, 23, 42, 0.4);
-          padding-left: 2.5rem;
-          padding-right: 0.75rem;
-          font-size: 0.875rem;
-          color: rgb(248 250 252);
-        }
-        :global(.company-input)::placeholder {
-          color: rgb(100 116 139);
-        }
-        :global(.company-input:focus) {
-          border-color: rgb(52 211 153);
-          outline: none;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
-        }
-      `}</style>
-    </div>
+      {/* 우: 안내 */}
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-[104px]">
+        <section className="boss-card p-5">
+          <p className="boss-kicker">어디에 쓰이나</p>
+          <ul className="mt-2 space-y-2 text-[12.5px] leading-relaxed text-boss-text-soft">
+            <li className="flex gap-1.5">
+              <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
+              <span>회사명 · 사업자등록번호는 화면 상단 회사 태그에 표시됩니다.</span>
+            </li>
+            <li className="flex gap-1.5">
+              <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
+              <span>활동 지역은 견적 요청 알림 대상 지역으로 쓰입니다.</span>
+            </li>
+            <li className="flex gap-1.5">
+              <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
+              <span>로고 · 도장 · 소개는 고객에게 보이는 견적서 브랜딩에 쓰입니다.</span>
+            </li>
+          </ul>
+        </section>
+
+        <section className="boss-card p-5">
+          <p className="boss-kicker">필수 항목</p>
+          <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-soft">
+            <span className={name.trim() ? 'text-boss-text-secondary line-through' : 'font-semibold text-boss-error'}>
+              · 회사명
+            </span>
+          </p>
+          <p className="mt-2 text-[12px] leading-relaxed text-boss-text-secondary">
+            나머지 항목은 선택입니다. 사업자등록번호와 대표 전화까지 채우면 고객이 견적서를 더 믿습니다.
+          </p>
+        </section>
+      </aside>
+    </form>
   );
 }
 
-type IconType = React.ComponentType<{ size?: number; className?: string }>;
-
-function CompanyField({
+// ── 로고 · 도장 자리 — 사각 자리표시자 + 이미지 선택 / 삭제 ──────────────────
+function ImageSlot({
   label,
-  icon: Icon,
-  children,
+  placeholderLabel,
+  src,
+  alt,
+  inputRef,
+  onFile,
+  onDelete,
+  canUpload,
+  canDelete,
 }: {
   label: string;
-  icon?: IconType;
-  children: React.ReactNode;
+  placeholderLabel: string;
+  src: string;
+  alt: string;
+  inputRef: React.MutableRefObject<HTMLInputElement | null>;
+  onFile: (file: File | undefined) => void;
+  onDelete: () => void;
+  canUpload: boolean;
+  canDelete: boolean;
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-boss-text-muted">{label}</label>
-      <div className="relative">
-        {Icon && (
-          <Icon size={15} className="pointer-events-none absolute left-3.5 top-[0.85rem] text-boss-text-muted" />
+      <FieldLabel>{label}</FieldLabel>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={!canUpload}
+        aria-label={`${label} 이미지 선택`}
+        className="block h-32 w-full border border-boss-border bg-boss-inset transition-colors duration-[120ms] ease-out hover:border-boss-border-hover disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={alt} className="h-full w-full object-contain p-2" />
+        ) : (
+          <Placeholder className="h-full w-full" label={placeholderLabel} />
         )}
-        {children}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => onFile(e.target.files?.[0])}
+      />
+      <div className="mt-2 flex gap-1">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => inputRef.current?.click()}
+          disabled={!canUpload}
+        >
+          {src ? '바꾸기' : '이미지 선택'}
+        </Button>
+        {canDelete && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="!text-boss-text-muted hover:!text-boss-error"
+          >
+            삭제
+          </Button>
+        )}
       </div>
     </div>
   );

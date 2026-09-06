@@ -1,36 +1,46 @@
 'use client';
 
-// AS 요청 목록 페이지 (B2B 데이터 그리드)
+// AS 요청 목록 — Industry 패턴
+//   필터 줄(상태 Seg + 검색 + 정렬 + 우측 전체 n건) → 표(DataTable). 화면 제목 · "새 접수" 버튼은 셸 헤더가 그린다.
+//   상태 탭은 API 재조회(기존 로직), 검색 · 정렬은 클라이언트. 첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 // Flutter: as_request_list_page.dart 포팅
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, RefreshCw, Inbox, AlertTriangle, Link2 } from 'lucide-react';
+import { Plus, RefreshCw, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
 import type { AsRequestItem } from '@/types/boss-as';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
   ListTabs,
+  Segmented,
   DataTable,
-  Badge,
+  ContentCard,
+  StatusPill,
+  TagPill,
   EmptyState,
-  Skeleton,
+  AlertBanner,
+  RowSkeleton,
   RowActions,
   ConfirmDialog,
+  type StatusTone,
 } from '@/components/boss/ui';
 
 type StatusFilter = '' | '접수' | '진행중' | '완료';
 type SortType = 'CREATED_DT' | 'REQUEST_DATE';
-type BadgeTone = Parameters<typeof Badge>[0]['tone'];
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: '', label: '전체' },
   { value: '접수', label: '접수' },
   { value: '진행중', label: '진행중' },
   { value: '완료', label: '완료' },
+];
+
+const SORT_OPTIONS: { key: SortType; label: string }[] = [
+  { key: 'CREATED_DT', label: '등록일순' },
+  { key: 'REQUEST_DATE', label: '요청일순' },
 ];
 
 function formatDate(input?: string | null): string {
@@ -58,16 +68,16 @@ function relativeTime(input?: string | null): string {
   return d.toLocaleDateString('ko-KR');
 }
 
-function statusBadgeTone(status: string): BadgeTone {
+function statusTone(status: string): StatusTone {
   switch (status) {
     case '접수':
-      return 'sky';
+      return 'info';
     case '진행중':
-      return 'amber';
+      return 'warn';
     case '완료':
-      return 'emerald';
+      return 'ok';
     default:
-      return 'default';
+      return 'neutral';
   }
 }
 
@@ -168,104 +178,111 @@ export default function BossAsListPage() {
     return list;
   }, [items, query, sortType]);
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="AS 요청"
-        description="하자보수 AS 요청을 관리하고 처리 상태를 확인합니다."
-        actions={
-          <>
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={() => router.push('/boss/as/new')}
-            >
-              등록
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
-              onClick={load}
-              disabled={loading}
-            >
-              새로고침
-            </Button>
-          </>
-        }
-      />
+  // 빈 상태 — 첫 조회 실패 / 0건 / 필터 결과 0건을 구분한다
+  const isFiltered = statusFilter !== '' || query.trim().length > 0;
 
-      <Toolbar>
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={STATUS_OPTIONS.map((opt) => ({
+            key: opt.value,
+            label: opt.label,
+            // 상태 탭은 서버 필터라 선택된 탭만 정확한 건수를 안다 — 전체 탭일 때만 분포를 보여준다
+            count: statusFilter === '' || opt.value === statusFilter ? statusCounts[opt.value] : undefined,
+          }))}
+          active={statusFilter}
+          onChange={(key) => setStatusFilter(key)}
+        />
         <SearchInput
           value={query}
           onChange={setQuery}
-          placeholder="제목·고객·주소·연락처 검색"
-          className="w-full max-w-xs"
+          placeholder="제목 · 고객 · 주소 · 연락처 검색"
+          className="w-full sm:w-72"
+          hint={false}
         />
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant={sortType === 'CREATED_DT' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setSortType('CREATED_DT')}
-          >
-            등록일순
-          </Button>
-          <Button
-            variant={sortType === 'REQUEST_DATE' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setSortType('REQUEST_DATE')}
-          >
-            요청일순
-          </Button>
-        </div>
-      </Toolbar>
-
-      <ListTabs
-        tabs={STATUS_OPTIONS.map((opt) => ({
-          key: opt.value,
-          label: opt.label,
-          count: statusCounts[opt.value],
-        }))}
-        active={statusFilter}
-        onChange={(key) => setStatusFilter(key)}
-      />
+        <Segmented ariaLabel="정렬" options={SORT_OPTIONS} value={sortType} onChange={setSortType} />
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
+          새로고침
+        </Button>
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
+        >
+          {loading && items.length === 0 ? '불러오는 중…' : `전체 ${displayedItems.length}건`}
+        </span>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button size="sm" variant="secondary" onClick={load} disabled={loading}>
+              다시 불러오기
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
-      ) : displayedItems.length === 0 ? (
+        <ContentCard>
+          <RowSkeleton rows={6} />
+        </ContentCard>
+      ) : error && items.length === 0 ? (
         <EmptyState
           icon={Inbox}
-          title={statusFilter || query ? '검색/필터 결과가 없습니다' : '등록된 AS 요청이 없습니다'}
-          description="신규 AS 요청을 등록하거나 필터를 변경해 보세요."
-          action={
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={() => router.push('/boss/as/new')}
-            >
-              AS 요청 등록
-            </Button>
-          }
+          title="AS 요청을 불러오지 못했습니다"
+          description="네트워크 상태를 확인한 뒤 다시 불러와 주세요. 접수한 내용이 사라진 것은 아닙니다."
         />
+      ) : displayedItems.length === 0 ? (
+        isFiltered ? (
+          <EmptyState
+            icon={Inbox}
+            title="조건에 맞는 AS 요청이 없습니다"
+            description={
+              statusFilter
+                ? `"${statusFilter}" 상태인 요청이 없습니다. 다른 탭을 보거나 검색어를 지워 보세요.`
+                : '검색어를 바꿔 보세요. 제목 · 고객명 · 주소 · 연락처에서 찾습니다.'
+            }
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setStatusFilter('');
+                  setQuery('');
+                }}
+              >
+                필터 초기화
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={Inbox}
+            title="아직 접수된 AS 요청이 없습니다"
+            description="고객이 하자를 알려오면 여기에 접수해 두세요. 진행 · 완료 상태와 하자 · 수리 사진을 함께 남길 수 있습니다."
+            action={
+              <ButtonLink href="/boss/as/new" variant="primary" size="sm" icon={Plus}>
+                첫 AS 접수하기
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
-              <th className="whitespace-nowrap">#</th>
-              <th>제목 / 고객</th>
+              <th>번호</th>
+              <th>제목 · 고객</th>
               <th>상태</th>
-              <th>지역 / 연락처</th>
-              <th className="text-center whitespace-nowrap">사진</th>
-              <th className="whitespace-nowrap">요청일</th>
-              <th className="whitespace-nowrap">접수</th>
+              <th>연락처 · 주소</th>
+              <th>사진</th>
+              <th>요청일</th>
+              <th>접수</th>
               <th />
             </tr>
           </thead>
@@ -280,48 +297,46 @@ export default function BossAsListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/as/${item.id}`)}
                 >
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">#{item.id}</td>
-                  <td>
-                    <div className="flex items-center gap-1.5">
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
+                    {item.id}
+                  </td>
+                  <td className="wrap max-w-[360px]">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-medium text-boss-text">{item.title}</span>
-                      {item.priority === '긴급' && (
-                        <Badge tone="rose">
-                          <AlertTriangle size={10} /> 긴급
-                        </Badge>
-                      )}
-                      {item.orderId != null && (
-                        <Badge tone="violet">
-                          <Link2 size={10} /> 주문
-                        </Badge>
-                      )}
+                      {item.priority === '긴급' && <StatusPill tone="bad">긴급</StatusPill>}
+                      {item.orderId != null && <TagPill>주문 #{item.orderId}</TagPill>}
                     </div>
                     {item.customerName ? (
-                      <span className="text-xs text-boss-text-muted">{item.customerName}</span>
+                      <span className="text-[12px] text-boss-text-muted">{item.customerName}</span>
                     ) : null}
                   </td>
                   <td>
-                    <Badge tone={statusBadgeTone(item.status)}>{item.status}</Badge>
+                    <StatusPill tone={statusTone(item.status)}>{item.status}</StatusPill>
                   </td>
-                  <td className="text-boss-text-secondary">
-                    <div>{item.customerPhone || '-'}</div>
+                  <td className="wrap max-w-[260px]">
+                    <div className="font-boss-head tabular-nums text-boss-text">
+                      {item.customerPhone || <span className="text-boss-text-ghost">—</span>}
+                    </div>
                     {item.address ? (
-                      <span className="text-xs text-boss-text-muted">{item.address}</span>
+                      <span className="text-[12px] text-boss-text-muted">{item.address}</span>
                     ) : null}
                   </td>
-                  <td className="text-center whitespace-nowrap text-xs text-boss-text-secondary">
-                    {hasPhotos
-                      ? [defectCount > 0 ? `하자 ${defectCount}` : null, repairCount > 0 ? `수리 ${repairCount}` : null]
-                          .filter(Boolean)
-                          .join(' · ')
-                      : '-'}
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
+                    {hasPhotos ? (
+                      [defectCount > 0 ? `하자 ${defectCount}` : null, repairCount > 0 ? `수리 ${repairCount}` : null]
+                        .filter(Boolean)
+                        .join(' · ')
+                    ) : (
+                      <span className="text-boss-text-ghost">—</span>
+                    )}
                   </td>
-                  <td className="whitespace-nowrap text-boss-text-secondary">
+                  <td className="font-boss-head tabular-nums text-boss-text-secondary">
                     {formatDate(item.requestDate)}
                   </td>
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
                     {relativeTime(item.createdAt)}
                   </td>
-                  <td className="whitespace-nowrap text-right">
+                  <td className="text-right">
                     <RowActions
                       onEdit={() => router.push(`/boss/as/${item.id}`)}
                       onDelete={() => setPendingDelete(item)}
@@ -335,7 +350,7 @@ export default function BossAsListPage() {
         </DataTable>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="AS 요청 삭제"

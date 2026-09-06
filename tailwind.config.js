@@ -28,6 +28,9 @@ module.exports = {
           bg: 'rgb(var(--boss-bg) / <alpha-value>)',
           shell: 'rgb(var(--boss-shell) / <alpha-value>)',
           rail: 'rgb(var(--boss-rail) / <alpha-value>)',
+          'rail-text': 'rgb(var(--boss-rail-text) / <alpha-value>)',
+          'rail-active': 'rgb(var(--boss-rail-active) / <alpha-value>)',
+          'primary-soft': 'rgb(var(--boss-primary-soft) / <alpha-value>)',
           surface: 'rgb(var(--boss-surface) / <alpha-value>)',
           inset: 'rgb(var(--boss-inset) / <alpha-value>)',
           elevated: 'rgb(var(--boss-elevated) / <alpha-value>)',
@@ -149,9 +152,10 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
-        // /boss 전용 — 본문 Pretendard, 숫자·라벨 JetBrains Mono
-        boss: ['Pretendard', 'Helvetica', '-apple-system', 'sans-serif'],
-        'boss-mono': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        // /boss 전용 — 본문 Pretendard, 숫자·제목·라벨 Barlow Condensed (Industry 패턴)
+        boss: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Noto Sans KR', 'sans-serif'],
+        'boss-head': ['Barlow Condensed', 'Pretendard', '-apple-system', 'sans-serif'],
+        'boss-mono': ['Barlow Condensed', 'Pretendard', '-apple-system', 'sans-serif'],
       },
       // 시안 스페이싱 — 홀수 기반 고밀도 스케일 (3·5·7·9·11·14·18·22)
       spacing: {
@@ -160,12 +164,12 @@ module.exports = {
         5.5: '22px',
       },
       borderRadius: {
-        // 시안 radius — 4·5(배지) 6·7(칩) 8·9(컨트롤) 11·12(카드) 14(프레임)
-        pill: '5px',
-        chip: '7px',
-        control: '9px',
-        card: '11px',
-        frame: '14px',
+        // Industry 패턴 — 모서리 0. 이름은 호환용으로만 남긴다.
+        pill: '0px',
+        chip: '0px',
+        control: '0px',
+        card: '0px',
+        frame: '0px',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

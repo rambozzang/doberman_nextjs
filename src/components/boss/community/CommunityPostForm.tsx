@@ -1,12 +1,28 @@
 'use client';
 
+// 커뮤니티 글쓰기 · 수정 공통 폼 — Industry 패턴 (참조 ListingForm 의 긴 폼 조판)
+//
+// 구조: lg:grid-cols-[minmax(0,1fr)_280px]
+//   좌 — 패널 «게시판 · 제목» → (구인/구직) 패널 «구인 / 구직 정보» 2열 → 패널 «내용»(RichEditor)
+//        → 하단 액션 패널(좌: 초기화 · 임시 저장 시각 / 우: 취소 secondary · 등록 primary)
+//   우 — 안내 패널(게시판 설명 · 필수 누락 · 작성 팁)
+//
+// 화면 제목과 «← 커뮤니티» 는 셸 헤더가 그린다. 초기화는 ConfirmDialog 를 거친다.
+// RichEditor 는 별도 담당(수정하지 않는다).
+
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Save, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import RichEditor from '@/components/boss/RichEditor';
-import { Button, Card, PageHeader } from '@/components/boss/ui';
+import {
+  Button,
+  ButtonLink,
+  Panel,
+  Field,
+  FieldLabel,
+  Segmented,
+  ConfirmDialog,
+} from '@/components/boss/ui';
 import type { BbsCreateRequest, BbsUpdateRequest, BbsData } from '@/types/boss-community';
 
 type CategoryCode = 'FREE' | 'JOB' | 'ANON';
@@ -88,7 +104,6 @@ interface Props {
 }
 
 export default function CommunityPostForm({ mode, boardId, initial, defaultCategory, onSubmit, onSuccess }: Props) {
-  const router = useRouter();
   const [category, setCategory] = useState<CategoryCode>(
     initial?.typeDtCd === 'JOB' || defaultCategory === 'JOB'
       ? 'JOB'
@@ -101,6 +116,7 @@ export default function CommunityPostForm({ mode, boardId, initial, defaultCateg
   const [jobMeta, setJobMeta] = useState<JobMeta>({ ...EMPTY_JOB_META });
   const [submitting, setSubmitting] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
 
   useEffect(() => {
     if (initial?.contents) {
@@ -208,172 +224,198 @@ export default function CommunityPostForm({ mode, boardId, initial, defaultCateg
   };
 
   const resetDraft = () => {
-    if (!confirm('임시 저장 내용을 지우고 초기화할까요?')) return;
     localStorage.removeItem('boss-community-draft');
     setCategory('FREE');
     setSubject('');
     setContents('');
     setJobMeta({ ...EMPTY_JOB_META });
     setDraftSavedAt(null);
+    setResetOpen(false);
   };
 
   const isJob = category === 'JOB';
+  const isEdit = mode === 'edit';
+  const cancelHref = isEdit && boardId ? `/boss/community/${boardId}` : '/boss/community';
+  const currentCategory = CATEGORIES.find((c) => c.key === category);
+
+  // 필수 누락 — 참조 04 의 «필수 누락» 패널
+  const missing: string[] = [];
+  if (!subject.trim()) missing.push('제목');
+  if (plainLength === 0) missing.push('내용');
+
+  const fmtSavedAt = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? iso
+      : d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Community"
-        title={mode === 'edit' ? '게시글 수정' : '새 게시글'}
-        description={CATEGORIES.find((c) => c.key === category)?.description}
-        breadcrumbs={[
-          { label: '커뮤니티', href: '/boss/community' },
-          ...(mode === 'edit' && boardId ? [{ label: '상세', href: `/boss/community/${boardId}` }] : []),
-          { label: mode === 'edit' ? '수정' : '새 글' },
-        ]}
-        actions={
-          <Link
-            href={mode === 'edit' && boardId ? `/boss/community/${boardId}` : '/boss/community'}
-            className="inline-flex items-center gap-1 text-xs text-boss-text-muted hover:text-boss-text"
-          >
-            <ArrowLeft size={12} /> 목록으로
-          </Link>
-        }
-      />
-
-      <Card padded>
-        <div className="space-y-5">
-          {/* 카테고리 */}
-          <div>
-            <label className="boss-label">게시판</label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map(({ key, label }) => {
-                const active = category === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setCategory(key)}
-                    className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      active
-                        ? 'border-boss-primary bg-boss-primary/10 text-boss-primary'
-                        : 'border-boss-border bg-boss-surface text-boss-text-secondary hover:text-boss-text'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+      {/* ───── 좌: 폼 ───── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        <Panel title="게시판 · 제목">
+          <div className="flex flex-col gap-4">
+            <div>
+              <FieldLabel required>게시판</FieldLabel>
+              <Segmented<CategoryCode>
+                ariaLabel="게시판"
+                options={CATEGORIES.map((c) => ({ key: c.key, label: c.label }))}
+                value={category}
+                onChange={setCategory}
+              />
+              {currentCategory && (
+                <p className="mt-1.5 text-[12px] text-boss-text-secondary">{currentCategory.description}</p>
+              )}
             </div>
-          </div>
 
-          {/* 제목 */}
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="subject" className="boss-label">
-                제목
-              </label>
-              <span className="text-[10px] text-boss-text-muted">{subject.length}/100</span>
-            </div>
-            <input
+            <Field
               id="subject"
+              label="제목"
+              required
               type="text"
               maxLength={100}
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="제목을 입력하세요"
-              className="boss-input h-11 w-full border-boss-border-strong bg-boss-surface px-3 text-sm focus:border-boss-primary focus:ring-boss-primary/15"
-            />
-          </div>
-
-          {/* 구인/구직 메타 */}
-          {isJob && (
-            <div className="rounded-lg border border-boss-border bg-boss-elevated/40 p-4">
-              <h3 className="mb-3 text-sm font-semibold text-boss-text">구인 / 구직 정보</h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <JobField label="근무 지역" value={jobMeta.region} onChange={(v) => setJobMeta((m) => ({ ...m, region: v }))} placeholder="예: 서울 강남구" />
-                <JobField label="직종 / 업무" value={jobMeta.jobType} onChange={(v) => setJobMeta((m) => ({ ...m, jobType: v }))} placeholder="예: 도배 공수, 현장 보조" />
-                <JobField label="급여 / 조건" value={jobMeta.pay} onChange={(v) => setJobMeta((m) => ({ ...m, pay: v }))} placeholder="예: 일당 15만원" />
-                <JobField label="연락처" value={jobMeta.contact} onChange={(v) => setJobMeta((m) => ({ ...m, contact: v }))} placeholder="예: 010-1234-5678" />
-                <JobField label="모집 인원" value={jobMeta.headcount} onChange={(v) => setJobMeta((m) => ({ ...m, headcount: v }))} placeholder="예: 2명" />
-                <JobField label="근무 기간" value={jobMeta.period} onChange={(v) => setJobMeta((m) => ({ ...m, period: v }))} placeholder="예: 6개월 이상" />
-              </div>
-            </div>
-          )}
-
-          {/* 내용 */}
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label className="boss-label">내용</label>
-              <span className="text-[10px] text-boss-text-muted">{plainLength.toLocaleString()}자</span>
-            </div>
-            <RichEditor
-              value={contents}
-              onChange={setContents}
-              placeholder={
-                isJob
-                  ? '상세한 모집/구직 조건을 작성하세요. (경력, 자격 요건, 근무 시간 등)'
-                  : '자유롭게 작성하세요. 굵게, 목록, 인용, 링크 등을 사용할 수 있습니다.'
+              placeholder="한 줄로 무엇에 대한 글인지 적어 주세요"
+              hint={
+                <span className="font-boss-head tabular-nums">{subject.length} / 100</span>
               }
-              minHeight={360}
             />
-            <p className="mt-1.5 text-[10px] text-boss-text-muted">
-              Cmd/Ctrl + B 굵게 · Cmd/Ctrl + I 기울임 · 툴바에서 제목·목록·인용·링크 삽입
-            </p>
           </div>
+        </Panel>
 
-          {mode === 'create' && draftSavedAt && (
-            <p className="text-[11px] text-boss-text-muted">
-              임시 저장: {new Date(draftSavedAt).toLocaleString('ko-KR')}
+        {isJob && (
+          <Panel title="구인 / 구직 정보" kicker="JOB">
+            <p className="mb-3 text-[12px] text-boss-text-secondary">
+              적은 항목만 본문 위에 표로 정리되어 올라갑니다. 비워도 됩니다.
             </p>
-          )}
+            <div className="grid gap-3.5 md:grid-cols-2">
+              <Field
+                label="근무 지역"
+                value={jobMeta.region}
+                onChange={(e) => setJobMeta((m) => ({ ...m, region: e.target.value }))}
+                placeholder="예: 서울 강남구"
+              />
+              <Field
+                label="직종 / 업무"
+                value={jobMeta.jobType}
+                onChange={(e) => setJobMeta((m) => ({ ...m, jobType: e.target.value }))}
+                placeholder="예: 도배 공수, 현장 보조"
+              />
+              <Field
+                label="급여 / 조건"
+                value={jobMeta.pay}
+                onChange={(e) => setJobMeta((m) => ({ ...m, pay: e.target.value }))}
+                placeholder="예: 일당 15만원"
+              />
+              <Field
+                label="연락처"
+                value={jobMeta.contact}
+                onChange={(e) => setJobMeta((m) => ({ ...m, contact: e.target.value }))}
+                placeholder="예: 010-1234-5678"
+              />
+              <Field
+                label="모집 인원"
+                value={jobMeta.headcount}
+                onChange={(e) => setJobMeta((m) => ({ ...m, headcount: e.target.value }))}
+                placeholder="예: 2명"
+              />
+              <Field
+                label="근무 기간"
+                value={jobMeta.period}
+                onChange={(e) => setJobMeta((m) => ({ ...m, period: e.target.value }))}
+                placeholder="예: 6개월 이상"
+              />
+            </div>
+          </Panel>
+        )}
 
-          {/* 액션 */}
-          <div className="sticky bottom-4 z-20 -mx-2 -mb-2 flex items-center justify-between gap-3 rounded-lg border border-boss-border bg-boss-surface/95 p-3 shadow-boss-md backdrop-blur">
-            <div className="flex items-center gap-2">
-              {mode === 'create' && (
-                <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetDraft}>
-                  초기화
-                </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Link
-                href={mode === 'edit' && boardId ? `/boss/community/${boardId}` : '/boss/community'}
-                className="boss-btn boss-btn-secondary h-9 px-4 text-xs"
-              >
-                취소
-              </Link>
-              <Button variant="primary" size="sm" icon={Save} onClick={handleSubmit} disabled={submitting}>
-                {submitting ? (mode === 'edit' ? '수정 중…' : '등록 중…') : mode === 'edit' ? '수정 완료' : '게시글 등록'}
-              </Button>
-            </div>
+        <Panel
+          title="내용"
+          right={
+            <span className="font-boss-head text-[12px] tabular-nums text-boss-text-muted">
+              {plainLength.toLocaleString()}자
+            </span>
+          }
+        >
+          <RichEditor
+            value={contents}
+            onChange={setContents}
+            placeholder={
+              isJob
+                ? '상세한 모집/구직 조건을 작성하세요. (경력, 자격 요건, 근무 시간 등)'
+                : '자유롭게 작성하세요. 굵게, 목록, 인용, 링크 등을 사용할 수 있습니다.'
+            }
+            minHeight={360}
+          />
+        </Panel>
+
+        {/* 하단 액션 패널 */}
+        <div className="boss-card flex flex-wrap items-center gap-2.5 px-4 py-3.5">
+          {mode === 'create' && (
+            <Button variant="ghost" size="sm" icon={RotateCcw} onClick={() => setResetOpen(true)}>
+              초기화
+            </Button>
+          )}
+          <span className="text-[12px] text-boss-text-secondary">
+            {mode === 'create'
+              ? draftSavedAt
+                ? `임시 저장 ${fmtSavedAt(draftSavedAt)} · 이 브라우저에만 보관됩니다`
+                : '입력을 멈추면 자동으로 임시 저장됩니다'
+              : '수정 내용은 저장을 눌러야 반영됩니다'}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <ButtonLink href={cancelHref} variant="secondary">
+              취소
+            </ButtonLink>
+            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+              {submitting ? (isEdit ? '저장 중…' : '등록 중…') : isEdit ? '저장' : '등록'}
+            </Button>
           </div>
         </div>
-      </Card>
-    </div>
-  );
-}
+      </div>
 
-function JobField({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-[11px] font-medium text-boss-text-secondary">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="boss-input h-9 w-full border-boss-border-strong bg-boss-surface px-3 text-sm focus:border-boss-primary focus:ring-boss-primary/15"
+      {/* ───── 우: 안내 ───── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        <Panel kicker="게시판" title={currentCategory?.label ?? '게시판'}>
+          <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+            {currentCategory?.description}
+            {category === 'ANON' && ' 익명 글은 작성자 이름 대신 «익명» 으로 표시됩니다.'}
+            {category === 'JOB' && ' 다른 사장님이 «연락 요청» 을 보내면 푸시로 알려드립니다.'}
+          </p>
+        </Panel>
+
+        <Panel kicker={missing.length > 0 ? '필수 누락' : '확인'} title={missing.length > 0 ? `${missing.length}항목 남음` : '등록할 수 있습니다'}>
+          {missing.length > 0 ? (
+            <ul className="flex flex-col gap-1 text-[13px] text-boss-error">
+              {missing.map((m) => (
+                <li key={m}>· {m}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+              제목과 내용이 모두 채워졌습니다. 아래 «{isEdit ? '저장' : '등록'}» 을 누르면 바로 게시됩니다.
+            </p>
+          )}
+        </Panel>
+
+        <Panel kicker="작성 팁" title="편집기">
+          <ul className="flex flex-col gap-1.5 text-[12.5px] leading-relaxed text-boss-text-secondary">
+            <li>· Cmd/Ctrl + B 굵게, Cmd/Ctrl + I 기울임</li>
+            <li>· 툴바에서 제목 · 목록 · 인용 · 링크 삽입</li>
+            <li>· 전화번호 · 주소 같은 개인정보는 본문보다 연락 요청으로 주고받으세요</li>
+          </ul>
+        </Panel>
+      </div>
+
+      <ConfirmDialog
+        open={resetOpen}
+        title="작성 중인 내용을 지울까요?"
+        description="임시 저장된 내용까지 함께 지워지며 되돌릴 수 없습니다."
+        confirmLabel="지우기"
+        onConfirm={resetDraft}
+        onCancel={() => setResetOpen(false)}
       />
     </div>
   );

@@ -1,41 +1,30 @@
 'use client';
 
+// 구독 상태 — Industry 패턴 (참조 대시보드 QuotaPanel)
+//
+//   BillingNav(Seg) + 새로고침 → 구독 상태 패널(SubscriptionPanel) 하나.
+//   화면 제목은 헤더(PAGE_META)가 그린다. 구독 취소는 ConfirmDialog 를 거치고,
+//   성공하면 셸의 구독 정보도 갱신한다(useBossPortal().refreshSubscription()).
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Activity,
-  AlertCircle,
-  ArrowLeft,
-  Calendar,
-  CreditCard,
-  Loader2,
-  Package,
-  RefreshCw,
-  Repeat,
-  XCircle,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossBillingApi } from '@/lib/api/boss/billing';
 import type { BossSubscriptionStatusResponse, BossSubscriptionState } from '@/types/boss-billing';
-import { PageHeader, Card, Button, Badge, Skeleton } from '@/components/boss/ui';
+import { AlertBanner, Button, ButtonLink, ConfirmDialog } from '@/components/boss/ui';
+import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import BillingNav from '../BillingNav';
-import { formatDate, STATE_LABEL } from '../utils';
-
-const STATE_TONE: Record<BossSubscriptionState, 'emerald' | 'amber' | 'rose' | 'default'> = {
-  ACTIVE: 'emerald',
-  GRACE_PERIOD: 'amber',
-  EXPIRED: 'rose',
-  NONE: 'default',
-  ERROR: 'rose',
-};
+import SubscriptionPanel from '../SubscriptionPanel';
 
 export default function BillingStatusPage() {
   const router = useRouter();
+  const { refreshSubscription } = useBossPortal();
   const [status, setStatus] = useState<BossSubscriptionStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -69,7 +58,6 @@ export default function BillingStatusPage() {
       toast.error('취소할 구독 ID를 찾을 수 없습니다.');
       return;
     }
-    if (!window.confirm('정말 구독을 취소하시겠습니까?')) return;
 
     setIsCancelling(true);
     const res = await bossBillingApi.cancel(subsId);
@@ -79,145 +67,76 @@ export default function BillingStatusPage() {
       toast.success(res.data?.message ?? '구독이 취소되었습니다.');
       router.refresh();
       await load();
+      refreshSubscription();
     }
     setIsCancelling(false);
-  }, [status?.subscriptionId, load, router]);
+    setCancelOpen(false);
+  }, [status?.subscriptionId, load, router, refreshSubscription]);
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Billing"
-        title="결제 현황"
-        description="현재 구독 상태와 만료일, 자동 갱신 설정을 확인하세요."
-        breadcrumbs={[{ label: '결제 관리', href: '/boss/billing' }, { label: '결제 현황' }]}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <BillingNav />
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={() => void load()}
+          disabled={isLoading}
+        >
+          새로고침
+        </Button>
+      </div>
+
+      {error && (
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void load()}>
+              다시 시도
+            </Button>
+          }
+        >
+          {error}
+        </AlertBanner>
+      )}
+
+      <SubscriptionPanel
+        status={status}
+        state={subscriptionState}
+        loading={isLoading}
         actions={
-          <Button
-            variant="secondary"
-            icon={isLoading ? Loader2 : RefreshCw}
-            onClick={() => void load()}
-            disabled={isLoading}
-          >
-            새로 고침
-          </Button>
+          <>
+            <ButtonLink href="/boss/billing/plans" variant="secondary" size="sm">
+              요금제 비교
+            </ButtonLink>
+            <ButtonLink href="/boss/billing/history" variant="secondary" size="sm">
+              결제 내역
+            </ButtonLink>
+            {isActive && status?.subscriptionId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCancelOpen(true)}
+                disabled={isCancelling}
+                className="!text-boss-error"
+              >
+                {isCancelling ? '취소 중…' : '구독 취소'}
+              </Button>
+            )}
+          </>
         }
       />
 
-      <BillingNav />
-
-      <LinkBack />
-
-      {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-boss-error/30 bg-boss-error/10 px-4 py-3 text-sm text-boss-error">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <div className="flex-1">{error}</div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="text-xs font-medium text-boss-error hover:text-boss-error"
-          >
-            다시 시도
-          </button>
-        </div>
-      )}
-
-      <Card className="rounded-2xl border-boss-border bg-boss-surface">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-boss-text">
-            <Activity className="h-5 w-5 text-boss-primary" />
-            <h2 className="text-base font-semibold">현재 구독 상태</h2>
-          </div>
-          {isLoading ? (
-            <Skeleton className="h-6 w-20" />
-          ) : (
-            <Badge tone={STATE_TONE[subscriptionState]}>{STATE_LABEL[subscriptionState]}</Badge>
-          )}
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <SkeletonTile />
-            <SkeletonTile />
-            <SkeletonTile />
-            <SkeletonTile />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <InfoTile
-              icon={Package}
-              label="상품명"
-              value={status?.productName ?? status?.entitlement?.productName ?? '-'}
-            />
-            <InfoTile
-              icon={Calendar}
-              label="시작일"
-              value={formatDate(status?.startDate ?? status?.entitlement?.originalPurchaseDate)}
-            />
-            <InfoTile
-              icon={CreditCard}
-              label="만료일"
-              value={formatDate(status?.expirationDate ?? status?.entitlement?.expirationDate)}
-            />
-            <InfoTile
-              icon={Repeat}
-              label="자동 갱신"
-              value={(status?.willRenew ?? status?.entitlement?.willRenew) ? '사용' : '미사용'}
-            />
-          </div>
-        )}
-
-        {isActive && status?.subscriptionId && !isLoading && (
-          <div className="mt-6 flex justify-end border-t border-boss-border/70 pt-5">
-            <Button
-              variant="danger"
-              icon={isCancelling ? Loader2 : XCircle}
-              onClick={() => void handleCancel()}
-              disabled={isCancelling}
-            >
-              구독 취소
-            </Button>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function LinkBack() {
-  return (
-    <Link
-      href="/boss/billing"
-      className="mb-6 inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-    >
-      <ArrowLeft size={14} /> 결제 관리로 돌아가기
-    </Link>
-  );
-}
-
-function InfoTile({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-boss-border bg-boss-bg/60 px-4 py-3">
-      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-boss-text-muted">
-        <Icon size={12} />
-        {label}
-      </div>
-      <div className="mt-1 truncate text-sm font-semibold text-boss-text">{value}</div>
-    </div>
-  );
-}
-
-function SkeletonTile() {
-  return (
-    <div className="rounded-xl border border-boss-border bg-boss-bg/60 px-4 py-3">
-      <Skeleton className="mb-2 h-3 w-16" />
-      <Skeleton className="h-4 w-28" />
+      <ConfirmDialog
+        open={cancelOpen}
+        title="구독을 취소하시겠습니까?"
+        description="취소하면 자동 갱신이 멈추고 만료일 이후에는 플랜 혜택을 이용할 수 없습니다. 다시 이용하려면 요금제에서 새로 신청해야 합니다."
+        confirmLabel="구독 취소"
+        loading={isCancelling}
+        onCancel={() => setCancelOpen(false)}
+        onConfirm={() => void handleCancel()}
+      />
     </div>
   );
 }

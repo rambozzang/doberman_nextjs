@@ -1,68 +1,46 @@
 'use client';
 
-// 사장님 좌측 레일 — onGo 리디자인 시안
-// width 216px / bg #14161f / border-right #23263c / padding 16px 12px
+// 사장님 좌측 레일 — Industry 패턴 (agent.opentohome.com 의 Rail)
 //
-// 로고    : padding 4px 8px 18px, 22×22 accent 사각(radius 6px) + 워드마크 16px/700
-// 내비    : gap 2px, 항목 padding 8px 9px / radius 8px / 12.5px / gap 10px
-//           기본 #9598bb 500 · hover bg #1d2030 #fff · 선택 700 #fff + ac-dim + inset 1px #2e3250
-//           좌측 16px 마크(시안은 글리프, 여기서는 Lucide 아이콘) · 우측 배지 mono 10px
-// 하단    : margin-top auto, gap 10px — 사용량 카드 + 계정 행(26px 아바타 + ⋯ 메뉴)
+//   폭 236px · 바탕 #1d2d3d(accent-900) · 글자 #f5f5f8
+//   워드마크 19px/700 tracking .06em + 10px 대문자 부제(55%)
+//   항목 14px, 좌측 3px 활성 선 #94bce3 + 흰 14% 배경 / 비활성 75% / hover 흰 10%
+//   하단: 플랜 카드(테두리 25%) → 사각 아바타 + 이름/역할 → 로그아웃(테두리)
+//
+// 좁은 화면(<lg)에서는 상단 네이비 바(워드마크 + 메뉴 버튼)가 되고,
+// 메뉴 버튼이 같은 내비를 담은 서랍을 연다.
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import {
-  PanelLeftClose,
-  PanelLeft,
-  User,
-  Building2,
-  Settings,
-  LogOut,
-  ChevronRight,
-  type LucideIcon,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Menu, X } from 'lucide-react';
 import { useBossAuth } from '@/hooks/useBossAuth';
-import { SECTIONS, isNavActive } from './nav';
+import { SECTIONS, isNavActive, type NavItem } from './nav';
+import { useBossPortal } from './BossPortalContext';
+import type { BossSubscriptionStatusResponse } from '@/types/boss-billing';
 
-const LS_KEY = 'boss_sidebar_collapsed';
+const RAIL = 'bg-boss-rail text-boss-rail-text';
 
 export default function BossSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { bossAuth, bossLogout } = useBossAuth();
-  const [collapsed, setCollapsed] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { subscription } = useBossPortal();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      setCollapsed(localStorage.getItem(LS_KEY) === '1');
-    } catch {}
-  }, []);
-
-  // 계정 메뉴 바깥 클릭 시 닫기
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [menuOpen]);
-
-  useEffect(() => {
-    setMenuOpen(false);
+    setDrawerOpen(false);
   }, [pathname]);
 
-  const toggle = () => {
-    setCollapsed((v) => {
-      try {
-        localStorage.setItem(LS_KEY, v ? '0' : '1');
-      } catch {}
-      return !v;
-    });
-  };
+  // 서랍이 열려 있는 동안 뒤 화면 스크롤을 막는다
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [drawerOpen]);
 
   const handleLogout = () => {
     bossLogout();
@@ -71,171 +49,238 @@ export default function BossSidebar() {
 
   const displayName =
     bossAuth.userInfo?.name ?? bossAuth.userInfo?.nickNm ?? bossAuth.userId ?? '사장님';
-  const email = bossAuth.userInfo?.email ?? '사장님 계정';
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <aside
-      className={`hidden shrink-0 flex-col border-r border-boss-border bg-boss-rail px-3 py-4 transition-[width] duration-200 md:flex ${
-        collapsed ? 'w-[60px]' : 'w-[216px]'
-      }`}
-    >
-      {/* 로고 — padding 4px 8px 18px */}
-      <Link
-        href="/boss"
-        className={`flex items-center gap-[9px] pb-[18px] pt-1 ${collapsed ? 'justify-center' : 'px-2'}`}
+    <>
+      {/* ── 데스크톱 레일 ── */}
+      <aside
+        className={`${RAIL} hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-5 lg:py-[22px]`}
       >
-        <span className="h-[22px] w-[22px] flex-none rounded-[6px] bg-boss-primary" />
-        {!collapsed && (
-          <span className="text-[16px] font-bold tracking-[-0.01em] !text-boss-text">
-            도배르만
-          </span>
-        )}
-      </Link>
+        <Wordmark />
 
-      {/* 내비 */}
-      <nav className="boss-scroll min-h-0 flex-1 overflow-y-auto">
-        {SECTIONS.map((section, idx) => (
-          <div key={section.title} className={idx > 0 ? 'mt-[18px]' : ''}>
-            {!collapsed && <p className="boss-mono-label mb-1.5 px-[9px]">{section.title}</p>}
-            <div className="flex flex-col gap-0.5">
-              {section.items.map(({ href, label, icon: Icon, exact, badge, exclude }) => {
-                const active = isNavActive(pathname, href, exact, exclude);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    title={collapsed ? label : undefined}
-                    className={`flex items-center gap-2.5 rounded-[8px] px-[9px] py-2 text-[12.5px] transition-colors duration-[120ms] ease-out ${
-                      collapsed ? 'justify-center' : ''
-                    } ${
-                      active
-                        ? 'bg-[var(--boss-ac-dim)] font-bold !text-white shadow-[inset_0_0_0_1px_rgb(var(--boss-border-strong))]'
-                        : 'font-medium !text-boss-text-tertiary hover:bg-boss-hover hover:!text-white'
-                    }`}
-                  >
-                    {/* 시안의 16px 마크 자리 */}
-                    <span className="flex w-4 flex-none justify-center">
-                      <Icon size={15} className={active ? 'text-boss-primary' : 'opacity-75'} />
-                    </span>
-                    {!collapsed && (
-                      <>
-                        <span className="min-w-0 flex-1 truncate">{label}</span>
-                        {badge && (
-                          <span className="font-boss-mono text-[10px] text-boss-text-muted">
-                            {badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Link>
-                );
-              })}
+        <nav aria-label="사장님 메뉴" className="boss-rail-scroll min-h-0 flex-1 overflow-y-auto">
+          {SECTIONS.map((section, idx) => (
+            <div key={section.title} className={idx > 0 ? 'mt-2.5' : ''}>
+              <p className="px-5 pb-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-rail-text/45">
+                {section.title}
+              </p>
+              {section.items.map((item) => (
+                <RailLink
+                  key={item.href}
+                  item={item}
+                  active={isNavActive(pathname, item.href, item.exact, item.exclude)}
+                />
+              ))}
             </div>
+          ))}
+        </nav>
+
+        <div className="flex flex-col gap-3 px-5">
+          {/* 낮은 화면(노트북)에서는 카드를 접어 내비가 먼저 보이게 한다 */}
+          <PlanCard sub={subscription} className="[@media(max-height:860px)]:hidden" />
+          <div className="flex items-center justify-between gap-2">
+            <AccountRow name={displayName} initial={initial} />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="shrink-0 border border-boss-rail-text/25 px-3 py-2 text-[12px] font-semibold transition-colors hover:bg-white/10"
+            >
+              로그아웃
+            </button>
           </div>
-        ))}
-      </nav>
+        </div>
+      </aside>
 
-      {/* 하단 — 플랜 카드 + 계정 + 접기 */}
-      <div className="mt-auto flex flex-col gap-2.5 pt-2.5">
-        {!collapsed && (
-          // 시안의 "이번 달 업로드 62/120" 진행바 자리.
-          // 구독 사용량 API가 아직 없어 목업 수치 대신 업그레이드 안내를 둔다.
-          // 사용량 데이터가 생기면 label + mono 값 + 4px 진행바 구조로 교체할 것.
-          <Link
-            href="/boss/billing/plans"
-            className="rounded-control border border-boss-border bg-boss-shell px-3 py-[11px] transition-colors duration-[120ms] ease-out hover:border-boss-border-hover"
-          >
-            <div className="flex items-center justify-between gap-2 text-[11px]">
-              <span className="!text-boss-text-secondary">PRO 업그레이드</span>
-              <ChevronRight size={12} className="text-boss-primary" />
-            </div>
-            <p className="mt-2 text-[10px] !text-boss-text-muted">무제한 견적 · 고급 리포트</p>
-          </Link>
-        )}
-
-        <div ref={menuRef} className="relative">
+      {/* ── 모바일 상단 바 ── */}
+      <div className={`${RAIL} sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-2.5 lg:hidden`}>
+        <Wordmark compact />
+        <div className="flex items-center gap-2">
+          <PlanChip sub={subscription} />
           <button
             type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            className={`flex w-full items-center gap-[9px] rounded-[8px] px-2 py-1.5 transition-colors duration-[120ms] ease-out hover:bg-boss-hover ${
-              collapsed ? 'justify-center' : ''
-            }`}
+            onClick={() => setDrawerOpen(true)}
+            aria-label="메뉴 열기"
+            aria-expanded={drawerOpen}
+            className="-mr-1 grid h-9 w-9 place-items-center border border-boss-rail-text/25 transition-colors hover:bg-white/10"
           >
-            <span className="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full bg-[#2b2f47] text-[11px] text-boss-text-dim">
-              {initial}
-            </span>
-            {!collapsed && (
-              <>
-                <span className="min-w-0 flex-1 text-left">
-                  <span className="block truncate text-[12px] font-semibold text-boss-text">
-                    {displayName}
-                  </span>
-                  <span className="block truncate text-[10px] text-boss-text-muted">{email}</span>
-                </span>
-                <span className="text-[11px] text-boss-text-muted">⋯</span>
-              </>
-            )}
+            <Menu size={18} strokeWidth={1.75} />
           </button>
+        </div>
+      </div>
 
-          {menuOpen && (
-            <div
-              role="menu"
-              className="boss-card-content absolute bottom-full left-0 z-50 mb-1.5 w-full min-w-[188px]"
-            >
-              <MenuLink href="/boss/me" icon={User}>
-                내 정보
-              </MenuLink>
-              <MenuLink href="/boss/me/company" icon={Building2}>
-                회사 정보
-              </MenuLink>
-              <MenuLink href="/boss/settings" icon={Settings}>
-                설정
-              </MenuLink>
+      {/* ── 모바일 서랍 ── */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-boss-text/50" onClick={() => setDrawerOpen(false)} />
+          <nav
+            aria-label="사장님 메뉴"
+            className={`${RAIL} absolute inset-y-0 left-0 flex w-[280px] max-w-[85vw] flex-col gap-4 overflow-hidden py-[22px]`}
+          >
+            <div className="flex items-start justify-between px-5">
+              <Wordmark />
               <button
                 type="button"
-                role="menuitem"
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 border-t border-boss-border-row px-3 py-2 text-[12px] text-boss-error transition-colors duration-[120ms] ease-out hover:bg-boss-pill-bad"
+                onClick={() => setDrawerOpen(false)}
+                aria-label="메뉴 닫기"
+                className="-mr-2 -mt-1 grid h-9 w-9 place-items-center transition-colors hover:bg-white/10"
               >
-                <LogOut size={13} /> 로그아웃
+                <X size={18} strokeWidth={1.75} />
               </button>
             </div>
-          )}
-        </div>
 
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
-          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-chip text-boss-text-muted transition-colors duration-[120ms] ease-out hover:bg-boss-hover hover:text-boss-text"
-        >
-          {collapsed ? <PanelLeft size={13} /> : <PanelLeftClose size={13} />}
-          {!collapsed && <span className="text-[11px]">접기</span>}
-        </button>
-      </div>
-    </aside>
+            <div className="boss-rail-scroll min-h-0 flex-1 overflow-y-auto">
+              {SECTIONS.map((section, idx) => (
+                <div key={section.title} className={idx > 0 ? 'mt-4' : ''}>
+                  <p className="px-5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-rail-text/45">
+                    {section.title}
+                  </p>
+                  {section.items.map((item) => (
+                    <RailLink
+                      key={item.href}
+                      item={item}
+                      active={isNavActive(pathname, item.href, item.exact, item.exclude)}
+                      touch
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3.5 px-5">
+              <PlanCard sub={subscription} />
+              <AccountRow name={displayName} initial={initial} />
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="border border-boss-rail-text/25 px-3.5 py-2.5 text-left text-[12.5px] font-semibold transition-colors hover:bg-white/10"
+              >
+                로그아웃
+              </button>
+            </div>
+          </nav>
+        </div>
+      )}
+    </>
   );
 }
 
-function MenuLink({
-  href,
-  icon: Icon,
-  children,
-}: {
-  href: string;
-  icon: LucideIcon;
-  children: React.ReactNode;
-}) {
+// ── 조각 ─────────────────────────────────────────────────────
+
+function Wordmark({ compact = false }: { compact?: boolean }) {
+  return (
+    <Link href="/boss" className={`flex flex-col gap-[3px] !text-boss-rail-text ${compact ? '' : 'px-5'}`}>
+      <span className="font-boss-head text-[21px] font-bold leading-none tracking-[0.04em]">
+        도배르만
+      </span>
+      {!compact && (
+        <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.09em] text-boss-rail-text/55">
+          사장님 전용 · doberman.kr
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function RailLink({ item, active, touch = false }: { item: NavItem; active: boolean; touch?: boolean }) {
+  const Icon = item.icon;
   return (
     <Link
-      href={href}
-      role="menuitem"
-      className="flex items-center gap-2 px-3 py-2 text-[12px] !text-boss-text-secondary transition-colors duration-[120ms] ease-out hover:bg-boss-elevated hover:!text-boss-text"
+      href={item.href}
+      aria-current={active ? 'page' : undefined}
+      className={[
+        'flex w-full items-center gap-2.5 whitespace-nowrap border-l-[3px] px-5 text-[13.5px] transition-colors',
+        touch ? 'min-h-[44px] py-2.5' : 'py-[6px]',
+        active
+          ? 'border-boss-rail-active bg-white/[0.14] !text-boss-rail-text'
+          : 'border-transparent !text-boss-rail-text/75 hover:bg-white/10 hover:!text-boss-rail-text',
+      ].join(' ')}
     >
-      <Icon size={13} className="text-boss-text-muted" /> {children}
+      <Icon size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />
+      <span className="flex-1">{item.label}</span>
+      {item.badge && (
+        <span className="font-boss-head text-[12px] tabular-nums opacity-55">{item.badge}</span>
+      )}
+    </Link>
+  );
+}
+
+// 구독 상태 → 레일 카드 문구. 없는 값을 지어내지 않는다 — 응답이 없으면 안내만 둔다.
+function planView(sub: BossSubscriptionStatusResponse | null) {
+  const active = sub?.isActive === true || sub?.status === 'ACTIVE';
+  const name = sub?.productName ?? sub?.entitlement?.productName;
+  const exp = sub?.expirationDate ?? sub?.entitlement?.expirationDate;
+  const expText = exp ? exp.slice(0, 10) : null;
+  if (active) {
+    return {
+      value: name ?? 'PRO',
+      sub: expText ? `${expText}까지` : sub?.willRenew ? '자동 갱신' : '이용 중',
+      tone: 'ok' as const,
+    };
+  }
+  if (sub?.status === 'GRACE_PERIOD') {
+    return { value: '결제 보류', sub: '결제 수단을 확인하세요', tone: 'warn' as const };
+  }
+  if (sub?.status === 'EXPIRED') {
+    return { value: '만료', sub: '다시 구독하면 바로 이어집니다', tone: 'warn' as const };
+  }
+  return { value: '무료', sub: 'PRO 로 견적 무제한 · 고급 리포트', tone: 'none' as const };
+}
+
+function PlanCard({
+  sub,
+  className = '',
+}: {
+  sub: BossSubscriptionStatusResponse | null;
+  className?: string;
+}) {
+  const v = planView(sub);
+  return (
+    <Link
+      href="/boss/billing"
+      className={`flex flex-col gap-1 border border-boss-rail-text/25 px-3.5 py-3 !text-boss-rail-text transition-colors hover:bg-white/10 ${className}`}
+    >
+      <span className="text-[10px] uppercase tracking-[0.09em] text-boss-rail-text/55">구독 플랜</span>
+      <span className="flex items-baseline gap-1.5">
+        <span className="font-boss-head text-[22px] font-bold leading-none tracking-[-0.01em]">
+          {v.value}
+        </span>
+        {v.tone === 'warn' && (
+          <span className="h-[7px] w-[7px] bg-boss-warning" aria-hidden />
+        )}
+      </span>
+      <span className="text-[11.5px] leading-relaxed text-boss-rail-text/70">{v.sub}</span>
+    </Link>
+  );
+}
+
+function PlanChip({ sub }: { sub: BossSubscriptionStatusResponse | null }) {
+  const v = planView(sub);
+  return (
+    <Link
+      href="/boss/billing"
+      className="border border-boss-rail-text/25 px-2 py-1 font-boss-head text-[12px] !text-boss-rail-text tabular-nums"
+    >
+      {v.value}
+    </Link>
+  );
+}
+
+function AccountRow({ name, initial }: { name: string; initial: string }) {
+  return (
+    <Link href="/boss/me" className="flex min-w-0 items-center gap-2.5 !text-boss-rail-text">
+      <span
+        aria-hidden
+        className="grid h-[34px] w-[34px] shrink-0 place-items-center bg-white/15 font-boss-head text-[14px] font-bold"
+      >
+        {initial || '·'}
+      </span>
+      <span className="flex min-w-0 flex-col leading-[1.35]">
+        <span className="truncate text-[13px]">{name}</span>
+        <span className="truncate text-[10px] uppercase tracking-[0.09em] text-boss-rail-text/55">
+          사장님
+        </span>
+      </span>
     </Link>
   );
 }

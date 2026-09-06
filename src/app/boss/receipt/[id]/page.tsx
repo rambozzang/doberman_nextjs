@@ -1,19 +1,14 @@
 'use client';
 
-// 사장님 영수증 상세 페이지
-// Flutter receipt_detail_page.dart 포팅 — 컴팩트 B2B 레이아웃
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+// 영수증 상세 — Industry 패턴
+//   좌: 거래처 · 금액 개요 + 품목 표 + 메모 (수정 모드에서는 2열 폼 + 하단 액션 패널)
+//   우: DescRow 요약 + 영수증 이미지 + 수정 · 새로고침 · 목록 · 삭제.
+//   화면 제목과 ← 영수증 관리 링크는 셸 헤더가 그린다. 삭제는 ConfirmDialog.
+// Flutter receipt_detail_page.dart 포팅
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import {
-  Trash2,
-  RefreshCw,
-  Save,
-  FileText,
-  Package,
-  Image as ImageIcon,
-  Receipt as ReceiptIcon,
-} from 'lucide-react';
+import { Trash2, RefreshCw, Pencil, Package, ArrowLeft, Receipt as ReceiptIcon } from 'lucide-react';
 import { bossReceiptApi } from '@/lib/api/boss/receipt';
 import type { ReceiptData, ReceiptSaveRequest } from '@/types/boss-receipt';
 import {
@@ -23,13 +18,20 @@ import {
   type ReceiptCategoryCode,
 } from '@/types/boss-receipt';
 import {
-  PageHeader,
-  Card,
+  Panel,
+  ContentCard,
+  CardHead,
   Button,
-  Badge,
-  DataTable,
+  ButtonLink,
+  StatusPill,
+  DescRow,
+  Field,
+  SelectField,
+  TextareaField,
   EmptyState,
+  AlertBanner,
   Skeleton,
+  ConfirmDialog,
 } from '@/components/boss/ui';
 
 function fmtWon(n?: number): string {
@@ -48,8 +50,6 @@ function formatDate(s?: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const BREADCRUMBS = [{ label: '영수증 관리', href: '/boss/receipt' }, { label: '상세' }];
-
 export default function BossReceiptDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const id = Number(params?.id);
@@ -58,6 +58,8 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // 편집 필드
   const [vendorName, setVendorName] = useState('');
@@ -131,7 +133,7 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
 
   const handleDelete = async () => {
     if (!data?.id) return;
-    if (!confirm('이 영수증을 삭제하시겠습니까?')) return;
+    setDeleting(true);
     try {
       const res = await bossReceiptApi.remove(data.id);
       if (res.success !== false) {
@@ -142,18 +144,23 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
       }
     } catch {
       toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
   // ── 로딩 ──────────────────────────────────
   if (loading && !data) {
     return (
-      <div className="space-y-4">
-        <PageHeader title="영수증 상세" breadcrumbs={BREADCRUMBS} />
-        <Skeleton className="h-28 rounded-xl" />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Skeleton className="h-64 rounded-xl lg:col-span-2" />
-          <Skeleton className="h-64 rounded-xl" />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-36" />
+          <Skeleton className="h-56" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-40" />
         </div>
       </div>
     );
@@ -162,15 +169,16 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
   // ── 에러 / 없음 ───────────────────────────
   if (error || !data) {
     return (
-      <div className="space-y-4">
-        <PageHeader title="영수증 상세" breadcrumbs={BREADCRUMBS} />
+      <div className="flex flex-col gap-4">
+        {error && <AlertBanner tone="bad">{error}</AlertBanner>}
         <EmptyState
           icon={ReceiptIcon}
-          title={error || '영수증을 찾을 수 없습니다'}
+          title="영수증을 열 수 없습니다"
+          description="삭제됐거나 주소가 잘못됐을 수 있습니다. 목록에서 다시 골라 주세요."
           action={
-            <Button variant="secondary" size="sm" onClick={() => router.replace('/boss/receipt')}>
+            <ButtonLink href="/boss/receipt" variant="primary" size="sm" icon={ArrowLeft}>
               목록으로
-            </Button>
+            </ButtonLink>
           }
         />
       </div>
@@ -181,280 +189,297 @@ export default function BossReceiptDetailPage({ params }: { params: { id: string
   const items = data.items ?? [];
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="영수증 상세"
-        breadcrumbs={BREADCRUMBS}
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
-              새로고침
-            </Button>
-            {!editing ? (
-              <Button variant="primary" size="sm" icon={Save} onClick={() => setEditing(true)}>
-                수정
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* ── 좌: 본문 ── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        {editing ? (
+          <>
+            {/* 수정 폼 */}
+            <Panel title="영수증 수정" kicker="EDIT">
+              <div className="flex flex-col gap-4">
+                <Field
+                  id="vendorName"
+                  label="상호명"
+                  type="text"
+                  value={vendorName}
+                  onChange={(e) => setVendorName(e.target.value)}
+                  placeholder="예: OO벽지 · OO자재"
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field
+                    id="txDate"
+                    label="거래일"
+                    type="date"
+                    value={txDate ? txDate.substring(0, 10) : ''}
+                    onChange={(e) => setTxDate(e.target.value)}
+                  />
+                  <SelectField
+                    id="category"
+                    label="카테고리"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as ReceiptCategoryCode)}
+                  >
+                    {RECEIPT_CATEGORIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field
+                    id="totalAmount"
+                    label="총 금액"
+                    type="text"
+                    inputMode="numeric"
+                    suffix="원"
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d]/g, ''))}
+                    placeholder="0"
+                    className="[&_input]:font-boss-head [&_input]:tabular-nums"
+                  />
+                  <Field
+                    id="taxAmount"
+                    label="부가세"
+                    type="text"
+                    inputMode="numeric"
+                    suffix="원"
+                    value={taxAmount}
+                    onChange={(e) => setTaxAmount(e.target.value.replace(/[^\d]/g, ''))}
+                    placeholder="0"
+                    hint="비워 두면 부가세 없음으로 저장됩니다."
+                    className="[&_input]:font-boss-head [&_input]:tabular-nums"
+                  />
+                </div>
+                <SelectField
+                  id="paymentMethod"
+                  label="결제 수단"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="md:w-1/2 md:pr-2"
+                >
+                  <option value="">선택 안함</option>
+                  <option value="CARD">카드</option>
+                  <option value="CASH">현금</option>
+                </SelectField>
+                <TextareaField
+                  id="memo"
+                  label="메모"
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  rows={3}
+                  placeholder="용도 · 현장 · 특이사항"
+                />
+              </div>
+            </Panel>
+
+            {/* 하단 액션 패널 */}
+            <div className="boss-card flex flex-wrap items-center gap-2.5 px-4 py-3.5">
+              <span className="text-[12.5px] text-boss-text-secondary">
+                품목과 영수증 이미지는 앱에서 읽어 온 값이라 여기서 바꾸지 않습니다.
+              </span>
+              <Button variant="secondary" onClick={() => setEditing(false)} disabled={saving} className="ml-auto">
+                취소
               </Button>
-            ) : (
-              <Button variant="primary" size="sm" icon={Save} onClick={handleSave} disabled={saving}>
-                {saving ? '저장 중...' : '저장'}
+              <Button variant="primary" onClick={handleSave} disabled={saving}>
+                {saving ? '저장 중…' : '저장'}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* 개요 */}
+            <Panel>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill tone="neutral">{categoryLabel(data.category)}</StatusPill>
+                {data.paymentMethod && <StatusPill tone="info">{paymentLabel(data.paymentMethod)}</StatusPill>}
+                {data.id != null && (
+                  <span className="font-boss-head text-[12px] tabular-nums text-boss-text-muted">#{data.id}</span>
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-boss-head text-[22px] font-semibold leading-tight tracking-[-0.01em] text-boss-text">
+                    {data.vendorName || '거래처 미상'}
+                  </h2>
+                  <p className="mt-1 text-[12.5px] text-boss-text-secondary">
+                    거래일{' '}
+                    <span className="font-boss-head tabular-nums text-boss-text">{formatDate(data.txDate)}</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="boss-kicker">총 금액</p>
+                  <p className="font-boss-head text-[32px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-boss-text">
+                    {won(data.totalAmount)}
+                  </p>
+                </div>
+              </div>
+            </Panel>
+
+            {/* 품목 */}
+            <ContentCard>
+              <CardHead title="품목" count={items.length > 0 ? `${items.length}개` : undefined} countTone="muted" />
+              {items.length === 0 ? (
+                <div className="p-5">
+                  <EmptyState
+                    icon={Package}
+                    title="읽어 온 품목이 없습니다"
+                    description="앱에서 영수증을 촬영할 때 품목이 인식되면 여기에 표로 나옵니다. 총 금액은 위 값 그대로입니다."
+                  />
+                </div>
+              ) : (
+                <div className="boss-scroll overflow-x-auto">
+                <table className="boss-table">
+                  <thead>
+                    <tr>
+                      <th>품명</th>
+                      <th className="text-right">수량</th>
+                      <th className="text-right">단가</th>
+                      <th className="text-right">금액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, i) => (
+                      <tr key={i}>
+                        <td className="wrap font-medium">{item.name ?? '-'}</td>
+                        <td className="num text-boss-text-secondary">{item.qty ?? '-'}</td>
+                        <td className="num text-boss-text-secondary">
+                          {item.unitPrice != null ? won(item.unitPrice) : '-'}
+                        </td>
+                        <td className="num font-semibold">{item.amount != null ? won(item.amount) : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                </div>
+              )}
+            </ContentCard>
+
+            {/* 메모 */}
+            <Panel title="메모" kicker="NOTE">
+              {data.memo ? (
+                <p className="whitespace-pre-wrap text-[13.5px] leading-[1.7] text-boss-text">{data.memo}</p>
+              ) : (
+                <p className="text-[13px] text-boss-text-secondary">
+                  메모가 없습니다. 어느 현장 지출인지 적어 두면 월 정산 때 찾기 쉽습니다.
+                </p>
+              )}
+            </Panel>
+          </>
+        )}
+      </div>
+
+      {/* ── 우: 요약 · 이미지 · 작업 ── */}
+      <div className="flex flex-col gap-4">
+        <Panel title="요약" kicker="RECEIPT">
+          <dl>
+            <DescRow
+              label="사업자번호"
+              value={
+                data.bizNo ? (
+                  <span className="font-boss-head tabular-nums">{data.bizNo}</span>
+                ) : (
+                  <span className="font-normal text-boss-text-muted">—</span>
+                )
+              }
+            />
+            <DescRow
+              label="거래일"
+              value={<span className="font-boss-head tabular-nums">{formatDate(data.txDate)}</span>}
+            />
+            <DescRow label="카테고리" value={categoryLabel(data.category)} />
+            <DescRow
+              label="결제수단"
+              value={
+                data.paymentMethod ? (
+                  paymentLabel(data.paymentMethod)
+                ) : (
+                  <span className="font-normal text-boss-text-muted">—</span>
+                )
+              }
+            />
+            <DescRow
+              label="공급가액"
+              value={<span className="font-boss-head tabular-nums">{won(supplyAmount)}</span>}
+            />
+            <DescRow
+              label="부가세"
+              value={
+                data.taxAmount != null ? (
+                  <span className="font-boss-head tabular-nums">{won(data.taxAmount)}</span>
+                ) : (
+                  <span className="font-normal text-boss-text-muted">—</span>
+                )
+              }
+            />
+            <DescRow
+              label="총 금액"
+              value={
+                <span className="font-boss-head text-[15px] tabular-nums text-boss-primary">
+                  {won(data.totalAmount)}
+                </span>
+              }
+            />
+          </dl>
+        </Panel>
+
+        {data.imageUrl && (
+          <Panel title="영수증 이미지" kicker="SCAN">
+            <a
+              href={data.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block border border-boss-border bg-boss-inset"
+              aria-label="영수증 이미지 새 창에서 보기"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={data.imageUrl} alt={data.vendorName ?? '영수증'} className="w-full object-contain" />
+            </a>
+          </Panel>
+        )}
+
+        <Panel title="작업" kicker="ACTIONS">
+          <div className="flex flex-col gap-2">
+            {!editing && (
+              <Button variant="primary" icon={Pencil} onClick={() => setEditing(true)} className="w-full">
+                내용 수정
               </Button>
             )}
             <Button
+              variant="secondary"
+              icon={RefreshCw}
+              onClick={load}
+              disabled={loading || saving}
+              className="w-full"
+            >
+              새로고침
+            </Button>
+            <ButtonLink href="/boss/receipt" variant="secondary" icon={ArrowLeft} className="w-full">
+              목록으로
+            </ButtonLink>
+            <Button
               variant="ghost"
-              size="sm"
               icon={Trash2}
-              onClick={handleDelete}
-              className="text-boss-error hover:bg-boss-error/10"
+              onClick={() => setConfirmDelete(true)}
+              className="w-full !text-boss-text-muted hover:!text-boss-error"
             >
               삭제
             </Button>
           </div>
-        }
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            삭제하면 월 합계에서 바로 빠지며 복구할 수 없습니다.
+          </p>
+        </Panel>
+      </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="이 영수증을 삭제할까요?"
+        description={`'${data.vendorName ?? '거래처 미상'}' 영수증을 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void handleDelete()}
       />
-
-      {editing ? (
-        // ── 편집 폼 ─────────────────────────────
-        <Card>
-          <div className="space-y-4">
-            <div>
-              <label className="boss-label">상호명</label>
-              <input
-                type="text"
-                value={vendorName}
-                onChange={(e) => setVendorName(e.target.value)}
-                className="boss-input"
-                placeholder="예: 홍길동 벽지매트"
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="boss-label">거래일</label>
-                <input
-                  type="date"
-                  value={txDate ? txDate.substring(0, 10) : ''}
-                  onChange={(e) => setTxDate(e.target.value)}
-                  className="boss-input"
-                />
-              </div>
-              <div>
-                <label className="boss-label">카테고리</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as ReceiptCategoryCode)}
-                  className="boss-input"
-                >
-                  {RECEIPT_CATEGORIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="boss-label">총 금액</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d]/g, ''))}
-                  className="boss-input text-right font-semibold text-boss-primary"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="boss-label">부가세</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={taxAmount}
-                  onChange={(e) => setTaxAmount(e.target.value.replace(/[^\d]/g, ''))}
-                  className="boss-input text-right"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="boss-label">결제 수단</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="boss-input"
-              >
-                <option value="">선택 안함</option>
-                <option value="CARD">카드</option>
-                <option value="CASH">현금</option>
-              </select>
-            </div>
-            <div>
-              <label className="boss-label">메모</label>
-              <textarea
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                className="boss-input min-h-[80px] resize-y"
-                placeholder="추가 메모"
-              />
-            </div>
-            <div className="flex items-center justify-end gap-2 border-t border-boss-border pt-4">
-              <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
-                취소
-              </Button>
-              <Button variant="primary" size="sm" icon={Save} onClick={handleSave} disabled={saving}>
-                {saving ? '저장 중...' : '저장'}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* 개요 카드 */}
-          <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <Badge tone="emerald">{categoryLabel(data.category)}</Badge>
-                {data.paymentMethod && <Badge tone="sky">{paymentLabel(data.paymentMethod)}</Badge>}
-                {data.id != null && <span className="text-xs text-boss-text-muted">#{data.id}</span>}
-              </div>
-              <h2 className="text-lg font-semibold text-boss-text">
-                {data.vendorName || '거래처 미상'}
-              </h2>
-              <p className="mt-1 text-sm text-boss-text-muted">거래일 {formatDate(data.txDate)}</p>
-            </div>
-            <div className="text-left md:text-right">
-              <p className="text-xs text-boss-text-muted">총 금액</p>
-              <p className="font-mono text-2xl font-semibold tabular-nums text-boss-primary">
-                {won(data.totalAmount)}
-              </p>
-            </div>
-          </Card>
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            {/* 정보 + 품목 */}
-            <div className={`space-y-4 ${data.imageUrl ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
-              {/* 영수증 정보 */}
-              <Section title="영수증 정보" icon={FileText}>
-                <div className="divide-y divide-boss-border">
-                  <Info label="사업자번호" value={data.bizNo} />
-                  <Info label="거래일" value={formatDate(data.txDate)} />
-                  <Info label="공급가액" value={won(supplyAmount)} />
-                  <Info
-                    label="부가세"
-                    value={data.taxAmount != null ? won(data.taxAmount) : '-'}
-                  />
-                  <Info label="총 금액" value={won(data.totalAmount)} strong />
-                  <Info
-                    label="결제수단"
-                    value={
-                      data.paymentMethod ? (
-                        <Badge tone="sky">{paymentLabel(data.paymentMethod)}</Badge>
-                      ) : undefined
-                    }
-                  />
-                </div>
-                {data.memo && (
-                  <div className="mt-3 border-t border-boss-border pt-3">
-                    <p className="mb-1 text-xs text-boss-text-muted">메모</p>
-                    <p className="whitespace-pre-wrap text-sm text-boss-text-secondary">
-                      {data.memo}
-                    </p>
-                  </div>
-                )}
-              </Section>
-
-              {/* 품목 */}
-              <Section title={`품목${items.length > 0 ? ` (${items.length})` : ''}`} icon={Package}>
-                {items.length === 0 ? (
-                  <EmptyState icon={Package} title="등록된 품목이 없습니다" />
-                ) : (
-                  <DataTable>
-                    <thead>
-                      <tr>
-                        <th>품명</th>
-                        <th className="text-right">수량</th>
-                        <th className="text-right">단가</th>
-                        <th className="text-right">금액</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((item, i) => (
-                        <tr key={i}>
-                          <td className="font-medium">{item.name ?? '-'}</td>
-                          <td className="text-right text-boss-text-secondary">{item.qty ?? '-'}</td>
-                          <td className="text-right text-boss-text-secondary">
-                            {item.unitPrice != null ? won(item.unitPrice) : '-'}
-                          </td>
-                          <td className="text-right font-medium">
-                            {item.amount != null ? won(item.amount) : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </DataTable>
-                )}
-              </Section>
-            </div>
-
-            {/* 영수증 이미지 */}
-            {data.imageUrl && (
-              <div className="space-y-4">
-                <Section title="영수증 이미지" icon={ImageIcon}>
-                  <div className="overflow-hidden rounded-lg border border-boss-border">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={data.imageUrl}
-                      alt={data.vendorName ?? '영수증'}
-                      className="w-full object-contain"
-                    />
-                  </div>
-                </Section>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: ReactNode;
-}) {
-  return (
-    <Card>
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
-        <Icon size={15} className="text-boss-primary" />
-        {title}
-      </h3>
-      {children}
-    </Card>
-  );
-}
-
-function Info({
-  label,
-  value,
-  strong,
-}: {
-  label: string;
-  value?: ReactNode;
-  strong?: boolean;
-}) {
-  if (value === undefined || value === null || value === '') return null;
-  return (
-    <div className="flex items-center justify-between gap-3 py-2 text-sm">
-      <span className="text-boss-text-muted">{label}</span>
-      <span
-        className={`text-right ${strong ? 'font-semibold text-boss-primary' : 'font-medium text-boss-text'}`}
-      >
-        {value}
-      </span>
     </div>
   );
 }

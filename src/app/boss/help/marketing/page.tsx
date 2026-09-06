@@ -1,8 +1,11 @@
 'use client';
 
-// 사장님 도움말 → 마케팅 수신 동의 안내
-import { Mail, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
-import { PageHeader, Card, Button } from '@/components/boss/ui';
+// 마케팅 정보 수신 안내 — Industry 패턴
+//
+//   안내 패널 → 혜택 · 철회 방법 패널(사각 점 목록) → 고객센터 패널(전화 secondary + 동의 primary 우측)
+//   화면 제목은 헤더(PAGE_META)가 그린다.
+
+import { Button, Panel } from '@/components/boss/ui';
 import toast from 'react-hot-toast';
 
 const BENEFITS = [
@@ -12,10 +15,24 @@ const BENEFITS = [
 ];
 
 const WITHDRAW_METHODS = [
-  '앱 내 설정 → 알림 설정에서 마케팅 수신을 끌 수 있습니다.',
-  '수신된 마케팅 메시지 하단의 "수신 거부" 링크를 클릭하시면 즉시 해지됩니다.',
-  '고객센터로 연락 주시면 신속하게 동의 철회를 도와드립니다.',
+  '설정 → 푸시 알림에서 마케팅 수신을 끌 수 있습니다.',
+  '수신된 마케팅 메시지 하단의 "수신 거부" 링크를 누르면 즉시 해지됩니다.',
+  '고객센터로 연락 주시면 동의 철회를 도와드립니다.',
 ];
+
+function DotList({ items, tone = 'accent' }: { items: string[]; tone?: 'accent' | 'warn' }) {
+  const dot = tone === 'warn' ? 'bg-boss-warning' : 'bg-boss-primary';
+  return (
+    <ul className="space-y-2">
+      {items.map((text, idx) => (
+        <li key={idx} className="flex items-start gap-2 text-[13.5px] leading-[1.6] text-boss-text-soft">
+          <span className={`mt-[9px] h-1 w-1 flex-none ${dot}`} aria-hidden />
+          <span>{text}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function BossHelpMarketingPage() {
   const handleOptIn = () => {
@@ -23,77 +40,42 @@ export default function BossHelpMarketingPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader
-        title="마케팅 수신 동의"
-        description="마케팅 정보 수신에 대한 안내 및 동의 철회 방법을 확인하세요."
-        breadcrumbs={[
-          { label: '도움말', href: '/boss/help' },
-          { label: '마케팅 수신 동의' },
-        ]}
-      />
+    <div className="flex flex-col gap-4">
+      <Panel kicker="안내" title="마케팅 정보 수신이란">
+        <p className="text-[13.5px] leading-[1.75] text-boss-text-soft">
+          도배르만은 사장님께 더 나은 서비스와 혜택을 제공하기 위해 마케팅 정보를 보냅니다. 동의하면
+          프로모션 · 이벤트 · 서비스 안내를 PUSH · 문자 · 이메일로 받습니다.
+        </p>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
+          마케팅 수신 동의는 선택 사항입니다. 동의하지 않아도 기본 서비스는 그대로 이용할 수 있습니다.
+        </p>
+      </Panel>
 
-      <Card>
-        <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-boss-primary/20 p-2 text-boss-primary">
-            <Mail size={20} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-base font-bold text-boss-text">마케팅 수신 동의 안내</h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-boss-text-secondary">
-              도베르만은 사장님께 더 나은 서비스와 혜택을 제공하기 위해 마케팅 정보를 전송하고 있습니다.
-              동의하시면 프로모션, 이벤트, 서비스 안내 등의 정보를 PUSH, 문자, 이메일로 받아보실 수 있습니다.
-            </p>
-            <p className="mt-3 text-xs text-boss-text-muted">
-              마케팅 수신 동의는 선택사항이며, 동의하지 않으셔도 도베르만의 기본 서비스를 이용하실 수 있습니다.
-            </p>
-          </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Panel kicker="혜택" title="동의하면 받는 것">
+          <DotList items={BENEFITS} />
+        </Panel>
+        <Panel kicker="철회" title="동의를 되돌리려면">
+          <DotList items={WITHDRAW_METHODS} tone="warn" />
+        </Panel>
+      </div>
+
+      <section className="boss-card flex flex-wrap items-center justify-between gap-3 p-5">
+        <div className="min-w-0">
+          <p className="boss-kicker">고객센터</p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
+            마케팅 수신과 관련해 궁금한 점은 전화 또는 앱 안 1:1 문의로 알려주세요.
+          </p>
         </div>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-bold text-boss-text">동의 시 받을 수 있는 혜택</h2>
-        <ul className="mt-3 space-y-2">
-          {BENEFITS.map((text, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-boss-text-secondary">
-              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-boss-primary" />
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-bold text-boss-text">수신 동의 철회 방법</h2>
-        <p className="mt-1 text-xs text-boss-text-muted">
-          언제든지 아래 방법 중 하나로 마케팅 수신 동의를 철회할 수 있습니다.
-        </p>
-        <ul className="mt-3 space-y-2">
-          {WITHDRAW_METHODS.map((text, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-boss-text-secondary">
-              <AlertCircle size={16} className="mt-0.5 shrink-0 text-boss-warning" />
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-bold text-boss-text">고객센터 안내</h2>
-        <p className="mt-1 text-xs text-boss-text-muted">
-          마케팅 수신 동의와 관련하여 궁금한 점이 있으시면 아래로 문의해 주세요.
-        </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <a
-            href="tel:1600-0000"
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-boss-border bg-boss-elevated px-4 py-2 text-sm text-boss-text transition hover:border-boss-border hover:bg-boss-elevated"
-          >
-            <Phone size={14} className="text-boss-primary" />
+        <div className="flex flex-wrap items-center gap-2">
+          <a href="tel:1600-0000" className="boss-btn boss-btn-md boss-btn-secondary font-boss-head tabular-nums">
             1600-0000
           </a>
-          <Button onClick={handleOptIn}>마케팅 수신 동의하기</Button>
+          <Button variant="primary" onClick={handleOptIn}>
+            마케팅 수신 동의
+          </Button>
         </div>
-      </Card>
+      </section>
     </div>
   );
 }

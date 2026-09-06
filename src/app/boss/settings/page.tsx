@@ -1,14 +1,16 @@
 'use client';
 
-// 사장님 설정 — onGo 리디자인 시안 `설정` 화면
+// 사장님 설정 — Industry 패턴 (agent.opentohome.com 의 설정 조판)
 //
-// 레이아웃: grid 194px minmax(0,1fr), 좌측 서브 내비 + 우측 본문(최대 880px)
-// 본문: 제목 15px/700 + 설명 12px → 토글 리스트 카드 → 하단 3카드(minmax 270px)
+// 레이아웃: boss-bleed 안 grid 194px + minmax(0,1fr) — 좌 SubNav(레일의 라이트 버전) + 우 본문(최대 880px)
+// 본문: 섹션 제목 17px Barlow Condensed + 설명 12.5px → 토글 행 / 링크 행 패널 → 하단 3패널(minmax 270px)
+//   토글 행: 제목 13.5px 600 + 설명 12.5px + 우측 Toggle
+//   링크 행: 같은 조판 + 우측 ›
 //
-// 알림 토글/시간은 실제 API(PUT /user/alramTime)와 연결돼 있다.
-// 저장은 ⌘↵ 로도 가능 (시안 KEYBOARD 원칙).
+// 알림 토글/시간은 실제 API(PUT /user/alramTime)와 연결돼 있다. 저장은 ⌘↵ 로도 된다(KEYBOARD 원칙).
+// 화면 제목은 헤더(PAGE_META)가 그린다.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -36,17 +38,17 @@ const NAV = [
   { key: 'support', label: '고객센터' },
 ];
 
-// 시안 설정 본문 헤더
+// 탭 본문 머리 — 섹션 제목 + 설명
 function Head({ title, description }: { title: string; description: string }) {
   return (
     <div>
-      <h2 className="text-[15px] font-bold text-boss-text">{title}</h2>
-      <p className="mt-[5px] text-[12px] leading-[1.6] text-boss-text-secondary">{description}</p>
+      <h2 className="boss-section-title">{title}</h2>
+      <p className="mt-1 text-[12.5px] leading-[1.6] text-boss-text-secondary">{description}</p>
     </div>
   );
 }
 
-// 시안 토글 행 — padding 14px 15px / gap 14px / 제목 12.5px/600 + 설명 11.5px
+// 토글 행 — padding 14px 15px / 제목 13.5px 600 + 설명 12.5px + 우측 Toggle
 function ToggleRow({
   title,
   description,
@@ -63,8 +65,8 @@ function ToggleRow({
   return (
     <div className="flex items-center gap-3.5 border-b border-boss-border-row px-[15px] py-[14px] last:border-b-0">
       <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] font-semibold text-boss-text">{title}</p>
-        <p className="mt-[3px] text-[11.5px] leading-[1.55] text-boss-text-secondary">
+        <p className="text-[13.5px] font-semibold text-boss-text">{title}</p>
+        <p className="mt-[3px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
           {description}
         </p>
       </div>
@@ -73,7 +75,7 @@ function ToggleRow({
   );
 }
 
-// 시안 링크 행
+// 링크 행 — 우측 ›
 function LinkRow({
   href,
   title,
@@ -89,8 +91,8 @@ function LinkRow({
       className="flex items-center gap-3.5 border-b border-boss-border-row px-[15px] py-[14px] transition-colors duration-[120ms] ease-out last:border-b-0 hover:bg-boss-elevated"
     >
       <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] font-semibold !text-boss-text">{title}</p>
-        <p className="mt-[3px] text-[11.5px] leading-[1.55] !text-boss-text-secondary">
+        <p className="text-[13.5px] font-semibold !text-boss-text">{title}</p>
+        <p className="mt-[3px] text-[12.5px] leading-[1.55] !text-boss-text-secondary">
           {description}
         </p>
       </div>
@@ -180,14 +182,11 @@ export default function BossSettingsPage() {
     }
   };
 
-  const timeSelect = useMemo(
-    () => 'boss-input w-auto min-w-[68px] cursor-pointer',
-    []
-  );
+  const timeSelect = 'boss-input w-auto min-w-[68px] cursor-pointer';
 
   return (
     <div className="boss-bleed grid grid-cols-1 md:grid-cols-[194px_minmax(0,1fr)]">
-      {/* 좌측 서브 내비 — 시안 194px / padding 15px 12px */}
+      {/* 좌측 서브 내비 — 194px / padding 15px 12px */}
       <div className="border-b border-boss-border px-3 py-[15px] md:border-b-0 md:border-r">
         <SubNav label="Settings" items={NAV} value={tab} onChange={setTab} />
       </div>
@@ -232,12 +231,13 @@ export default function BossSettingsPage() {
               />
               <div className="flex flex-wrap items-center gap-3.5 border-b border-boss-border-row px-[15px] py-[14px] last:border-b-0">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] font-semibold text-boss-text">수신 시간대</p>
-                  <p className="mt-[3px] text-[11.5px] leading-[1.55] text-boss-text-secondary">
+                  <p className="text-[13.5px] font-semibold text-boss-text">수신 시간대</p>
+                  <p className="mt-[3px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
                     이 시간 밖에 발생한 알림은 다음 시작 시각에 모아서 보냅니다.
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5">
+                {/* 좁은 화면에서는 시작·종료 두 줄로 접힌다 */}
+                <div className="flex flex-wrap items-center gap-1.5">
                   <select
                     value={startHour}
                     onChange={(e) => setStartHour(e.target.value)}
@@ -264,7 +264,7 @@ export default function BossSettingsPage() {
                       </option>
                     ))}
                   </select>
-                  <span className="px-1 font-boss-mono text-[11px] text-boss-text-muted">—</span>
+                  <span className="px-1 font-boss-head text-[12px] text-boss-text-muted">—</span>
                   <select
                     value={endHour}
                     onChange={(e) => setEndHour(e.target.value)}
@@ -299,9 +299,10 @@ export default function BossSettingsPage() {
               <Button variant="primary" onClick={() => void handleSaveAlarm()} disabled={saving}>
                 {saving ? '저장 중…' : '알림 설정 저장'}
               </Button>
-              <span className="font-boss-mono text-[10.5px] text-boss-text-muted">
-                ⌘↵ 로 저장
-              </span>
+              <kbd className="border border-boss-border px-[5px] py-px font-boss-head text-[11px] text-boss-text-muted">
+                ⌘↵
+              </kbd>
+              <span className="text-[12px] text-boss-text-muted">로 저장</span>
             </div>
 
             <ContentCard>
@@ -354,36 +355,39 @@ export default function BossSettingsPage() {
           </>
         )}
 
-        {/* ───── 하단 3카드 — 시안 minmax(270px, 1fr) ───── */}
+        {/* ───── 하단 3패널 — minmax(270px, 1fr) ───── */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-3">
           <Card>
-            <p className="text-[13px] font-bold text-boss-text">요금제</p>
-            <p className="mt-[5px] text-[11.5px] leading-[1.55] text-boss-text-secondary">
-              현재 플랜과 다음 결제일을 확인합니다.
+            <p className="boss-kicker">구독</p>
+            <p className="mt-1 text-[13.5px] font-bold text-boss-text">요금제</p>
+            <p className="mt-[5px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
+              현재 플랜과 만료일을 확인하고 플랜을 바꿉니다.
             </p>
             <div className="mt-[11px]">
               <Link
-                href="/boss/billing/plans"
-                className="text-[12px] font-semibold !text-boss-primary"
+                href="/boss/billing"
+                className="text-[12.5px] font-semibold !text-boss-primary hover:underline underline-offset-2"
               >
-                플랜 보기 →
+                구독 · 결제 보기 →
               </Link>
             </div>
           </Card>
 
           <Card>
-            <p className="text-[13px] font-bold text-boss-text">사업자 정보</p>
-            <p className="mt-[5px] text-[11.5px] leading-[1.55] text-boss-text-secondary">
+            <p className="boss-kicker">운영사</p>
+            <p className="mt-1 text-[13.5px] font-bold text-boss-text">사업자 정보</p>
+            <p className="mt-[5px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
               코드랩타이거(CodeLabTiger)
             </p>
-            <p className="mt-[11px] font-boss-mono text-[11px] text-boss-text-muted">
+            <p className="mt-[11px] font-boss-head text-[13px] tabular-nums text-boss-text-muted">
               770-50-01045
             </p>
           </Card>
 
-          <div className="boss-card px-[15px] py-[13px]">
-            <p className="text-[13px] font-bold text-boss-text">위험 구역</p>
-            <p className="mt-[5px] text-[11.5px] leading-[1.55] text-boss-text-secondary">
+          <div className="boss-card border-l-[3px] border-l-boss-error p-5">
+            <p className="boss-kicker !text-boss-error">주의</p>
+            <p className="mt-1 text-[13.5px] font-bold text-boss-text">계정 종료</p>
+            <p className="mt-[5px] text-[12.5px] leading-[1.55] text-boss-text-secondary">
               탈퇴하면 1년간 재가입할 수 없고 데이터는 복구되지 않습니다.
             </p>
             <div className="mt-[11px] flex gap-2">
@@ -397,7 +401,7 @@ export default function BossSettingsPage() {
           </div>
         </div>
 
-        <p className="pt-2 text-right text-[10.5px] text-boss-text-faint">
+        <p className="boss-mono-label pt-2 text-right normal-case tracking-[0.04em] !text-boss-text-faint">
           Copyright 2024 TIGER Group · All rights reserved
         </p>
       </div>

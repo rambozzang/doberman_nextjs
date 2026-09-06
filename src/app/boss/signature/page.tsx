@@ -1,34 +1,41 @@
 'use client';
 
+// 고객 서명 목록 — Industry 패턴
+//   필터 줄(상태 Seg + 검색 + 새로고침 + 우측 전체 n건 · 서명 받기) → 표(DataTable). 화면 제목은 셸 헤더가 그린다.
+//   PAGE_META 에 헤더 액션이 없어 "서명 받기" 는 필터 줄 우측에 둔다(참조 고객 화면과 같은 자리).
+//   첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  PenLine,
-  Plus,
-  RefreshCw,
-  Inbox,
-  Phone,
-} from 'lucide-react';
+import { PenLine, Plus, RefreshCw, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossSignatureItem } from '@/types/boss-signature';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
+  ListTabs,
   DataTable,
+  ContentCard,
   RowThumb,
-  Badge,
+  StatusPill,
+  TagPill,
   EmptyState,
-  Skeleton,
+  AlertBanner,
+  RowSkeleton,
   RowActions,
   ConfirmDialog,
+  type StatusTone,
 } from '@/components/boss/ui';
 
-type BadgeTone = 'default' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
+type StatusFilter = 'all' | 'done' | 'pending';
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: '전체' },
+  { key: 'done', label: '서명 완료' },
+  { key: 'pending', label: '미완료' },
+];
 
 function formatDate(input?: string | null): string {
   if (!input) return '-';
@@ -46,11 +53,13 @@ function maskPhone(phone?: string | null): string {
   return phone;
 }
 
-function statusBadge(item: BossSignatureItem): { label: string; tone: BadgeTone } {
-  if (item.confirmedAt || item.signatureImagePath) {
-    return { label: '서명완료', tone: 'emerald' };
-  }
-  return { label: '미완료', tone: 'amber' };
+function isSigned(item: BossSignatureItem): boolean {
+  return !!(item.confirmedAt || item.signatureImagePath);
+}
+
+function statusBadge(item: BossSignatureItem): { label: string; tone: StatusTone } {
+  if (isSigned(item)) return { label: '서명 완료', tone: 'ok' };
+  return { label: '미완료', tone: 'warn' };
 }
 
 export default function BossSignatureListPage() {
@@ -59,6 +68,7 @@ export default function BossSignatureListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [statusTab, setStatusTab] = useState<StatusFilter>('all');
   const [pendingDelete, setPendingDelete] = useState<BossSignatureItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -96,15 +106,23 @@ export default function BossSignatureListPage() {
     load();
   }, []);
 
+  const counts = useMemo(() => {
+    const done = items.filter(isSigned).length;
+    return { all: items.length, done, pending: items.length - done };
+  }, [items]);
+
   const filtered = useMemo(() => {
-    if (!keyword.trim()) return items;
+    let list = items;
+    if (statusTab === 'done') list = list.filter(isSigned);
+    else if (statusTab === 'pending') list = list.filter((it) => !isSigned(it));
+    if (!keyword.trim()) return list;
     const k = keyword.toLowerCase();
-    return items.filter((it) =>
+    return list.filter((it) =>
       [it.customerName, it.customerPhone, it.memo]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(k)),
     );
-  }, [items, keyword]);
+  }, [items, keyword, statusTab]);
 
   // 서명 기록 삭제 (확인 모달 → API → 목록 반영)
   const handleDelete = async () => {
@@ -133,64 +151,102 @@ export default function BossSignatureListPage() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="고객 서명"
-        description="시공 완료 후 받은 고객 서명을 관리하세요."
-        actions={
-          <Link href="/boss/signature/capture">
-            <Button variant="primary" size="sm" icon={Plus}>
-              서명 받기
-            </Button>
-          </Link>
-        }
-      />
+  // 빈 상태 — 첫 조회 실패 / 0건 / 필터 결과 0건을 구분한다
+  const isFiltered = statusTab !== 'all' || keyword.trim().length > 0;
 
-      <Toolbar>
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={STATUS_TABS.map((t) => ({ key: t.key, label: t.label, count: counts[t.key] }))}
+          active={statusTab}
+          onChange={setStatusTab}
+        />
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="고객명·연락처·메모 검색"
-          className="w-full max-w-xs"
+          placeholder="고객명 · 연락처 · 메모 검색"
+          className="w-full sm:w-64"
+          hint={false}
         />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={load}
-          disabled={loading}
-        >
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load} disabled={loading}>
           새로고침
         </Button>
-        <div className="ml-auto">
-          <Badge tone="default">{items.length.toLocaleString()}건</Badge>
-        </div>
-      </Toolbar>
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
+        >
+          {loading && items.length === 0 ? '불러오는 중…' : `전체 ${filtered.length}건`}
+        </span>
+        <ButtonLink href="/boss/signature/capture" variant="primary" icon={PenLine}>
+          서명 받기
+        </ButtonLink>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button size="sm" variant="secondary" onClick={load} disabled={loading}>
+              다시 불러오기
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
-      ) : filtered.length === 0 ? (
+        <ContentCard>
+          <RowSkeleton rows={6} />
+        </ContentCard>
+      ) : error && items.length === 0 ? (
         <EmptyState
           icon={Inbox}
-          title="서명 내역이 없습니다"
-          description="'서명 받기'로 새 서명을 받아보세요."
+          title="서명 목록을 불러오지 못했습니다"
+          description="네트워크 상태를 확인한 뒤 다시 불러와 주세요. 받아 둔 서명이 사라진 것은 아닙니다."
         />
+      ) : filtered.length === 0 ? (
+        isFiltered ? (
+          <EmptyState
+            icon={Inbox}
+            title="조건에 맞는 서명이 없습니다"
+            description="상태 탭이나 검색어를 바꿔 보세요. 고객명 · 연락처 · 메모에서 찾습니다."
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setStatusTab('all');
+                  setKeyword('');
+                }}
+              >
+                필터 초기화
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={Inbox}
+            title="아직 받아 둔 서명이 없습니다"
+            description="시공을 마치면 현장에서 고객 서명을 받아 두세요. 완료 확인 · 분쟁 대응 근거로 남습니다."
+            action={
+              <ButtonLink href="/boss/signature/capture" variant="primary" size="sm" icon={Plus}>
+                첫 서명 받기
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
               <th>고객</th>
               <th>상태</th>
-              <th className="whitespace-nowrap">연락처</th>
-              <th>관련 정보</th>
-              <th className="whitespace-nowrap">서명일</th>
+              <th>연락처</th>
+              <th>연결</th>
+              <th>서명일</th>
               <th />
             </tr>
           </thead>
@@ -203,20 +259,21 @@ export default function BossSignatureListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/signature/${item.id}`)}
                 >
-                  <td>
+                  <td className="wrap max-w-[360px]">
                     <div className="flex items-center gap-2.5">
+                      {/* 서명 썸네일 — 캔버스 저장본이라 흰 배경 위에 그린다 */}
                       <RowThumb
                         src={item.signatureImagePath}
                         alt={item.customerName ?? 'signature'}
                         icon={PenLine}
-                        className="h-9 w-9"
+                        className="h-9 w-9 !bg-white"
                       />
                       <div className="min-w-0">
                         <span className="block font-medium text-boss-text">
                           {item.customerName ?? '이름 없음'}
                         </span>
                         {item.memo ? (
-                          <span className="block max-w-[16rem] truncate text-xs text-boss-text-muted">
+                          <span className="block max-w-[16rem] truncate text-[12px] text-boss-text-muted">
                             {item.memo}
                           </span>
                         ) : null}
@@ -224,36 +281,30 @@ export default function BossSignatureListPage() {
                     </div>
                   </td>
                   <td>
-                    <Badge tone={badge.tone}>{badge.label}</Badge>
+                    <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
                   </td>
-                  <td className="whitespace-nowrap text-boss-text-secondary">
+                  <td className="font-boss-head tabular-nums text-boss-text-secondary">
                     {item.customerPhone ? (
-                      <span className="inline-flex items-center gap-1">
-                        <Phone size={11} className="text-boss-text-muted" />
-                        {maskPhone(item.customerPhone)}
-                      </span>
+                      maskPhone(item.customerPhone)
                     ) : (
-                      '-'
+                      <span className="text-boss-text-ghost">—</span>
                     )}
                   </td>
-                  <td className="text-boss-text-secondary">
+                  <td>
                     <div className="flex flex-wrap items-center gap-1">
-                      {item.orderId ? (
-                        <Badge tone="violet">주문 #{item.orderId}</Badge>
-                      ) : null}
-                      {item.recordId ? (
-                        <Badge tone="sky">기록 #{item.recordId}</Badge>
-                      ) : null}
+                      {item.orderId ? <TagPill>주문 #{item.orderId}</TagPill> : null}
+                      {item.recordId ? <TagPill>시공 #{item.recordId}</TagPill> : null}
                       {!item.orderId && !item.recordId ? (
-                        <span className="text-boss-text-muted">-</span>
+                        <span className="text-boss-text-ghost">—</span>
                       ) : null}
                     </div>
                   </td>
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                  <td className="font-boss-head tabular-nums text-boss-text-secondary">
                     {formatDate(item.confirmedAt ?? item.createdDt)}
                   </td>
-                  <td className="whitespace-nowrap text-right">
+                  <td className="text-right">
                     <RowActions
+                      editLabel="상세"
                       onEdit={() => router.push(`/boss/signature/${item.id}`)}
                       onDelete={() => setPendingDelete(item)}
                       deleting={deleting && pendingDelete?.id === item.id}
@@ -266,7 +317,7 @@ export default function BossSignatureListPage() {
         </DataTable>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="서명 기록 삭제"

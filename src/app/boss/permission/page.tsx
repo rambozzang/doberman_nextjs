@@ -1,19 +1,16 @@
 'use client';
 
-// 사장님 권한 안내 페이지
+// 권한 안내 — Industry 패턴 (AuthFrame wide 620px)
 // Flutter 원본: lib/app/login/permission_page.dart
 // 모바일 권한 대신 브라우저 Permission API (Notification, Camera, Geolocation) 안내.
+//
+// 패널 한 장에 권한 세 줄(아이콘 · 이름 · 상태 태그 · 설명 · 요청 버튼), 아래 액션 패널.
+// 권한 조회·요청 로직은 그대로다.
+
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import {
-  ArrowLeft,
-  Bell,
-  Camera,
-  MapPin,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { Bell, Camera, MapPin, Check } from 'lucide-react';
+import { Button, ButtonLink, StatusPill, type StatusTone } from '@/components/boss/ui';
+import { AuthFrame } from '@/components/boss/AuthFrame';
 
 type PermStatus = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'checking';
 
@@ -27,23 +24,31 @@ interface PermItem {
 const PERM_LIST: PermItem[] = [
   {
     key: 'notification',
-    title: '알림 권한',
-    description: '신규 견적 요청, 일정 알림 등을 실시간으로 받기 위해 필요합니다.',
+    title: '알림',
+    description: '새 견적 요청, 일정 알림을 실시간으로 받습니다.',
     icon: Bell,
   },
   {
     key: 'camera',
-    title: '카메라 접근 권한',
-    description: '현장 사진을 촬영해 견적서와 포트폴리오에 첨부하기 위해 필요합니다.',
+    title: '카메라',
+    description: '현장 사진을 찍어 견적서와 포트폴리오에 바로 붙입니다.',
     icon: Camera,
   },
   {
     key: 'location',
-    title: '위치 정보 권한',
-    description: '현장 인근 견적 요청을 우선 노출하고 거리 정보를 안내하기 위해 사용됩니다.',
+    title: '위치 정보',
+    description: '현장 인근 견적 요청을 먼저 보여주고 거리를 안내합니다.',
     icon: MapPin,
   },
 ];
+
+const STATUS_META: Record<PermStatus, { label: string; tone: StatusTone }> = {
+  granted: { label: '허용됨', tone: 'ok' },
+  denied: { label: '거부됨', tone: 'bad' },
+  prompt: { label: '미설정', tone: 'warn' },
+  unsupported: { label: '지원 안 함', tone: 'neutral' },
+  checking: { label: '확인 중…', tone: 'neutral' },
+};
 
 export default function BossPermissionPage() {
   const [statuses, setStatuses] = useState<Record<PermItem['key'], PermStatus>>({
@@ -127,104 +132,79 @@ export default function BossPermissionPage() {
     }
   }
 
-  function statusLabel(s: PermStatus): { label: string; tone: string } {
-    switch (s) {
-      case 'granted':
-        return { label: '허용됨', tone: 'text-boss-primary bg-boss-primary/15 border-boss-primary/30' };
-      case 'denied':
-        return { label: '거부됨', tone: 'text-red-300 bg-red-500/15 border-red-500/30' };
-      case 'prompt':
-        return { label: '미설정', tone: 'text-boss-warning bg-amber-500/15 border-amber-500/30' };
-      case 'unsupported':
-        return { label: '지원안함', tone: 'text-boss-text-muted bg-boss-elevated/30 border-boss-border' };
-      default:
-        return { label: '확인중', tone: 'text-boss-text-muted bg-boss-elevated/30 border-boss-border' };
-    }
-  }
+  const grantedCount = PERM_LIST.filter((p) => statuses[p.key] === 'granted').length;
+  const hasDenied = PERM_LIST.some((p) => statuses[p.key] === 'denied');
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 홈
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">앱 사용을 위한 권한</h1>
-        <div className="w-10" />
-      </div>
-
-      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-boss-primary" />
-          <div className="text-sm leading-relaxed text-boss-text-secondary">
-            도베르만의 모든 기능을 원활히 사용하려면 아래 권한을 허용해 주세요. 권한은 브라우저
-            설정에서 언제든지 변경할 수 있습니다.
-          </div>
+    <AuthFrame
+      title="앱 사용을 위한 권한"
+      description="모든 기능을 쓰려면 아래 권한이 필요합니다. 브라우저 설정에서 언제든 바꿀 수 있습니다"
+      width="wide"
+      footer={
+        hasDenied ? (
+          <>
+            거부된 권한은 브라우저 주소창 왼쪽 자물쇠(사이트 정보)에서 다시 허용할 수 있습니다.
+          </>
+        ) : undefined
+      }
+    >
+      <div className="boss-card-content">
+        <div className="boss-card-head">
+          <h2 className="boss-section-title">권한 상태</h2>
+          <div className="min-w-0 flex-1" />
+          <span className="font-boss-head text-[13px] font-semibold tabular-nums text-boss-text-muted">
+            허용 {grantedCount} / {PERM_LIST.length}
+          </span>
         </div>
-      </div>
 
-      <div className="space-y-3">
         {PERM_LIST.map(({ key, title, description, icon: Icon }) => {
           const s = statuses[key];
-          const meta = statusLabel(s);
+          const meta = STATUS_META[s];
           const granted = s === 'granted';
           return (
             <div
               key={key}
-              className="rounded-2xl border border-boss-border bg-boss-surface p-5"
+              className="flex items-start gap-3.5 border-b border-boss-border-row px-5 py-4 last:border-b-0"
             >
-              <div className="flex items-start gap-4">
-                <div className="rounded-lg bg-boss-primary/15 p-2 text-boss-primary">
-                  <Icon size={20} />
+              <span className="grid h-9 w-9 flex-none place-items-center border border-boss-border bg-boss-bg text-boss-text-dim">
+                <Icon size={16} strokeWidth={1.5} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[14px] font-bold text-boss-text">{title}</p>
+                  <StatusPill tone={meta.tone}>{meta.label}</StatusPill>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-bold text-boss-text">{title}</div>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.tone}`}
-                    >
-                      {s === 'checking' ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Loader2 size={10} className="animate-spin" /> {meta.label}
-                        </span>
-                      ) : (
-                        meta.label
-                      )}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-boss-text-muted">{description}</p>
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      disabled={granted || s === 'unsupported' || s === 'checking'}
-                      onClick={() => void requestPermission(key)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 py-1.5 text-xs font-semibold text-boss-primary hover:bg-boss-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {granted ? (
-                        <>
-                          <CheckCircle2 size={12} /> 허용됨
-                        </>
-                      ) : (
-                        '권한 요청'
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
+                  {description}
+                </p>
               </div>
+              <Button
+                variant={granted ? 'secondary' : 'primary'}
+                size="sm"
+                icon={granted ? Check : undefined}
+                disabled={granted || s === 'unsupported' || s === 'checking'}
+                onClick={() => void requestPermission(key)}
+                className="shrink-0"
+              >
+                {granted ? '허용됨' : '허용하기'}
+              </Button>
             </div>
           );
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={() => void checkAll()}
-        className="w-full rounded-xl border border-boss-border bg-boss-elevated/50 py-3 text-sm font-semibold text-boss-text hover:bg-boss-elevated"
-      >
-        권한 상태 새로고침
-      </button>
-    </div>
+      {/* 하단 액션 패널 */}
+      <div className="boss-card mt-4 flex flex-wrap items-center gap-2.5 px-4 py-3.5">
+        <Button variant="secondary" onClick={() => void checkAll()}>
+          상태 새로고침
+        </Button>
+        <span className="text-[12.5px] text-boss-text-secondary">
+          허용하지 않아도 이용할 수 있습니다. 필요할 때 다시 요청합니다.
+        </span>
+        <ButtonLink href="/boss" variant="primary" className="ml-auto">
+          대시보드로
+        </ButtonLink>
+      </div>
+    </AuthFrame>
   );
 }

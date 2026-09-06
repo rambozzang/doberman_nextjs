@@ -1,17 +1,17 @@
 'use client';
 
+// 구독 · 결제 — Industry 패턴 (참조 agent/billing)
+//
+//   BillingNav(Seg) + 새로고침
+//   → 구독 상태 패널(SubscriptionPanel: 플랜명 · 남은 일수 40px · 진행바 · 시작/만료 dl)
+//   → 요금제 패널: 사각 플랜 카드 나열, 추천 플랜은 accent 테두리 + outline 태그
+//   → 결제 내역 표(최근) + "전체 보기 →"
+//
+// 화면 제목은 헤더(PAGE_META)가 그린다. 구독 취소는 되돌릴 수 없어 ConfirmDialog 를 거친다.
+// 결제 · 취소가 성공하면 셸(레일 플랜 카드)도 같이 갱신한다 — useBossPortal().refreshSubscription().
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  CreditCard,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  XCircle,
-  Sparkles,
-  Receipt,
-  ShieldCheck,
-  Clock,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { bossBillingApi } from '@/lib/api/boss/billing';
 import type {
   BossSubscriptionStatusResponse,
@@ -21,70 +21,35 @@ import type {
   BossCreateSubscriptionRequest,
 } from '@/types/boss-billing';
 import {
-  PageHeader,
-  Card,
-  Button,
+  AlertBanner,
   Badge,
+  Button,
+  ButtonLink,
+  CardHead,
+  ConfirmDialog,
+  ContentCard,
   DataTable,
   EmptyState,
+  Panel,
   Skeleton,
-  SectionHeader,
+  Tag,
 } from '@/components/boss/ui';
-
-type BadgeTone = 'default' | 'emerald' | 'amber' | 'rose';
-
-const STATE_LABEL: Record<BossSubscriptionState, string> = {
-  ACTIVE: '구독중',
-  GRACE_PERIOD: '결제 보류',
-  EXPIRED: '만료됨',
-  NONE: '비활성',
-  ERROR: '오류',
-};
-
-const STATE_TONE: Record<BossSubscriptionState, BadgeTone> = {
-  ACTIVE: 'emerald',
-  GRACE_PERIOD: 'amber',
-  EXPIRED: 'rose',
-  NONE: 'default',
-  ERROR: 'rose',
-};
-
-function formatDate(value?: string | null): string {
-  if (!value) return '-';
-  try {
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return value;
-    return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
-  } catch {
-    return value;
-  }
-}
-
-function formatPrice(plan: BossBillingPlan): string {
-  if (plan.priceString) return plan.priceString;
-  if (plan.priceAmount != null) {
-    const currency = plan.currencyCode ?? 'KRW';
-    try {
-      return new Intl.NumberFormat('ko-KR', {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: 0,
-      }).format(plan.priceAmount);
-    } catch {
-      return `${plan.priceAmount.toLocaleString('ko-KR')}원`;
-    }
-  }
-  return '가격 문의';
-}
+import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
+import BillingNav from './BillingNav';
+import SubscriptionPanel from './SubscriptionPanel';
+import { formatAmount, formatDate, formatPeriod, formatPrice, historyStatusTone } from './utils';
 
 export default function BossBillingPage() {
+  const { refreshSubscription } = useBossPortal();
   const [status, setStatus] = useState<BossSubscriptionStatusResponse | null>(null);
   const [history, setHistory] = useState<BossPurchaseHistoryItem[]>([]);
+  const [historyFailed, setHistoryFailed] = useState(false);
   const [plans, setPlans] = useState<BossBillingPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionPlanId, setActionPlanId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
@@ -101,6 +66,7 @@ export default function BossBillingPage() {
       } else {
         setStatus(statusRes.data ?? null);
       }
+      setHistoryFailed(historyRes.success === false);
       setHistory(historyRes.success !== false ? historyRes.data?.items ?? [] : []);
       setPlans(plansRes.success !== false ? plansRes.data?.plans ?? [] : []);
     } catch (e) {
@@ -137,10 +103,11 @@ export default function BossBillingPage() {
       } else {
         setActionMessage(res.data?.message ?? '구독이 신청되었습니다.');
         await loadAll();
+        refreshSubscription();
       }
       setActionPlanId(null);
     },
-    [loadAll],
+    [loadAll, refreshSubscription],
   );
 
   const handleCancel = useCallback(async () => {
@@ -149,7 +116,6 @@ export default function BossBillingPage() {
       setActionMessage('취소할 구독 ID를 찾을 수 없습니다.');
       return;
     }
-    if (typeof window !== 'undefined' && !window.confirm('정말 구독을 취소하시겠습니까?')) return;
     setIsCancelling(true);
     setActionMessage(null);
     const res = await bossBillingApi.cancel(subsId);
@@ -158,128 +124,117 @@ export default function BossBillingPage() {
     } else {
       setActionMessage(res.data?.message ?? '구독이 취소되었습니다.');
       await loadAll();
+      refreshSubscription();
     }
     setIsCancelling(false);
-  }, [status?.subscriptionId, loadAll]);
+    setCancelOpen(false);
+  }, [status?.subscriptionId, loadAll, refreshSubscription]);
+
+  const recentHistory = history.slice(0, 5);
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        eyebrow="Billing"
-        title="결제 관리"
-        description="구독 상태, 결제 이력, 이용 가능한 플랜을 한곳에서 관리합니다."
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <BillingNav />
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={() => void loadAll()}
+          disabled={isLoading}
+        >
+          새로고침
+        </Button>
+      </div>
+
+      {errorMessage && (
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void loadAll()}>
+              다시 시도
+            </Button>
+          }
+        >
+          {errorMessage}
+        </AlertBanner>
+      )}
+
+      {actionMessage && <AlertBanner tone="info">{actionMessage}</AlertBanner>}
+
+      {/* 구독 상태 */}
+      <SubscriptionPanel
+        status={status}
+        state={subscriptionState}
+        loading={isLoading}
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={RefreshCw}
-            onClick={() => void loadAll()}
-            disabled={isLoading}
-          >
-            새로고침
-          </Button>
+          <>
+            <ButtonLink href="/boss/billing/plans" variant="secondary" size="sm">
+              요금제 비교
+            </ButtonLink>
+            {isActive && status?.subscriptionId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCancelOpen(true)}
+                disabled={isCancelling}
+                className="!text-boss-error"
+              >
+                {isCancelling ? '취소 중…' : '구독 취소'}
+              </Button>
+            )}
+          </>
         }
       />
 
-      {errorMessage && (
-        <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
-      {actionMessage && (
-        <div className="flex items-start gap-2 rounded-lg border border-boss-primary/30 bg-boss-primary/10 p-3 text-sm text-boss-primary">
-          <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-          <span>{actionMessage}</span>
-        </div>
-      )}
-
-      {/* 구독 상태 */}
-      <Card>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-boss-primary" />
-            <h2 className="text-sm font-semibold text-boss-text">현재 구독 상태</h2>
-          </div>
-          <Badge tone={STATE_TONE[subscriptionState]}>{STATE_LABEL[subscriptionState]}</Badge>
-        </div>
-
+      {/* 요금제 */}
+      <Panel kicker="요금제" title="이용 가능한 플랜">
         {isLoading ? (
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <InfoTile label="상품명" value={status?.productName ?? status?.entitlement?.productName ?? '-'} />
-            <InfoTile label="시작일" value={formatDate(status?.startDate ?? status?.entitlement?.originalPurchaseDate)} />
-            <InfoTile label="만료일" value={formatDate(status?.expirationDate ?? status?.entitlement?.expirationDate)} />
-            <InfoTile label="자동 갱신" value={(status?.willRenew ?? status?.entitlement?.willRenew) ? '사용' : '미사용'} />
-          </div>
-        )}
-
-        {isActive && status?.subscriptionId && (
-          <div className="mt-4 flex justify-end border-t border-boss-border pt-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={XCircle}
-              onClick={() => void handleCancel()}
-              disabled={isCancelling}
-              className="text-boss-error hover:bg-boss-error/10"
-            >
-              {isCancelling ? '취소 중...' : '구독 취소'}
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      {/* 플랜 목록 */}
-      <Card>
-        <SectionHeader title="이용 가능한 플랜" />
-        {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-48 rounded-lg" />
+              <Skeleton key={i} className="h-48" />
             ))}
           </div>
         ) : plans.length === 0 ? (
-          <EmptyState title="현재 이용 가능한 플랜이 없습니다" />
+          <EmptyState
+            title="지금 신청할 수 있는 플랜이 없습니다"
+            description="플랜 정보를 받아오지 못했거나 판매 중인 플랜이 없습니다. 새로고침해도 같으면 고객센터로 문의해주세요."
+          />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => {
               const purchasing = actionPlanId === plan.planId;
               return (
                 <div
                   key={plan.planId}
-                  className={`flex flex-col rounded-lg border p-5 transition ${
-                    plan.isPopular
-                      ? 'border-boss-primary/30 bg-boss-primary/5'
-                      : 'border-boss-border bg-boss-surface'
+                  className={`flex flex-col gap-2 border bg-boss-inset p-4 ${
+                    plan.isPopular ? 'border-boss-primary' : 'border-boss-border'
                   }`}
                 >
-                  {plan.isPopular && (
-                    <Badge tone="emerald" className="mb-2 self-start">POPULAR</Badge>
-                  )}
-                  <h3 className="text-base font-semibold text-boss-text">{plan.title}</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-boss-head text-[15px] font-semibold leading-snug text-boss-text">
+                      {plan.title}
+                    </p>
+                    {plan.isPopular && <Badge tone="violet">추천</Badge>}
+                  </div>
                   {plan.description && (
-                    <p className="mt-1 text-xs text-boss-text-muted">{plan.description}</p>
+                    <p className="text-[12px] leading-relaxed text-boss-text-secondary">
+                      {plan.description}
+                    </p>
                   )}
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-boss-primary">{formatPrice(plan)}</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-boss-head text-[26px] font-semibold leading-none tabular-nums text-boss-text">
+                      {formatPrice(plan)}
+                    </span>
                     {plan.periodUnit && (
-                      <span className="text-[11px] text-boss-text-muted">
-                        / {plan.periodLength ?? 1} {plan.periodUnit.toLowerCase()}
-                      </span>
+                      <span className="text-[12px] text-boss-text-muted">{formatPeriod(plan)}</span>
                     )}
                   </div>
                   {plan.features && plan.features.length > 0 && (
-                    <ul className="mt-4 flex-1 space-y-1.5 text-xs text-boss-text-secondary">
+                    <ul className="flex-1 space-y-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
                       {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
-                          <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-boss-primary" />
+                        <li key={feature} className="flex items-start gap-1.5">
+                          <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
                           <span>{feature}</span>
                         </li>
                       ))}
@@ -288,40 +243,54 @@ export default function BossBillingPage() {
                   <Button
                     variant={plan.isPopular ? 'primary' : 'secondary'}
                     size="sm"
-                    icon={CreditCard}
                     onClick={() => void handleSubscribe(plan)}
                     disabled={purchasing || isActive}
-                    className="mt-5 w-full"
+                    className="mt-1 w-full"
                   >
-                    {purchasing ? '처리 중...' : isActive ? '이미 구독중' : '구독 신청'}
+                    {purchasing ? '처리 중…' : isActive ? '구독 중' : '구독 신청'}
                   </Button>
                 </div>
               );
             })}
           </div>
         )}
-      </Card>
+      </Panel>
 
-      {/* 구매 이력 */}
-      <Card padded={false}>
-        <div className="border-b border-boss-border px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Receipt size={15} className="text-boss-primary" />
-            <h2 className="text-sm font-semibold text-boss-text">구매 이력</h2>
-          </div>
-        </div>
+      {/* 결제 내역 (최근) */}
+      <ContentCard>
+        <CardHead
+          title="결제 내역"
+          meta={history.length > 0 ? `최근 ${recentHistory.length}건` : undefined}
+          action="전체 보기 →"
+          actionHref="/boss/billing/history"
+        />
         {isLoading ? (
           <div className="p-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="mb-2 h-10 w-full rounded" />
+              <Skeleton key={i} className="mb-2 h-9 w-full" />
             ))}
           </div>
+        ) : historyFailed ? (
+          <div className="p-5">
+            <EmptyState
+              title="결제 내역을 불러오지 못했습니다"
+              description="네트워크 상태를 확인하고 새로고침해주세요."
+              action={
+                <Button variant="secondary" size="sm" onClick={() => void loadAll()}>
+                  다시 시도
+                </Button>
+              }
+            />
+          </div>
         ) : history.length === 0 ? (
-          <div className="p-6">
-            <EmptyState title="구매 이력이 없습니다" />
+          <div className="p-5">
+            <EmptyState
+              title="아직 결제 내역이 없습니다"
+              description="플랜을 신청하면 결제 · 갱신 기록이 여기에 쌓입니다."
+            />
           </div>
         ) : (
-          <DataTable>
+          <DataTable className="border-0 shadow-none">
             <thead>
               <tr>
                 <th>상품</th>
@@ -332,39 +301,34 @@ export default function BossBillingPage() {
               </tr>
             </thead>
             <tbody>
-              {history.map((item, idx) => (
+              {recentHistory.map((item, idx) => (
                 <tr key={item.transactionId ?? `${item.productId}-${idx}`}>
                   <td>
-                    <p className="font-medium text-boss-text">{item.productName ?? item.productId ?? '-'}</p>
-                    {item.store && <p className="text-xs text-boss-text-muted">{item.store}</p>}
+                    <p className="font-medium">{item.productName ?? item.productId ?? '-'}</p>
+                    {item.store && <p className="text-[11.5px] text-boss-text-muted">{item.store}</p>}
                   </td>
-                  <td className="text-boss-text-secondary">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock size={11} /> {formatDate(item.purchaseDate)}
-                    </span>
-                  </td>
-                  <td className="text-boss-text-secondary">{formatDate(item.expirationDate)}</td>
-                  <td className="text-right font-medium text-boss-text">
-                    {item.amount != null ? `${item.amount.toLocaleString('ko-KR')} ${item.currency ?? ''}`.trim() : '-'}
-                  </td>
+                  <td className="font-boss-head tabular-nums">{formatDate(item.purchaseDate)}</td>
+                  <td className="font-boss-head tabular-nums">{formatDate(item.expirationDate)}</td>
+                  <td className="num font-semibold">{formatAmount(item.amount, item.currency)}</td>
                   <td>
-                    <Badge tone="default">{item.status ?? '-'}</Badge>
+                    <Tag tone={historyStatusTone(item.status)}>{item.status ?? '-'}</Tag>
                   </td>
                 </tr>
               ))}
             </tbody>
           </DataTable>
         )}
-      </Card>
-    </div>
-  );
-}
+      </ContentCard>
 
-function InfoTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-boss-border bg-boss-bg p-3">
-      <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">{label}</p>
-      <p className="mt-1 truncate text-sm font-semibold text-boss-text">{value}</p>
+      <ConfirmDialog
+        open={cancelOpen}
+        title="구독을 취소하시겠습니까?"
+        description="취소하면 자동 갱신이 멈추고 만료일 이후에는 플랜 혜택을 이용할 수 없습니다. 다시 이용하려면 요금제에서 새로 신청해야 합니다."
+        confirmLabel="구독 취소"
+        loading={isCancelling}
+        onCancel={() => setCancelOpen(false)}
+        onConfirm={() => void handleCancel()}
+      />
     </div>
   );
 }

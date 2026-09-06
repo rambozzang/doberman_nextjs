@@ -1,6 +1,9 @@
 'use client';
 
-// 사장님 커뮤니티 글쓰기 — 카테고리 선택 + 구인/구직 양식 + 임시 저장
+// 사장님 커뮤니티 글쓰기 — Industry 패턴
+// 폼 조판(게시판 Seg · 제목 · 구인/구직 양식 · 본문 · 임시 저장)은 CommunityPostForm 이 담당한다.
+// ?type=JOB|ANON 으로 들어오면 그 게시판을 기본 선택한다.
+
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -8,6 +11,7 @@ import { bossCommunityApi } from '@/lib/api/boss/community';
 import CommunityPostForm from '@/components/boss/community/CommunityPostForm';
 import type { BbsCreateRequest } from '@/types/boss-community';
 import type { CategoryCode } from '@/components/boss/community/CommunityList';
+import { Skeleton } from '@/components/boss/ui';
 
 function CommunityNewInner() {
   const router = useRouter();
@@ -41,7 +45,14 @@ function CommunityNewInner() {
 
 export default function BossCommunityNewPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-[220px]" />
+          <Skeleton className="h-[420px]" />
+        </div>
+      }
+    >
       <CommunityNewInner />
     </Suspense>
   );

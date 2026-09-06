@@ -1,12 +1,15 @@
 'use client';
 
+// 견적 답변 작성 — Industry 패턴의 긴 폼 (참조 매물 등록: 좌 폼 + 하단 액션 패널 + 우 280px 안내 패널)
+// 화면 제목 · "← 견적 요청" 링크는 셸 헤더가 그린다.
+
 import { FormEvent, useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import RichEditor from '@/components/boss/RichEditor';
-import { PageHeader, Card, Button } from '@/components/boss/ui';
-import { FileSignature, Wallet, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Panel, Button, Field, FieldLabel } from '@/components/boss/ui';
 
 const TEMPLATES = [
   {
@@ -77,109 +80,129 @@ export default function BossAnswerPage() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title={`견적 답변 작성 #${requestId}`}
-        breadcrumbs={[
-          { label: '견적 요청', href: '/boss/requests' },
-          { label: '상세', href: `/boss/requests/${requestId}` },
-          { label: '답변' },
-        ]}
-      />
+  // 필수 누락 — 참조 매물 등록의 우측 "필수 누락" 패널과 같은 역할
+  const missing = [
+    !title.trim() && '제목',
+    !bodyText && '상세 내용',
+    !cost.trim() && '견적 금액',
+  ].filter((v): v is string => Boolean(v));
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          <Card>
-            <label htmlFor="title" className="mb-2 flex items-center gap-2 text-sm font-medium text-boss-text">
-              <FileSignature size={14} className="text-boss-primary" />
-              제목
-            </label>
-            <input
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]"
+    >
+      {/* ───── 좌: 폼 ───── */}
+      <div className="flex flex-col gap-4">
+        <Panel kicker={`요청 #${requestId}`} title="답변 내용">
+          <div className="flex flex-col gap-4">
+            <Field
               id="title"
+              label="제목"
+              required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="boss-input h-11 w-full"
-              placeholder="예: 32평 아파트 실크벽지 도배 견적"
+              placeholder="예) 32평 아파트 실크벽지 도배 견적"
+              maxLength={100}
             />
-          </Card>
 
-          <Card>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm font-medium text-boss-text">
-                <Sparkles size={14} className="text-boss-primary" />
-                상세 내용
-              </label>
-              <div className="flex gap-1">
-                {TEMPLATES.map((t) => (
-                  <button
-                    key={t.label}
-                    type="button"
-                    onClick={() => setBody(t.body)}
-                    className="rounded-md border border-boss-border bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-secondary transition-colors hover:border-boss-primary/20 hover:text-boss-primary"
-                  >
-                    {t.label}
-                  </button>
-                ))}
+            <div>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <FieldLabel required>
+                  <span id="answer-body-label">상세 내용</span>
+                </FieldLabel>
+                <div className="mb-[5px] flex items-center gap-1.5">
+                  <span className="text-[11px] text-boss-text-muted">양식 넣기</span>
+                  {TEMPLATES.map((t) => (
+                    <Button
+                      key={t.label}
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setBody(t.body)}
+                    >
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
+              <div id="answer-body" role="group" aria-labelledby="answer-body-label">
+                <RichEditor
+                  value={body}
+                  onChange={setBody}
+                  placeholder="시공 범위, 사용 자재, 일정 등을 자세히 적어주세요."
+                  minHeight={280}
+                />
+              </div>
+              <p className="mt-1 text-right font-boss-head text-[12px] tabular-nums text-boss-text-muted">
+                {bodyText.length}자
+              </p>
             </div>
-            <RichEditor
-              value={body}
-              onChange={setBody}
-              placeholder="시공 범위, 사용 자재, 일정 등을 자세히 적어주세요."
-              minHeight={280}
+
+            <Field
+              id="cost"
+              label="견적 금액"
+              required
+              inputMode="numeric"
+              suffix="원"
+              value={cost}
+              onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, ''))}
+              placeholder="0"
+              className="max-w-[280px] [&_input]:text-right [&_input]:font-boss-head [&_input]:text-[16px] [&_input]:font-semibold"
+              hint={formattedCost ? <span className="font-boss-head tabular-nums">{formattedCost}</span> : '부가세 포함 여부를 본문에 적어 주세요.'}
             />
-            <p className="mt-2 text-right text-[11px] text-boss-text-muted">{bodyText.length}자</p>
-          </Card>
+          </div>
+        </Panel>
+
+        {/* 하단 액션 패널 — 취소 secondary / 제출 primary 우측 */}
+        <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <p className="text-[12.5px] text-boss-text-secondary">
+            {missing.length > 0
+              ? `필수 ${missing.length}항목이 비어 있습니다`
+              : '제출하면 고객에게 바로 알림이 갑니다'}
+          </p>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/boss/requests/${requestId}`}
+              className="boss-btn boss-btn-md boss-btn-secondary"
+            >
+              취소
+            </Link>
+            <Button type="submit" variant="primary" disabled={submitting}>
+              {submitting ? '제출 중…' : '답변 제출'}
+            </Button>
+          </div>
         </div>
+      </div>
 
-        <div className="space-y-4">
-          <Card>
-            <label htmlFor="cost" className="mb-2 flex items-center gap-2 text-sm font-medium text-boss-text">
-              <Wallet size={14} className="text-boss-primary" />
-              견적 금액
-            </label>
-            <div className="relative">
-              <input
-                id="cost"
-                inputMode="numeric"
-                value={cost}
-                onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, ''))}
-                className="boss-input h-12 w-full pr-10 text-right text-lg font-bold text-boss-primary"
-                placeholder="0"
-              />
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-boss-text-muted">
-                원
-              </span>
-            </div>
-            {formattedCost && (
-              <p className="mt-2 text-right text-xs text-boss-text-muted">{formattedCost}</p>
-            )}
-          </Card>
-
-          <Card>
-            <div className="mb-2 flex items-center gap-2">
-              <CheckCircle2 size={13} className="text-boss-primary" />
-              <p className="text-xs font-semibold text-boss-text">제출 전 체크</p>
-            </div>
-            <ul className="space-y-1 text-xs">
-              <li className={title.trim() ? 'text-boss-primary' : 'text-boss-text-muted'}>• 제목 작성</li>
-              <li className={bodyText ? 'text-boss-primary' : 'text-boss-text-muted'}>• 상세 내용 작성</li>
-              <li className={cost ? 'text-boss-primary' : 'text-boss-text-muted'}>• 견적 금액 입력</li>
+      {/* ───── 우: 안내 패널 ───── */}
+      <div className="flex flex-col gap-4">
+        <Panel kicker="필수 확인" title={missing.length > 0 ? `${missing.length}항목 남음` : '준비 완료'}>
+          {missing.length > 0 ? (
+            <ul className="flex flex-col gap-1 text-[13px]">
+              {missing.map((m) => (
+                <li key={m} className="text-boss-error">
+                  · {m}
+                </li>
+              ))}
             </ul>
-          </Card>
+          ) : (
+            <p className="text-[13px] text-boss-text">제목 · 상세 내용 · 견적 금액이 모두 채워졌습니다.</p>
+          )}
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            금액은 숫자만 입력합니다. 콤마는 자동으로 붙습니다.
+          </p>
+        </Panel>
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            disabled={submitting}
-            className="w-full"
-          >
-            {submitting ? '제출 중...' : '답변 제출하기'}
-          </Button>
-        </div>
-      </form>
-    </div>
+        <Panel kicker="안내" title="잘 채택되는 답변">
+          <ul className="flex flex-col gap-1.5 text-[12.5px] leading-relaxed text-boss-text-secondary">
+            <li>· 시공 범위(거실 · 방 · 천장)를 먼저 적습니다.</li>
+            <li>· 벽지 종류와 브랜드를 명시합니다.</li>
+            <li>· 시공 가능한 가장 빠른 날짜를 적습니다.</li>
+            <li>· AS 기간과 조건을 한 줄로 밝힙니다.</li>
+          </ul>
+        </Panel>
+      </div>
+    </form>
   );
 }

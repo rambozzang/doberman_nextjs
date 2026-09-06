@@ -1,13 +1,18 @@
 'use client';
 
+// 내 정보 수정 — Industry 패턴 (참조 agent/profile 의 수정 폼)
+//
+//   패널: 잠긴 항목(아이디 — 입력창이 아니라 kicker + 값) → 2열 grid(Field) → 하단 액션 패널
+//   (취소 secondary / 저장 primary 우측). 화면 제목은 헤더(PAGE_META)가 그린다.
+//   못 고치는 값은 입력창으로 만들지 않는다 — 잠긴 입력창은 고장난 화면으로 읽힌다.
+
 import { FormEvent, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossUserApi } from '@/lib/api/boss/user';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossUserInfo } from '@/types/boss';
-import { User, Mail, Phone, Save, Loader2, IdCard } from 'lucide-react';
-import { PageHeader, Card, Button } from '@/components/boss/ui';
+import { Button, Field, Skeleton } from '@/components/boss/ui';
 
 export default function BossMyInfoEditPage() {
   const router = useRouter();
@@ -85,105 +90,84 @@ export default function BossMyInfoEditPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-boss-primary" />
+      <div className="boss-card p-5" aria-busy>
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="mt-2 h-4 w-32" />
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <PageHeader
-        title="내 정보 수정"
-        breadcrumbs={[{ label: '내 정보', href: '/boss/me' }, { label: '수정' }]}
-      />
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <section className="boss-card p-5">
+        <p className="boss-kicker">프로필</p>
+        <h3 className="boss-section-title">내 정보</h3>
 
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="boss-label">아이디 (수정 불가)</label>
-            <div className="relative">
-              <IdCard size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-              <input
-                type="text"
-                value={userId}
-                readOnly
-                className="boss-input cursor-not-allowed bg-boss-elevated pl-10 opacity-60"
-              />
-            </div>
-          </div>
+        {/* 잠긴 항목 — 아이디는 바꿀 수 없다 */}
+        <div className="mt-3 border-b border-boss-border pb-3">
+          <p className="boss-mono-label">아이디 (변경 불가)</p>
+          <p className="mt-0.5 break-all font-boss-head text-[14px] text-boss-text">{userId || '-'}</p>
+        </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="boss-label">이름</label>
-              <div className="relative">
-                <User size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={15}
-                  className="boss-input pl-10"
-                  placeholder="홍길동"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="boss-label">닉네임</label>
-              <div className="relative">
-                <User size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-                <input
-                  type="text"
-                  value={nickNm}
-                  onChange={(e) => setNickNm(e.target.value)}
-                  maxLength={15}
-                  className="boss-input pl-10"
-                  placeholder="닉네임"
-                />
-              </div>
-            </div>
-          </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Field
+            id="me-name"
+            label="이름"
+            required
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={15}
+            placeholder="홍길동"
+            autoFocus
+          />
+          <Field
+            id="me-nick"
+            label="닉네임"
+            type="text"
+            value={nickNm}
+            onChange={(e) => setNickNm(e.target.value)}
+            maxLength={15}
+            placeholder="커뮤니티에 보이는 이름"
+            hint="커뮤니티 글 · 댓글에 이름 대신 표시됩니다."
+          />
+          <Field
+            id="me-phone"
+            label="휴대폰 번호"
+            type="tel"
+            inputMode="numeric"
+            maxLength={11}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+            placeholder="01012345678"
+            hint="숫자만 입력합니다. 견적 요청 고객에게 이 번호가 안내됩니다."
+          />
+          <Field
+            id="me-email"
+            label="이메일"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="example@email.com"
+          />
+        </div>
+      </section>
 
-          <div>
-            <label className="boss-label">휴대폰 번호</label>
-            <div className="relative">
-              <Phone size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={11}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                className="boss-input pl-10"
-                placeholder="01012345678"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="boss-label">이메일</label>
-            <div className="relative">
-              <Mail size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-boss-text-muted" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="boss-input pl-10"
-                placeholder="example@email.com"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 border-t border-boss-border pt-4">
-            <Button type="button" variant="secondary" size="sm" onClick={() => router.back()}>
-              취소
-            </Button>
-            <Button type="submit" variant="primary" size="sm" icon={Save} disabled={saving}>
-              {saving ? '저장 중...' : '저장'}
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+      {/* 하단 액션 패널 */}
+      <div className="boss-card flex flex-wrap items-center justify-end gap-2 px-5 py-3.5">
+        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={saving}>
+          취소
+        </Button>
+        <Button type="submit" variant="primary" disabled={saving}>
+          {saving ? '저장 중…' : '저장'}
+        </Button>
+      </div>
+    </form>
   );
 }

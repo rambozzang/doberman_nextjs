@@ -1,14 +1,20 @@
 'use client';
 
-// 사장님 휴대폰 본인인증 안내 페이지
+// 휴대폰 본인인증 — Industry 패턴 (AuthFrame 380px 열)
 // Flutter 원본: lib/app/login/phone_auth_page.dart
-// 백엔드 SMS 엔드포인트가 확정되기 전까지는 입력 폼과 단계 UI 만 제공하고
-// 인증번호 발송/확인은 클라이언트 상태로만 처리(데모).
+//
+// 이름 → 생년월일 → 휴대폰 순으로 입력칸이 열리고, 인증번호 전송 뒤 3분 타이머가 돈다.
+// 백엔드 SMS 엔드포인트가 확정되기 전이라 발송/확인은 클라이언트 상태로만 처리(데모)한다.
+// 상단 스텝(정보 입력 → 인증번호 → 완료)은 sent/verified 상태에서 파생한다.
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Phone, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { AlertBanner, Button, Field, FieldLabel } from '@/components/boss/ui';
+import { AuthFrame } from '@/components/boss/AuthFrame';
 
 const TIMER_SECONDS = 180;
+const STEPS = ['정보 입력', '인증번호', '완료'];
 
 export default function BossPhoneAuthPage() {
   const [name, setName] = useState('');
@@ -68,146 +74,182 @@ export default function BossPhoneAuthPage() {
     setVerified(true);
   }
 
+  const current = verified ? 2 : sent ? 1 : 0;
+  const expired = sent && !verified && timeLeft <= 0;
+
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss/login"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 로그인
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">휴대폰 본인인증</h1>
-        <div className="w-10" />
-      </div>
+    <AuthFrame
+      title="휴대폰 본인인증"
+      description="본인 명의 휴대폰으로 인증합니다. 입력한 정보는 인증 외 목적으로 쓰지 않습니다"
+      footer={
+        <>
+          SMS 발송 연동 전 단계입니다 — 지금은 인증번호가 서버 검증 없이 통과 처리됩니다.
+        </>
+      }
+    >
+      <Steps items={STEPS} current={current} />
 
-      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
-        <div className="flex items-start gap-3">
-          <ShieldCheck size={20} className="mt-0.5 shrink-0 text-boss-primary" />
-          <div className="min-w-0 flex-1 text-sm leading-relaxed text-boss-text-secondary">
-            안전한 서비스 이용을 위해 휴대폰 본인인증이 필요합니다. 입력하신 정보는 인증 목적
-            외에 사용되지 않습니다.
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-6">
-        <Field label="이름">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="실명을 입력해주세요"
-            className="h-11 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none"
-          />
-        </Field>
+      <div className="boss-card p-6">
+        <Field
+          id="name"
+          label="이름"
+          required
+          type="text"
+          autoComplete="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="실명"
+          disabled={verified}
+          autoFocus
+        />
 
         {showBirth && (
-          <Field label="생년월일">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={birth}
-              maxLength={8}
-              onChange={(e) => setBirth(e.target.value.replace(/\D/g, ''))}
-              placeholder="예) 19900101"
-              className="h-11 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none"
-            />
-          </Field>
+          <Field
+            id="birth"
+            label="생년월일"
+            required
+            type="text"
+            inputMode="numeric"
+            autoComplete="bday"
+            maxLength={8}
+            value={birth}
+            onChange={(e) => setBirth(e.target.value.replace(/\D/g, ''))}
+            placeholder="19900101"
+            hint="숫자 8자리"
+            disabled={verified}
+            className="mt-4"
+          />
         )}
 
         {showPhone && (
-          <Field label="휴대폰 번호">
+          <div className="mt-4">
+            <FieldLabel required htmlFor="phone">
+              휴대폰 번호
+            </FieldLabel>
             <div className="flex gap-2">
               <input
-                type="text"
+                id="phone"
+                type="tel"
                 inputMode="numeric"
-                value={phone}
+                autoComplete="tel"
                 maxLength={11}
+                value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                placeholder="- 없이 숫자만 입력"
+                placeholder="- 없이 숫자만"
                 disabled={verified}
-                className="h-11 flex-1 rounded-lg border border-boss-border bg-boss-bg/40 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none disabled:opacity-60"
+                className="boss-input min-w-0 flex-1"
               />
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={sendCode}
                 disabled={verified || phone.length < 10}
-                className="shrink-0 rounded-lg border border-boss-primary/20 bg-boss-primary/15 px-3 text-xs font-bold text-boss-primary hover:bg-boss-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-9 shrink-0"
               >
-                <Phone size={14} className="mr-1 inline" />
                 {sent ? '재전송' : '인증번호 전송'}
-              </button>
+              </Button>
             </div>
-          </Field>
+          </div>
         )}
 
         {sent && (
-          <Field label="인증번호">
+          <div className="mt-4">
+            <FieldLabel required htmlFor="code">
+              인증번호
+            </FieldLabel>
             <div className="flex gap-2">
-              <div className="relative flex-1">
+              <div className="relative min-w-0 flex-1">
                 <input
+                  id="code"
                   type="text"
                   inputMode="numeric"
-                  value={code}
+                  autoComplete="one-time-code"
                   maxLength={6}
+                  value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="6자리 인증번호"
+                  placeholder="6자리"
                   disabled={verified}
-                  className="h-11 w-full rounded-lg border border-boss-border bg-boss-bg/40 px-3 pr-16 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/60 focus:outline-none disabled:opacity-60"
+                  className="boss-input pr-14 font-boss-head tracking-[0.12em]"
                 />
                 {!verified && timeLeft > 0 && (
-                  <span className="pointer-events-none absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 text-xs text-boss-primary">
-                    <Clock size={12} />
+                  <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center font-boss-head text-[12.5px] tabular-nums text-boss-primary">
                     {timerText}
                   </span>
                 )}
               </div>
-              <button
-                type="button"
+              <Button
+                variant={verified ? 'secondary' : 'primary'}
                 onClick={verifyCode}
                 disabled={verified || code.length !== 6}
-                className="shrink-0 rounded-lg border border-boss-primary/20 bg-boss-primary/15 px-4 text-xs font-bold text-boss-primary hover:bg-boss-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-9 shrink-0"
               >
-                {verified ? '인증완료' : '확인'}
-              </button>
+                {verified ? '인증 완료' : '확인'}
+              </Button>
             </div>
-          </Field>
+            {expired && (
+              <p className="mt-1 text-[12px] text-boss-warning">
+                유효 시간이 지났습니다. 인증번호를 다시 전송해 주세요.
+              </p>
+            )}
+          </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-            {error}
+          <div className="mt-4">
+            <AlertBanner tone="bad">{error}</AlertBanner>
           </div>
         )}
 
         {verified && (
-          <div className="flex items-center gap-2 rounded-lg border border-boss-primary/20 bg-boss-primary/10 px-3 py-2 text-xs text-boss-primary">
-            <CheckCircle2 size={14} /> 본인인증이 완료되었습니다.
+          <div
+            role="status"
+            className="mt-4 flex items-center gap-2 border border-boss-success/35 bg-boss-pill-ok px-4 py-3 text-[13px] text-boss-pill-ok-fg"
+          >
+            <Check size={14} strokeWidth={2.25} /> 본인인증이 완료되었습니다.
           </div>
         )}
 
-        <button
-          type="button"
-          disabled={!verified}
-          className="mt-2 h-12 w-full rounded-xl bg-boss-primary text-sm font-bold text-boss-text transition hover:bg-boss-primary-hover disabled:cursor-not-allowed disabled:bg-boss-elevated disabled:text-boss-text-muted"
-        >
+        <Button variant="primary" disabled={!verified} className="mt-5 w-full py-3">
           다음 단계로
-        </button>
-      </div>
+        </Button>
 
-      <p className="text-center text-xs text-boss-text-muted">
-        ※ SMS 발송 연동 전 단계로 입력하신 인증번호는 서버 검증 없이 통과 처리됩니다.
-      </p>
-    </div>
+        <p className="mt-5 border-t border-boss-border pt-4 text-center text-[12.5px] text-boss-text-secondary">
+          <Link href="/boss/login" className="font-semibold text-boss-primary underline underline-offset-2">
+            로그인으로 돌아가기
+          </Link>
+        </p>
+      </div>
+    </AuthFrame>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** 사각 Seg 모양의 단계 표시 — 완료 = accent 채움, 현재 = accent-100 + 굵게, 이후 = 면색 */
+function Steps({ items, current }: { items: string[]; current: number }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-boss-text-secondary">{label}</label>
-      {children}
-    </div>
+    <ol className="mb-4 flex border border-boss-border" aria-label="진행 단계">
+      {items.map((label, i) => {
+        const done = i < current || (i === current && current === items.length - 1);
+        const active = i === current && !done;
+        return (
+          <li
+            key={label}
+            aria-current={i === current ? 'step' : undefined}
+            className={`flex flex-1 items-center gap-2 px-3 py-[7px] text-[13px] ${
+              i > 0 ? 'border-l border-boss-border' : ''
+            } ${
+              done
+                ? 'bg-boss-primary text-boss-primary-foreground'
+                : active
+                  ? 'bg-boss-elevated font-semibold text-boss-pill-info-fg'
+                  : 'bg-boss-bg text-boss-text-muted'
+            }`}
+          >
+            <span className="grid h-4 w-4 flex-none place-items-center font-boss-head text-[12px] tabular-nums">
+              {done ? <Check size={12} strokeWidth={2.5} /> : i + 1}
+            </span>
+            {label}
+          </li>
+        );
+      })}
+    </ol>
   );
 }

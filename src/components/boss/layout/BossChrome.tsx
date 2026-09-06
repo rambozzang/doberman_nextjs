@@ -1,21 +1,24 @@
 'use client';
 
-// 사장님 앱 프레임 — onGo 리디자인 시안
-// 바깥 배경 #101120 / 앱 컨테이너 #181a27 / 최대폭 1560px
-// 데스크톱은 "좌측 고정 레일 + 우측 본문" 2열, 높이는 100vh 풀 화면.
-// 본문 패딩은 시안 기준 20px 22px 40px.
+// 사장님 앱 프레임 — Industry 패턴 (agent.opentohome.com 의 AgentShell)
 //
-// 다크 전용이므로 테마 프로바이더는 없다.
+//   lg↑ : grid 236px 레일 + 본문. 레일은 sticky 100dvh, 본문은 페이지 스크롤.
+//   lg↓ : 네이비 상단 바(레일이 접힘) + 본문 + 하단 탭.
+//   본문 폭은 PAGE_META.width — full 1560 / wide 860 / narrow 620. 패딩 20px 28px 56px.
+//
+// 라이트 전용. 테마 프로바이더는 없다.
+// 토큰 CSS(boss-b2b.css)는 globals.css 가 @import 한다 — 유틸리티보다 앞에 와야 해서 여기서 import 하지 않는다.
 
 import { usePathname } from 'next/navigation';
-import '@/styles/boss-b2b.css';
 import BossHeader from './BossHeader';
 import BossSidebar from './BossSidebar';
 import BossMobileTabs from './BossMobileTabs';
 import { BossSearchProvider } from './BossSearchContext';
+import { BossPortalProvider } from './BossPortalContext';
+import { getPageMeta } from './nav';
 
 // 인증 화면(로그인/회원가입/아이디·비밀번호 찾기 등)에서는
-// 헤더/사이드바를 렌더링하지 않는다. 전체 화면 단독 레이아웃 사용.
+// 레일/헤더를 렌더링하지 않는다. 전체 화면 단독 레이아웃 사용.
 const AUTH_PATHS = [
   '/boss/login',
   '/boss/signup',
@@ -29,6 +32,12 @@ const AUTH_PATHS = [
 // 인쇄용 화면은 크롬 없이 단독 렌더링한다
 const isPrintPath = (p: string) => p.endsWith('/print') || p.endsWith('/receipt');
 
+const WIDTH: Record<'narrow' | 'wide' | 'full', string> = {
+  narrow: 'max-w-[620px]',
+  wide: 'max-w-[860px]',
+  full: 'max-w-[1560px]',
+};
+
 export default function BossChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const isAuth = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
@@ -37,21 +46,22 @@ export default function BossChrome({ children }: { children: React.ReactNode }) 
     return <main className="boss-page">{children}</main>;
   }
 
+  const width = getPageMeta(pathname).width ?? 'full';
+
   return (
-    <BossSearchProvider>
-      <div className="boss-page flex h-screen justify-center overflow-hidden">
-        <div className="flex h-full w-full max-w-[1560px] overflow-hidden bg-boss-shell xl:border-x xl:border-boss-border">
+    <BossPortalProvider>
+      <BossSearchProvider>
+        <div className="boss-page min-h-dvh lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
           <BossSidebar />
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+
+          <main className="flex min-w-0 flex-col pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0">
             <BossHeader />
-            <main className="boss-scroll flex-1 overflow-y-auto px-4 pb-10 pt-5 md:px-[22px]">
-              {children}
-            </main>
-            {/* 모바일 하단 탭 — 시안 모바일 규칙 (데스크톱에서는 숨김) */}
-            <BossMobileTabs />
-          </div>
+            <div className={`w-full ${WIDTH[width]} px-5 pb-14 pt-5 sm:px-7`}>{children}</div>
+          </main>
+
+          <BossMobileTabs />
         </div>
-      </div>
-    </BossSearchProvider>
+      </BossSearchProvider>
+    </BossPortalProvider>
   );
 }

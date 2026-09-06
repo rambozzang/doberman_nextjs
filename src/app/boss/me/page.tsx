@@ -1,5 +1,12 @@
 'use client';
 
+// 내 정보 — Industry 패턴 (참조 agent/profile : 좌 계정 패널 + 우 읽기 표)
+//
+//   lg↑ grid 280px + minmax(0,1fr)
+//   좌: 계정 패널 — 사각 아바타 타일(네이비 이니셜) + 이름 19px + 아이디 → 빠른 메뉴 행
+//   우: "내 정보" 패널(DescRow dl, 헤더의 «수정» ghost) → "계정 종료" 패널(로그아웃 · 탈퇴)
+//   화면 제목은 헤더(PAGE_META)가 그린다. 탈퇴는 되돌릴 수 없어 ConfirmDialog 를 거친다.
+
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,33 +16,24 @@ import { bossAuthApi } from '@/lib/api/boss/auth';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossUserInfo } from '@/types/boss';
 import {
-  PageHeader,
-  Card,
   Button,
+  ConfirmDialog,
+  DescRow,
+  Panel,
   RowList,
   RowItem,
   RowThumb,
   RowChevron,
   Skeleton,
 } from '@/components/boss/ui';
-import {
-  User,
-  Mail,
-  Phone,
-  Building2,
-  LogOut,
-  UserX,
-  Edit3,
-  Bell,
-  ShieldCheck,
-  Loader2,
-} from 'lucide-react';
+import { Building2, ShieldCheck, Bell, CreditCard } from 'lucide-react';
 
 export default function BossMyInfoPage() {
   const router = useRouter();
   const [user, setUser] = useState<BossUserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const loadUser = useCallback(async () => {
     const cached = BossAuthManager.getUserInfo();
@@ -76,7 +74,6 @@ export default function BossMyInfoPage() {
 
   const handleWithdraw = async () => {
     if (!user?.userId) return;
-    if (!confirm('정말 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.')) return;
     setActionLoading(true);
     try {
       const res = await bossAuthApi.withdraw(user.userId);
@@ -92,126 +89,165 @@ export default function BossMyInfoPage() {
       toast.error('탈퇴 처리 중 오류가 발생했습니다.');
     } finally {
       setActionLoading(false);
+      setWithdrawOpen(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-boss-primary" />
+      <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)]" aria-busy>
+        <div className="boss-card p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12" />
+            <div className="flex-1">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="mt-1.5 h-3 w-16" />
+            </div>
+          </div>
+        </div>
+        <div className="boss-card p-5">
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="mt-4 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-5/6" />
+        </div>
       </div>
     );
   }
 
+  const initial = (user?.name || user?.userId || '·').slice(0, 1);
+
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <PageHeader
-        title="내 정보"
-        actions={
-          <Link href="/boss/me/edit">
-            <Button variant="secondary" size="sm" icon={Edit3}>
-              수정
-            </Button>
-          </Link>
-        }
-      />
-
-      {/* 프로필 */}
-      <Card>
-        <div className="flex items-center gap-4">
-          <RowThumb
-            src={user?.profilePath}
-            alt="프로필"
-            icon={User}
-            className="h-14 w-14"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-lg font-semibold text-boss-text">{user?.name || '이름 없음'}</p>
-            <p className="text-sm text-boss-text-muted">@{user?.userId || '-'}</p>
-            {user?.nickNm && (
-              <p className="mt-0.5 text-xs text-boss-text-muted">{user.nickNm}</p>
+    <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+      {/* 좌: 계정 */}
+      <div className="flex flex-col gap-4">
+        <section className="boss-card flex flex-col gap-3.5 p-5">
+          <div className="flex items-center gap-3">
+            {user?.profilePath ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.profilePath}
+                alt="프로필"
+                className="h-12 w-12 shrink-0 border border-boss-border object-cover"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="grid h-12 w-12 shrink-0 place-items-center bg-boss-rail font-boss-head text-[17px] font-bold text-boss-surface"
+              >
+                {initial}
+              </span>
             )}
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-boss-border pt-4 sm:grid-cols-3">
-          <div className="flex items-center gap-2">
-            <Mail size={14} className="shrink-0 text-boss-text-muted" />
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">이메일</p>
-              <p className="truncate text-sm text-boss-text">{user?.email || '-'}</p>
+              <p className="truncate font-boss-head text-[19px] font-semibold leading-tight tracking-[0.01em] text-boss-text">
+                {user?.name || '이름 없음'}
+              </p>
+              <p className="mt-0.5 text-[12px] text-boss-text-secondary">
+                {user?.nickNm ? `${user.nickNm} · ` : ''}사장님
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Phone size={14} className="shrink-0 text-boss-text-muted" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">휴대폰</p>
-              <p className="truncate text-sm text-boss-text">{user?.phone || '-'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Bell size={14} className="shrink-0 text-boss-text-muted" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-boss-text-muted">알림 시간</p>
-              <p className="truncate text-sm text-boss-text">{user?.alramTime || '-'}</p>
-            </div>
-          </div>
-        </div>
-      </Card>
 
-      {/* 빠른 메뉴 */}
-      <RowList>
-        <RowItem
-          href="/boss/me/company"
-          leading={<RowThumb icon={Building2} />}
-          title="회사 정보"
-          subtitle="로고/도장/지역"
-          actions={<RowChevron />}
-        />
-        <RowItem
-          href="/boss/settings"
-          leading={<RowThumb icon={ShieldCheck} />}
-          title="설정"
-          subtitle="알림/보안"
-          actions={<RowChevron />}
-        />
-      </RowList>
+          <div className="flex flex-col gap-1 border-t border-boss-border pt-3">
+            <p className="boss-mono-label">계정</p>
+            <p className="break-all font-boss-head text-[14px] text-boss-text">{user?.userId || '-'}</p>
+          </div>
 
-      {/* 계정 관리 */}
-      <RowList>
-        <RowItem
-          onClick={handleLogout}
-          leading={<RowThumb icon={LogOut} />}
-          title="로그아웃"
-          actions={
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              disabled={actionLoading}
-            >
+          <p className="text-[12px] leading-relaxed text-boss-text-secondary">
+            아이디는 바꿀 수 없습니다. 비밀번호 변경은 로그인 화면의 «비밀번호 찾기» 로 진행합니다.
+          </p>
+        </section>
+
+        <RowList>
+          <RowItem
+            href="/boss/me/company"
+            leading={<RowThumb icon={Building2} />}
+            title="회사 정보"
+            subtitle="로고 · 도장 · 활동 지역"
+            actions={<RowChevron />}
+          />
+          <RowItem
+            href="/boss/billing"
+            leading={<RowThumb icon={CreditCard} />}
+            title="구독 · 결제"
+            subtitle="현재 플랜 · 결제 내역"
+            actions={<RowChevron />}
+          />
+          <RowItem
+            href="/boss/settings"
+            leading={<RowThumb icon={ShieldCheck} />}
+            title="설정"
+            subtitle="알림 · 약관"
+            actions={<RowChevron />}
+          />
+        </RowList>
+      </div>
+
+      {/* 우: 내 정보 + 계정 종료 */}
+      <div className="flex min-w-0 flex-col gap-4">
+        <Panel
+          kicker="프로필"
+          title="내 정보"
+          right={
+            <Link href="/boss/me/edit" className="boss-btn boss-btn-sm boss-btn-ghost">
+              수정
+            </Link>
+          }
+        >
+          <dl>
+            <DescRow label="이름" value={user?.name || '-'} />
+            <DescRow label="닉네임" value={user?.nickNm || '-'} />
+            <DescRow label="이메일" value={user?.email || '-'} />
+            <DescRow
+              label="휴대폰"
+              value={<span className="font-boss-head font-semibold">{user?.phone || '-'}</span>}
+            />
+            <DescRow
+              label={
+                <span className="inline-flex items-center gap-1">
+                  <Bell size={12} strokeWidth={1.75} /> 알림 시간
+                </span>
+              }
+              value={<span className="font-boss-head font-semibold">{user?.alramTime || '-'}</span>}
+            />
+          </dl>
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            이름 · 닉네임 · 연락처 · 이메일은 «수정» 에서 바꿉니다. 알림 시간은 설정 → 알림에서 바꿉니다.
+          </p>
+        </Panel>
+
+        <section className="boss-card border-l-[3px] border-l-boss-error p-5">
+          <p className="boss-kicker !text-boss-error">주의</p>
+          <h3 className="boss-section-title">계정 종료</h3>
+          <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
+            탈퇴하면 견적 · 주문 · 시공 기록이 모두 삭제되고 복구할 수 없습니다. 1년간 같은 정보로 다시
+            가입할 수 없습니다.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" onClick={handleLogout} disabled={actionLoading}>
               로그아웃
             </Button>
-          }
-        />
-        <RowItem
-          onClick={handleWithdraw}
-          leading={<RowThumb icon={UserX} />}
-          title="회원 탈퇴"
-          subtitle="재가입 불가, 데이터 영구 삭제"
-          actions={
             <Button
-              variant="ghost"
+              variant="danger"
               size="sm"
-              onClick={handleWithdraw}
+              onClick={() => setWithdrawOpen(true)}
               disabled={actionLoading}
-              className="text-boss-error hover:bg-boss-error/10"
             >
-              탈퇴
+              회원 탈퇴
             </Button>
-          }
-        />
-      </RowList>
+          </div>
+        </section>
+      </div>
+
+      <ConfirmDialog
+        open={withdrawOpen}
+        title="정말 탈퇴하시겠습니까?"
+        description="모든 데이터가 삭제되며 복구할 수 없습니다. 1년간 재가입이 불가합니다."
+        confirmLabel="탈퇴"
+        loading={actionLoading}
+        onCancel={() => setWithdrawOpen(false)}
+        onConfirm={() => void handleWithdraw()}
+      />
     </div>
   );
 }

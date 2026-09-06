@@ -1,20 +1,24 @@
 'use client';
 
-// 사장님 사진 편집 페이지
+// 사장님 사진 편집 — Industry 패턴 (agent.opentohome.com)
 // Flutter `lib/app/image/image_edit_page.dart` 의 편집 기능 중 웹에 필요한 핵심만 포팅:
 //   - 한 장씩 큰 화면으로 미리보기 (image_one_view_page.dart)
 //   - 좌/우 이동 (image_list_view.dart)
 //   - 단건 삭제 (DELETE /orders/files/{fileId})
-//   - 순서 변경 (위/아래 이동) → PUT /orders/files 로 num 필드 갱신 후 저장은 갤러리 페이지에서
+//   - 순서 변경 (위/아래 이동) → POST /orders/files 로 num 필드 갱신
 // (자유 그리기/치수선/텍스트 같은 캔버스 편집은 웹 범위에서 제외)
+//
+//   상단 : "n / m"(Barlow Condensed) · 우측 갤러리로 · 새로고침 · 순서 저장
+//   좌   : 뷰어 패널(사각 · 면색 스테이지 · 이전/다음 사각 버튼) + 캡션 줄(방 · 유형 · 날짜 · 위로/아래로/삭제)
+//   우   : 썸네일 패널(사각, 선택 = accent 2px 안쪽 선)
+//   삭제는 ConfirmDialog.
+//
+// 화면 제목("사진 편집")과 ← 사진 관리 링크는 셸 헤더(PAGE_META)가 그린다.
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Trash2,
@@ -26,21 +30,45 @@ import {
 } from 'lucide-react';
 import { bossImageApi } from '@/lib/api/boss/image';
 import {
+  AlertBanner,
+  Button,
+  ButtonLink,
+  ConfirmDialog,
+  ContentCard,
+  EmptyState,
+  Skeleton,
+  Tag,
+  Kicker,
+  type StatusTone,
+} from '@/components/boss/ui';
+import {
   getPhotoTypeDisplayName,
   getRoomDisplayName,
   type BossImageDataInfo,
 } from '@/types/boss-image';
 
+function photoTypeTone(code?: string): StatusTone {
+  switch (code) {
+    case 'before':
+      return 'warn';
+    case 'after':
+      return 'ok';
+    case 'detail':
+      return 'info';
+    default:
+      return 'neutral';
+  }
+}
+
 export default function BossPhotoEditPage() {
   return (
-    <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-boss-elevated" />}>
+    <Suspense fallback={<Skeleton className="h-64 w-full" />}>
       <BossPhotoEditInner />
     </Suspense>
   );
 }
 
 function BossPhotoEditInner() {
-  const router = useRouter();
   const search = useSearchParams();
   const customerId = search.get('customerId') ?? '';
 
@@ -49,10 +77,12 @@ function BossPhotoEditInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!customerId) {
-      setError('customerId 가 필요합니다.');
+      setError('고객이 지정되지 않았습니다. 사진 관리에서 고객을 고른 뒤 편집으로 들어오세요.');
       return;
     }
     setLoading(true);
@@ -82,10 +112,10 @@ function BossPhotoEditInner() {
   const prev = () => setCurrent((c) => (c > 0 ? c - 1 : c));
   const next = () => setCurrent((c) => (c < total - 1 ? c + 1 : c));
 
-  // 단건 삭제
+  // 단건 삭제 — ConfirmDialog 확인 후
   const handleDelete = async () => {
     if (!active) return;
-    if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
+    setDeleting(true);
 
     const serverFileId = active.num ?? active.fileKey;
     if (serverFileId !== undefined && serverFileId !== null) {
@@ -93,15 +123,19 @@ function BossPhotoEditInner() {
         const res = await bossImageApi.remove(String(serverFileId));
         if (!res.success) {
           toast.error(res.message || '삭제에 실패했습니다.');
+          setDeleting(false);
           return;
         }
       } catch {
         toast.error('네트워크 오류로 삭제에 실패했습니다.');
+        setDeleting(false);
         return;
       }
     }
     setItems((prevList) => prevList.filter((_, i) => i !== current));
     setCurrent((c) => Math.max(0, c - 1));
+    setConfirmDelete(false);
+    setDeleting(false);
     toast.success('삭제되었습니다.');
   };
 
@@ -126,11 +160,11 @@ function BossPhotoEditInner() {
     setCurrent((c) => c + 1);
   };
 
-  // 순서 저장 (num 필드 부여 후 PUT /orders/files 로 단건 업데이트, 또는 POST /orders/files 일괄)
+  // 순서 저장 (num 필드 부여 후 일괄 저장)
   // 백엔드 호환성을 위해 일괄 저장(POST) 방식 사용
   const handleSaveOrder = async () => {
     if (!customerId) {
-      toast.error('customerId 가 없습니다.');
+      toast.error('고객이 지정되지 않았습니다.');
       return;
     }
     setSaving(true);
@@ -158,68 +192,86 @@ function BossPhotoEditInner() {
 
   const path = active?.filePath ?? '';
   const canPreview = path.startsWith('http') || path.startsWith('data:');
+  const galleryHref = `/boss/photo?customerId=${encodeURIComponent(customerId)}`;
 
   return (
-    <div className="space-y-4">
-      {/* 헤더 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="rounded-lg border border-boss-border bg-boss-surface p-1.5 text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-            aria-label="뒤로"
-          >
-            <ArrowLeft size={14} />
-          </button>
-          <h1 className="text-xl font-bold text-boss-text">사진 편집</h1>
-          <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-xs font-semibold text-boss-text-secondary">
-            {total === 0 ? 0 : current + 1} / {total}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
+    <div className="flex flex-col gap-4">
+      {/* 상단 컨트롤 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="font-boss-head text-[20px] font-semibold tabular-nums tracking-[-0.01em] text-boss-text">
+          {total === 0 ? 0 : current + 1}
+          <span className="text-boss-text-muted"> / {total}</span>
+        </span>
+        <p className="hidden text-[12px] text-boss-text-muted md:block">
+          위로 · 아래로 로 순서를 바꾼 뒤 순서 저장을 누르세요
+        </p>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <ButtonLink href={galleryHref} variant="secondary" size="sm">
+            갤러리로
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
             onClick={load}
-            disabled={loading}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text disabled:opacity-50"
+            disabled={loading || !customerId}
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 새로고침
-          </button>
-          <button
-            type="button"
+            새로고침
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Save}
             onClick={handleSaveOrder}
             disabled={saving || total === 0}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-primary/60 bg-boss-primary/20 px-3 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary/30 disabled:opacity-50"
           >
-            <Save size={14} /> {saving ? '저장 중...' : '순서 저장'}
-          </button>
-          <Link
-            href={`/boss/photo?customerId=${encodeURIComponent(customerId)}`}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-          >
-            갤러리로
-          </Link>
+            {saving ? '저장 중…' : '순서 저장'}
+          </Button>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            customerId ? (
+              <Button variant="primary" size="sm" onClick={load}>
+                다시 시도
+              </Button>
+            ) : (
+              <ButtonLink href="/boss/customers" variant="primary" size="sm">
+                고객 관리로
+              </ButtonLink>
+            )
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
-      {total === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-boss-border bg-boss-surface/30 px-6 py-20 text-center">
-          <ImageIcon size={28} className="mb-3 text-boss-text-muted" />
-          <p className="text-sm text-boss-text-secondary">편집할 이미지가 없습니다</p>
+      {loading && total === 0 ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <Skeleton className="aspect-video w-full" />
+          <Skeleton className="h-48 w-full" />
         </div>
+      ) : total === 0 ? (
+        error ? null : (
+          <EmptyState
+            icon={ImageIcon}
+            title="편집할 사진이 없습니다"
+            description="사진 관리에서 먼저 사진을 올리고 저장한 뒤 순서를 바꿀 수 있습니다."
+            action={
+              <ButtonLink href={galleryHref} variant="primary" size="sm">
+                사진 관리로
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
           {/* 메인 뷰어 */}
-          <div className="relative overflow-hidden rounded-2xl border border-boss-border bg-boss-bg">
-            <div className="relative flex aspect-video w-full items-center justify-center bg-black">
+          <ContentCard>
+            <div className="relative flex aspect-video w-full items-center justify-center bg-boss-inset">
               {canPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -229,8 +281,8 @@ function BossPhotoEditInner() {
                 />
               ) : (
                 <div className="flex flex-col items-center text-boss-text-muted">
-                  <ImageIcon size={36} />
-                  <span className="mt-2 text-xs">미리보기 불가</span>
+                  <ImageIcon size={36} strokeWidth={1.5} />
+                  <span className="mt-2 text-[12px]">미리보기를 만들 수 없는 경로입니다</span>
                 </div>
               )}
 
@@ -238,105 +290,123 @@ function BossPhotoEditInner() {
                 type="button"
                 onClick={prev}
                 disabled={current === 0}
-                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-boss-text hover:bg-black/80 disabled:opacity-30"
+                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center border border-boss-border bg-boss-surface text-boss-text shadow-boss transition-colors duration-[120ms] ease-out hover:border-boss-border-hover disabled:opacity-30"
                 aria-label="이전"
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={18} />
               </button>
               <button
                 type="button"
                 onClick={next}
                 disabled={current >= total - 1}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-boss-text hover:bg-black/80 disabled:opacity-30"
+                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center border border-boss-border bg-boss-surface text-boss-text shadow-boss transition-colors duration-[120ms] ease-out hover:border-boss-border-hover disabled:opacity-30"
                 aria-label="다음"
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={18} />
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-boss-border p-3">
-              <div className="text-xs text-boss-text-muted">
+            {/* 캡션 + 행 액션 */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-boss-border px-4 py-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 text-[13px]">
                 <span className="font-semibold text-boss-text">
                   {getRoomDisplayName(active?.roomCategory)}
                 </span>
-                {' · '}
-                <span>{getPhotoTypeDisplayName(active?.photoType)}</span>
+                <Tag tone={photoTypeTone(active?.photoType)}>
+                  {getPhotoTypeDisplayName(active?.photoType)}
+                </Tag>
                 {active?.crtDtm && (
-                  <span className="ml-2 text-boss-text-muted">
+                  <span className="font-boss-head text-[12px] tabular-nums text-boss-text-muted">
                     {active.crtDtm.replace('T', ' ').slice(0, 16)}
                   </span>
                 )}
+                {active?.fileNm && (
+                  <span className="min-w-0 truncate text-[12px] text-boss-text-secondary">
+                    {active.fileNm}
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={moveUp}
-                  disabled={current === 0}
-                  className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-2 text-xs text-boss-text-secondary hover:text-boss-text disabled:opacity-40"
-                >
-                  <ArrowUp size={12} /> 위로
-                </button>
-                <button
-                  type="button"
+              <div className="flex items-center gap-1">
+                <Button variant="secondary" size="sm" icon={ArrowUp} onClick={moveUp} disabled={current === 0}>
+                  위로
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={ArrowDown}
                   onClick={moveDown}
                   disabled={current >= total - 1}
-                  className="flex h-8 items-center gap-1 rounded-lg border border-boss-border bg-boss-surface px-2 text-xs text-boss-text-secondary hover:text-boss-text disabled:opacity-40"
                 >
-                  <ArrowDown size={12} /> 아래로
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="flex h-8 items-center gap-1 rounded-lg border border-boss-error/20 bg-boss-error/10 px-2 text-xs text-boss-error hover:bg-boss-error/20"
+                  아래로
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={Trash2}
+                  className="!text-boss-text-muted hover:!text-boss-error"
+                  onClick={() => setConfirmDelete(true)}
                 >
-                  <Trash2 size={12} /> 삭제
-                </button>
+                  삭제
+                </Button>
               </div>
             </div>
-          </div>
+          </ContentCard>
 
-          {/* 썸네일 사이드바 */}
-          <div className="space-y-2 rounded-2xl border border-boss-border bg-boss-surface/30 p-3">
-            <div className="mb-1 text-xs font-semibold text-boss-text-muted">목록</div>
-            <div className="grid max-h-[70vh] grid-cols-3 gap-2 overflow-y-auto pr-1 lg:grid-cols-2">
+          {/* 썸네일 패널 */}
+          <ContentCard className="p-3">
+            <Kicker className="mb-2">목록 · {total}장</Kicker>
+            <div className="boss-scroll grid max-h-[70vh] grid-cols-3 gap-2 overflow-y-auto pr-1 lg:grid-cols-2">
               {items.map((it, idx) => {
                 const p = it.filePath ?? '';
                 const ok = p.startsWith('http') || p.startsWith('data:');
-                const active = idx === current;
+                const isActive = idx === current;
                 return (
                   <button
                     key={`${p}-${idx}`}
                     type="button"
                     onClick={() => setCurrent(idx)}
-                    className={`relative aspect-square overflow-hidden rounded-lg border ${
-                      active ? 'border-boss-primary ring-2 ring-boss-primary/30' : 'border-boss-border'
+                    aria-current={isActive}
+                    aria-label={`${idx + 1}번 ${getRoomDisplayName(it.roomCategory)}`}
+                    className={`relative aspect-square overflow-hidden border bg-boss-inset transition-colors duration-[120ms] ease-out ${
+                      isActive
+                        ? 'border-boss-primary shadow-[inset_0_0_0_2px_rgb(var(--boss-primary))]'
+                        : 'border-boss-border hover:border-boss-border-hover'
                     }`}
                   >
                     {ok ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-boss-bg text-boss-text-muted">
-                        <ImageIcon size={16} />
+                      <div className="flex h-full w-full items-center justify-center text-boss-text-muted">
+                        <ImageIcon size={16} strokeWidth={1.5} />
                       </div>
                     )}
-                    <span className="absolute bottom-0 left-0 right-0 bg-black/70 px-1 py-0.5 text-[9px] text-boss-text">
+                    <span className="absolute bottom-0 left-0 right-0 truncate bg-boss-text/75 px-1.5 py-[2px] text-left font-boss-head text-[10px] tabular-nums text-boss-bg">
                       {idx + 1}. {getRoomDisplayName(it.roomCategory)}
                     </span>
                   </button>
                 );
               })}
             </div>
-            <div className="mt-2 flex items-center justify-between border-t border-boss-border pt-2 text-[10px] text-boss-text-muted">
-              <span>좌우 화살표로 탐색</span>
-              <span className="flex items-center gap-1">
-                <ArrowLeft size={10} />
-                <ArrowRight size={10} />
-              </span>
-            </div>
-          </div>
+            <p className="mt-2 border-t border-boss-border pt-2 text-[11.5px] text-boss-text-muted">
+              썸네일을 누르면 큰 화면으로 봅니다.
+            </p>
+          </ContentCard>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="이 사진을 삭제할까요?"
+        description={
+          active && active.num === undefined && active.fileKey === undefined
+            ? '아직 저장하지 않은 사진이라 목록에서만 빠집니다.'
+            : '서버에서 바로 지워지며 되돌릴 수 없습니다.'
+        }
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

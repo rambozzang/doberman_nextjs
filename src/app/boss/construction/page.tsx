@@ -1,27 +1,23 @@
 'use client';
 
-// 시공 기록 목록 — B2B 데이터 그리드
+// 시공 기록 목록 — Industry 패턴
+//   필터 줄(상태 Seg + 검색 + 정렬 + 우측 전체 n건) → 표(DataTable). 화면 제목은 셸 헤더(PAGE_META)가 그린다.
+//   첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Plus, RefreshCw, Inbox } from 'lucide-react';
 import {
-  Plus,
-  RefreshCw,
-  ImageIcon,
-  Link2,
-  Inbox,
-} from 'lucide-react';
-import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
+  ButtonLink,
   ListTabs,
-  Card,
+  Segmented,
   DataTable,
-  Badge,
+  ContentCard,
+  StatusPill,
   EmptyState,
-  Skeleton,
+  AlertBanner,
+  RowSkeleton,
   RowActions,
   ConfirmDialog,
 } from '@/components/boss/ui';
@@ -37,6 +33,11 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: '진행중', label: '진행중' },
   { key: '완료', label: '완료' },
+];
+
+const SORT_OPTIONS: { key: SortType; label: string }[] = [
+  { key: 'CREATED_DT', label: '등록일순' },
+  { key: 'CONSTRUCTION_DATE', label: '시공일순' },
 ];
 
 function formatDate(input?: string): string {
@@ -142,43 +143,30 @@ export default function BossConstructionListPage() {
     return c;
   }, [items]);
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="시공 기록"
-        description="시공 내역과 전/중/후 사진을 관리합니다."
-        actions={
-          <Link href="/boss/construction/new">
-            <Button variant="primary" size="sm" icon={Plus}>
-              시공 등록
-            </Button>
-          </Link>
-        }
-      />
+  // 빈 상태 — 첫 조회 실패 / 0건 / 필터 결과 0건을 구분한다
+  const isFiltered = statusTab !== 'all' || keyword.trim().length > 0;
 
-      <Toolbar>
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={STATUS_TABS.map((t) => ({
+            key: t.key,
+            label: t.label,
+            count: t.key === 'all' ? counts.all : counts[t.key],
+          }))}
+          active={statusTab}
+          onChange={setStatusTab}
+        />
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="제목·설명 검색"
-          className="w-full max-w-xs"
+          placeholder="제목 · 설명 검색"
+          className="w-full sm:w-64"
+          hint={false}
         />
-        <div className="flex items-center rounded-md border border-boss-border bg-boss-bg p-0.5">
-          <Button
-            variant={sort === 'CREATED_DT' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setSort('CREATED_DT')}
-          >
-            등록일순
-          </Button>
-          <Button
-            variant={sort === 'CONSTRUCTION_DATE' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setSort('CONSTRUCTION_DATE')}
-          >
-            시공일순
-          </Button>
-        </div>
+        <Segmented ariaLabel="정렬" options={SORT_OPTIONS} value={sort} onChange={setSort} />
         <Button
           variant="secondary"
           icon={RefreshCw}
@@ -189,49 +177,78 @@ export default function BossConstructionListPage() {
         >
           새로고침
         </Button>
-      </Toolbar>
-
-      <ListTabs
-        tabs={STATUS_TABS.map((t) => ({
-          key: t.key,
-          label: t.label,
-          count: t.key === 'all' ? counts.all : counts[t.key],
-        }))}
-        active={statusTab}
-        onChange={setStatusTab}
-      />
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
+        >
+          {loading && items.length === 0 ? '불러오는 중…' : `전체 ${filtered.length}건`}
+        </span>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button size="sm" variant="secondary" onClick={load} disabled={loading}>
+              다시 불러오기
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
-      ) : filtered.length === 0 ? (
+        <ContentCard>
+          <RowSkeleton rows={6} />
+        </ContentCard>
+      ) : error && items.length === 0 ? (
         <EmptyState
           icon={Inbox}
-          title="표시할 시공 기록이 없습니다"
-          description="시공 기록을 등록하거나 필터를 변경하세요."
-          action={
-            <Link href="/boss/construction/new">
-              <Button variant="primary" size="sm" icon={Plus}>
-                시공 기록 등록
-              </Button>
-            </Link>
-          }
+          title="시공 기록을 불러오지 못했습니다"
+          description="네트워크 상태를 확인한 뒤 다시 불러와 주세요. 등록된 기록이 사라진 것은 아닙니다."
         />
+      ) : filtered.length === 0 ? (
+        isFiltered ? (
+          <EmptyState
+            icon={Inbox}
+            title="조건에 맞는 시공 기록이 없습니다"
+            description="상태 탭이나 검색어를 바꿔 보세요."
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setStatusTab('all');
+                  setKeyword('');
+                }}
+              >
+                필터 초기화
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={Inbox}
+            title="아직 등록된 시공 기록이 없습니다"
+            description="현장 사진(전 · 중 · 후)과 시공일을 남겨 두면 포트폴리오와 AS 대응에 그대로 쓸 수 있습니다."
+            action={
+              <ButtonLink href="/boss/construction/new" variant="primary" size="sm" icon={Plus}>
+                첫 시공 기록 남기기
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
-              <th className="whitespace-nowrap">#</th>
+              <th>번호</th>
               <th>제목</th>
               <th>상태</th>
-              <th className="whitespace-nowrap">시공일</th>
-              <th className="text-center whitespace-nowrap">사진</th>
-              <th className="whitespace-nowrap">주문</th>
+              <th>시공일</th>
+              <th className="text-right">사진</th>
+              <th>주문</th>
               <th />
             </tr>
           </thead>
@@ -245,46 +262,34 @@ export default function BossConstructionListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/construction/${item.id}`)}
                 >
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
-                    #{String(item.id)}
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
+                    {String(item.id)}
                   </td>
-                  <td>
-                    <span className="font-medium text-boss-text">
-                      {item.title || '제목 없음'}
-                    </span>
+                  <td className="wrap max-w-[420px]">
+                    <span className="font-medium text-boss-text">{item.title || '제목 없음'}</span>
                     {item.description ? (
-                      <span className="ml-1 text-xs text-boss-text-muted">
-                        — {item.description.length > 40
+                      <span className="ml-1.5 text-[12px] text-boss-text-muted">
+                        {item.description.length > 40
                           ? `${item.description.substring(0, 40)}…`
                           : item.description}
                       </span>
                     ) : null}
                   </td>
                   <td>
-                    <Badge tone={isDone ? 'emerald' : 'amber'}>{item.status}</Badge>
+                    <StatusPill tone={isDone ? 'ok' : 'warn'}>{item.status}</StatusPill>
                   </td>
-                  <td className="whitespace-nowrap text-boss-text-secondary">
+                  <td className="font-boss-head tabular-nums text-boss-text-secondary">
                     {formatDate(item.constructionDate)}
                   </td>
-                  <td className="text-center whitespace-nowrap">
-                    {total > 0 ? (
-                      <span className="inline-flex items-center gap-1 text-boss-text-secondary">
-                        <ImageIcon size={12} /> {total}
-                      </span>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap">
+                  <td className="num text-boss-text-secondary">{total > 0 ? `${total}장` : '—'}</td>
+                  <td className="font-boss-head tabular-nums">
                     {item.orderId ? (
-                      <span className="inline-flex items-center gap-1 text-boss-info">
-                        <Link2 size={12} /> #{item.orderId}
-                      </span>
+                      <span className="text-boss-primary">#{item.orderId}</span>
                     ) : (
-                      '-'
+                      <span className="text-boss-text-ghost">—</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap text-right">
+                  <td className="text-right">
                     <RowActions
                       onEdit={() => router.push(`/boss/construction/${item.id}`)}
                       onDelete={() => setPendingDelete(item)}
@@ -298,7 +303,7 @@ export default function BossConstructionListPage() {
         </DataTable>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="시공 기록 삭제"

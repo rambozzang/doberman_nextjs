@@ -1,27 +1,28 @@
 'use client';
 
-// 사장님 고객 서명 상세 페이지
-// Flutter: lib/app/signature/signature_detail_page.dart 와 대응
+// 고객 서명 상세 — Industry 패턴
+//   좌: 서명 이미지(흰 종이 위) + 메모 / 우: DescRow 요약 + 주문 이동 · 목록 · 삭제.
+//   화면 제목과 ← 고객 서명 링크는 셸 헤더가 그린다. 삭제는 ConfirmDialog.
+// Flutter: lib/app/signature/signature_detail_page.dart 와 대응 — 단건 API 가 없어 목록에서 id 로 찾는다.
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import {
-  Trash2,
-  Calendar,
-  CheckCircle2,
-  Phone,
-  FileText,
-  Hash,
-  PenLine,
-  User,
-  StickyNote,
-  ArrowUpRight,
-} from 'lucide-react';
+import { Trash2, PenLine, ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossSignatureItem } from '@/types/boss-signature';
-import { PageHeader, Card, Button, Badge, EmptyState } from '@/components/boss/ui';
+import {
+  Panel,
+  Button,
+  ButtonLink,
+  StatusPill,
+  EmptyState,
+  AlertBanner,
+  DescRow,
+  Skeleton,
+  ConfirmDialog,
+} from '@/components/boss/ui';
 
 // 날짜 포맷터(년 월 일)
 function formatDate(input?: string | null): string {
@@ -51,6 +52,7 @@ export default function BossSignatureDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // 단일 조회 API 가 없으므로 사용자별 목록에서 찾음 (Flutter 와 동일 패턴)
   useEffect(() => {
@@ -86,7 +88,6 @@ export default function BossSignatureDetailPage() {
 
   const handleDelete = async () => {
     if (!item?.id) return;
-    if (!confirm('이 고객 서명 기록을 영구적으로 삭제하시겠습니까?')) return;
     const userInfo = BossAuthManager.getUserInfo();
     const custId = userInfo?.userId ?? '';
     if (!custId) {
@@ -110,180 +111,195 @@ export default function BossSignatureDetailPage() {
   };
 
   const badge = item?.confirmedAt
-    ? { tone: 'emerald' as const, label: '확인완료' }
-    : { tone: 'amber' as const, label: '미확인' };
+    ? { tone: 'ok' as const, label: '확인 완료' }
+    : { tone: 'warn' as const, label: '미확인' };
 
   const hasImage =
     !!item?.signatureImagePath &&
     (item.signatureImagePath.startsWith('http') || item.signatureImagePath.startsWith('data:'));
 
-  return (
-    <div className="space-y-5">
-      <PageHeader
-        title="고객 서명 상세"
-        breadcrumbs={[{ label: '고객 서명', href: '/boss/signature' }, { label: '상세' }]}
-        actions={
-          item ? (
-            <>
-              {item.orderId ? (
-                <Link href="/boss/orders">
-                  <Button variant="secondary" icon={ArrowUpRight}>
-                    주문 이동
-                  </Button>
-                </Link>
-              ) : null}
-              <Button
-                variant="danger"
-                icon={Trash2}
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? '삭제 중…' : '삭제'}
-              </Button>
-            </>
-          ) : undefined
-        }
-      />
+  const phoneText = formatPhone(item?.customerPhone);
+  const phoneDigits = item?.customerPhone?.replace(/[^0-9+]/g, '') ?? '';
 
-      {error && item === null && !loading && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          {error}
+  if (loading) {
+    return (
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-28" />
         </div>
-      )}
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-56" />
+          <Skeleton className="h-40" />
+        </div>
+      </div>
+    );
+  }
 
-      {loading ? (
-        <div className="boss-empty">불러오는 중...</div>
-      ) : item ? (
-        <>
-          {/* 개요 카드 */}
-          <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <Badge tone={badge.tone}>{badge.label}</Badge>
-                {item.id && <span className="text-xs text-boss-text-muted">#{item.id}</span>}
-              </div>
-              <h2 className="text-lg font-semibold text-boss-text">
-                {item.customerName || '이름 없음'}
-              </h2>
-              <p className="mt-1 text-sm text-boss-text-muted">
-                서명일: {formatDate(item.createdDt)}
-              </p>
-            </div>
-            {item.customerPhone && (
-              <div className="text-center text-sm">
-                <p className="text-xs text-boss-text-muted">연락처</p>
-                <p className="font-semibold text-boss-text">{formatPhone(item.customerPhone)}</p>
-              </div>
-            )}
-          </Card>
-
-          <div className="grid gap-5 lg:grid-cols-3">
-            {/* 서명 정보 */}
-            <Section title="서명 정보" icon={User}>
-              <Info label="고객명" value={item.customerName} icon={User} />
-              <Info label="연락처" value={formatPhone(item.customerPhone) || undefined} icon={Phone} />
-              <Info label="등록일" value={formatDate(item.createdDt)} icon={Calendar} />
-              <Info
-                label="확인일"
-                value={item.confirmedAt ? formatDate(item.confirmedAt) : undefined}
-                icon={CheckCircle2}
-              />
-              <Info
-                label="시공기록"
-                value={item.recordId ? `#${item.recordId}` : undefined}
-                icon={FileText}
-              />
-              <Info label="주문" value={item.orderId ? `#${item.orderId}` : undefined} icon={Hash} />
-              {item.memo && (
-                <div className="border-t border-boss-border pt-3">
-                  <div className="flex items-start gap-2.5 text-sm">
-                    <StickyNote size={14} className="mt-0.5 text-boss-text-muted" />
-                    <div>
-                      <p className="text-xs text-boss-text-muted">메모</p>
-                      <p className="whitespace-pre-line text-boss-text">{item.memo}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Section>
-
-            {/* 서명 이미지 */}
-            <div className="lg:col-span-2">
-              <Section title="서명 이미지" icon={PenLine}>
-                <div className="flex min-h-64 items-center justify-center overflow-hidden rounded-lg border border-boss-border bg-boss-elevated/30 p-6">
-                  {hasImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.signatureImagePath}
-                      alt={item.customerName ?? 'signature'}
-                      className="max-h-72 max-w-full object-contain"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-boss-text-muted">
-                      <PenLine size={64} />
-                      <span className="text-xs">서명 이미지가 없습니다</span>
-                    </div>
-                  )}
-                </div>
-              </Section>
-            </div>
-          </div>
-        </>
-      ) : (
+  if (!item) {
+    return (
+      <div className="flex flex-col gap-4">
+        {error && <AlertBanner tone="bad">{error}</AlertBanner>}
         <EmptyState
           icon={PenLine}
-          title="정보를 찾을 수 없습니다"
-          description={error ?? '요청하신 서명 정보가 존재하지 않습니다.'}
+          title="서명 기록을 열 수 없습니다"
+          description="삭제됐거나 주소가 잘못됐을 수 있습니다. 목록에서 다시 골라 주세요."
           action={
-            <Link href="/boss/signature">
-              <Button variant="secondary" size="sm">
-                목록으로
-              </Button>
-            </Link>
+            <ButtonLink href="/boss/signature" variant="primary" size="sm" icon={ArrowLeft}>
+              목록으로
+            </ButtonLink>
           }
         />
-      )}
-    </div>
-  );
-}
-
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
-        <Icon size={15} className="text-boss-primary" />
-        {title}
-      </h3>
-      <div className="space-y-3">{children}</div>
-    </Card>
-  );
-}
-
-function Info({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value?: string | number | null;
-  icon: React.ElementType;
-}) {
-  if (value === undefined || value === null || value === '') return null;
-  return (
-    <div className="flex items-start gap-2.5 text-sm">
-      <Icon size={14} className="mt-0.5 text-boss-text-muted" />
-      <div>
-        <p className="text-xs text-boss-text-muted">{label}</p>
-        <p className="text-boss-text">{value}</p>
       </div>
+    );
+  }
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* ── 좌: 서명 이미지 · 메모 ── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        <Panel
+          title={item.customerName || '이름 없음'}
+          kicker="SIGNATURE"
+          right={<StatusPill tone={badge.tone}>{badge.label}</StatusPill>}
+        >
+          {/* 서명은 캔버스 저장본(흰 배경 PNG)이라 종이처럼 흰 면 위에 올린다 */}
+          <div className="flex min-h-[280px] items-center justify-center border border-boss-border bg-white p-6">
+            {hasImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.signatureImagePath}
+                alt={`${item.customerName ?? '고객'} 서명`}
+                className="max-h-72 max-w-full object-contain"
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-boss-text-muted">
+                <PenLine size={40} strokeWidth={1.25} />
+                <span className="text-[12.5px]">저장된 서명 이미지가 없습니다</span>
+              </div>
+            )}
+          </div>
+          <p className="mt-3 text-[12px] text-boss-text-secondary">
+            서명일{' '}
+            <span className="font-boss-head tabular-nums text-boss-text">{formatDate(item.createdDt)}</span>
+            {item.confirmedAt && (
+              <>
+                {' '}
+                · 확인{' '}
+                <span className="font-boss-head tabular-nums text-boss-text">
+                  {formatDate(item.confirmedAt)}
+                </span>
+              </>
+            )}
+          </p>
+        </Panel>
+
+        <Panel title="메모" kicker="NOTE">
+          {item.memo ? (
+            <p className="whitespace-pre-line text-[13.5px] leading-[1.7] text-boss-text">{item.memo}</p>
+          ) : (
+            <p className="text-[13px] text-boss-text-secondary">
+              남긴 메모가 없습니다. 서명을 받을 때 현장 · 시공 내용을 메모해 두면 나중에 찾기 쉽습니다.
+            </p>
+          )}
+        </Panel>
+      </div>
+
+      {/* ── 우: 요약 · 작업 ── */}
+      <div className="flex flex-col gap-4">
+        <Panel title="요약" kicker="RECORD">
+          <dl>
+            <DescRow
+              label="번호"
+              value={<span className="font-boss-head tabular-nums">#{item.id}</span>}
+            />
+            <DescRow label="고객명" value={item.customerName || '이름 없음'} />
+            <DescRow
+              label="연락처"
+              value={
+                phoneDigits ? (
+                  <a href={`tel:${phoneDigits}`} className="font-boss-head tabular-nums">
+                    {phoneText}
+                  </a>
+                ) : (
+                  <span className="font-normal text-boss-text-muted">—</span>
+                )
+              }
+            />
+            <DescRow label="상태" value={<StatusPill tone={badge.tone}>{badge.label}</StatusPill>} />
+            <DescRow
+              label="등록일"
+              value={<span className="font-boss-head tabular-nums">{formatDate(item.createdDt)}</span>}
+            />
+            <DescRow
+              label="확인일"
+              value={
+                item.confirmedAt ? (
+                  <span className="font-boss-head tabular-nums">{formatDate(item.confirmedAt)}</span>
+                ) : (
+                  <span className="font-normal text-boss-text-muted">미확인</span>
+                )
+              }
+            />
+            <DescRow
+              label="시공 기록"
+              value={
+                item.recordId ? (
+                  <Link href={`/boss/construction/${item.recordId}`} className="font-boss-head tabular-nums">
+                    #{item.recordId}
+                  </Link>
+                ) : (
+                  <span className="font-normal text-boss-text-muted">연결 없음</span>
+                )
+              }
+            />
+            <DescRow
+              label="주문"
+              value={
+                item.orderId ? (
+                  <span className="font-boss-head tabular-nums text-boss-primary">#{item.orderId}</span>
+                ) : (
+                  <span className="font-normal text-boss-text-muted">연결 없음</span>
+                )
+              }
+            />
+          </dl>
+        </Panel>
+
+        <Panel title="작업" kicker="ACTIONS">
+          <div className="flex flex-col gap-2">
+            {item.orderId ? (
+              <ButtonLink href="/boss/orders" variant="primary" icon={ArrowUpRight} className="w-full">
+                주문 관리로 이동
+              </ButtonLink>
+            ) : null}
+            <ButtonLink href="/boss/signature" variant="secondary" icon={ArrowLeft} className="w-full">
+              목록으로
+            </ButtonLink>
+            <Button
+              variant="ghost"
+              icon={Trash2}
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+              className="w-full !text-boss-text-muted hover:!text-boss-error"
+            >
+              {deleting ? '삭제 중…' : '삭제'}
+            </Button>
+          </div>
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            서명은 고객 확인의 근거입니다. 삭제하면 복구할 수 없습니다.
+          </p>
+        </Panel>
+      </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="이 서명 기록을 삭제할까요?"
+        description="고객 서명 기록을 영구적으로 삭제합니다. 복구할 수 없습니다."
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

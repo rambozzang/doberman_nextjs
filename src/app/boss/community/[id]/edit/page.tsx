@@ -1,12 +1,15 @@
 'use client';
 
-// 사장님 커뮤니티 게시글 수정
+// 사장님 커뮤니티 게시글 수정 — Industry 패턴
+// 폼 조판은 CommunityPostForm 이 담당한다. 여기서는 원본 조회와 저장만 잇는다.
+
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import CommunityPostForm from '@/components/boss/community/CommunityPostForm';
 import type { BbsData, BbsUpdateRequest } from '@/types/boss-community';
+import { AlertBanner, ButtonLink, Skeleton } from '@/components/boss/ui';
 
 export default function BossCommunityEditPage() {
   const params = useParams<{ id: string }>();
@@ -54,17 +57,32 @@ export default function BossCommunityEditPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl">
-        <div className="h-[32rem] animate-pulse rounded-lg border border-boss-border bg-boss-elevated" />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-[220px]" />
+          <Skeleton className="h-[420px]" />
+        </div>
+        <Skeleton className="h-[180px]" />
       </div>
     );
   }
 
   if (error || !initial) {
     return (
-      <div className="mx-auto max-w-4xl rounded-lg border border-boss-error/20 bg-boss-error/10 p-4 text-sm text-boss-error">
-        {error || '게시글을 찾을 수 없습니다.'}
-      </div>
+      <AlertBanner
+        tone="bad"
+        action={
+          <ButtonLink
+            href={boardId ? `/boss/community/${boardId}` : '/boss/community'}
+            variant="secondary"
+            size="sm"
+          >
+            돌아가기
+          </ButtonLink>
+        }
+      >
+        {error || '게시글을 찾을 수 없습니다. 삭제됐거나 주소가 잘못됐을 수 있습니다.'}
+      </AlertBanner>
     );
   }
 

@@ -1,24 +1,14 @@
 'use client';
 
-// 시공 기록 등록/수정 페이지
-// Flutter `construction_record_add_page.dart` 포팅
+// 시공 기록 등록/수정 — Industry 패턴 (참조 ListingForm 조판)
+//   좌: 패널 섹션(시공 정보 · 사진) + 하단 액션 패널 / 우: 필수 누락 · 안내 패널.
+//   화면 제목은 셸 헤더(PAGE_META)가 그린다.
+// Flutter `construction_record_add_page.dart` 포팅 —
 // 웹은 카메라/이미지 크롭 대신 URL 입력 기반으로 BEFORE/DURING/AFTER 사진을 관리한다.
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import {
-  ArrowLeft,
-  Save,
-  Plus,
-  Trash2,
-  ImageIcon,
-  Calendar,
-  CheckCircle2,
-  Clock3,
-  Hammer,
-  Link2,
-} from 'lucide-react';
+import { Plus, Trash2, ImageIcon } from 'lucide-react';
 import {
   bossConstructionApi,
   buildImagePayload,
@@ -26,6 +16,17 @@ import {
 } from '@/lib/api/boss/construction';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { ConstructionImageType } from '@/types/boss-construction';
+import {
+  Panel,
+  Field,
+  TextareaField,
+  FieldLabel,
+  Segmented,
+  Button,
+  ButtonLink,
+  AlertBanner,
+  Skeleton,
+} from '@/components/boss/ui';
 
 type ImageBucket = 'beforeImages' | 'duringImages' | 'afterImages';
 
@@ -33,6 +34,11 @@ const SECTIONS: { key: ImageBucket; type: ConstructionImageType; label: string }
   { key: 'beforeImages', type: 'BEFORE', label: '시공 전' },
   { key: 'duringImages', type: 'DURING', label: '시공 중' },
   { key: 'afterImages', type: 'AFTER', label: '시공 후' },
+];
+
+const STATUS_OPTIONS: { key: '진행중' | '완료'; label: string }[] = [
+  { key: '진행중', label: '진행중' },
+  { key: '완료', label: '완료' },
 ];
 
 function todayStr(): string {
@@ -161,6 +167,15 @@ function ConstructionFormInner() {
     return true;
   }, [title, constructionDate, totalImageCount]);
 
+  // 우측 안내 패널용 — 아직 채우지 않은 필수 항목
+  const missing = useMemo(() => {
+    const list: string[] = [];
+    if (!title.trim()) list.push('제목');
+    if (!constructionDate) list.push('시공일');
+    if (totalImageCount === 0) list.push('사진 1장 이상');
+    return list;
+  }, [title, constructionDate, totalImageCount]);
+
   const handleSave = async () => {
     if (!valid) {
       if (!title.trim()) toast.error('제목을 입력해주세요.');
@@ -221,227 +236,204 @@ function ConstructionFormInner() {
     }
   };
 
+  const cancelHref = isEditMode && editId ? `/boss/construction/${editId}` : '/boss/construction';
+  const submitLabel = saving ? '저장 중…' : isEditMode ? '수정 저장' : '시공 기록 등록';
+
   return (
-    <div className="space-y-5">
-      {/* 상단 네비 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={isEditMode && editId ? `/boss/construction/${editId}` : '/boss/construction'}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-surface px-3 text-sm text-boss-text-secondary hover:border-boss-border hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 취소
-        </Link>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || loadingDetail}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-boss-primary px-4 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary-hover disabled:opacity-50"
-        >
-          <Save size={14} /> {isEditMode ? '수정 저장' : '시공 기록 등록'}
-        </button>
-      </div>
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+      {/* ── 좌: 폼 ── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        {error && <AlertBanner tone="bad">{error}</AlertBanner>}
 
-      {/* 헤더 */}
-      <div className="flex items-center gap-2">
-        <Hammer size={20} className="text-boss-primary" />
-        <h1 className="text-2xl font-bold tracking-tight text-boss-text">
-          {isEditMode ? '시공 기록 수정' : '시공 기록 등록'}
-        </h1>
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          {error}
-        </div>
-      )}
-
-      {/* 이미지 섹션 (3개) */}
-      <div className="space-y-4">
-        {SECTIONS.map((section) => {
-          const list = getBucket(section.key);
-          return (
-            <div
-              key={section.key}
-              className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface"
-            >
-              <div className="flex items-center justify-between gap-2 border-b border-boss-border bg-boss-surface px-5 py-3">
-                <div className="flex items-center gap-2">
-                  <ImageIcon size={16} className="text-boss-primary" />
-                  <h2 className="text-sm font-semibold text-boss-text">{section.label}</h2>
-                  <span className="rounded-full bg-boss-elevated px-2 py-0.5 text-[10px] font-semibold text-boss-text-secondary">
-                    {list.length}/10
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-3 p-4">
-                {/* URL 추가 입력 */}
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newUrlMap[section.key]}
-                    onChange={(e) =>
-                      setNewUrlMap((m) => ({ ...m, [section.key]: e.target.value }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addImageUrl(section.key);
-                      }
-                    }}
-                    placeholder="https://... 이미지 URL 입력 후 추가"
-                    className="h-10 flex-1 rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addImageUrl(section.key)}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary-hover"
-                  >
-                    <Plus size={14} /> 추가
-                  </button>
-                </div>
-
-                {/* 이미지 그리드 */}
-                {list.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-boss-border bg-boss-bg/40 py-10 text-center">
-                    <ImageIcon size={28} className="mb-2 text-boss-text-muted" />
-                    <p className="text-xs text-boss-text-muted">아직 등록된 사진이 없습니다</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {list.map((url, idx) => (
-                      <div
-                        key={`${section.key}-${idx}-${url}`}
-                        className="group relative aspect-square overflow-hidden rounded-xl border border-boss-border bg-boss-bg"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt={`${section.label}-${idx}`}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(section.key, idx)}
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-boss-error/100 text-boss-text opacity-0 transition-opacity group-hover:opacity-100"
-                          aria-label="삭제"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                        <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-boss-text">
-                          {idx + 1}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 메타 정보 */}
-      <div className="overflow-hidden rounded-2xl border border-boss-border bg-boss-surface">
-        <div className="border-b border-boss-border bg-boss-surface px-5 py-3">
-          <h2 className="text-sm font-semibold text-boss-text">시공 정보</h2>
-        </div>
-        <div className="space-y-4 p-5">
-          {/* 제목 */}
-          <div>
-            <label className="mb-1 block text-xs text-boss-text-muted">
-              제목 <span className="text-boss-error">*</span>
-            </label>
-            <input
+        {/* 시공 정보 */}
+        <Panel title="시공 정보" kicker={isEditMode ? 'EDIT' : 'NEW'}>
+          <div className="flex flex-col gap-4">
+            <Field
+              id="title"
+              label="제목"
+              required
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 신촌 OO아파트 거실 도배 시공"
-              className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+              disabled={loadingDetail}
             />
-          </div>
-
-          {/* 설명 */}
-          <div>
-            <label className="mb-1 block text-xs text-boss-text-muted">설명</label>
-            <textarea
+            <TextareaField
+              id="description"
+              label="설명"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              placeholder="시공 내용을 자유롭게 작성하세요"
-              className="w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 py-2 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+              placeholder="자재 · 평수 · 특이사항 등 시공 내용을 자유롭게 적어 두세요"
+              disabled={loadingDetail}
             />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* 시공일 */}
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs text-boss-text-muted">
-                <Calendar size={11} /> 시공일 <span className="text-boss-error">*</span>
-              </label>
-              <input
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field
+                id="constructionDate"
+                label="시공일"
+                required
                 type="date"
                 value={constructionDate}
                 onChange={(e) => setConstructionDate(e.target.value)}
-                className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                disabled={loadingDetail}
               />
-            </div>
-
-            {/* 주문 ID */}
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs text-boss-text-muted">
-                <Link2 size={11} /> 연결할 주문 ID (선택)
-              </label>
-              <input
+              <Field
+                id="orderId"
+                label="연결할 주문 번호"
                 type="number"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 placeholder="예: 1234"
-                className="h-10 w-full rounded-lg border border-boss-border bg-boss-bg/60 px-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-primary/50 focus:outline-none focus:ring-2 focus:ring-boss-primary/10"
+                hint="주문 관리의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다."
+                disabled={loadingDetail}
+              />
+            </div>
+            <div>
+              <FieldLabel>상태</FieldLabel>
+              <Segmented
+                ariaLabel="시공 상태"
+                options={STATUS_OPTIONS}
+                value={status}
+                onChange={setStatus}
               />
             </div>
           </div>
+        </Panel>
 
-          {/* 상태 */}
-          <div>
-            <label className="mb-1 block text-xs text-boss-text-muted">상태</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setStatus('진행중')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ring-1 ring-inset ${
-                  status === '진행중'
-                    ? 'bg-boss-warning/20 text-boss-warning ring-boss-warning/40'
-                    : 'bg-boss-elevated/60 text-boss-text-muted ring-boss-border'
-                }`}
-              >
-                <Clock3 size={12} /> 진행중
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatus('완료')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ring-1 ring-inset ${
-                  status === '완료'
-                    ? 'bg-boss-primary/20 text-boss-primary ring-boss-primary/40'
-                    : 'bg-boss-elevated/60 text-boss-text-muted ring-boss-border'
-                }`}
-              >
-                <CheckCircle2 size={12} /> 완료
-              </button>
-            </div>
+        {/* 사진 — 시공 전 / 중 / 후 */}
+        <Panel
+          title="사진"
+          kicker="PHOTOS"
+          right={
+            <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
+              전체 {totalImageCount}장
+            </span>
+          }
+        >
+          <div className="flex flex-col gap-6">
+            {SECTIONS.map((section) => {
+              const list = getBucket(section.key);
+              const inputId = `url-${section.key}`;
+              return (
+                <div key={section.key} className="flex flex-col gap-3">
+                  <div className="flex items-baseline justify-between gap-3 border-b border-boss-border-row pb-2">
+                    <h4 className="text-[14px] font-semibold text-boss-text">{section.label}</h4>
+                    <span className="font-boss-head text-[12px] tabular-nums text-boss-text-muted">
+                      {list.length} / 10
+                    </span>
+                  </div>
+
+                  {/* URL 추가 입력 */}
+                  <div className="flex gap-2">
+                    <input
+                      id={inputId}
+                      type="url"
+                      aria-label={`${section.label} 사진 URL`}
+                      value={newUrlMap[section.key]}
+                      onChange={(e) =>
+                        setNewUrlMap((m) => ({ ...m, [section.key]: e.target.value }))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addImageUrl(section.key);
+                        }
+                      }}
+                      placeholder="https:// 로 시작하는 이미지 주소"
+                      className="boss-input flex-1"
+                    />
+                    <Button
+                      variant="secondary"
+                      icon={Plus}
+                      onClick={() => addImageUrl(section.key)}
+                      disabled={list.length >= 10}
+                    >
+                      추가
+                    </Button>
+                  </div>
+
+                  {/* 이미지 그리드 */}
+                  {list.length === 0 ? (
+                    <div className="boss-dashed-cta flex flex-col items-center justify-center py-8 text-center">
+                      <ImageIcon size={22} strokeWidth={1.5} className="mb-2 text-boss-text-muted" />
+                      <p className="text-[12.5px] text-boss-text-secondary">
+                        {section.label} 사진이 아직 없습니다 — 위에 주소를 넣고 추가하세요
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                      {list.map((url, idx) => (
+                        <div
+                          key={`${section.key}-${idx}-${url}`}
+                          className="group relative aspect-square overflow-hidden border border-boss-border bg-boss-bg"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt={`${section.label} ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(section.key, idx)}
+                            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center bg-boss-error text-boss-primary-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                            aria-label={`${section.label} 사진 ${idx + 1} 삭제`}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                          <span className="absolute bottom-1 left-1 bg-boss-text/75 px-1.5 py-px font-boss-head text-[10px] font-semibold text-boss-bg">
+                            {idx + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+        </Panel>
+
+        {/* 하단 액션 패널 */}
+        <div className="boss-card flex flex-wrap items-center gap-2.5 px-4 py-3.5">
+          <span className="text-[12.5px] text-boss-text-secondary">
+            {missing.length > 0 ? `필수 ${missing.length}항목 남음` : '저장할 준비가 됐습니다'}
+          </span>
+          <ButtonLink href={cancelHref} variant="secondary" className="ml-auto">
+            취소
+          </ButtonLink>
+          <Button variant="primary" onClick={handleSave} disabled={saving || loadingDetail}>
+            {submitLabel}
+          </Button>
         </div>
       </div>
 
-      {/* 하단 저장 */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || loadingDetail}
-          className="inline-flex h-11 items-center gap-2 rounded-lg bg-boss-primary px-6 text-sm font-semibold text-boss-primary-foreground hover:bg-boss-primary-hover disabled:opacity-50"
-        >
-          <Save size={16} /> {saving ? '저장 중...' : isEditMode ? '수정 저장' : '시공 기록 등록'}
-        </button>
+      {/* ── 우: 안내 ── */}
+      <div className="flex flex-col gap-4">
+        <Panel kicker="필수 누락">
+          {missing.length === 0 ? (
+            <p className="text-[13px] text-boss-success">필수 항목을 모두 채웠습니다.</p>
+          ) : (
+            <ul className="flex flex-col gap-1 text-[13px] text-boss-error">
+              {missing.map((m) => (
+                <li key={m}>· {m}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            사진은 전 · 중 · 후 중 한 곳에라도 1장 이상 있어야 저장됩니다. 구간별 최대 10장.
+          </p>
+        </Panel>
+
+        <Panel kicker="사진 안내">
+          <p className="text-[12.5px] leading-[1.7] text-boss-text-soft">
+            웹에서는 파일 업로드 대신 <strong className="font-semibold">이미지 주소(URL)</strong>를
+            붙여 넣습니다. 앱에서 찍은 사진은 사진 관리에서 주소를 복사해 오세요.
+          </p>
+          <p className="mt-2 text-[12.5px] leading-[1.7] text-boss-text-soft">
+            완료로 저장한 기록은 포트폴리오 · AS 접수에서 바로 연결할 수 있습니다.
+          </p>
+        </Panel>
       </div>
     </div>
   );
@@ -451,9 +443,12 @@ export default function BossConstructionFormPage() {
   return (
     <Suspense
       fallback={
-        <div className="space-y-4">
-          <div className="h-9 w-40 animate-pulse rounded-lg bg-boss-elevated/60" />
-          <div className="h-96 animate-pulse rounded-2xl bg-boss-elevated/40" />
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-72" />
+            <Skeleton className="h-96" />
+          </div>
+          <Skeleton className="h-40" />
         </div>
       }
     >

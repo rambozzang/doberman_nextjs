@@ -1,21 +1,33 @@
 'use client';
 
-// 사장님 커뮤니티 신고하기
+// 사장님 커뮤니티 신고하기 — Industry 패턴
 // Flutter `bbs_sigo_page.dart` 를 Next.js 로 포팅.
+//
+// 가운데 620px 열: 패널 안에 신고 유형(RadioOption) + 상세 사유(TextareaField)
+// → 하단 액션 패널(취소 secondary / 신고 접수 primary). 접수는 ConfirmDialog 를 거친다.
+// 화면 제목과 «← 커뮤니티» 는 셸 헤더가 그린다.
+
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import { BossAuthManager } from '@/lib/bossAuth';
+import {
+  Panel,
+  FieldLabel,
+  RadioOption,
+  TextareaField,
+  Button,
+  ButtonLink,
+  ConfirmDialog,
+} from '@/components/boss/ui';
 
-const REASON_OPTIONS: { code: string; label: string }[] = [
-  { code: 'SPAM', label: '스팸/광고성 게시물' },
-  { code: 'ABUSE', label: '욕설/혐오/비방' },
-  { code: 'PORN', label: '음란/선정적 내용' },
-  { code: 'COPY', label: '저작권 침해' },
-  { code: 'ETC', label: '기타' },
+const REASON_OPTIONS: { code: string; label: string; hint: string }[] = [
+  { code: 'SPAM', label: '스팸 · 광고성 게시물', hint: '홍보 · 도배' },
+  { code: 'ABUSE', label: '욕설 · 혐오 · 비방', hint: '특정인 공격' },
+  { code: 'PORN', label: '음란 · 선정적 내용', hint: '' },
+  { code: 'COPY', label: '저작권 침해', hint: '무단 복제' },
+  { code: 'ETC', label: '기타', hint: '아래에 설명' },
 ];
 
 export default function BossCommunityReportPage() {
@@ -26,6 +38,17 @@ export default function BossCommunityReportPage() {
   const [reasonCd, setReasonCd] = useState<string>(REASON_OPTIONS[0].code);
   const [reason, setReason] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const backHref = `/boss/community/${boardId}`;
+
+  const requestSubmit = () => {
+    if (!reason.trim()) {
+      toast.error('신고 사유를 입력해주세요.');
+      return;
+    }
+    setConfirmOpen(true);
+  };
 
   const submit = async () => {
     if (!boardId) return;
@@ -44,7 +67,7 @@ export default function BossCommunityReportPage() {
       });
       if (res.success !== false) {
         toast.success('신고가 접수되었습니다.');
-        router.push(`/boss/community/${boardId}`);
+        router.push(backHref);
       } else {
         toast.error(res.message || '신고 실패');
       }
@@ -52,65 +75,69 @@ export default function BossCommunityReportPage() {
       toast.error('네트워크 오류');
     } finally {
       setSubmitting(false);
+      setConfirmOpen(false);
     }
   };
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div className="flex items-center justify-between">
-        <Link
-          href={`/boss/community/${boardId}`}
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 돌아가기
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">게시글 신고</h1>
-        <div className="w-20" />
-      </div>
+  const reasonLabel = REASON_OPTIONS.find((o) => o.code === reasonCd)?.label ?? '';
 
-      <div className="space-y-4 rounded-2xl border border-boss-border bg-boss-surface p-5">
-        <div>
-          <label className="mb-2 block text-xs font-semibold text-boss-text-muted">신고 유형</label>
-          <div className="space-y-2">
-            {REASON_OPTIONS.map((opt) => (
-              <label
-                key={opt.code}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-boss-border bg-boss-bg/40 px-3 py-2 text-sm text-boss-text hover:border-boss-border"
-              >
-                <input
-                  type="radio"
-                  name="reasonCd"
-                  value={opt.code}
+  return (
+    <div className="mx-auto flex w-full max-w-[620px] flex-col gap-4">
+      <Panel kicker="신고" title="게시글 신고">
+        <p className="mb-4 text-[12.5px] leading-relaxed text-boss-text-secondary">
+          글 #{boardId} 을(를) 신고합니다. 접수된 신고는 운영팀이 확인한 뒤 처리하며, 신고자
+          정보는 작성자에게 공개되지 않습니다.
+        </p>
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <FieldLabel required>신고 유형</FieldLabel>
+            <div role="radiogroup" aria-label="신고 유형" className="flex flex-col gap-1.5">
+              {REASON_OPTIONS.map((opt) => (
+                <RadioOption
+                  key={opt.code}
                   checked={reasonCd === opt.code}
                   onChange={() => setReasonCd(opt.code)}
-                  className="accent-emerald-500"
+                  label={opt.label}
+                  hint={opt.hint || undefined}
                 />
-                {opt.label}
-              </label>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-boss-text-muted">상세 사유</label>
-          <textarea
+
+          <TextareaField
+            id="reason"
+            label="상세 사유"
+            required
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={6}
-            placeholder="신고 사유를 자세히 작성해주세요"
-            className="w-full resize-y rounded-lg border border-boss-border bg-boss-bg/40 p-3 text-sm text-boss-text placeholder:text-boss-text-muted focus:border-boss-warning/50 focus:outline-none focus:ring-2 focus:ring-boss-warning/10"
+            placeholder="어떤 부분이 문제인지 구체적으로 적어 주세요. 운영팀이 판단하는 근거가 됩니다."
+            hint={`${reason.trim().length.toLocaleString()}자 입력`}
           />
         </div>
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={submitting}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-boss-warning px-4 py-2 text-sm font-semibold text-boss-text hover:bg-boss-warning disabled:opacity-50"
-          >
-            <Flag size={14} /> {submitting ? '신고 중…' : '신고하기'}
-          </button>
-        </div>
+      </Panel>
+
+      {/* 하단 액션 패널 */}
+      <div className="boss-card flex flex-wrap items-center justify-end gap-2 px-4 py-3.5">
+        <ButtonLink href={backHref} variant="secondary">
+          취소
+        </ButtonLink>
+        <Button variant="primary" onClick={requestSubmit} disabled={submitting}>
+          {submitting ? '신고 중…' : '신고 접수'}
+        </Button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        tone="primary"
+        title="신고를 접수할까요?"
+        description={`유형: ${reasonLabel}. 접수한 신고는 취소할 수 없습니다.`}
+        confirmLabel="접수"
+        loading={submitting}
+        onConfirm={() => void submit()}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

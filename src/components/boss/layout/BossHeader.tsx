@@ -1,170 +1,113 @@
 'use client';
 
-// 사장님 상단바 — onGo 리디자인 시안
-// height 56px / bg #181a27 / border-bottom #23263c / padding 0 18px / gap 14px
+// 사장님 헤더 — Industry 패턴 (agent.opentohome.com 의 main > header)
 //
-// 좌: 화면 제목 14px/600 + 부제 12px #6c7093 (ellipsis)
-// 우: 검색 240px(`/` 키캡) → 보조 버튼 → 주요 버튼(accent)
+//   sticky · 면색 95% + blur · 하단 보더 · padding 20px 28px 16px
+//   좌: kicker(10px 대문자 "사장님 센터" 또는 `← 상위 화면`) / 제목 26px Barlow Condensed / 설명 12.5px
+//   우: 회사 태그(md↑) → 검색(등록한 화면만) → 보조 버튼 → 주요 버튼(accent)
 //
-// 시안 주의: 상단바 요소는 모두 white-space: nowrap.
-//   한국어 버튼 라벨이 글자 단위로 줄바꿈되는 문제가 있었다.
-//
-// 로고와 계정 메뉴는 시안대로 좌측 레일에 있다. 모바일에서만 상단바에 유지한다.
+// 제목·부제·버튼은 nav.ts 의 PAGE_META 가 정한다. 페이지 안에 h1 을 두지 않는다.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { Bell, Menu, X, HelpCircle, Search } from 'lucide-react';
-import { SECTIONS, isNavActive, getPageMeta } from './nav';
+import { Bell, Search } from 'lucide-react';
+import { getPageMeta } from './nav';
 import { useBossSearchBar } from './BossSearchContext';
+import { useBossPortal } from './BossPortalContext';
 
 export default function BossHeader() {
   const pathname = usePathname();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const meta = getPageMeta(pathname);
   const search = useBossSearchBar();
+  const { company } = useBossPortal();
+  // 컨텍스트 객체 안에 inputRef 가 있어 react-hooks/refs 규칙이 객체 전체를 ref 로 오인한다 —
+  // 렌더에서 쓰는 값만 먼저 풀어 둔다(ref 는 <input ref> 에 넘기기만 하고 .current 는 읽지 않는다).
+  const searchPlaceholder = search?.placeholder ?? null;
+  const searchQuery = search?.query ?? '';
+  const setSearchQuery = search?.setQuery;
+  const searchInputRef = search?.inputRef;
 
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
+  const kicker = 'text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-text-muted';
 
   return (
-    <>
-      <header className="flex h-14 flex-none items-center gap-3.5 border-b border-boss-border bg-boss-shell px-4 md:px-[18px]">
-        {/* 모바일 햄버거 */}
-        <button
-          type="button"
-          onClick={() => setMobileNavOpen(true)}
-          className="-ml-1 inline-flex flex-none rounded-chip p-1.5 text-boss-text-muted transition-colors duration-[120ms] ease-out hover:bg-boss-elevated hover:text-boss-text md:hidden"
-          aria-label="메뉴 열기"
-        >
-          <Menu size={18} />
-        </button>
-
-        {/* 화면 제목 / 부제 */}
-        <h1 className="flex-none whitespace-nowrap text-[14px] font-semibold text-boss-text">
+    <header className="sticky top-[53px] z-30 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-boss-border bg-boss-bg/95 px-5 pb-4 pt-5 backdrop-blur sm:px-7 lg:top-0">
+      <div className="min-w-0">
+        {meta.back ? (
+          <Link
+            href={meta.back.href}
+            className={`${kicker} inline-flex items-center gap-1 !text-boss-text-muted hover:!text-boss-text`}
+          >
+            <span aria-hidden>←</span> {meta.back.label}
+          </Link>
+        ) : (
+          <div className={kicker}>사장님 센터</div>
+        )}
+        <h1 className="mt-0.5 truncate font-boss-head text-[22px] font-semibold leading-tight tracking-[-0.015em] text-boss-text sm:text-[26px]">
           {meta.title}
         </h1>
         {meta.subtitle && (
-          <p className="hidden min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] text-boss-text-muted lg:block">
+          <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
             {meta.subtitle}
           </p>
         )}
+      </div>
 
-        <div className="min-w-2 flex-1" />
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        {/* 회사명·사업자번호 — 사장님이 늘 보고 있어야 하는 표시 항목 */}
+        {company?.name && (
+          <span className="hidden max-w-[320px] items-center truncate border border-boss-border bg-boss-surface px-2.5 py-[5px] text-[12px] text-boss-text-dim md:inline-flex">
+            {company.name}
+            {company.bizno ? ` · ${company.bizno}` : ''}
+          </span>
+        )}
 
         {/* 전역 검색 — 페이지가 useBossSearch 로 등록했을 때만 노출 */}
-        {search?.placeholder && (
-          <div className="relative hidden w-60 flex-[0_1_240px] sm:block" style={{ minWidth: 92 }}>
+        {searchPlaceholder && (
+          <div className="relative w-full sm:w-[240px]">
             <Search
-              size={13}
+              size={14}
+              strokeWidth={1.75}
               className="pointer-events-none absolute left-[10px] top-1/2 -translate-y-1/2 text-boss-text-muted"
             />
             <input
-              ref={search.inputRef}
+              ref={searchInputRef}
               type="text"
-              value={search.query}
-              onChange={(e) => search.setQuery(e.target.value)}
-              placeholder={search.placeholder}
-              className="h-[34px] w-full rounded-[8px] border border-boss-border-soft bg-transparent pl-[30px] pr-8 text-[12px] text-boss-text outline-none transition-colors duration-[120ms] ease-out placeholder:text-boss-text-muted focus:border-boss-border-hover"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery?.(e.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              className="boss-input pl-[30px] pr-8"
             />
-            <kbd className="pointer-events-none absolute right-[9px] top-1/2 -translate-y-1/2 rounded-[4px] border border-boss-border-strong px-[5px] py-px font-boss-mono text-[10px] text-boss-text-muted">
+            <kbd className="pointer-events-none absolute right-[9px] top-1/2 hidden -translate-y-1/2 border border-boss-border px-[5px] py-px font-boss-head text-[11px] text-boss-text-muted sm:block">
               /
             </kbd>
           </div>
         )}
 
-        {/* 우측 액션 */}
-        <div className="flex flex-none items-center gap-1.5">
-          <Link
-            href="/boss/help"
-            className="hidden rounded-chip p-1.5 !text-boss-text-muted transition-colors duration-[120ms] ease-out hover:bg-boss-elevated hover:!text-boss-text md:inline-flex"
-            aria-label="도움말"
-          >
-            <HelpCircle size={16} />
+        <Link
+          href="/boss/notifications"
+          aria-label="알림"
+          title="알림"
+          className={`grid h-[34px] w-[34px] place-items-center border transition-colors ${
+            pathname?.startsWith('/boss/notifications')
+              ? 'border-boss-primary bg-boss-elevated !text-boss-primary'
+              : 'border-boss-border bg-boss-surface !text-boss-text-dim hover:border-boss-border-hover hover:!text-boss-text'
+          }`}
+        >
+          <Bell size={15} strokeWidth={1.75} />
+        </Link>
+
+        {meta.secondary && (
+          <Link href={meta.secondary.href} className="boss-btn boss-btn-md boss-btn-secondary">
+            {meta.secondary.label}
           </Link>
-          <Link
-            href="/boss/notifications"
-            className="rounded-chip p-1.5 !text-boss-text-muted transition-colors duration-[120ms] ease-out hover:bg-boss-elevated hover:!text-boss-text"
-            aria-label="알림"
-          >
-            <Bell size={16} />
+        )}
+        {meta.action && (
+          <Link href={meta.action.href} className="boss-btn boss-btn-md boss-btn-primary">
+            {meta.action.label}
           </Link>
-
-          {meta.secondary && (
-            <Link
-              href={meta.secondary.href}
-              className="boss-btn boss-btn-md boss-btn-secondary ml-1 hidden md:inline-flex"
-            >
-              {meta.secondary.label}
-            </Link>
-          )}
-          {meta.action && (
-            <Link href={meta.action.href} className="boss-btn boss-btn-md boss-btn-primary ml-0.5">
-              {meta.action.label}
-            </Link>
-          )}
-        </div>
-      </header>
-
-      {/* 모바일 내비게이션 오버레이 */}
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setMobileNavOpen(false)} />
-          <nav className="boss-scroll absolute left-0 top-0 h-full w-[260px] overflow-y-auto border-r border-boss-border bg-boss-rail px-3 py-4">
-            <div className="mb-[18px] flex items-center justify-between px-2">
-              <Link
-                href="/boss"
-                className="flex items-center gap-[9px]"
-                onClick={() => setMobileNavOpen(false)}
-              >
-                <span className="h-[22px] w-[22px] rounded-[6px] bg-boss-primary" />
-                <span className="text-[16px] font-bold tracking-[-0.01em] !text-boss-text">
-                  도배르만
-                </span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setMobileNavOpen(false)}
-                className="rounded-chip p-1.5 text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
-                aria-label="메뉴 닫기"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {SECTIONS.map((section, idx) => (
-              <div key={section.title} className={idx > 0 ? 'mt-[18px]' : ''}>
-                <p className="boss-mono-label mb-1.5 px-[9px]">{section.title}</p>
-                <div className="flex flex-col gap-0.5">
-                  {section.items.map(({ href, label, icon: Icon, exact, exclude }) => {
-                    const active = isNavActive(pathname, href, exact, exclude);
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setMobileNavOpen(false)}
-                        // 모바일 터치 타겟 44px 이상 (시안 모바일 규칙)
-                        className={`flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-[9px] py-2 text-[13px] transition-colors duration-[120ms] ease-out ${
-                          active
-                            ? 'bg-[var(--boss-ac-dim)] font-bold !text-white shadow-[inset_0_0_0_1px_rgb(var(--boss-border-strong))]'
-                            : 'font-medium !text-boss-text-tertiary hover:bg-boss-hover hover:!text-white'
-                        }`}
-                      >
-                        <Icon
-                          size={16}
-                          className={active ? 'text-boss-primary' : 'opacity-75'}
-                        />
-                        <span className="truncate">{label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </nav>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+    </header>
   );
 }

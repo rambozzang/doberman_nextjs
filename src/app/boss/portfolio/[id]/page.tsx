@@ -1,34 +1,32 @@
 'use client';
 
-// 사장님 포트폴리오 상세 — 컴팩트 B2B 레이아웃
+// 사장님 포트폴리오 상세 — Industry 패턴
 // - 공개/비공개 토글 (PUT /portfolios/{id}/toggle-public)
-// - 삭제 (DELETE /portfolios/{id})
-// - 시공 전/후 이미지 그리드, 외부 링크
+// - 삭제 (DELETE /portfolios/{id}) — 되돌릴 수 없으므로 ConfirmDialog 를 거친다
+//
+// 좌 본문(사진 · 설명 · 외부 링크 패널) + 우 요약 패널(DescRow + 액션) 2열.
+// 화면 제목은 셸 헤더(← 포트폴리오)가 그리므로 본문에는 사례 제목만 둔다.
+
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { bossPortfolioApi } from '@/lib/api/boss/portfolio';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossPortfolioItem, PortfolioExternalLink } from '@/types/boss-portfolio';
-import { PageHeader, Card, Button, Badge, EmptyState, ListTabs } from '@/components/boss/ui';
 import {
-  Eye,
-  EyeOff,
-  Trash2,
-  Pencil,
-  MapPin,
-  Ruler,
-  Calendar,
-  Clock,
-  Wallet,
-  Building2,
-  Layers,
-  FileText,
-  Image as ImageIcon,
-  ExternalLink,
-  Loader2,
-} from 'lucide-react';
+  AlertBanner,
+  Button,
+  ButtonLink,
+  ConfirmDialog,
+  DescRow,
+  EmptyState,
+  ListTabs,
+  Panel,
+  Skeleton,
+  StatusPill,
+  TagPill,
+} from '@/components/boss/ui';
+import { Eye, EyeOff, Trash2, Image as ImageIcon, ExternalLink } from 'lucide-react';
 
 function normalizeIsPublic(v: BossPortfolioItem['isPublic']): boolean {
   if (typeof v === 'boolean') return v;
@@ -75,6 +73,7 @@ export default function BossPortfolioDetailPage() {
   const [tab, setTab] = useState<Tab>('after');
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -142,11 +141,9 @@ export default function BossPortfolioDetailPage() {
     }
   };
 
+  // 확인은 ConfirmDialog 가 맡는다 — 여기서는 확정된 뒤의 처리만
   const handleDelete = async () => {
     if (!item) return;
-    if (!confirm('이 포트폴리오를 삭제하시겠습니까?\n삭제된 포트폴리오는 복구할 수 없습니다.')) {
-      return;
-    }
     const userInfo = BossAuthManager.getUserInfo();
     const custId = userInfo?.userId;
     if (!custId) {
@@ -171,124 +168,67 @@ export default function BossPortfolioDetailPage() {
 
   const images = tab === 'before' ? before : after;
 
-  return (
-    <div className="space-y-5">
-      <PageHeader
-        title="포트폴리오 상세"
-        breadcrumbs={[{ label: '포트폴리오', href: '/boss/portfolio' }, { label: '상세' }]}
-        actions={
-          item ? (
-            <>
-              <Button variant="secondary" onClick={handleToggle} disabled={toggling}>
-                {toggling ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : isPublic ? (
-                  <EyeOff size={13} />
-                ) : (
-                  <Eye size={13} />
-                )}
-                {isPublic ? '비공개로 전환' : '공개로 전환'}
-              </Button>
-              <Button variant="danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                삭제
-              </Button>
-              <Link href="/boss/portfolio/new">
-                <Button variant="ghost" icon={Pencil}>
-                  새 등록
-                </Button>
-              </Link>
-            </>
-          ) : undefined
+  if (loading) {
+    return (
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="boss-card p-5">
+          <Skeleton className="h-4 w-32" />
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square" />
+            ))}
+          </div>
+        </div>
+        <div className="boss-card p-5">
+          <Skeleton className="h-5 w-3/4" />
+          <div className="mt-4 flex flex-col gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-3.5 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <AlertBanner
+        tone="bad"
+        action={
+          <ButtonLink href="/boss/portfolio" variant="secondary" size="sm">
+            목록으로
+          </ButtonLink>
+        }
+      >
+        {error}
+      </AlertBanner>
+    );
+  }
+
+  if (!item) {
+    return (
+      <EmptyState
+        icon={ImageIcon}
+        title="포트폴리오를 찾을 수 없습니다"
+        description="삭제되었거나 접근 권한이 없는 사례입니다."
+        action={
+          <ButtonLink href="/boss/portfolio" variant="primary" size="sm">
+            목록으로
+          </ButtonLink>
         }
       />
+    );
+  }
 
-      {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <Card>
-          <div className="flex h-40 items-center justify-center text-boss-text-muted">
-            <Loader2 size={18} className="mr-2 animate-spin" /> 불러오는 중...
-          </div>
-        </Card>
-      ) : item ? (
-        <>
-          {/* 개요 카드 */}
-          <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Badge tone={isPublic ? 'emerald' : 'default'}>
-                  {isPublic ? <Eye size={11} /> : <EyeOff size={11} />}
-                  {isPublic ? '공개' : '비공개'}
-                </Badge>
-                {item.buildingType && <Badge tone="sky">{item.buildingType}</Badge>}
-                <span className="text-xs text-boss-text-muted">#{item.id}</span>
-              </div>
-              <h2 className="text-lg font-semibold text-boss-text">{item.title}</h2>
-              <p className="mt-1 text-sm text-boss-text-muted">
-                작성일: {item.createdAt ? formatDate(item.createdAt) : '-'}
-              </p>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="text-center">
-                <p className="text-xs text-boss-text-muted">면적</p>
-                <p className="font-semibold text-boss-text">
-                  {item.area != null ? `${Math.round(item.area)}평` : '-'}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-boss-text-muted">비용</p>
-                <p className="font-semibold text-boss-text">
-                  {item.cost != null ? moneyFormat(item.cost) : '-'}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* 정보 */}
-          <Section title="정보" icon={FileText}>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-              <Info label="카테고리" value={item.buildingType} icon={Building2} />
-              <Info label="지역" value={item.region} icon={MapPin} />
-              <Info
-                label="면적"
-                value={item.area != null ? `${Math.round(item.area)}평` : undefined}
-                icon={Ruler}
-              />
-              <Info label="벽지" value={item.wallpaperType} icon={Layers} />
-              <Info
-                label="비용"
-                value={item.cost != null ? moneyFormat(item.cost) : undefined}
-                icon={Wallet}
-              />
-              <Info
-                label="작업일"
-                value={item.workDate ? formatDate(item.workDate) : undefined}
-                icon={Calendar}
-              />
-              <Info
-                label="작성일"
-                value={item.createdAt ? formatDate(item.createdAt) : undefined}
-                icon={Clock}
-              />
-              <Info label="공개여부" value={isPublic ? '공개' : '비공개'} icon={isPublic ? Eye : EyeOff} />
-            </div>
-            {item.description && (
-              <div className="border-t border-boss-border pt-3">
-                <p className="mb-1 text-xs text-boss-text-muted">설명</p>
-                <p className="whitespace-pre-line text-sm leading-relaxed text-boss-text-secondary">
-                  {item.description}
-                </p>
-              </div>
-            )}
-          </Section>
-
-          {/* 사진 */}
-          <Section title="사진" icon={ImageIcon}>
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* ── 좌: 본문 ── */}
+      <div className="flex min-w-0 flex-col gap-4">
+        <Panel
+          kicker="사진"
+          title={tab === 'after' ? '시공 후' : '시공 전'}
+          right={
             <ListTabs
               tabs={[
                 { key: 'after', label: '시공 후', count: after.length },
@@ -297,123 +237,174 @@ export default function BossPortfolioDetailPage() {
               active={tab}
               onChange={setTab}
             />
-            {images.length === 0 ? (
-              <EmptyState icon={ImageIcon} title="등록된 사진이 없습니다" />
-            ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                {images.map((src, idx) => (
+          }
+        >
+          {images.length === 0 ? (
+            <p className="px-4 py-10 text-center text-[13px] text-boss-text-secondary">
+              {tab === 'after' ? '시공 후' : '시공 전'} 사진이 없습니다.
+              {tab === 'after' && before.length > 0 && ' 시공 전 탭을 확인해 보세요.'}
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
+              {images.map((src, idx) => (
+                <a
+                  key={`${src}-${idx}`}
+                  href={src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="boss-placeholder relative block aspect-square overflow-hidden border border-boss-border transition-colors duration-[120ms] ease-out hover:border-boss-border-hover"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`${tab === 'after' ? '시공 후' : '시공 전'} ${idx + 1}`} className="h-full w-full object-cover" />
+                  <span className="absolute bottom-1 right-1 bg-boss-text/75 px-1 py-px font-boss-head text-[10px] tabular-nums text-boss-bg">
+                    {idx + 1}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel kicker="설명" title="시공 내용">
+          {item.description ? (
+            <p className="whitespace-pre-line text-[14px] leading-[1.7] text-boss-text-body">
+              {item.description}
+            </p>
+          ) : (
+            <p className="text-[13px] text-boss-text-secondary">작성한 설명이 없습니다.</p>
+          )}
+        </Panel>
+
+        {links.length > 0 && (
+          <div className="boss-card-content">
+            <div className="boss-card-head">
+              <h3 className="boss-section-title">외부 링크</h3>
+              <div className="min-w-0 flex-1" />
+              <span className="font-boss-head text-[13px] font-semibold tabular-nums text-boss-text-muted">
+                {links.length}건
+              </span>
+            </div>
+            <ul>
+              {links.map((link, idx) => (
+                <li key={`${link.url}-${idx}`}>
                   <a
-                    key={`${src}-${idx}`}
-                    href={src}
+                    href={link.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-boss-border bg-boss-bg"
+                    className="boss-row boss-row-hover flex items-center gap-3 !text-boss-text hover:!text-boss-text"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={src}
-                      alt={`${tab}-${idx}`}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    <span className="boss-placeholder flex h-10 w-10 flex-none items-center justify-center overflow-hidden border border-boss-border text-boss-text-muted">
+                      {link.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={link.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <ExternalLink size={14} strokeWidth={1.5} />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-semibold">
+                        {link.title || '외부 링크'}
+                      </span>
+                      <span className="block truncate text-[12px] text-boss-text-muted">{link.url}</span>
+                    </span>
+                    <ExternalLink size={13} className="flex-none text-boss-text-ghost" />
                   </a>
-                ))}
-              </div>
-            )}
-          </Section>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
-          {/* 외부 링크 */}
-          {links.length > 0 && (
-            <Section title={`외부 링크 (${links.length})`} icon={ExternalLink}>
-              <ul className="space-y-2">
-                {links.map((link, idx) => (
-                  <li key={`${link.url}-${idx}`}>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-3 rounded-lg border border-boss-border bg-boss-elevated/30 p-3 transition-colors hover:border-boss-border-strong"
-                    >
-                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-boss-elevated text-boss-text-muted">
-                        {link.thumbnailUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={link.thumbnailUrl} alt="thumb" className="h-full w-full object-cover" />
-                        ) : (
-                          <ExternalLink size={16} />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-sm font-medium text-boss-text">
-                          {link.title || '외부 링크'}
-                        </p>
-                        <p className="line-clamp-1 text-xs text-boss-text-muted">{link.url}</p>
-                      </div>
-                      <ExternalLink size={14} className="text-boss-text-muted" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </Section>
+      {/* ── 우: 요약 + 액션 ── */}
+      <aside className="flex min-w-0 flex-col gap-4">
+        <div className="boss-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="boss-kicker">사례 #{item.id}</p>
+              <h2 className="boss-section-title mt-0.5 break-keep">{item.title || '제목 없음'}</h2>
+            </div>
+            <StatusPill tone={isPublic ? 'ok' : 'neutral'}>{isPublic ? '공개' : '비공개'}</StatusPill>
+          </div>
+
+          {(item.buildingType || item.wallpaperType) && (
+            <div className="mt-2.5 flex flex-wrap gap-1">
+              {item.buildingType && <TagPill>{item.buildingType}</TagPill>}
+              {item.wallpaperType && <TagPill>{item.wallpaperType}</TagPill>}
+            </div>
           )}
-        </>
-      ) : (
-        !error && (
-          <Card>
-            <EmptyState
-              icon={ImageIcon}
-              title="포트폴리오를 찾을 수 없습니다"
-              description="삭제되었거나 접근 권한이 없는 포트폴리오입니다."
-              action={
-                <Link href="/boss/portfolio">
-                  <Button variant="primary" size="sm">
-                    목록으로
-                  </Button>
-                </Link>
+
+          <dl className="mt-3 border-t border-boss-border pt-1">
+            <DescRow label="지역" value={item.region ?? '-'} />
+            <DescRow
+              label="면적"
+              value={
+                item.area != null ? (
+                  <span className="font-boss-head tabular-nums">{Math.round(item.area)}평</span>
+                ) : (
+                  '-'
+                )
               }
             />
-          </Card>
-        )
-      )}
-    </div>
-  );
-}
+            <DescRow
+              label="시공 비용"
+              value={<span className="font-boss-head tabular-nums">{moneyFormat(item.cost)}</span>}
+            />
+            <DescRow
+              label="시공일"
+              value={<span className="font-boss-head tabular-nums">{formatDate(item.workDate)}</span>}
+            />
+            <DescRow
+              label="등록일"
+              value={<span className="font-boss-head tabular-nums">{formatDate(item.createdAt)}</span>}
+            />
+            <DescRow
+              label="사진"
+              value={
+                <span className="font-boss-head tabular-nums">
+                  전 {before.length} · 후 {after.length}
+                </span>
+              }
+            />
+          </dl>
 
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
-        <Icon size={15} className="text-boss-primary" />
-        {title}
-      </h3>
-      <div className="space-y-3">{children}</div>
-    </Card>
-  );
-}
+          <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+            {isPublic
+              ? '고객 검색 결과에 노출되고 있습니다.'
+              : '비공개 상태라 고객에게 보이지 않습니다.'}
+          </p>
 
-function Info({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value?: string | number | null;
-  icon: React.ElementType;
-}) {
-  if (value === undefined || value === null || value === '') return null;
-  return (
-    <div className="flex items-start gap-2.5 text-sm">
-      <Icon size={14} className="mt-0.5 text-boss-text-muted" />
-      <div className="min-w-0">
-        <p className="text-xs text-boss-text-muted">{label}</p>
-        <p className="truncate text-boss-text">{value}</p>
-      </div>
+          <div className="mt-4 flex flex-col gap-2 border-t border-boss-border pt-4">
+            <Button
+              variant="secondary"
+              icon={isPublic ? EyeOff : Eye}
+              onClick={handleToggle}
+              disabled={toggling}
+              className="w-full"
+            >
+              {toggling ? '전환 중…' : isPublic ? '비공개로 전환' : '공개로 전환'}
+            </Button>
+            <Button
+              variant="ghost"
+              icon={Trash2}
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+              className="w-full !text-boss-error"
+            >
+              {deleting ? '삭제 중…' : '사례 삭제'}
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="포트폴리오 삭제"
+        description={`'${item.title || '이 사례'}'을(를) 삭제합니다. 삭제된 사례는 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

@@ -1,11 +1,16 @@
 'use client';
 
-// 사장님 약관 동의 페이지 (회원가입 전 단계)
+// 약관 동의 (회원가입 전 단계) — Industry 패턴 (AuthFrame 380px 열)
 // Flutter 원본: lib/app/login/agree_page.dart
+//
+// 패널 안에 "전체 동의" 한 줄 → 항목별 CheckLine(필수/선택 태그 + 약관 보기 링크).
+// 필수 항목이 모두 켜져야 계속 버튼이 열린다. 동의 상태 처리는 그대로다.
+
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CheckSquare, Square, ChevronRight } from 'lucide-react';
+import { Button, CheckLine, Tag } from '@/components/boss/ui';
+import { AuthFrame } from '@/components/boss/AuthFrame';
 
 interface AgreementItem {
   id: string;
@@ -73,89 +78,78 @@ export default function BossAgreePage() {
     router.push('/boss/signup');
   }
 
+  const requiredTotal = AGREEMENTS.filter((a) => a.required).length;
+  const requiredDone = AGREEMENTS.filter((a) => a.required && checked[a.id]).length;
+
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/boss/login"
-          className="inline-flex items-center gap-1.5 text-sm text-boss-text-muted hover:text-boss-text"
-        >
-          <ArrowLeft size={14} /> 로그인
-        </Link>
-        <h1 className="text-xl font-bold text-boss-text">약관 동의</h1>
-        <div className="w-10" />
-      </div>
+    <AuthFrame
+      title="약관 동의"
+      description="가입에 필요한 약관입니다. 필수 항목에 동의하면 다음으로 넘어갑니다"
+      footer={
+        <>
+          이미 계정이 있으신가요?{' '}
+          <Link
+            href="/boss/login"
+            className="font-semibold !text-boss-primary underline underline-offset-2"
+          >
+            로그인
+          </Link>
+        </>
+      }
+    >
+      <div className="boss-card p-6">
+        {/* 전체 동의 — 굵게, 아래 구분선 */}
+        <div className="flex items-center justify-between gap-3 border-b border-boss-border pb-4">
+          <CheckLine checked={allChecked} onChange={toggleAll}>
+            <span className="font-bold">전체 동의</span>
+          </CheckLine>
+          <span className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
+            필수 {requiredDone} / {requiredTotal}
+          </span>
+        </div>
 
-      <div className="rounded-2xl border border-boss-primary/20 bg-gradient-to-br from-boss-primary/10 to-slate-900/40 p-5">
-        <h2 className="text-base font-bold text-boss-text">도베르만 서비스 가입</h2>
-        <p className="mt-1 text-sm leading-relaxed text-boss-text-secondary">
-          서비스 시작 및 가입을 위해 먼저 가입 및 정보 제공에 동의해 주세요.
-        </p>
-      </div>
-
-      <div className="space-y-3 rounded-2xl border border-boss-border bg-boss-surface p-5">
-        <button
-          type="button"
-          onClick={toggleAll}
-          className="flex w-full items-center gap-3 rounded-xl border border-boss-primary/30 bg-boss-primary/10 p-4 text-left hover:bg-boss-primary/15"
-        >
-          {allChecked ? (
-            <CheckSquare size={20} className="text-boss-primary" />
-          ) : (
-            <Square size={20} className="text-boss-text-muted" />
-          )}
-          <span className="text-sm font-bold text-boss-text">전체 동의</span>
-        </button>
-
-        <div className="divide-y divide-slate-800/70">
+        <ul>
           {AGREEMENTS.map((a) => {
             const isOn = !!checked[a.id];
             return (
-              <div key={a.id} className="flex items-center gap-3 py-3">
-                <button
-                  type="button"
-                  onClick={() => toggle(a.id)}
-                  className="shrink-0"
-                  aria-label={a.title}
-                >
-                  {isOn ? (
-                    <CheckSquare size={18} className="text-boss-primary" />
-                  ) : (
-                    <Square size={18} className="text-boss-text-muted" />
-                  )}
-                </button>
-                <div className="min-w-0 flex-1 text-sm text-boss-text">
-                  <span
-                    className={
-                      a.required ? 'text-boss-primary font-semibold' : 'text-boss-text-muted font-semibold'
-                    }
-                  >
-                    ({a.required ? '필수' : '선택'})
-                  </span>{' '}
-                  {a.title}
-                </div>
+              <li
+                key={a.id}
+                className="flex items-center justify-between gap-3 border-b border-boss-border-row py-3 last:border-b-0"
+              >
+                <CheckLine checked={isOn} onChange={() => toggle(a.id)}>
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
+                    <Tag tone={a.required ? 'info' : 'neutral'}>{a.required ? '필수' : '선택'}</Tag>
+                    {a.title}
+                  </span>
+                </CheckLine>
+                {/* 약관 보기는 label 밖에 둔다 — 안에 두면 링크를 눌러도 체크가 같이 바뀐다 */}
                 {a.href && (
                   <Link
                     href={a.href}
-                    className="inline-flex items-center gap-0.5 text-xs text-boss-text-muted hover:text-boss-primary"
+                    className="shrink-0 text-[12px] font-semibold text-boss-primary underline underline-offset-2"
                   >
-                    보기 <ChevronRight size={12} />
+                    보기
                   </Link>
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
-      </div>
+        </ul>
 
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!requiredChecked}
-        className="h-12 w-full rounded-xl bg-boss-primary text-sm font-bold text-boss-text transition hover:bg-boss-primary-hover disabled:cursor-not-allowed disabled:bg-boss-elevated disabled:text-boss-text-muted"
-      >
-        동의하고 계속하기
-      </button>
-    </div>
+        <Button
+          variant="primary"
+          onClick={submit}
+          disabled={!requiredChecked}
+          className="mt-5 w-full py-3"
+        >
+          동의하고 계속하기
+        </Button>
+        {!requiredChecked && (
+          <p className="mt-2 text-center text-[12px] text-boss-text-secondary">
+            필수 항목 {requiredTotal - requiredDone}개에 더 동의해야 합니다.
+          </p>
+        )}
+      </div>
+    </AuthFrame>
   );
 }

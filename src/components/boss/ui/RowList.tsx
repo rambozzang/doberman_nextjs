@@ -1,9 +1,9 @@
 'use client';
 
-// 사장님 영역 공용 컴팩트 행 리스트 (RowList)
+// 사장님 영역 공용 컴팩트 행 리스트 (RowList) — Industry 패턴
 // - 한 줄/두 줄 행을 촘촘하게 나열하는 모바일 친화적 리스트
 // - 행 우측에 인라인 빠른 액션(버튼)을 둬 조작을 줄임
-// - 그리드 토글 없이 리스트가 기본 UI
+// - 패널(테두리 + #f5f5f8) 안의 행, hover 는 accent-100
 
 import { type ReactNode } from 'react';
 import Link from 'next/link';
@@ -19,17 +19,11 @@ export function RowList({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <div
-      className={`divide-y divide-boss-border overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss ${className}`}
-    >
-      {children}
-    </div>
-  );
+  return <div className={`boss-card-content divide-y divide-boss-border-row ${className}`}>{children}</div>;
 }
 
 // ───────────────────────────────────────────
-// RowThumb — 좌측 썸네일/아이콘
+// RowThumb — 좌측 썸네일/아이콘 (사각)
 // ───────────────────────────────────────────
 export function RowThumb({
   src,
@@ -39,20 +33,20 @@ export function RowThumb({
 }: {
   src?: string | null;
   alt?: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   className?: string;
 }) {
   return (
     <div
-      className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-boss-elevated text-boss-text-muted ${className}`}
+      className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden border border-boss-border bg-boss-bg text-boss-text-muted ${className}`}
     >
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={alt} className="h-full w-full object-cover" />
       ) : Icon ? (
-        <Icon size={18} />
+        <Icon size={18} strokeWidth={1.5} />
       ) : (
-        <ImageOff size={18} />
+        <ImageOff size={18} strokeWidth={1.5} />
       )}
     </div>
   );
@@ -88,9 +82,9 @@ export function RowItem({
     <>
       {leading}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-boss-text">{title}</p>
+        <p className="truncate text-[14px] font-semibold text-boss-text">{title}</p>
         {subtitle && (
-          <p className="mt-0.5 truncate text-xs text-boss-text-muted">{subtitle}</p>
+          <p className="mt-0.5 truncate text-[12.5px] text-boss-text-secondary">{subtitle}</p>
         )}
         {tags && <div className="mt-1.5 flex flex-wrap items-center gap-1">{tags}</div>}
       </div>
@@ -98,7 +92,7 @@ export function RowItem({
   );
 
   const main = href ? (
-    <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
+    <Link href={href} className="flex min-w-0 flex-1 items-center gap-3 !text-boss-text">
       {body}
     </Link>
   ) : onClick ? (
@@ -122,14 +116,18 @@ export function RowItem({
 
   return (
     <div
-      className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-boss-elevated/40 sm:px-4 sm:py-3 ${className}`}
+      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-boss-elevated sm:px-5 ${className}`}
     >
       {main}
 
       <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-        {meta && <div className="text-right text-xs text-boss-text-muted">{meta}</div>}
+        {meta && (
+          <div className="text-right font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
+            {meta}
+          </div>
+        )}
         {actions && (
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
             {actions}
           </div>
         )}
@@ -139,7 +137,7 @@ export function RowItem({
 }
 
 // ───────────────────────────────────────────
-// RowAction — 우측 인라인 액션 버튼
+// RowAction — 우측 인라인 액션 버튼 (참조 ghost / secondary)
 // ───────────────────────────────────────────
 export function RowAction({
   icon: Icon,
@@ -149,21 +147,17 @@ export function RowAction({
   variant = 'ghost',
   hideLabel = false,
 }: {
-  icon?: React.ComponentType<{ size?: number }>;
+  icon?: React.ComponentType<{ size?: number; strokeWidth?: number }>;
   label: string;
   href?: string;
   onClick?: () => void;
   variant?: 'ghost' | 'primary';
   hideLabel?: boolean;
 }) {
-  const cls = `inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors ${
-    variant === 'primary'
-      ? 'bg-boss-primary/10 text-boss-primary hover:bg-boss-primary/20'
-      : 'text-boss-text-secondary hover:bg-boss-elevated hover:text-boss-text'
-  }`;
+  const cls = `boss-btn boss-btn-sm ${variant === 'primary' ? 'boss-btn-secondary' : 'boss-btn-ghost'}`;
   const inner = (
     <>
-      {Icon && <Icon size={13} />}
+      {Icon && <Icon size={13} strokeWidth={1.75} />}
       {!hideLabel && <span>{label}</span>}
     </>
   );
@@ -188,7 +182,8 @@ export function RowChevron() {
   return (
     <ChevronRight
       size={16}
-      className="shrink-0 text-boss-text-muted transition-colors group-hover:text-boss-text-secondary"
+      strokeWidth={1.75}
+      className="shrink-0 text-boss-text-ghost transition-colors group-hover:text-boss-text-secondary"
     />
   );
 }

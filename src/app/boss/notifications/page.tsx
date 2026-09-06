@@ -1,15 +1,22 @@
 'use client';
 
-// 사장님 알림(Notifications) 목록 페이지
+// 사장님 알림 목록 — Industry 패턴 (agent.opentohome.com)
 // Flutter 참조:
 //   - lib/app/setting/noti_page.dart : BBS list 를 typeCd='NOTI' 로 호출
 //   - lib/repo/bbs/bbs_repo.dart : list / detail / delete / viewCount
 //
 // 백엔드 알림은 BBS(`/bbs/...`) 의 typeCd='NOTI' 를 재사용하며
 // 하위 카테고리(typeDtCd) 로 공지(NOTI)/광고(AD)/업데이트(UPDATE) 를 구분한다.
+//
+//   필터 줄 : ListTabs(카테고리) + 검색 + 우측 "안 읽음 n" · "전체 n건" · 모두 읽음 · 새로고침
+//   표      : 유형 Tag · 제목 · 내용 · 조회 · 시간 · 삭제. 읽지 않은 행은 좌측 3px accent + 제목 굵게
+//   첫 조회 실패(AlertBanner + 다시 시도)와 0건(검색/카테고리 안내)을 구분한다. 삭제는 ConfirmDialog.
+//
+// 화면 제목은 셸 헤더(PAGE_META)가 그린다.
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, RefreshCw, CheckCheck, Inbox, AlertCircle } from 'lucide-react';
+import { RefreshCw, CheckCheck, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   bossNotificationsApi,
@@ -22,21 +29,20 @@ import type {
   BossNotificationListResponse,
 } from '@/types/boss-notifications';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
   ListTabs,
   DataTable,
-  Badge,
+  Tag,
   EmptyState,
   Pagination,
-  Skeleton,
+  RowSkeleton,
+  ContentCard,
   RowActions,
   ConfirmDialog,
+  AlertBanner,
+  type StatusTone,
 } from '@/components/boss/ui';
-
-type BadgeTone = 'default' | 'emerald' | 'amber' | 'sky';
 
 const PAGE_SIZE = 20;
 
@@ -47,14 +53,14 @@ const CATEGORIES: BossNotificationCategoryMeta[] = [
   { code: 'UPDATE', label: '업데이트' },
 ];
 
-function categoryBadge(item: BossNotificationItem): { label: string; tone: BadgeTone } {
+function categoryTag(item: BossNotificationItem): { label: string; tone: StatusTone } {
   switch (item.typeDtCd) {
     case 'AD':
-      return { label: item.typeDtNm ?? '광고', tone: 'amber' };
+      return { label: item.typeDtNm ?? '광고', tone: 'warn' };
     case 'UPDATE':
-      return { label: item.typeDtNm ?? '업데이트', tone: 'sky' };
+      return { label: item.typeDtNm ?? '업데이트', tone: 'info' };
     default:
-      return { label: item.typeDtNm ?? '공지', tone: 'emerald' };
+      return { label: item.typeDtNm ?? '공지', tone: 'ok' };
   }
 }
 
@@ -198,86 +204,113 @@ export default function BossNotificationsPage() {
 
   const isFiltering = keyword.trim().length > 0;
   const pageNum = page + 1;
+  const categoryLabel = CATEGORIES.find((c) => c.code === category)?.label ?? '전체';
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="알림"
-        description="공지·광고·업데이트 등 받은 모든 알림을 확인하세요."
-        actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={CheckCheck}
-              onClick={markAllRead}
-              disabled={items.length === 0}
-            >
-              모두 읽음
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
-              onClick={() => load(page, category)}
-              disabled={loading}
-            >
-              새로고침
-            </Button>
-          </div>
-        }
-      />
-
-      <Toolbar>
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={CATEGORIES.map((c) => ({ key: c.code, label: c.label }))}
+          active={category}
+          onChange={onChangeCategory}
+        />
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="제목·내용 검색"
-          className="w-full max-w-xs"
+          placeholder="제목 · 내용 검색"
+          className="w-full sm:w-[240px]"
+          hint={false}
         />
-        {unreadCount > 0 && (
-          <Badge tone="emerald">
-            <Bell size={10} /> {unreadCount}개 안 읽음
-          </Badge>
-        )}
-      </Toolbar>
-
-      <ListTabs
-        tabs={CATEGORIES.map((c) => ({ key: c.code, label: c.label }))}
-        active={category}
-        onChange={onChangeCategory}
-      />
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {unreadCount > 0 && <Tag tone="info">안 읽음 {unreadCount}</Tag>}
+          <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+            {loading ? '불러오는 중…' : `전체 ${filtered.length}건`}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={CheckCheck}
+            onClick={markAllRead}
+            disabled={items.length === 0 || unreadCount === 0}
+          >
+            모두 읽음
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
+            onClick={() => load(page, category)}
+            disabled={loading}
+          >
+            새로고침
+          </Button>
+        </div>
+      </div>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={() => load(page, category)}>
+              다시 시도
+            </Button>
+          }
+        >
+          {error}
+        </AlertBanner>
       )}
 
       {loading && items.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
+        <ContentCard>
+          <RowSkeleton rows={6} />
+        </ContentCard>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="표시할 알림이 없습니다"
-          description="새로운 공지·광고·업데이트가 오면 여기에 표시됩니다."
-        />
+        error ? null : (
+          <EmptyState
+            icon={Inbox}
+            title={
+              isFiltering
+                ? `"${keyword.trim()}" 에 맞는 알림이 없습니다`
+                : category === 'ALL'
+                  ? '받은 알림이 없습니다'
+                  : `${categoryLabel} 알림이 없습니다`
+            }
+            description={
+              isFiltering
+                ? '검색은 현재 페이지 안에서만 찾습니다. 검색어를 지우거나 다른 페이지를 확인하세요.'
+                : category === 'ALL'
+                  ? '공지 · 광고 · 업데이트가 오면 여기에 쌓입니다.'
+                  : "다른 카테고리에 있을 수 있습니다. '전체'로 바꿔 보세요."
+            }
+            action={
+              isFiltering ? (
+                <Button variant="secondary" size="sm" onClick={() => setKeyword('')}>
+                  검색어 지우기
+                </Button>
+              ) : category !== 'ALL' ? (
+                <Button variant="secondary" size="sm" onClick={() => onChangeCategory('ALL')}>
+                  전체 보기
+                </Button>
+              ) : undefined
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
             <tr>
-              <th className="whitespace-nowrap">유형</th>
+              <th>유형</th>
               <th>제목</th>
               <th>내용</th>
-              <th className="text-center whitespace-nowrap">조회</th>
-              <th className="whitespace-nowrap">등록일</th>
+              <th className="num">조회</th>
+              <th>시간</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => {
-              const badge = categoryBadge(item);
+              const tag = categoryTag(item);
               void readVersion;
               const isRead = bossNotificationsReadStore.isRead(item.boardId);
               const summary = stripHtml(item.contents);
@@ -287,35 +320,33 @@ export default function BossNotificationsPage() {
                   className="cursor-pointer"
                   onClick={() => openDetail(item)}
                 >
-                  <td className="whitespace-nowrap">
-                    <Badge tone={badge.tone}>{badge.label}</Badge>
+                  <td
+                    className={`border-l-[3px] ${
+                      isRead ? 'border-l-transparent' : 'border-l-boss-primary'
+                    }`}
+                  >
+                    <Tag tone={tag.tone}>{tag.label}</Tag>
                   </td>
-                  <td>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={
-                          isRead
-                            ? 'text-boss-text-secondary'
-                            : 'font-medium text-boss-text'
-                        }
-                      >
-                        {item.subject ?? '(제목 없음)'}
-                      </span>
-                      {!isRead && <Badge tone="emerald">NEW</Badge>}
-                    </div>
-                  </td>
-                  <td className="max-w-xs">
-                    <span className="line-clamp-1 text-boss-text-muted">
-                      {summary || '-'}
+                  <td className="wrap max-w-[360px]">
+                    <span
+                      className={`line-clamp-1 ${
+                        isRead ? 'text-boss-text-secondary' : 'font-semibold text-boss-text'
+                      }`}
+                    >
+                      {!isRead && <span className="sr-only">읽지 않음 · </span>}
+                      {item.subject ?? '(제목 없음)'}
                     </span>
                   </td>
-                  <td className="text-center text-boss-text-secondary">
-                    {item.viewCnt ?? 0}
+                  <td className="wrap max-w-[320px]">
+                    <span className="line-clamp-1 text-[12.5px] text-boss-text-muted">
+                      {summary || '—'}
+                    </span>
                   </td>
-                  <td className="whitespace-nowrap text-xs text-boss-text-muted">
+                  <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
                     {relativeTime(item.crtDtm)}
                   </td>
-                  <td className="whitespace-nowrap text-right">
+                  <td className="text-right">
                     <RowActions
                       onDelete={() => setPendingDelete(item)}
                       deleting={deleting && pendingDelete?.boardId === item.boardId}
@@ -335,19 +366,17 @@ export default function BossNotificationsPage() {
           onChange={(p) => setPage(p - 1)}
           disabled={loading}
         />
-      ) : isFiltering ? (
-        <div className="flex justify-end border-t border-boss-border pt-3">
-          <span className="rounded-md bg-boss-elevated px-2 py-1 text-[11px] text-boss-text-muted">
-            현재 페이지 내 필터
-          </span>
-        </div>
+      ) : isFiltering && filtered.length > 0 ? (
+        <p className="text-right text-[12px] text-boss-text-muted">
+          검색은 현재 페이지({pageNum}페이지) 안에서만 찾습니다.
+        </p>
       ) : null}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="알림 삭제"
-        description={`'${pendingDelete?.subject ?? '선택한 알림'}'을(를) 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        title="알림을 삭제할까요?"
+        description={`'${pendingDelete?.subject ?? '선택한 알림'}' — 삭제한 알림은 되돌릴 수 없습니다.`}
         loading={deleting}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => void handleDelete()}

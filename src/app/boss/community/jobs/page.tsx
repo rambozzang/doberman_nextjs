@@ -1,36 +1,22 @@
 'use client';
 
-// 구인 / 구직 전용 메뉴
-import Link from 'next/link';
+// 구인 / 구직 전용 메뉴 — Industry 패턴
+// 목록 조판은 CommunityList(fixedCategory="JOB") 가 담당한다.
+// 화면 제목은 셸 헤더가 그리고, «구인/구직 등록» 은 필터 줄 우측에 둔다.
+
 import { CommunityList } from '@/components/boss/community/CommunityList';
-import { PageHeader } from '@/components/boss/ui';
-import { PenSquare, ArrowLeft } from 'lucide-react';
+import { ButtonLink } from '@/components/boss/ui';
+import { PenSquare } from 'lucide-react';
 
 export default function BossCommunityJobsPage() {
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="구인 / 구직"
-        description="인력을 구하거나 일자리를 찾아보세요."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/boss/community"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-boss-border bg-boss-elevated px-3 text-xs font-medium text-boss-text-secondary transition-colors hover:border-boss-border-strong hover:bg-boss-surface hover:text-boss-text"
-            >
-              <ArrowLeft size={13} /> 커뮤니티
-            </Link>
-            <Link
-              href="/boss/community/new?type=JOB"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-boss-primary px-3 text-xs font-medium text-boss-primary-foreground transition-colors hover:bg-boss-primary-hover"
-            >
-              <PenSquare size={13} /> 구인/구직 등록
-            </Link>
-          </div>
-        }
-      />
-
-      <CommunityList fixedCategory="JOB" />
-    </div>
+    <CommunityList
+      fixedCategory="JOB"
+      actions={
+        <ButtonLink href="/boss/community/new?type=JOB" variant="primary" size="sm" icon={PenSquare}>
+          구인 / 구직 등록
+        </ButtonLink>
+      }
+    />
   );
 }

@@ -1,6 +1,9 @@
 'use client';
 
-// 사장님 영수증 지출관리 — 월별 목록 페이지 (B2B 데이터 그리드)
+// 영수증 관리 — 월별 지출 목록 (Industry 패턴)
+//   필터 줄(월 이동 + 검색 + 새로고침 + 우측 n건 · 합계) → 좌 표(DataTable) + 우 월 요약(합계 · 카테고리별 Bar).
+//   화면 제목은 셸 헤더가 그린다. 첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
+//   월 요약(totalAmount · byCategory)은 API 응답을 그대로 쓴다 — 없는 지표는 만들지 않는다.
 // Flutter receipt_home_page.dart 포팅
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,13 +13,17 @@ import { bossReceiptApi } from '@/lib/api/boss/receipt';
 import type { MonthlySummary, ReceiptData } from '@/types/boss-receipt';
 import { categoryLabel, paymentLabel } from '@/types/boss-receipt';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
   DataTable,
-  Badge,
+  ContentCard,
+  Panel,
+  MetricBox,
+  Bar,
+  StatusPill,
   EmptyState,
+  AlertBanner,
+  RowSkeleton,
   Skeleton,
   RowActions,
   ConfirmDialog,
@@ -125,41 +132,54 @@ export default function BossReceiptListPage() {
     [filtered],
   );
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        eyebrow="영수증"
-        title="지출 관리"
-        description="영수증을 관리하고 월별 지출을 추적하세요."
-      />
+  // 카테고리별 요약 — 금액 큰 순, 최대 금액 기준 막대
+  const byCategory = useMemo(() => {
+    const list = [...(summary?.byCategory ?? [])].sort((a, b) => b.amount - a.amount);
+    const max = Math.max(...list.map((c) => c.amount), 1);
+    return list.map((c) => ({ ...c, pct: (c.amount / max) * 100 }));
+  }, [summary]);
 
-      <Toolbar>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ChevronLeft}
-          onClick={() => setYm(shiftYm(ym, -1))}
-          disabled={loading}
-        >
-          이전달
-        </Button>
-        <span className="min-w-[72px] text-center text-sm font-semibold text-boss-text">
-          {ymLabel(ym)}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setYm(shiftYm(ym, 1))}
-          disabled={loading}
-        >
-          다음달
-          <ChevronRight size={13} />
-        </Button>
+  const monthTotal = summary?.totalAmount ?? filteredTotal;
+  const isCurrentMonth = ym === currentYm();
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 — 월 이동 · 검색 · 새로고침 · 우측 n건 · 합계 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="inline-flex items-center border border-boss-border">
+          <button
+            type="button"
+            onClick={() => setYm(shiftYm(ym, -1))}
+            disabled={loading}
+            className="flex h-[34px] w-9 items-center justify-center text-boss-text-dim transition-colors hover:bg-boss-hover disabled:opacity-45"
+            aria-label="이전 달"
+          >
+            <ChevronLeft size={15} strokeWidth={1.75} />
+          </button>
+          <span className="min-w-[88px] border-x border-boss-border px-3 text-center font-boss-head text-[15px] font-semibold tabular-nums text-boss-text">
+            {ymLabel(ym)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setYm(shiftYm(ym, 1))}
+            disabled={loading}
+            className="flex h-[34px] w-9 items-center justify-center text-boss-text-dim transition-colors hover:bg-boss-hover disabled:opacity-45"
+            aria-label="다음 달"
+          >
+            <ChevronRight size={15} strokeWidth={1.75} />
+          </button>
+        </div>
+        {!isCurrentMonth && (
+          <Button variant="ghost" size="sm" onClick={() => setYm(currentYm())} disabled={loading}>
+            이번 달
+          </Button>
+        )}
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="거래처·카테고리 검색"
-          className="ml-auto w-full max-w-xs"
+          placeholder="거래처 · 카테고리 · 결제수단 검색"
+          className="w-full sm:w-72"
+          hint={false}
         />
         <Button
           variant="secondary"
@@ -170,96 +190,186 @@ export default function BossReceiptListPage() {
         >
           새로고침
         </Button>
-      </Toolbar>
+        <span
+          className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary"
+          aria-live="polite"
+        >
+          {loading && !summary ? (
+            '불러오는 중…'
+          ) : (
+            <>
+              전체 {filtered.length}건 ·{' '}
+              <span className="font-semibold text-boss-text">합계 {formatWon(filteredTotal)}</span>
+            </>
+          )}
+        </span>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          {error}
-        </div>
-      )}
-
-      {loading && !summary ? (
-        <Skeleton className="h-64 rounded-lg" />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title={keyword.trim() ? '검색 결과가 없습니다' : '이번 달 영수증이 없습니다'}
-          description={
-            keyword.trim()
-              ? '검색어를 변경해 보세요.'
-              : '모바일 앱에서 영수증을 촬영하면 여기에 표시됩니다.'
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button size="sm" variant="secondary" onClick={() => load(ym)} disabled={loading}>
+              다시 불러오기
+            </Button>
           }
-        />
-      ) : (
-        <DataTable>
-          <thead>
-            <tr>
-              <th className="whitespace-nowrap">날짜</th>
-              <th>거래처</th>
-              <th>카테고리</th>
-              <th className="whitespace-nowrap text-right">금액</th>
-              <th>결제수단</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((item, idx) => {
-              const id = item.id;
-              const goDetail = () => id != null && router.push(`/boss/receipt/${id}`);
-              return (
-                <tr
-                  key={id ?? idx}
-                  className={id != null ? 'cursor-pointer' : ''}
-                  onClick={goDetail}
-                >
-                  <td className="whitespace-nowrap text-boss-text-secondary">
-                    {fmtDate(item.txDate)}
-                  </td>
-                  <td>
-                    <span className="font-medium text-boss-text">
-                      {item.vendorName ?? '상호 없음'}
-                    </span>
-                  </td>
-                  <td>
-                    <Badge tone="default">{categoryLabel(item.category)}</Badge>
-                  </td>
-                  <td className="whitespace-nowrap text-right font-mono font-semibold tabular-nums text-boss-text">
-                    {formatWon(item.totalAmount)}
-                  </td>
-                  <td>
-                    {item.paymentMethod ? (
-                      <Badge tone="sky">{paymentLabel(item.paymentMethod)}</Badge>
-                    ) : (
-                      <span className="text-boss-text-muted">-</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap text-right">
-                    <RowActions
-                      editLabel="상세"
-                      onEdit={id != null ? goDetail : undefined}
-                      onDelete={id != null ? () => setPendingDelete(item) : undefined}
-                      deleting={deleting && pendingDelete?.id === item.id}
-                    />
-                  </td>
+        >
+          {error}
+        </AlertBanner>
+      )}
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* ── 좌: 표 ── */}
+        <div className="min-w-0">
+          {loading && !summary ? (
+            <ContentCard>
+              <RowSkeleton rows={6} />
+            </ContentCard>
+          ) : error && receipts.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title="영수증을 불러오지 못했습니다"
+              description="네트워크 상태를 확인한 뒤 다시 불러와 주세요. 저장된 영수증이 사라진 것은 아닙니다."
+            />
+          ) : receipts.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title={`${ymLabel(ym)} 에 등록된 영수증이 없습니다`}
+              description="영수증은 모바일 앱에서 촬영하면 자동으로 읽혀 여기에 쌓입니다. 다른 달을 보려면 위 월 이동을 쓰세요."
+              action={
+                !isCurrentMonth ? (
+                  <Button size="sm" variant="secondary" onClick={() => setYm(currentYm())}>
+                    이번 달로 이동
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title="검색어와 맞는 영수증이 없습니다"
+              description="거래처 · 카테고리 · 결제수단에서 찾습니다. 검색어를 바꿔 보세요."
+              action={
+                <Button size="sm" variant="secondary" onClick={() => setKeyword('')}>
+                  검색 지우기
+                </Button>
+              }
+            />
+          ) : (
+            <DataTable>
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>거래처</th>
+                  <th>카테고리</th>
+                  <th className="text-right">금액</th>
+                  <th>결제</th>
+                  <th />
                 </tr>
-              );
-            })}
-          </tbody>
-        </DataTable>
-      )}
-
-      {filtered.length > 0 && (
-        <div className="flex items-center justify-between gap-3 border-t border-boss-border pt-3 text-xs">
-          <span className="text-boss-text-muted">
-            {ymLabel(ym)} · 총 {filtered.length.toLocaleString()}건
-          </span>
-          <span className="font-mono font-semibold tabular-nums text-boss-text">
-            합계 {formatWon(filteredTotal)}
-          </span>
+              </thead>
+              <tbody>
+                {filtered.map((item, idx) => {
+                  const id = item.id;
+                  const goDetail = () => id != null && router.push(`/boss/receipt/${id}`);
+                  return (
+                    <tr
+                      key={id ?? idx}
+                      className={id != null ? 'cursor-pointer' : ''}
+                      onClick={goDetail}
+                    >
+                      <td className="font-boss-head tabular-nums text-boss-text-secondary">
+                        {fmtDate(item.txDate)}
+                      </td>
+                      <td className="wrap max-w-[320px]">
+                        <span className="font-medium text-boss-text">{item.vendorName ?? '상호 없음'}</span>
+                      </td>
+                      <td>
+                        <StatusPill tone="neutral">{categoryLabel(item.category)}</StatusPill>
+                      </td>
+                      <td className="num font-semibold text-boss-text">{formatWon(item.totalAmount)}</td>
+                      <td>
+                        {item.paymentMethod ? (
+                          <StatusPill tone="info">{paymentLabel(item.paymentMethod)}</StatusPill>
+                        ) : (
+                          <span className="text-boss-text-ghost">—</span>
+                        )}
+                      </td>
+                      <td className="text-right">
+                        <RowActions
+                          editLabel="상세"
+                          onEdit={id != null ? goDetail : undefined}
+                          onDelete={id != null ? () => setPendingDelete(item) : undefined}
+                          deleting={deleting && pendingDelete?.id === item.id}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="border-t border-boss-border bg-boss-inset px-3 py-2.5 text-[12.5px] text-boss-text-secondary"
+                  >
+                    {ymLabel(ym)} · {filtered.length.toLocaleString()}건
+                    {keyword.trim() ? ' (검색 결과)' : ''}
+                  </td>
+                  <td className="border-t border-boss-border bg-boss-inset px-3 py-2.5 text-right font-boss-head text-[14px] font-semibold tabular-nums text-boss-text">
+                    {formatWon(filteredTotal)}
+                  </td>
+                  <td colSpan={2} className="border-t border-boss-border bg-boss-inset" />
+                </tr>
+              </tfoot>
+            </DataTable>
+          )}
         </div>
-      )}
 
-      {/* 삭제 확인 모달 */}
+        {/* ── 우: 월 요약 ── */}
+        <div className="flex flex-col gap-4">
+          <Panel title={`${ymLabel(ym)} 지출`} kicker="MONTHLY">
+            {loading && !summary ? (
+              <Skeleton className="h-24" />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <MetricBox label="합계" value={formatWon(monthTotal)} />
+                <MetricBox label="건수" value={`${receipts.length.toLocaleString()}건`} />
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="카테고리별" kicker="BY CATEGORY">
+            {loading && !summary ? (
+              <Skeleton className="h-32" />
+            ) : byCategory.length === 0 ? (
+              <p className="text-[13px] text-boss-text-secondary">이 달에는 집계할 지출이 없습니다.</p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {byCategory.map((c) => (
+                  <li key={c.category}>
+                    <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                      <span className="text-boss-text">
+                        {c.label || categoryLabel(c.category)}
+                        <span className="ml-1.5 font-boss-head text-[12px] tabular-nums text-boss-text-muted">
+                          {c.count}건
+                        </span>
+                      </span>
+                      <span className="font-boss-head font-semibold tabular-nums text-boss-text">
+                        {formatWon(c.amount)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5">
+                      <Bar pct={c.pct} height={4} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
+      </div>
+
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="영수증 삭제"

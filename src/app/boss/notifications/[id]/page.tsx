@@ -1,37 +1,32 @@
 'use client';
 
-// 사장님 알림(Notifications) 상세 페이지
+// 사장님 알림 상세 — Industry 패턴 (agent.opentohome.com)
 // Flutter 참조:
 //   - lib/app/setting/noti_view_page.dart : BBS detail 호출
 //   - lib/repo/bbs/bbs_repo.dart : detail / delete / viewCount
 //
 // 백엔드 알림은 BBS(`/bbs/...`) 의 typeCd='NOTI' 를 재사용한다.
+//
+//   좌 본문 패널 : kicker(유형) + 제목 + 본문(HTML 은 sanitize 후 렌더) + 첨부 링크
+//   우 요약 패널 : DescRow(유형 · 작성자 · 등록일 · 조회수 · 첨부) + 액션(목록 · 삭제)
+//   삭제는 ConfirmDialog. 첫 조회 실패는 AlertBanner + 목록으로.
+//
+// 화면 제목("알림")과 ← 알림 링크는 셸 헤더(PAGE_META)가 그린다.
+
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { Trash2, ExternalLink } from 'lucide-react';
 import {
-  BellRing,
-  Megaphone,
-  Sparkles,
-  ArrowLeft,
-  Trash2,
-  Eye,
-  Calendar,
-  User,
-  AlertCircle,
-  Tag,
-  Paperclip,
-  FileText,
-  ExternalLink,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import {
-  PageHeader,
-  Card,
+  Panel,
   Button,
-  Badge,
+  ButtonLink,
+  Tag,
   Skeleton,
+  DescRow,
+  AlertBanner,
+  ConfirmDialog,
+  type StatusTone,
 } from '@/components/boss/ui';
 import {
   bossNotificationsApi,
@@ -40,23 +35,23 @@ import {
 import type { BossNotificationItem } from '@/types/boss-notifications';
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
-const BREADCRUMBS = [
-  { label: '알림', href: '/boss/notifications' },
-  { label: '상세' },
-];
-
-const CATEGORY_META: Record<
-  string,
-  { label: string; tone: 'amber' | 'emerald' | 'sky'; Icon: LucideIcon }
-> = {
-  AD: { label: '광고', tone: 'amber', Icon: Megaphone },
-  NOTI: { label: '공지', tone: 'emerald', Icon: BellRing },
-  UPDATE: { label: '업데이트', tone: 'sky', Icon: Sparkles },
+const CATEGORY_META: Record<string, { label: string; tone: StatusTone }> = {
+  AD: { label: '광고', tone: 'warn' },
+  NOTI: { label: '공지', tone: 'ok' },
+  UPDATE: { label: '업데이트', tone: 'info' },
 };
 
 function categoryMeta(code?: string) {
   return CATEGORY_META[code ?? ''] ?? CATEGORY_META.NOTI;
 }
+
+// 서버 HTML 본문 — typography 플러그인이 없으므로 필요한 요소만 직접 조판한다
+const HTML_BODY_CLS =
+  'text-[13.5px] leading-[1.75] text-boss-text [&_p]:my-2 [&_a]:text-boss-primary [&_a]:underline [&_a]:underline-offset-2 ' +
+  '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 ' +
+  '[&_h1]:mt-4 [&_h1]:text-[18px] [&_h1]:font-semibold [&_h2]:mt-4 [&_h2]:text-[16px] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:text-[14.5px] [&_h3]:font-semibold ' +
+  '[&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-boss-primary [&_blockquote]:pl-3 [&_blockquote]:text-boss-text-secondary ' +
+  '[&_img]:my-2 [&_img]:max-w-full [&_table]:my-2 [&_table]:w-full [&_td]:border [&_td]:border-boss-border [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-boss-border [&_th]:bg-boss-inset [&_th]:px-2 [&_th]:py-1';
 
 function formatDate(input?: string | null): string {
   if (!input) return '-';
@@ -90,6 +85,7 @@ export default function BossNotificationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (Number.isNaN(boardId)) {
@@ -132,7 +128,6 @@ export default function BossNotificationDetailPage() {
 
   const handleDelete = async () => {
     if (Number.isNaN(boardId)) return;
-    if (!window.confirm('이 알림을 삭제하시겠습니까?')) return;
 
     setDeleting(true);
     try {
@@ -153,15 +148,17 @@ export default function BossNotificationDetailPage() {
   // 로딩
   if (loading) {
     return (
-      <div className="space-y-5">
-        <PageHeader title="알림 상세" breadcrumbs={BREADCRUMBS} />
-        <Card className="space-y-4">
-          <Skeleton className="h-6 w-2/3" />
-          <Skeleton className="h-4 w-1/3" />
-        </Card>
-        <Card>
-          <Skeleton className="h-32 w-full" />
-        </Card>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <Panel>
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="mt-3 h-6 w-2/3" />
+          <Skeleton className="mt-5 h-32 w-full" />
+        </Panel>
+        <Panel>
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="mt-3 h-4 w-2/3" />
+          <Skeleton className="mt-3 h-4 w-1/3" />
+        </Panel>
       </div>
     );
   }
@@ -169,161 +166,110 @@ export default function BossNotificationDetailPage() {
   // 에러 / 미존재
   if (error || !item) {
     return (
-      <div className="space-y-5">
-        <PageHeader title="알림 상세" breadcrumbs={BREADCRUMBS} />
-        <div className="flex items-start gap-2 rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
-          <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>{error || '알림을 찾을 수 없습니다.'}</span>
-        </div>
-        <Link
-          href="/boss/notifications"
-          className="inline-flex items-center gap-1 text-sm text-boss-text-muted hover:text-boss-text"
+      <div className="flex flex-col gap-4">
+        <AlertBanner
+          tone="bad"
+          action={
+            <ButtonLink href="/boss/notifications" variant="secondary" size="sm">
+              알림 목록으로
+            </ButtonLink>
+          }
         >
-          <ArrowLeft size={14} /> 알림 목록으로 돌아가기
-        </Link>
+          {error || '알림을 찾을 수 없습니다. 이미 삭제됐거나 주소가 잘못됐을 수 있습니다.'}
+        </AlertBanner>
       </div>
     );
   }
 
-  const { Icon, tone, label } = categoryMeta(item.typeDtCd);
+  const { tone, label } = categoryMeta(item.typeDtCd);
   const isHtml = hasHtml(item.contents);
   const author = authorName(item);
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="알림 상세"
-        description="공지·광고·업데이트 알림의 상세 내용을 확인하세요."
-        breadcrumbs={BREADCRUMBS}
-        actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              icon={ArrowLeft}
-              onClick={() => router.push('/boss/notifications')}
-            >
-              목록
-            </Button>
-            <Button
-              variant="danger"
-              icon={Trash2}
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? '삭제 중...' : '삭제'}
-            </Button>
-          </div>
-        }
-      />
-
-      {/* 개요 카드 */}
-      <Card className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge tone={tone}>
-              <Icon size={11} />
-              {label}
-            </Badge>
-            {typeof item.boardId === 'number' && (
-              <span className="text-xs text-boss-text-muted">#{item.boardId}</span>
-            )}
-          </div>
-          <h2 className="text-lg font-semibold text-boss-text">
-            {item.subject ?? '(제목 없음)'}
-          </h2>
-          <p className="mt-1 text-sm text-boss-text-muted">
-            등록일: {formatDate(item.crtDtm)}
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 본문 패널 */}
+      <Panel kicker={label} title={item.subject ?? '(제목 없음)'}>
+        <p className="mb-4 font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
+          {formatDate(item.crtDtm)}
+          {author ? ` · ${author}` : ''}
+        </p>
+        {isHtml ? (
+          <div
+            className={HTML_BODY_CLS}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.contents) }}
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-[13.5px] leading-[1.75] text-boss-text">
+            {item.contents ?? '내용이 없습니다.'}
           </p>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <div className="text-center">
-            <p className="text-xs text-boss-text-muted">조회수</p>
-            <p className="font-semibold text-boss-text">{item.viewCnt ?? 0}</p>
+        )}
+
+        {item.filePath && (
+          <div className="mt-5 border-t border-boss-border pt-4">
+            <a
+              href={item.filePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="boss-btn boss-btn-sm boss-btn-secondary"
+            >
+              <ExternalLink size={13} strokeWidth={1.75} /> 첨부파일 보기
+            </a>
           </div>
-        </div>
-      </Card>
+        )}
+      </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        {/* 상세 정보 */}
-        <Section title="상세 정보" icon={Tag}>
-          <Info label="유형" value={label} icon={Tag} />
-          <Info label="작성자" value={author} icon={User} />
-          <Info label="등록일" value={formatDate(item.crtDtm)} icon={Calendar} />
-          <Info label="조회수" value={item.viewCnt ?? 0} icon={Eye} />
+      {/* 요약 패널 */}
+      <Panel kicker="요약" title="알림 정보">
+        <dl>
+          <DescRow label="유형" value={<Tag tone={tone}>{label}</Tag>} />
+          {author && <DescRow label="작성자" value={author} />}
+          <DescRow
+            label="등록일"
+            value={<span className="font-boss-head tabular-nums">{formatDate(item.crtDtm)}</span>}
+          />
+          <DescRow
+            label="조회수"
+            value={<span className="font-boss-head tabular-nums">{item.viewCnt ?? 0}</span>}
+          />
           {item.fileCnt ? (
-            <Info label="첨부파일" value={`${item.fileCnt}개`} icon={Paperclip} />
-          ) : null}
-        </Section>
-
-        {/* 본문 */}
-        <Card className="lg:col-span-2">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
-            <FileText size={15} className="text-boss-primary" />
-            본문
-          </h3>
-          {isHtml ? (
-            <div
-              className="prose prose-invert max-w-none text-sm leading-relaxed text-boss-text"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.contents) }}
+            <DescRow
+              label="첨부"
+              value={<span className="font-boss-head tabular-nums">{item.fileCnt}개</span>}
             />
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-boss-text-secondary">
-              {item.contents ?? '내용이 없습니다.'}
-            </p>
+          ) : null}
+          {typeof item.boardId === 'number' && (
+            <DescRow
+              label="번호"
+              value={<span className="font-boss-head tabular-nums">#{item.boardId}</span>}
+            />
           )}
+        </dl>
 
-          {item.filePath && (
-            <div className="mt-4 border-t border-boss-border pt-4">
-              <a href={item.filePath} target="_blank" rel="noopener noreferrer">
-                <Button variant="secondary" size="sm" icon={ExternalLink}>
-                  첨부파일 보기
-                </Button>
-              </a>
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
-  );
-}
+        <div className="mt-4 flex items-center justify-between gap-2 border-t border-boss-border pt-4">
+          <ButtonLink href="/boss/notifications" variant="secondary" size="sm">
+            목록
+          </ButtonLink>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={Trash2}
+            className="!text-boss-text-muted hover:!text-boss-error"
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+          >
+            삭제
+          </Button>
+        </div>
+      </Panel>
 
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: LucideIcon;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-boss-text">
-        <Icon size={15} className="text-boss-primary" />
-        {title}
-      </h3>
-      <div className="space-y-3">{children}</div>
-    </Card>
-  );
-}
-
-function Info({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value?: string | number | null;
-  icon: LucideIcon;
-}) {
-  if (value === undefined || value === null || value === '') return null;
-  return (
-    <div className="flex items-start gap-2.5 text-sm">
-      <Icon size={14} className="mt-0.5 text-boss-text-muted" />
-      <div className="min-w-0">
-        <p className="text-xs text-boss-text-muted">{label}</p>
-        <p className="text-boss-text">{value}</p>
-      </div>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="이 알림을 삭제할까요?"
+        description={`'${item.subject ?? '(제목 없음)'}' — 삭제한 알림은 되돌릴 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

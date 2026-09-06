@@ -1,15 +1,27 @@
 'use client';
 
-// 사장님 주문 등록 (고객/주문서 생성)
+// 빠른 주문 등록 (고객 / 주문서 생성) — Industry 패턴의 긴 폼 (참조 매물 등록)
 // Flutter 의 고객 생성 로직과 동일: POST /customers
+//
+// 조판: 좌 폼 패널(섹션 제목 + 2열 grid) + 하단 액션 패널 / 우 280px 요약 · 입력 확인 패널.
+// nav.ts 가 이 화면 폭을 wide(860px) 로 두므로 전체폭 bleed 컴포저 대신 폼 조판을 쓴다.
+// 화면 제목 · "← 주문 관리" 링크는 셸 헤더가 그린다.
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBossAuth } from '@/hooks/useBossAuth';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
-import { Button, ContentCard, CardHead, AlertBanner, StatusPill } from '@/components/boss/ui';
+import {
+  Button,
+  Panel,
+  Field,
+  SelectField,
+  TextareaField,
+  DescRow,
+  Tag,
+} from '@/components/boss/ui';
 import { useSubmitHotkey } from '@/components/boss/layout/BossSearchContext';
-import { Save, User, Phone, Mail, Calendar, MapPin, FileText, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function toYyyyMMddHHmm(v: string): string {
@@ -69,7 +81,7 @@ export default function BossOrderQuickPage() {
     }
   };
 
-  // 규칙 경고는 발행 시점이 아니라 입력 시점에 뜬다 (시안 컴포저 원칙)
+  // 규칙 경고는 발행 시점이 아니라 입력 시점에 뜬다
   const warnings: string[] = [];
   if (form.workDate && form.workEndDate && form.workEndDate < form.workDate) {
     warnings.push('시공 종료일이 시작일보다 빠릅니다.');
@@ -82,247 +94,221 @@ export default function BossOrderQuickPage() {
   }
 
   const canSubmit = form.name.trim().length > 0 && !saving;
-  // ⌘↵ 로 바로 등록 (시안 KEYBOARD 원칙)
+  // ⌘↵ 로 바로 등록 (KEYBOARD 원칙)
   useSubmitHotkey(() => {
     if (canSubmit) void handleSubmit(new Event('submit') as unknown as React.FormEvent);
   }, canSubmit);
 
   const statusLabel =
     { '00': '대기', '01': '진행', '02': '완료', '03': '취소' }[form.statusCd] ?? '대기';
+  const statusTone = form.statusCd === '03' ? 'bad' : form.statusCd === '02' ? 'ok' : 'neutral';
 
   return (
-    // 시안 컴포저: grid minmax(0,1fr) 372px, 높이 100%
     <form
       onSubmit={handleSubmit}
-      className="boss-bleed grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_372px]"
+      className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]"
     >
-      {/* ───── 좌: 입력 (스크롤 영역) ───── */}
-      <div className="boss-scroll overflow-y-auto border-boss-border px-5 pb-32 pt-[18px] lg:border-r">
-        <div className="flex flex-col gap-[18px]">
-          <ContentCard>
-            <CardHead title="고객" meta="필수" />
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(168px,1fr))] gap-2.5 p-4">
-              <Field label="고객명 *" icon={User}>
-                <input
-                  value={form.name}
-                  onChange={(e) => set('name', e.target.value)}
-                  placeholder="홍길동"
-                  className="boss-input"
-                  required
-                />
-              </Field>
-              <Field label="연락처" icon={Phone}>
-                <input
-                  value={form.phone}
-                  onChange={(e) => set('phone', e.target.value)}
-                  placeholder="010-0000-0000"
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="이메일" icon={Mail}>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => set('email', e.target.value)}
-                  placeholder="customer@example.com"
-                  className="boss-input"
-                />
-              </Field>
-            </div>
-          </ContentCard>
+      {/* ───── 좌: 폼 ───── */}
+      <div className="flex flex-col gap-4">
+        <Panel>
+          <h3 className="boss-section-title mb-3">고객</h3>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field
+              id="name"
+              label="고객명"
+              required
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
+              placeholder="홍길동"
+              autoFocus
+            />
+            <Field
+              id="phone"
+              label="연락처"
+              inputMode="tel"
+              value={form.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              placeholder="010-0000-0000"
+            />
+            <Field
+              id="email"
+              label="이메일"
+              type="email"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+              placeholder="customer@example.com"
+              className="md:col-span-2"
+            />
+          </div>
 
-          <ContentCard>
-            <CardHead title="일정" meta="견적 · 시공" />
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(168px,1fr))] gap-2.5 p-4">
-              <Field label="견적일" icon={Calendar}>
-                <input
-                  type="datetime-local"
-                  value={form.estimateDate}
-                  onChange={(e) => set('estimateDate', e.target.value)}
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="시공 시작일" icon={Calendar}>
-                <input
-                  type="datetime-local"
-                  value={form.workDate}
-                  onChange={(e) => set('workDate', e.target.value)}
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="시공 종료일" icon={Calendar}>
-                <input
-                  type="datetime-local"
-                  value={form.workEndDate}
-                  onChange={(e) => set('workEndDate', e.target.value)}
-                  className="boss-input"
-                />
-              </Field>
-            </div>
-          </ContentCard>
+          <h3 className="boss-section-title mb-3 mt-6 border-t border-boss-border-row pt-5">일정</h3>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field
+              id="estimateDate"
+              label="견적일"
+              type="datetime-local"
+              value={form.estimateDate}
+              onChange={(e) => set('estimateDate', e.target.value)}
+              className="md:col-span-2"
+            />
+            <Field
+              id="workDate"
+              label="시공 시작일"
+              type="datetime-local"
+              value={form.workDate}
+              onChange={(e) => set('workDate', e.target.value)}
+            />
+            <Field
+              id="workEndDate"
+              label="시공 종료일"
+              type="datetime-local"
+              value={form.workEndDate}
+              onChange={(e) => set('workEndDate', e.target.value)}
+              hint="하루 시공이면 비워 두어도 됩니다."
+            />
+          </div>
 
-          <ContentCard>
-            <CardHead title="현장" meta="주소 · 출입" />
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(168px,1fr))] gap-2.5 p-4">
-              <Field label="우편번호" icon={MapPin}>
-                <input
-                  value={form.post}
-                  onChange={(e) => set('post', e.target.value)}
-                  placeholder="12345"
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="주소" icon={MapPin}>
-                <input
-                  value={form.address1}
-                  onChange={(e) => set('address1', e.target.value)}
-                  placeholder="도로명 주소"
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="상세 주소" icon={MapPin}>
-                <input
-                  value={form.address2}
-                  onChange={(e) => set('address2', e.target.value)}
-                  placeholder="상세 주소"
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="공동현관 비밀번호" icon={Lock}>
-                <input
-                  value={form.commonPw}
-                  onChange={(e) => set('commonPw', e.target.value)}
-                  placeholder="****"
-                  className="boss-input"
-                />
-              </Field>
-              <Field label="현관 비밀번호" icon={Lock}>
-                <input
-                  value={form.housePw}
-                  onChange={(e) => set('housePw', e.target.value)}
-                  placeholder="****"
-                  className="boss-input"
-                />
-              </Field>
-            </div>
-          </ContentCard>
+          <h3 className="boss-section-title mb-3 mt-6 border-t border-boss-border-row pt-5">현장</h3>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field
+              id="post"
+              label="우편번호"
+              inputMode="numeric"
+              value={form.post}
+              onChange={(e) => set('post', e.target.value)}
+              placeholder="12345"
+            />
+            <Field
+              id="address1"
+              label="주소"
+              value={form.address1}
+              onChange={(e) => set('address1', e.target.value)}
+              placeholder="도로명 주소"
+            />
+            <Field
+              id="address2"
+              label="상세 주소"
+              value={form.address2}
+              onChange={(e) => set('address2', e.target.value)}
+              placeholder="동 · 호수"
+              className="md:col-span-2"
+            />
+            <Field
+              id="commonPw"
+              label="공동현관 비밀번호"
+              value={form.commonPw}
+              onChange={(e) => set('commonPw', e.target.value)}
+              placeholder="****"
+            />
+            <Field
+              id="housePw"
+              label="현관 비밀번호"
+              value={form.housePw}
+              onChange={(e) => set('housePw', e.target.value)}
+              placeholder="****"
+            />
+          </div>
 
-          <ContentCard>
-            <CardHead title="메모" />
-            <div className="p-4">
-              <textarea
-                value={form.memo}
-                onChange={(e) => set('memo', e.target.value)}
-                placeholder="추가 요청사항이나 메모를 입력하세요."
-                className="boss-input"
-              />
-            </div>
-          </ContentCard>
+          <h3 className="boss-section-title mb-3 mt-6 border-t border-boss-border-row pt-5">메모 · 상태</h3>
+          <div className="grid grid-cols-1 gap-3">
+            <TextareaField
+              id="memo"
+              label="메모"
+              value={form.memo}
+              onChange={(e) => set('memo', e.target.value)}
+              placeholder="추가 요청사항이나 메모를 입력하세요."
+              rows={4}
+            />
+            <SelectField
+              id="statusCd"
+              label="상태"
+              value={form.statusCd}
+              onChange={(e) => set('statusCd', e.target.value)}
+              className="md:max-w-[240px]"
+              hint="현장에서 바로 등록할 때는 「대기」로 두고, 나중에 주문 상세에서 바꿉니다."
+            >
+              <option value="00">대기</option>
+              <option value="01">진행</option>
+              <option value="02">완료</option>
+              <option value="03">취소</option>
+            </SelectField>
+          </div>
+        </Panel>
 
-          {/* 입력 시점 규칙 경고 */}
-          {warnings.map((w) => (
-            <AlertBanner key={w} tone="warn">
-              {w}
-            </AlertBanner>
-          ))}
+        {/* 하단 액션 패널 — 취소 secondary / 등록 primary 우측 */}
+        <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <p className="text-[12.5px] text-boss-text-secondary">
+            {warnings.length > 0
+              ? `확인할 항목 ${warnings.length}개 · 등록은 가능합니다`
+              : '등록하면 주문 목록에 올라갑니다'}
+            <span className="ml-2 font-boss-head text-[11px] text-boss-text-muted">⌘↵ 로 바로 등록</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <Link href="/boss/orders" className="boss-btn boss-btn-md boss-btn-secondary">
+              취소
+            </Link>
+            <Button type="submit" variant="primary" disabled={!canSubmit}>
+              {saving ? '등록 중…' : '주문 등록'}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* ───── 우: 372px 요약 패널 ───── */}
-      <div className="boss-scroll overflow-y-auto bg-boss-inset px-[18px] pb-10 pt-[18px]">
-        <p className="mb-[11px] text-[12px] font-bold text-boss-text">요약</p>
+      {/* ───── 우: 요약 · 입력 확인 ───── */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-[112px]">
+        <Panel kicker="요약" title={form.name.trim() || '새 주문'}>
+          <dl>
+            <DescRow
+              label="연락처"
+              value={<span className="font-boss-head tabular-nums">{form.phone.trim() || '—'}</span>}
+            />
+            <DescRow
+              label="주소"
+              value={[form.address1, form.address2].filter(Boolean).join(' ') || '—'}
+            />
+            <DescRow
+              label="견적"
+              value={
+                <span className="font-boss-head tabular-nums">
+                  {form.estimateDate ? form.estimateDate.replace('T', ' ') : '미정'}
+                </span>
+              }
+            />
+            <DescRow
+              label="시공"
+              value={
+                <span className="font-boss-head tabular-nums">
+                  {form.workDate ? form.workDate.replace('T', ' ') : '미정'}
+                </span>
+              }
+            />
+            <DescRow label="상태" value={<Tag tone={statusTone}>{statusLabel}</Tag>} />
+          </dl>
+        </Panel>
 
-        <ContentCard>
-          <div className="flex flex-col gap-2.5 p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] text-boss-text-muted">고객</span>
-              <span className="truncate text-[12.5px] font-semibold text-boss-text">
-                {form.name.trim() || '—'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] text-boss-text-muted">연락처</span>
-              <span className="font-boss-mono text-[12px] text-boss-text-dim">
-                {form.phone.trim() || '—'}
-              </span>
-            </div>
-            <div className="flex items-start justify-between gap-2">
-              <span className="flex-none text-[11px] text-boss-text-muted">주소</span>
-              <span className="text-right text-[12px] text-boss-text-dim">
-                {[form.address1, form.address2].filter(Boolean).join(' ') || '—'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2 border-t border-boss-border-row pt-2.5">
-              <span className="text-[11px] text-boss-text-muted">시공</span>
-              <span className="font-boss-mono text-[11.5px] text-boss-text-dim">
-                {form.workDate ? form.workDate.replace('T', ' ') : '미정'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] text-boss-text-muted">상태</span>
-              <StatusPill tone={form.statusCd === '03' ? 'bad' : form.statusCd === '02' ? 'ok' : 'neutral'}>
-                {statusLabel}
-              </StatusPill>
-            </div>
-          </div>
-        </ContentCard>
+        <Panel kicker="입력 확인" title={warnings.length > 0 ? `${warnings.length}개 확인` : '문제 없음'}>
+          {warnings.length > 0 ? (
+            <ul className="flex flex-col gap-1.5 text-[12.5px] leading-relaxed">
+              {warnings.map((w) => (
+                <li key={w} className="text-boss-warning">
+                  · {w}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+              고객명만 있으면 등록됩니다. 연락처 · 주소 · 시공일은 나중에 채워도 됩니다.
+            </p>
+          )}
+        </Panel>
 
-        <div className="mt-4">
-          <label className="boss-label">상태</label>
-          <select
-            value={form.statusCd}
-            onChange={(e) => set('statusCd', e.target.value)}
-            className="boss-input"
-          >
-            <option value="00">대기</option>
-            <option value="01">진행</option>
-            <option value="02">완료</option>
-            <option value="03">취소</option>
-          </select>
-        </div>
-
-        {/* 하단 액션 — 시안: 취소 flex 1 + 등록 flex 1.4 accent */}
-        <div className="mt-3.5 flex gap-2">
-          <Link
-            href="/boss/orders"
-            className="boss-btn boss-btn-md boss-btn-outline flex-1 justify-center"
-          >
-            취소
-          </Link>
-          <Button
-            type="submit"
-            variant="primary"
-            icon={Save}
-            disabled={!canSubmit}
-            className="flex-[1.4] justify-center"
-          >
-            {saving ? '등록 중…' : '주문 등록'}
-          </Button>
-        </div>
-        <p className="mt-2.5 text-center font-boss-mono text-[11px] text-boss-text-muted">
-          ⌘↵ 로 바로 등록
-        </p>
+        <Panel kicker="안내" title="등록 뒤에는">
+          <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+            주문 상세에서 견적서 · 체크리스트 · 시공 기록 · AS 를 이 주문에 이어서 남깁니다. 시공일을
+            넣으면 일정 화면에도 바로 표시됩니다.
+          </p>
+        </Panel>
       </div>
     </form>
-  );
-}
-
-function Field({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="boss-label flex items-center gap-1.5">
-        <Icon size={11} />
-        {label}
-      </span>
-      {children}
-    </label>
   );
 }

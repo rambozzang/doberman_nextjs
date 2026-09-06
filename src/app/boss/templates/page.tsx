@@ -1,37 +1,40 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+// 사장님 답변 템플릿 — Industry 패턴 (agent.opentohome.com)
+// 웹 견적서 답변에 자주 쓰는 문구를 저장 · 불러온다. (GET/POST/PUT/DELETE /templates)
+//
+//   필터 줄 : ListTabs(전체 · 기본 · 사용자 + 건수) + 검색 + 우측 "전체 n건" · 새로고침 · 템플릿 추가
+//   편집    : 모달이 아니라 표 위에 뜨는 폼 패널(참조 04-listing-new) — 좌 폼 2열 grid + RichEditor,
+//             우 안내 패널(필수 누락 · 기본 템플릿 안내), 하단 액션(취소 secondary / 저장 primary 우측)
+//   미리보기: 표 위 패널(제목 · 내용) + 복사 · 편집 액션
+//   표      : 이름 · 견적서 제목 · 내용 · 구분 Tag · 액션(미리보기 · 복사 · 편집/삭제)
+//   삭제는 ConfirmDialog. 첫 조회 실패(AlertBanner)와 0건(검색/구분 안내)을 구분한다.
+//
+// 화면 제목은 셸 헤더(PAGE_META)가 그린다.
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import {
-  FileText,
-  Plus,
-  Pencil,
-  Trash2,
-  Copy,
-  Eye,
-  RefreshCw,
-  Inbox,
-  X,
-  Lock,
-  Save,
-} from 'lucide-react';
+import { Plus, RefreshCw, Inbox, Lock, Copy } from 'lucide-react';
 import { bossTemplatesApi } from '@/lib/api/boss/templates';
 import { getBossCustId } from '@/lib/api/boss/as';
 import type { BossTemplate, BossTemplateFormValue } from '@/types/boss-templates';
 import RichEditor from '@/components/boss/RichEditor';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
 import {
-  PageHeader,
-  Toolbar,
   SearchInput,
   Button,
-  IconButton,
-  Badge,
+  Tag,
   ListTabs,
   DataTable,
   EmptyState,
-  Skeleton,
+  RowSkeleton,
+  ContentCard,
   ConfirmDialog,
+  AlertBanner,
+  Panel,
+  Field,
+  FieldLabel,
+  Kicker,
 } from '@/components/boss/ui';
 
 const DEFAULT_TITLE = '견적서 보내드립니다.';
@@ -62,6 +65,14 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// 저장된 HTML 본문 — typography 플러그인이 없으므로 필요한 요소만 직접 조판한다
+const HTML_BODY_CLS =
+  'text-[13.5px] leading-[1.75] text-boss-text [&_p]:my-1.5 [&_a]:text-boss-primary [&_a]:underline [&_a]:underline-offset-2 ' +
+  '[&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 ' +
+  '[&_h2]:mt-3 [&_h2]:text-[16px] [&_h2]:font-semibold [&_h3]:mt-2 [&_h3]:text-[14.5px] [&_h3]:font-semibold ' +
+  '[&_blockquote]:my-1.5 [&_blockquote]:border-l-2 [&_blockquote]:border-boss-primary [&_blockquote]:pl-3 [&_blockquote]:text-boss-text-secondary ' +
+  '[&_code]:bg-boss-inset [&_code]:px-1 [&_code]:font-boss-head [&_strong]:font-semibold';
+
 export default function BossTemplatesPage() {
   const [templates, setTemplates] = useState<BossTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,11 +91,19 @@ export default function BossTemplatesPage() {
   const [pendingDelete, setPendingDelete] = useState<BossTemplate | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // 편집 · 미리보기 패널은 표 위에 뜬다 — 표 아래쪽 행에서 열면 화면 밖이라 패널로 스크롤한다
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (editor.open || previewTarget) {
+      panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [editor.open, previewTarget]);
+
   const load = useCallback(async () => {
     const cid = getBossCustId();
     setCustId(cid);
     if (!cid) {
-      setError('로그인 정보가 없습니다.');
+      setError('로그인 정보가 없습니다. 다시 로그인한 뒤 열어 주세요.');
       return;
     }
     setLoading(true);
@@ -115,6 +134,7 @@ export default function BossTemplatesPage() {
   }, [load]);
 
   const openCreate = (prefill?: BossTemplateFormValue) => {
+    setPreviewTarget(null);
     setEditor({
       open: true,
       mode: 'create',
@@ -124,6 +144,7 @@ export default function BossTemplatesPage() {
   };
 
   const openEdit = (t: BossTemplate) => {
+    setPreviewTarget(null);
     setEditor({
       open: true,
       mode: 'edit',
@@ -143,6 +164,11 @@ export default function BossTemplatesPage() {
   const closeEditor = () => {
     if (saving) return;
     setEditor((s) => ({ ...s, open: false }));
+  };
+
+  const openPreview = (t: BossTemplate) => {
+    setEditor((s) => (s.open ? { ...s, open: false } : s));
+    setPreviewTarget(t);
   };
 
   const handleSave = async () => {
@@ -258,21 +284,38 @@ export default function BossTemplatesPage() {
     return list;
   }, [templates, tab, keyword]);
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="답변 템플릿"
-        description="웹 견적서 답변에 자주 쓰는 문구를 템플릿으로 저장하고 불러오세요."
-      />
+  const isFiltered = keyword.trim().length > 0 || tab !== 'all';
 
-      <Toolbar>
+  // 편집 폼 필수 누락 — 참조 04 의 우측 "필수 누락" 패널
+  const missing = useMemo(() => {
+    const v = editor.value;
+    const m: string[] = [];
+    if (!v.name.trim()) m.push('템플릿 이름');
+    if (!v.title.trim()) m.push('견적서 제목');
+    if (!stripHtml(v.content || '')) m.push('견적서 내용');
+    return m;
+  }, [editor.value]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 필터 줄 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ListTabs
+          tabs={KIND_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
+          active={tab}
+          onChange={setTab}
+        />
         <SearchInput
           value={keyword}
           onChange={setKeyword}
-          placeholder="이름·제목·내용 검색"
-          className="w-full max-w-xs"
+          placeholder="이름 · 제목 · 내용 검색"
+          className="w-full sm:w-[240px]"
+          hint={false}
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+            {loading ? '불러오는 중…' : `전체 ${filtered.length}건`}
+          </span>
           <Button
             variant="secondary"
             size="sm"
@@ -286,33 +329,184 @@ export default function BossTemplatesPage() {
             템플릿 추가
           </Button>
         </div>
-      </Toolbar>
-
-      <ListTabs
-        tabs={KIND_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
-        active={tab}
-        onChange={setTab}
-      />
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={load}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
+        </AlertBanner>
+      )}
+
+      {/* 편집 · 미리보기 패널 앵커 */}
+      <div ref={panelRef} className="scroll-mt-[120px]" />
+
+      {/* 편집 패널 — 좌 폼 / 우 안내 */}
+      {editor.open && (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="flex flex-col gap-4">
+            <Panel
+              kicker={editor.mode === 'edit' ? '수정' : '새 템플릿'}
+              title={editor.mode === 'edit' ? editor.target?.name ?? '템플릿 수정' : '템플릿 추가'}
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field
+                  id="tpl-name"
+                  label="템플릿 이름"
+                  required
+                  value={editor.value.name}
+                  onChange={(e) => update('name', e.target.value)}
+                  placeholder="예) 도배 공사용, 인테리어용"
+                  autoFocus
+                />
+                <Field
+                  id="tpl-title"
+                  label="견적서 제목"
+                  required
+                  value={editor.value.title}
+                  onChange={(e) => update('title', e.target.value)}
+                  placeholder="예) 견적서 보내드립니다."
+                />
+              </div>
+              <div className="mt-4">
+                <FieldLabel required>견적서 내용</FieldLabel>
+                <RichEditor
+                  value={editor.value.content}
+                  onChange={(html) => update('content', html)}
+                  placeholder="굵게 · 목록 · 링크를 써서 고객에게 보낼 답변을 작성하세요."
+                  minHeight={260}
+                />
+              </div>
+            </Panel>
+
+            {/* 하단 액션 패널 */}
+            <div className="boss-card flex flex-wrap items-center gap-2 px-4 py-3">
+              <span className="text-[12.5px] text-boss-text-secondary">
+                {missing.length > 0 ? `필수 ${missing.length}항목 남음` : '저장할 수 있습니다'}
+              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <Button variant="secondary" onClick={closeEditor} disabled={saving}>
+                  취소
+                </Button>
+                <Button variant="primary" onClick={handleSave} disabled={saving}>
+                  {saving ? '저장 중…' : editor.mode === 'edit' ? '수정 저장' : '추가'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3.5">
+            <Panel kicker="필수 항목">
+              {missing.length === 0 ? (
+                <p className="text-[13px] text-boss-text-secondary">모두 채웠습니다.</p>
+              ) : (
+                <ul className="flex flex-col gap-1 text-[13px] text-boss-error">
+                  {missing.map((m) => (
+                    <li key={m}>· {m}</li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+            <Panel kicker="안내">
+              <p className="text-[12.5px] leading-[1.65] text-boss-text-secondary">
+                템플릿은 견적 요청에 답변할 때 불러와 쓰는 문구입니다. 이름은 사장님만 보고, 제목과 내용이
+                고객에게 갑니다.
+              </p>
+              <p className="mt-2 text-[12.5px] leading-[1.65] text-boss-text-secondary">
+                기본 템플릿은 고칠 수 없습니다 — 복사해서 사용자 템플릿으로 만든 뒤 바꾸세요.
+              </p>
+            </Panel>
+          </div>
         </div>
       )}
 
-      {loading && templates.length === 0 ? (
-        <Skeleton className="h-64 rounded-lg" />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="등록된 템플릿이 없습니다"
-          description="자주 쓰는 견적 답변을 템플릿으로 만들어 시간을 아끼세요."
-          action={
-            <Button variant="primary" size="sm" icon={Plus} onClick={() => openCreate()}>
-              템플릿 추가
-            </Button>
+      {/* 미리보기 패널 */}
+      {previewTarget && !editor.open && (
+        <Panel
+          kicker="미리보기"
+          title={previewTarget.name}
+          right={
+            <div className="flex items-center gap-1.5">
+              {previewTarget.isDefault && <Tag tone="neutral">기본</Tag>}
+              <Button variant="secondary" size="sm" icon={Copy} onClick={() => duplicate(previewTarget)}>
+                복사
+              </Button>
+              {!previewTarget.isDefault && (
+                <Button variant="primary" size="sm" onClick={() => openEdit(previewTarget)}>
+                  편집
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setPreviewTarget(null)}>
+                닫기
+              </Button>
+            </div>
           }
-        />
+        >
+          <div className="flex flex-col gap-3">
+            <div>
+              <Kicker className="mb-1">제목</Kicker>
+              <div className="boss-card-inset px-3 py-2.5 text-[13.5px] text-boss-text">
+                {previewTarget.title || '—'}
+              </div>
+            </div>
+            <div>
+              <Kicker className="mb-1">내용</Kicker>
+              {looksLikePlainText(previewTarget.content) ? (
+                <div className="boss-card-inset whitespace-pre-wrap px-3 py-2.5 text-[13.5px] leading-[1.75] text-boss-text">
+                  {previewTarget.content}
+                </div>
+              ) : (
+                <div
+                  className={`boss-card-inset px-3 py-2.5 ${HTML_BODY_CLS}`}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewTarget.content) }}
+                />
+              )}
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      {/* 표 */}
+      {loading && templates.length === 0 ? (
+        <ContentCard>
+          <RowSkeleton rows={5} />
+        </ContentCard>
+      ) : filtered.length === 0 ? (
+        error ? null : (
+          <EmptyState
+            icon={Inbox}
+            title={isFiltered ? '조건에 맞는 템플릿이 없습니다' : '아직 만든 템플릿이 없습니다'}
+            description={
+              isFiltered
+                ? "검색어를 지우거나 구분을 '전체'로 바꿔 보세요."
+                : '자주 쓰는 견적 답변을 템플릿으로 만들어 두면 답변할 때 불러와 바로 보낼 수 있습니다.'
+            }
+            action={
+              isFiltered ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setKeyword('');
+                    setTab('all');
+                  }}
+                >
+                  필터 초기화
+                </Button>
+              ) : (
+                <Button variant="primary" size="sm" icon={Plus} onClick={() => openCreate()}>
+                  템플릿 추가
+                </Button>
+              )
+            }
+          />
+        )
       ) : (
         <DataTable>
           <thead>
@@ -327,68 +521,58 @@ export default function BossTemplatesPage() {
           <tbody>
             {filtered.map((t) => {
               const contentPreview = t.content ? stripHtml(t.content) : '';
+              const isOpen = previewTarget?.id === t.id || (editor.open && editor.target?.id === t.id);
               return (
                 <tr
                   key={String(t.id)}
-                  className="cursor-pointer"
-                  onClick={() => setPreviewTarget(t)}
+                  className={`cursor-pointer ${isOpen ? '[&>td]:bg-boss-elevated' : ''}`}
+                  onClick={() => openPreview(t)}
                 >
-                  <td>
-                    <span className="flex items-center gap-1.5 font-medium text-boss-text">
-                      {t.isDefault ? (
-                        <Lock size={13} className="shrink-0 text-boss-text-muted" />
-                      ) : (
-                        <FileText size={13} className="shrink-0 text-boss-text-muted" />
+                  <td className="wrap max-w-[240px]">
+                    <span className="flex items-center gap-1.5 font-semibold text-boss-text">
+                      {t.isDefault && (
+                        <Lock size={12} strokeWidth={1.75} className="shrink-0 text-boss-text-muted" aria-label="기본 템플릿" />
                       )}
-                      <span className="truncate">{t.name}</span>
+                      <span className="line-clamp-1">{t.name}</span>
                     </span>
                   </td>
-                  <td className="text-boss-text-secondary">{t.title || '-'}</td>
-                  <td className="text-boss-text-muted">
-                    {contentPreview ? (
-                      <span className="line-clamp-1 max-w-[280px]">{contentPreview}</span>
-                    ) : (
-                      '-'
-                    )}
+                  <td className="wrap max-w-[260px]">
+                    <span className="line-clamp-1 text-boss-text-secondary">{t.title || '—'}</span>
+                  </td>
+                  <td className="wrap max-w-[320px]">
+                    <span className="line-clamp-1 text-[12.5px] text-boss-text-muted">
+                      {contentPreview || '—'}
+                    </span>
                   </td>
                   <td>
                     {t.isDefault ? (
-                      <Badge tone="default">기본</Badge>
+                      <Tag tone="neutral">기본</Tag>
                     ) : (
-                      <Badge tone="emerald">사용자</Badge>
+                      <Tag tone="ok">사용자</Tag>
                     )}
                   </td>
-                  <td
-                    className="whitespace-nowrap text-right"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <IconButton icon={Copy} label="복사" onClick={() => duplicate(t)} />
-                      {!t.isDefault && (
-                        <IconButton
-                          icon={Trash2}
-                          label="삭제"
-                          onClick={() => setPendingDelete(t)}
-                        />
-                      )}
-                      {t.isDefault ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          icon={Eye}
-                          onClick={() => setPreviewTarget(t)}
-                        >
-                          보기
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          icon={Pencil}
-                          onClick={() => openEdit(t)}
-                        >
-                          편집
-                        </Button>
+                  <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button variant="ghost" size="sm" onClick={() => openPreview(t)}>
+                        미리보기
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => duplicate(t)}>
+                        복사
+                      </Button>
+                      {t.isDefault ? null : (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
+                            편집
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="!text-boss-text-muted hover:!text-boss-error"
+                            onClick={() => setPendingDelete(t)}
+                          >
+                            삭제
+                          </Button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -399,149 +583,15 @@ export default function BossTemplatesPage() {
         </DataTable>
       )}
 
-      {/* 삭제 확인 모달 */}
+      {/* 삭제 확인 */}
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="템플릿 삭제"
-        description={`"${pendingDelete?.name ?? ''}" 템플릿을 삭제합니다. 삭제 후 복구할 수 없습니다.`}
+        title="템플릿을 삭제할까요?"
+        description={`"${pendingDelete?.name ?? ''}" — 삭제한 템플릿은 되돌릴 수 없습니다.`}
         loading={deleting}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => void handleDelete()}
       />
-
-      {/* 미리보기 모달 */}
-      {previewTarget && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setPreviewTarget(null)}
-        >
-          <div
-            className="w-full max-w-2xl overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 border-b border-boss-border px-5 py-3">
-              <Eye size={16} className="shrink-0 text-boss-primary" />
-              <h2 className="flex-1 truncate text-sm font-semibold text-boss-text">
-                {previewTarget.name}
-              </h2>
-              {previewTarget.isDefault && <Badge tone="default">기본</Badge>}
-              <button
-                type="button"
-                onClick={() => setPreviewTarget(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5">
-              <div>
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">
-                  제목
-                </p>
-                <div className="rounded-lg border border-boss-border bg-boss-bg px-3 py-2.5 text-sm text-boss-text">
-                  {previewTarget.title}
-                </div>
-              </div>
-              <div>
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-boss-text-muted">
-                  내용
-                </p>
-                {looksLikePlainText(previewTarget.content) ? (
-                  <div className="whitespace-pre-wrap rounded-lg border border-boss-border bg-boss-bg px-3 py-2.5 text-sm leading-relaxed text-boss-text">
-                    {previewTarget.content}
-                  </div>
-                ) : (
-                  <div
-                    className="prose dark:prose-invert prose-sm max-w-none rounded-lg border border-boss-border bg-boss-bg px-3 py-2.5 leading-relaxed prose-headings:text-boss-text prose-strong:text-boss-text prose-blockquote:border-l-boss-primary"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewTarget.content) }}
-                  />
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-boss-border px-5 py-3">
-              <Button variant="secondary" size="sm" onClick={() => setPreviewTarget(null)}>
-                닫기
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 추가/수정 모달 */}
-      {editor.open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={closeEditor}
-        >
-          <div
-            className="w-full max-w-2xl overflow-hidden rounded-lg border border-boss-border bg-boss-surface shadow-boss-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 border-b border-boss-border px-5 py-3">
-              <FileText size={16} className="shrink-0 text-boss-primary" />
-              <h2 className="flex-1 text-sm font-semibold text-boss-text">
-                {editor.mode === 'edit' ? '템플릿 수정' : '새 템플릿 추가'}
-              </h2>
-              <button
-                type="button"
-                onClick={closeEditor}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-boss-text-muted hover:bg-boss-elevated hover:text-boss-text"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5">
-              <div>
-                <label className="boss-label">템플릿 이름 *</label>
-                <input
-                  type="text"
-                  value={editor.value.name}
-                  onChange={(e) => update('name', e.target.value)}
-                  placeholder="예: 도배 공사용, 인테리어용"
-                  className="boss-input h-11"
-                />
-              </div>
-              <div>
-                <label className="boss-label">견적서 제목 *</label>
-                <input
-                  type="text"
-                  value={editor.value.title}
-                  onChange={(e) => update('title', e.target.value)}
-                  placeholder="예: 견적서 보내드립니다."
-                  className="boss-input h-11"
-                />
-              </div>
-              <div>
-                <label className="boss-label">견적서 내용 *</label>
-                <RichEditor
-                  value={editor.value.content}
-                  onChange={(html) => update('content', html)}
-                  placeholder="굵게, 목록, 링크를 사용해 전문적인 답변 템플릿을 작성하세요."
-                  minHeight={260}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-boss-border px-5 py-3">
-              <Button variant="secondary" size="sm" onClick={closeEditor} disabled={saving}>
-                취소
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={saving ? RefreshCw : Save}
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? '저장 중...' : editor.mode === 'edit' ? '수정' : '추가'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

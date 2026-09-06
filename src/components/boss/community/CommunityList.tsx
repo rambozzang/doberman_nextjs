@@ -1,24 +1,33 @@
 'use client';
 
-// 사장님 커뮤니티 게시글 목록 (공용)
-// - /boss/community (전체/자유/구인구직/익명 탭)
-// - /boss/community/jobs (구인/구직 전용 메뉴)
-// 두 화면에서 동일한 목록 로직을 재사용한다.
-import { useEffect, useState, useCallback, useRef } from 'react';
+// 사장님 커뮤니티 게시글 목록 (공용) — Industry 패턴
+// - /boss/community/jobs (구인/구직 전용 메뉴) 가 fixedCategory="JOB" 으로 쓴다.
+// - fixedCategory 가 없으면 게시판 Seg(전체/자유/구인구직/익명)를 함께 그린다.
+//
+// 필터 줄(Seg + 검색 + 검색 버튼 + 우측 n건 · 새로고침 · actions)
+// → 표(제목 · 작성자 · 댓글 · 조회 · 날짜) → 페이지네이션
+// 검색은 API 검색(searchWord)이다.
+
+import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { bossCommunityApi } from '@/lib/api/boss/community';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
 import {
-  Toolbar,
   SearchInput,
   Button,
-  Badge,
+  ButtonLink,
+  StatusPill,
   EmptyState,
+  AlertBanner,
   Pagination,
-  Skeleton,
+  RowSkeleton,
+  ContentCard,
+  DataTable,
   ListTabs,
+  type StatusTone,
 } from '@/components/boss/ui';
-import { MessageCircle, Heart, Eye, RefreshCw, Inbox } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
@@ -35,6 +44,15 @@ function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
   return payload.list ?? payload.content ?? [];
+}
+
+function categoryTone(code?: string): StatusTone {
+  return code === 'JOB' ? 'warn' : code === 'ANON' ? 'neutral' : 'info';
+}
+
+function authorName(item: BbsData): string {
+  if (item.anonyYn === 'Y') return '익명';
+  return item.nickNm ?? item.userNm ?? '사용자';
 }
 
 function relativeTime(input?: string): string {
@@ -54,9 +72,13 @@ function relativeTime(input?: string): string {
 
 export function CommunityList({
   fixedCategory,
+  actions,
 }: {
   fixedCategory?: Exclude<CategoryCode, 'ALL'>;
+  /** 필터 줄 우측 끝 버튼 (예: 구인/구직 등록) */
+  actions?: ReactNode;
 }) {
+  const router = useRouter();
   const [items, setItems] = useState<BbsData[]>([]);
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
@@ -114,102 +136,157 @@ export function CommunityList({
     void load(page, keyword);
   };
 
+  const clearSearch = () => {
+    setSearchInput('');
+    setPage(1);
+    setKeyword('');
+  };
+
+  const isJob = category === 'JOB';
+  const newHref = isJob ? '/boss/community/new?type=JOB' : '/boss/community/new';
+
   return (
-    <>
-      <Toolbar>
+    <div className="flex flex-col gap-4">
+      {/* ───── 필터 줄 ───── */}
+      <form
+        className="flex flex-wrap items-center gap-2.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSearch();
+        }}
+      >
+        {!fixedCategory && (
+          <ListTabs
+            tabs={CATEGORY_TABS}
+            active={category}
+            onChange={(next) => {
+              setCategory(next);
+              setPage(1);
+            }}
+          />
+        )}
         <SearchInput
           value={searchInput}
           onChange={setSearchInput}
-          placeholder="제목·내용 검색"
+          placeholder="제목 · 내용"
           className="w-56"
+          hint={false}
         />
-        <Button onClick={onSearch} disabled={loading}>
+        <Button type="submit" variant="secondary" disabled={loading}>
           검색
         </Button>
-        <Button
-          icon={RefreshCw}
-          onClick={onRefresh}
-          disabled={loading}
-          className={loading ? '[&>svg]:animate-spin' : ''}
-        >
-          새로고침
-        </Button>
-      </Toolbar>
-
-      {!fixedCategory && (
-        <ListTabs
-          tabs={CATEGORY_TABS}
-          active={category}
-          onChange={(next) => {
-            setCategory(next);
-            setPage(1);
-          }}
-        />
-      )}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+            {loading
+              ? '불러오는 중…'
+              : keyword
+                ? `'${keyword}' ${items.length}건`
+                : `${page} 페이지 · ${items.length}건`}
+          </span>
+          <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRefresh} disabled={loading}>
+            새로고침
+          </Button>
+          {actions}
+        </div>
+      </form>
 
       {error && (
-        <div className="rounded-lg border border-boss-error/30 bg-boss-error/10 p-3 text-sm text-boss-error">
+        <AlertBanner
+          tone="bad"
+          action={
+            <Button variant="primary" size="sm" onClick={onRefresh}>
+              다시 시도
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </AlertBanner>
       )}
 
+      {/* ───── 표 ───── */}
       {loading && items.length === 0 ? (
-        <div className="rounded-lg border border-boss-border bg-boss-surface p-4">
-          <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-1/3" />
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="h-3 w-1/4" />
-              </div>
-            ))}
-          </div>
-        </div>
+        <ContentCard>
+          <RowSkeleton rows={8} />
+        </ContentCard>
       ) : items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-boss-border bg-boss-surface/30 px-6 py-12">
+        error ? (
           <EmptyState
-            icon={Inbox}
-            title="게시글이 없습니다"
-            description="검색어를 확인하거나 첫 게시글을 작성하세요."
+            title="게시글을 불러오지 못했습니다"
+            description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={onRefresh}>
+                다시 시도
+              </Button>
+            }
           />
-        </div>
+        ) : keyword ? (
+          <EmptyState
+            title={`'${keyword}' 에 맞는 글이 없습니다`}
+            description="제목과 내용에서 찾습니다. 검색어를 짧게 바꿔 보세요."
+            action={
+              <Button variant="secondary" size="sm" onClick={clearSearch}>
+                검색 지우기
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title={isJob ? '아직 올라온 구인 · 구직 글이 없습니다' : '아직 게시글이 없습니다'}
+            description={
+              isJob
+                ? '인력이 필요하거나 일자리를 찾는다면 첫 글을 올려 보세요. 다른 사장님이 연락 요청을 보낼 수 있습니다.'
+                : '첫 글을 올리면 다른 사장님들이 답을 달 수 있습니다.'
+            }
+            action={
+              <ButtonLink href={newHref} variant="primary" size="sm">
+                {isJob ? '구인 / 구직 등록' : '글쓰기'}
+              </ButtonLink>
+            }
+          />
+        )
       ) : (
-        <div className="overflow-hidden rounded-lg border border-boss-border bg-boss-surface">
-          <ul className="divide-y divide-boss-border">
-            {items.map((item) => (
-              <li key={item.boardId}>
-                <Link
-                  href={`/boss/community/${item.boardId}`}
-                  className="block p-3 transition-colors hover:bg-boss-elevated/50"
-                >
-                  <div className="mb-1 flex items-center gap-2 text-xs text-boss-text-muted">
-                    {item.typeDtNm && <Badge tone="default">{item.typeDtNm}</Badge>}
-                    <span>{item.anonyYn === 'Y' ? '익명' : item.nickNm ?? item.userNm ?? '사용자'}</span>
-                    <span>·</span>
-                    <span>{relativeTime(item.crtDtm)}</span>
-                  </div>
-                  <h3 className="mb-1 line-clamp-1 text-sm font-semibold text-boss-text">
-                    {item.subject ?? '(제목 없음)'}
-                  </h3>
-                  <p className="mb-2 line-clamp-1 text-xs text-boss-text-secondary">
-                    {item.contents ?? ''}
-                  </p>
-                  <div className="flex items-center gap-3 text-[11px] text-boss-text-muted">
-                    <span className="inline-flex items-center gap-1">
-                      <Eye size={11} /> {item.viewCnt ?? 0}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Heart size={11} /> {item.likeCnt ?? 0}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MessageCircle size={11} /> {item.replyCnt ?? 0}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>제목</th>
+              <th>작성자</th>
+              <th className="num">댓글</th>
+              <th className="num">좋아요</th>
+              <th className="num">조회</th>
+              <th>날짜</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const href = `/boss/community/${item.boardId}`;
+              return (
+                <tr key={item.boardId} className="cursor-pointer" onClick={() => router.push(href)}>
+                  <td className="wrap max-w-[520px]">
+                    <div className="flex items-center gap-2">
+                      {item.typeDtNm && !fixedCategory && (
+                        <StatusPill tone={categoryTone(item.typeDtCd)}>{item.typeDtNm}</StatusPill>
+                      )}
+                      <Link
+                        href={href}
+                        className="line-clamp-1 min-w-0 font-semibold !text-boss-text hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {item.subject ?? '(제목 없음)'}
+                      </Link>
+                    </div>
+                  </td>
+                  <td className="text-boss-text-secondary">{authorName(item)}</td>
+                  <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
+                  <td className="num text-boss-text-secondary">{item.likeCnt ?? 0}</td>
+                  <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
+                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
+                    {relativeTime(item.crtDtm)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </DataTable>
       )}
 
       <Pagination
@@ -218,6 +295,6 @@ export function CommunityList({
         onChange={setPage}
         disabled={loading}
       />
-    </>
+    </div>
   );
 }

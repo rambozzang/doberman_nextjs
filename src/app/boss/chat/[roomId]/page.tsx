@@ -1,14 +1,23 @@
 'use client';
 
+// 채팅방 단독 보기 — Industry 패턴 (agent.opentohome.com)
+//
+// 인박스(/boss/chat)의 3열 본문을 한 화면으로 뺀 것. 좁은 화면(<lg)에서 목록을 누르면 여기로 온다.
+//   패널 헤더 : 사각 Chip 아바타 + 고객명 + 연결 상태 점
+//   말풍선    : 사각 — 내 메시지 accent 채움 / 상대 패널 + 테두리
+//   입력      : boss-input + primary 전송 (Enter 전송, Shift+Enter 줄바꿈)
+//
+// 화면 제목("채팅")과 ← 채팅 링크는 셸 헤더(PAGE_META)가 그린다.
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useChatRooms } from '@/hooks/useChatRooms';
 import { useChatAuth } from '@/hooks/useChatAuth';
-import BossPageHeader from '@/components/boss/BossPageHeader';
 import type { ChatApiMessage } from '@/components/chat/types';
 import { Send } from 'lucide-react';
+import { Button, Chip, chipToneOf, ContentCard } from '@/components/boss/ui';
 
 export default function BossChatRoomPage() {
   const params = useParams<{ roomId: string }>();
@@ -51,19 +60,38 @@ export default function BossChatRoomPage() {
     setInput('');
   };
 
-  return (
-    <div className="flex h-[calc(100vh-160px)] flex-col gap-3">
-      <BossPageHeader
-        title={room?.partnerName ?? `채팅방 #${roomId}`}
-        backHref="/boss/chat"
-        description={isConnected ? '연결됨' : connectionError ?? '연결 중...'}
-      />
+  const partnerName = room?.partnerName ?? `채팅방 #${roomId}`;
 
-      <div className="flex-1 space-y-2 overflow-y-auto rounded-lg border border-boss-border bg-boss-elevated/40 p-4">
+  return (
+    // 헤더(≈111px) + 본문 패딩(20 + 56) 을 뺀 높이. 모바일은 상단 바 · 하단 탭이 더 있어 여유를 둔다.
+    <ContentCard className="flex h-[calc(100dvh-300px)] min-h-[420px] flex-col lg:h-[calc(100dvh-190px)]">
+      {/* 패널 헤더 */}
+      <div className="flex flex-none items-center gap-2.5 border-b border-boss-border px-[18px] py-3">
+        <Chip tone={chipToneOf(partnerName)} size={30}>
+          {partnerName.charAt(0)}
+        </Chip>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-semibold text-boss-text">{partnerName}</p>
+          <p className="flex items-center gap-1.5 text-[11.5px] text-boss-text-muted">
+            <span
+              aria-hidden
+              className={`inline-block h-[6px] w-[6px] rounded-full ${
+                isConnected ? 'bg-boss-success' : 'bg-boss-warning'
+              }`}
+            />
+            {isConnected ? '연결됨' : (connectionError ?? '연결 중…')}
+          </p>
+        </div>
+      </div>
+
+      {/* 메시지 */}
+      <div className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-boss-bg p-[18px]">
         {isLoading && messages.length === 0 ? (
-          <div className="text-center text-sm text-boss-text-muted">불러오는 중...</div>
+          <p className="text-center text-[12.5px] text-boss-text-secondary">불러오는 중…</p>
         ) : messages.length === 0 ? (
-          <div className="text-center text-sm text-boss-text-muted">아직 메시지가 없습니다.</div>
+          <p className="text-center text-[12.5px] text-boss-text-secondary">
+            아직 주고받은 메시지가 없습니다. 아래에서 첫 답변을 보내세요.
+          </p>
         ) : (
           messages
             .filter((m) => m.message && m.message.trim() !== '')
@@ -72,20 +100,22 @@ export default function BossChatRoomPage() {
               return (
                 <div
                   key={m.messageId}
-                  className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                  className={`max-w-[75%] px-3.5 py-2.5 ${
+                    isMine
+                      ? 'self-end bg-boss-primary text-boss-primary-foreground'
+                      : 'self-start border border-boss-border bg-boss-surface text-boss-text'
+                  }`}
                 >
-                  <div
-                    className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                      isMine
-                        ? 'bg-boss-primary-hover text-boss-text'
-                        : 'bg-boss-elevated text-boss-text'
+                  <p className="whitespace-pre-wrap break-words text-[13.5px] leading-[1.6]">
+                    {m.message}
+                  </p>
+                  <p
+                    className={`mt-1 font-boss-head text-[10.5px] tabular-nums ${
+                      isMine ? 'text-boss-primary-foreground/70' : 'text-boss-text-muted'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap break-words">{m.message}</div>
-                    <div className={`mt-1 text-[10px] ${isMine ? 'text-boss-primary-foreground' : 'text-boss-text-muted'}`}>
-                      {m.timeAgo}
-                    </div>
-                  </div>
+                    {m.timeAgo}
+                  </p>
                 </div>
               );
             })
@@ -93,7 +123,8 @@ export default function BossChatRoomPage() {
         <div ref={endRef} />
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-boss-border bg-boss-elevated/60 p-2">
+      {/* 입력 */}
+      <div className="flex flex-none items-center gap-2 border-t border-boss-border bg-boss-surface p-3">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -103,19 +134,20 @@ export default function BossChatRoomPage() {
               handleSend();
             }
           }}
-          placeholder={isConnected ? '메시지를 입력하세요' : '연결 중...'}
+          placeholder={isConnected ? '메시지를 입력하세요' : '연결 중…'}
+          aria-label="메시지 입력"
           disabled={!isConnected}
-          className="flex-1 rounded bg-boss-surface px-3 py-2 text-sm text-boss-text outline-none disabled:opacity-50"
+          className="boss-input"
         />
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          icon={Send}
           onClick={handleSend}
           disabled={!isConnected || !input.trim()}
-          className="flex items-center gap-1 rounded bg-boss-primary-hover px-3 py-2 text-sm font-semibold text-boss-text hover:bg-boss-primary disabled:bg-boss-primary-hover/40"
         >
-          <Send size={14} /> 전송
-        </button>
+          전송
+        </Button>
       </div>
-    </div>
+    </ContentCard>
   );
 }
