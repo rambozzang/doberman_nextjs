@@ -20,8 +20,11 @@ export interface BossUserInfo {
 export interface BossLoginRequest {
   userId: string;
   password: string;
+  /** 웹은 FCM 을 쓰지 않으므로 항상 빈 문자열 — 백엔드도 웹 로그인에서는 토큰을 갱신하지 않는다 */
   fcmToken: string;
   deviceId: string;
+  /** "WEB" — 백엔드가 앱의 FCM 토큰을 건드리지 않게 한다 */
+  clientType?: string;
 }
 
 // Flutter 의 LoginData (= res.data) 와 동일

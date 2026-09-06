@@ -51,8 +51,10 @@ export default function BossLoginPage() {
       const payload: BossLoginRequest = {
         userId: userId.trim(),
         password,
+        // 웹은 FCM 이 없다. clientType 으로 웹임을 알려 앱의 푸시 토큰을 지우지 않게 한다
         fcmToken: '',
         deviceId: ensureDeviceId() ?? '',
+        clientType: 'WEB',
       };
       const res = await bossAuthApi.login(payload);
       if (res.success !== false && res.data?.token) {
