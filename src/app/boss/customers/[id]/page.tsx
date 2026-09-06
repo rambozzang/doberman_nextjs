@@ -9,6 +9,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { customerStatus } from '@/lib/boss/customerStatus';
+import { formatAppDateTime, formatPhone } from '@/lib/boss/format';
 import toast from 'react-hot-toast';
 import type { BossOrderItem } from '@/types/boss';
 import {
@@ -33,10 +34,15 @@ function formatMoney(n?: number) {
   return '₩' + n.toLocaleString('ko-KR');
 }
 
+// 등록일 · 수정일은 ISO(2026-07-15T15:12:34), 견적일 · 시공일은 'yyyyMMddHHmm' 로 온다.
+// 두 형태를 모두 사람이 읽는 표기로 바꾼다.
 function formatDate(input?: string | null) {
   if (!input) return '-';
+  if (/^\d{8,14}$/.test(input.replace(/[^0-9]/g, '')) && !input.includes('-')) {
+    return formatAppDateTime(input);
+  }
   const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
+  if (Number.isNaN(d.getTime())) return formatAppDateTime(input);
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -250,7 +256,7 @@ export default function BossOrderDetailPage() {
               value={
                 item.phone ? (
                   <a href={`tel:${item.phone}`} className="font-boss-head tabular-nums">
-                    {item.phone}
+                    {formatPhone(item.phone)}
                   </a>
                 ) : (
                   '—'

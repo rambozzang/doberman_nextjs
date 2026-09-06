@@ -24,6 +24,7 @@ import {
 } from '@/components/boss/ui';
 import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
 import { CUSTOMER_LIST_TABS, customerStatus } from '@/lib/boss/customerStatus';
+import { formatAppDateTime, maskPhoneForList } from '@/lib/boss/format';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import type { BossOrderItem, OrderSortType } from '@/types/boss';
 import { RefreshCw, Phone, Plus } from 'lucide-react';
@@ -218,7 +219,7 @@ export default function BossOrderListPage() {
                     </td>
                     <td className="font-semibold text-boss-text">{item.name ?? '-'}</td>
                     <td className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
-                      {item.phone ?? '-'}
+                      {maskPhoneForList(item.phone)}
                     </td>
                     <td className="max-w-[240px]">
                       <span className="block truncate text-boss-text-secondary">
@@ -226,10 +227,10 @@ export default function BossOrderListPage() {
                       </span>
                     </td>
                     <td className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">
-                      {item.workDate ?? item.estimateDate ?? '-'}
+                      {formatAppDateTime(item.workDate ?? item.estimateDate)}
                       {item.workDate && item.workEndDate && item.workEndDate !== item.workDate && (
                         <span className="block text-[11px] text-boss-text-muted">
-                          ~ {item.workEndDate}
+                          ~ {formatAppDateTime(item.workEndDate)}
                         </span>
                       )}
                     </td>
