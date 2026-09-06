@@ -3,14 +3,17 @@
 // 인쇄 화면 공용 액션 — 인쇄 · PDF 저장 · 이미지 저장 · 공유 · 문자
 //
 // 웹에서 "핸드폰으로 견적서 보내기"를 가능한 만큼 구현한다.
-//   PDF/이미지  : 종이 영역(targetRef)을 html2canvas 로 그려서 파일로 내려준다.
+//   PDF        : pdfDoc 이 주어지면 @react-pdf/renderer 로 **진짜 벡터 PDF** 를 만든다.
+//                 (글자가 글자로 들어가 확대해도 안 깨지고 복사도 된다. 앱 PDF 와 같은 방식)
+//                 pdfDoc 이 없으면 예전처럼 화면을 캡처해서 넣는다.
+//   이미지      : 벡터 PDF 를 만들 수 있으면 그 PDF 1쪽을 고해상도로 굽고, 아니면 화면을 캡처한다.
 //   공유        : Web Share API(navigator.share) 로 OS 공유 시트를 연다 — 아이폰 Safari · 안드로이드 Chrome 에서
 //                 문자 · 카카오톡 · 메일에 파일이 첨부된다. 지원하지 않는 브라우저(데스크톱 대부분)에서는 버튼을 숨긴다.
 //   문자        : sms: 링크로 문자 앱을 연다. 파일은 못 붙이고 요약 문구만 채운다.
 //
 // html2canvas · jspdf 는 무거워서 버튼을 누를 때만 동적으로 불러온다.
 
-import { useEffect, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode, type RefObject } from 'react';
 import toast from 'react-hot-toast';
 import { Printer, FileDown, ImageDown, Share2, MessageSquareText } from 'lucide-react';
 import { Button } from '@/components/boss/ui';
@@ -29,6 +32,11 @@ type Props = {
   disabled?: boolean;
   /** 앞쪽에 둘 보조 버튼(목록으로 등) */
   children?: ReactNode;
+  /**
+   * 벡터 PDF 문서. 있으면 PDF · 이미지 · 공유가 모두 이걸로 만들어진다.
+   * (@react-pdf/renderer 의 <Document>. 무거워서 누를 때 동적으로 불러온다)
+   */
+  pdfDoc?: ReactElement | null;
 };
 
 type Busy = null | 'pdf' | 'png' | 'share';
@@ -45,6 +53,36 @@ function isIOS() {
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   );
+}
+
+/** 벡터 PDF 를 Blob 으로 (@react-pdf/renderer) */
+async function renderVectorPdf(doc: ReactElement): Promise<Blob> {
+  const { pdf } = await import('@react-pdf/renderer');
+  // pdf() 는 <Document> 만 받는다. 호출부가 항상 Document 를 넘기므로 여기서 형만 맞춘다.
+  return pdf(doc as Parameters<typeof pdf>[0]).toBlob();
+}
+
+/** PDF 1쪽을 고해상도 PNG 로 — 캡처가 아니라 벡터에서 구워서 글자가 또렷하다 */
+async function pdfBlobToPng(blob: Blob, scale = 3): Promise<Blob> {
+  const pdfjs = await import('pdfjs-dist');
+  // 워커는 같은 버전의 파일을 쓴다(번들러가 URL 을 만들어 준다)
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
+  const buf = await blob.arrayBuffer();
+  const doc = await pdfjs.getDocument({ data: buf }).promise;
+  const page = await doc.getPage(1);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas 2d context unavailable');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+  return canvasToBlob(canvas);
 }
 
 /** 종이 영역을 캔버스로. 화면의 패널 배경 · 테두리 · 그림자는 벗기고 흰 종이 위에 그린다. */
@@ -117,6 +155,7 @@ export function PrintActions({
   fileName,
   shareTitle,
   shareText,
+  pdfDoc,
   smsPhone,
   disabled,
   children,
@@ -150,12 +189,14 @@ export function PrintActions({
   };
 
   const handlePdf = async () => {
+    if (busy) return;
     const el = getTarget();
-    if (!el || busy) return;
+    if (!pdfDoc && !el) return;
     setBusy('pdf');
     try {
-      const canvas = await renderCanvas(el);
-      download(await canvasToPdf(canvas), `${name}.pdf`);
+      // 벡터 PDF 가 우선 — 글자가 이미지가 아니라 글자로 들어간다
+      const blob = pdfDoc ? await renderVectorPdf(pdfDoc) : await canvasToPdf(await renderCanvas(el!));
+      download(blob, `${name}.pdf`);
       toast.success('PDF 를 저장했습니다.');
     } catch (e) {
       console.error('pdf export failed', e);
@@ -166,12 +207,16 @@ export function PrintActions({
   };
 
   const handlePng = async () => {
+    if (busy) return;
     const el = getTarget();
-    if (!el || busy) return;
+    if (!pdfDoc && !el) return;
     setBusy('png');
     try {
-      const canvas = await renderCanvas(el);
-      download(await canvasToBlob(canvas), `${name}.png`);
+      // 벡터 PDF 를 고해상도로 구워 낸다 — 화면 캡처보다 훨씬 또렷하다
+      const blob = pdfDoc
+        ? await pdfBlobToPng(await renderVectorPdf(pdfDoc))
+        : await canvasToBlob(await renderCanvas(el!));
+      download(blob, `${name}.png`);
       toast.success('이미지를 저장했습니다.');
     } catch (e) {
       console.error('png export failed', e);
@@ -183,12 +228,15 @@ export function PrintActions({
 
   // 공유는 이미지로 — 문자(MMS)·카카오톡 양쪽에서 바로 보인다. PDF 가 필요하면 저장 후 첨부.
   const handleShare = async () => {
+    if (busy) return;
     const el = getTarget();
-    if (!el || busy) return;
+    if (!pdfDoc && !el) return;
     setBusy('share');
     try {
-      const canvas = await renderCanvas(el);
-      const file = new File([await canvasToBlob(canvas)], `${name}.png`, { type: 'image/png' });
+      const png = pdfDoc
+        ? await pdfBlobToPng(await renderVectorPdf(pdfDoc))
+        : await canvasToBlob(await renderCanvas(el!));
+      const file = new File([png], `${name}.png`, { type: 'image/png' });
       if (!navigator.canShare?.({ files: [file] })) {
         toast.error('이 기기에서는 파일 공유를 지원하지 않습니다. 이미지 저장 후 보내 주세요.');
         return;

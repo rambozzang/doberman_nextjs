@@ -14,6 +14,7 @@ import { BossAuthManager } from '@/lib/bossAuth';
 import { PageHeader, ButtonLink, EmptyState, AlertBanner, Skeleton } from '@/components/boss/ui';
 import { PrintActions } from '@/components/boss/print/PrintActions';
 import EstimateDoc from '@/components/boss/print/EstimateDoc';
+import EstimatePdf, { registerPdfFont } from '@/components/boss/print/pdf/EstimatePdf';
 import DocStylePicker from '@/components/boss/print/DocStylePicker';
 import { ESTIMATE_STYLES } from '@/components/boss/print/docTypes';
 import { buildDocMeta } from '@/lib/boss/docMeta';
@@ -61,6 +62,7 @@ export default function BossEstimatePrintPage() {
 
   useEffect(() => {
     setStyleKey(loadDocStyle('estimate', ESTIMATE_STYLES[0].key));
+    registerPdfFont();
   }, []);
 
   const changeStyle = (key: string) => {
@@ -195,6 +197,7 @@ export default function BossEstimatePrintPage() {
               shareText={shareText}
               smsPhone={customer?.phone}
               disabled={items.length === 0}
+              pdfDoc={items.length ? <EstimatePdf data={docData} p={style.palette} styleKey={styleKey} /> : null}
             >
               <ButtonLink href="/boss/estimate" variant="secondary">
                 목록으로
