@@ -104,6 +104,15 @@ export interface BbsBlockData {
 // CommentRepo 가 BbsData 를 직접 보내므로 별도 타입을 만들지 않고 BbsData 를 재사용한다.
 export type CommentCreateRequest = BbsData;
 
+// 댓글 목록 응답 — 백엔드가 Spring Page 를 그대로 내려 준다
+export interface BbsCommentListResponse {
+  content?: BbsData[];
+  totalElements?: number;
+  totalPages?: number;
+  number?: number;
+  size?: number;
+}
+
 // 게시글 목록 응답이 배열만 오는 경우와 페이징 래핑이 오는 경우 모두 수용
 export interface BbsListResponse<T = BbsData> {
   list?: T[];

@@ -124,7 +124,9 @@ export default function BossCommunityDetailPage() {
         sortDesc: 'ASC',
       });
       if (res.success !== false && res.data) {
-        setComments(Array.isArray(res.data) ? res.data : []);
+        // 배열이 아니라 Page 객체({content: [...]})로 온다
+        const data = res.data as { content?: BbsData[] } | BbsData[];
+        setComments(Array.isArray(data) ? data : (data.content ?? []));
       }
     } catch {
       // 댓글 로드 실패는 토스트만
