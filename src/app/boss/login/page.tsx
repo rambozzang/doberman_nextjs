@@ -53,8 +53,6 @@ export default function BossLoginPage() {
         password,
         fcmToken: '',
         deviceId: ensureDeviceId() ?? '',
-        // 웹 로그인임을 알려 앱 세션(DEVICE_ID)을 끊지 않게 한다
-        clientType: 'WEB',
       };
       const res = await bossAuthApi.login(payload);
       if (res.success !== false && res.data?.token) {
