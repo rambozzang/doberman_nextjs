@@ -3,7 +3,7 @@
 // 견적서 인쇄 — Industry 패턴의 인쇄 화면
 // - URL [id] 는 customerId
 // - GET /estimateitems/{customerId} 로 품목을 불러와 인쇄용 견적서로 표시
-// - 셸(레일 · 헤더) 없이 단독 렌더링된다(BossChrome 이 /print 경로를 제외한다). 그래서 PageHeader 를 여기서 그린다.
+// - 화면에서는 셸(레일 · 헤더)이 그대로 있고, 인쇄할 때만 CSS 로 셸을 숨긴다.
 // - 화면에서는 패널 위 종이, 인쇄에서는 흰 종이 · 검정 글자 · 사각 테두리.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -11,7 +11,7 @@ import { bossEstimateApi } from '@/lib/api/boss/estimate';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
-import { PageHeader, ButtonLink, EmptyState, AlertBanner, Skeleton } from '@/components/boss/ui';
+import { ButtonLink, EmptyState, AlertBanner, Skeleton } from '@/components/boss/ui';
 import { PrintActions } from '@/components/boss/print/PrintActions';
 import EstimateDoc from '@/components/boss/print/EstimateDoc';
 import DocStylePicker from '@/components/boss/print/DocStylePicker';
@@ -167,6 +167,22 @@ export default function BossEstimatePrintPage() {
           .no-print {
             display: none !important;
           }
+          /* 화면에서는 레일 · 헤더를 두되, 종이에는 문서만 나가게 한다 */
+          .boss-shell > aside,
+          .boss-shell-main > header,
+          .boss-shell nav[aria-label='주요 메뉴'] {
+            display: none !important;
+          }
+          .boss-shell {
+            display: block !important;
+          }
+          .boss-shell-main {
+            padding: 0 !important;
+          }
+          .boss-shell-main > div {
+            max-width: none !important;
+            padding: 0 !important;
+          }
           .print-area {
             background: #ffffff !important;
             box-shadow: none !important;
@@ -181,44 +197,41 @@ export default function BossEstimatePrintPage() {
         }
       `}</style>
 
-      <div className="no-print">
-        <PageHeader
-          eyebrow="견적서"
-          title="견적서 출력"
-          description={`고객 ID ${customerId || '-'} · 견적일 ${today}`}
-          breadcrumbs={[{ label: '견적서', href: '/boss/estimate' }, { label: '출력' }]}
-          actions={
-            <PrintActions
-              targetRef={paperRef}
-              fileName={fileName}
-              shareTitle={`${customerLabel} 견적서`}
-              shareText={shareText}
-              smsPhone={customer?.phone}
-              disabled={items.length === 0}
-              pdfDocFactory={
-                items.length
-                  ? async () => {
-                      // 무거운 PDF 라이브러리는 버튼을 누를 때만 불러온다
-                      const mod = await import('@/components/boss/print/pdf/EstimatePdf');
-                      mod.registerPdfFont();
-                      const Doc = mod.default;
-                      return <Doc data={docData} p={style.palette} styleKey={styleKey} />;
-                    }
-                  : null
-              }
-            >
-              <ButtonLink href="/boss/estimate" variant="secondary">
-                목록으로
-              </ButtonLink>
-              <ButtonLink href={`/boss/estimate/${encodeURIComponent(customerId)}/receipt`} variant="secondary">
-                영수증
-              </ButtonLink>
-              <ButtonLink href={`/boss/tax-invoice/new?customerId=${encodeURIComponent(customerId)}`} variant="secondary">
-                세금계산서
-              </ButtonLink>
-            </PrintActions>
+      {/* 셸 헤더가 화면 제목을 그린다 — 여기서는 문서 이름과 내보내기 버튼만 */}
+      <div className="no-print flex flex-wrap items-center gap-2">
+        <h2 className="font-boss-head text-[17px] font-semibold text-boss-text">견적서 출력</h2>
+        <span className="text-[12px] text-boss-text-secondary">{customerLabel} · {today}</span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <PrintActions
+          targetRef={paperRef}
+          fileName={fileName}
+          shareTitle={`${customerLabel} 견적서`}
+          shareText={shareText}
+          smsPhone={customer?.phone}
+          disabled={items.length === 0}
+          pdfDocFactory={
+            items.length
+              ? async () => {
+                  // 무거운 PDF 라이브러리는 버튼을 누를 때만 불러온다
+                  const mod = await import('@/components/boss/print/pdf/EstimatePdf');
+                  mod.registerPdfFont();
+                  const Doc = mod.default;
+                  return <Doc data={docData} p={style.palette} styleKey={styleKey} />;
+                }
+              : null
           }
-        />
+        >
+          <ButtonLink href="/boss/estimate" variant="secondary">
+            목록으로
+          </ButtonLink>
+          <ButtonLink href={`/boss/estimate/${encodeURIComponent(customerId)}/receipt`} variant="secondary">
+            영수증
+          </ButtonLink>
+          <ButtonLink href={`/boss/tax-invoice/new?customerId=${encodeURIComponent(customerId)}`} variant="secondary">
+            세금계산서
+          </ButtonLink>
+        </PrintActions>
+        </div>
       </div>
 
       <DocStylePicker styles={ESTIMATE_STYLES} value={styleKey} onChange={changeStyle} label="견적서 양식" />

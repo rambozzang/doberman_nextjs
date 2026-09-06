@@ -29,11 +29,9 @@ const AUTH_PATHS = [
   '/boss/permission',
 ];
 
-// 인쇄용 화면은 크롬 없이 단독 렌더링한다.
-// `/receipt` 로 끝나는 건 견적서의 거래명세서 출력(/boss/estimate/[id]/receipt)뿐이다 —
-// 영수증 지출관리(/boss/receipt)까지 걸리면 레일이 사라진다.
-const isPrintPath = (p: string) =>
-  p.endsWith('/print') || /^\/boss\/estimate\/[^/]+\/receipt$/.test(p);
+// 인쇄용 화면도 화면에서는 레일 · 헤더를 그대로 둔다.
+// 예전에는 셸 없이 단독으로 띄웠는데, 사장님이 견적서를 열면 메뉴가 통째로 사라져
+// 어디로 돌아가야 할지 알 수 없었다. 인쇄할 때만 CSS(@media print)로 셸을 숨긴다.
 
 const WIDTH: Record<'narrow' | 'wide' | 'full', string> = {
   narrow: 'max-w-[620px]',
@@ -45,7 +43,7 @@ export default function BossChrome({ children }: { children: React.ReactNode }) 
   const pathname = usePathname() ?? '';
   const isAuth = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
-  if (isAuth || isPrintPath(pathname)) {
+  if (isAuth) {
     return <main className="boss-page">{children}</main>;
   }
 
@@ -54,10 +52,10 @@ export default function BossChrome({ children }: { children: React.ReactNode }) 
   return (
     <BossPortalProvider>
       <BossSearchProvider>
-        <div className="boss-page min-h-dvh lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
+        <div className="boss-page boss-shell min-h-dvh lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
           <BossSidebar />
 
-          <main className="flex min-w-0 flex-col pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0">
+          <main className="boss-shell-main flex min-w-0 flex-col pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0">
             <BossHeader />
             <div className={`w-full ${WIDTH[width]} px-5 pb-14 pt-5 sm:px-7`}>{children}</div>
           </main>

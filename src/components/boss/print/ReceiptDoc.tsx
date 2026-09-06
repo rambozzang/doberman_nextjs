@@ -1,390 +1,355 @@
 'use client';
 
-// 영수증 문서 5종 — 앱 lib/app/estimate/pdf/receipt_print_page*.dart 와 같은 구성
+// 영수증 문서 5종 — 한국 실무 영수증 서식
 //
-//   0 기본    국세청 영수증 서식 모양(테두리 격자, 공급자 칸, 품목 표)
-//   1 심플    아래 굵은 선 제목 + 받는 분 / 총 금액 / 품목 내역 / 공급자
-//   2 클래식  갈색 이중 테두리, "위 금액을 정히 영수함."
-//   3 카드    파란 카드, 총 금액을 크게
-//   4 컬러    세이지 카드 + 색 강조 바
+// 견적서와 같은 원칙: 실제 거래에 쓰는 영수증은 격자 서식이다.
+//   제목(영 수 증) · 발행일 · 문서번호
+//   받는 분(귀하) 칸
+//   금액 칸 : 一金 …원整 (₩ …)  ← 가장 크게
+//   공급자 격자 : 등록번호 · 상호 · 성명(인) · 사업장주소 · 업태/종목 · 전화
+//   품목 격자표 : No · 품 명 · 규격 · 수량 · 단가 · 금 액 (+ 합계 행)
+//   "위 금액을 정히 영수합니다." · 발행일 · 상호 · 대표자(인)
 //
-// 문구는 앱 그대로다: "위 금액을 정히 영수합니다." / "위 금액을 정히 영수함." / "{회사명} 드림"
+// 양식(색)마다 다른 것은 제목 줄과 강조색뿐이다.
+//   0 기본 · 1 심플 · 2 클래식 · 3 카드 · 4 컬러
 
 import type { DocData, DocPalette } from './docTypes';
 import { money, companyAddress } from './docTypes';
 import { formatBizNoLoose } from '@/lib/boss/docMeta';
 
 const FONT = "'Pretendard', sans-serif";
-const RECEIPT_SENTENCE = '위 금액을 정히 영수합니다.';
+const LINE = '#111111';
+const ROWS = 8;
 
-/** 품목 표 — 앱 영수증의 4열 (품목 · 수량 · 단가 · 금액) */
-function ItemTable({ data, p, headerBg, headerColor }: { data: DocData; p: DocPalette; headerBg: string; headerColor: string }) {
-  const th: React.CSSProperties = {
-    padding: '7px 8px',
-    fontSize: 10,
-    fontWeight: 700,
-    color: headerColor,
-    background: headerBg,
-    whiteSpace: 'nowrap',
-  };
-  const td: React.CSSProperties = {
-    padding: '7px 8px',
-    fontSize: 10.5,
-    color: p.textDark,
-    borderBottom: `1px solid ${p.border}`,
-  };
-  const num: React.CSSProperties = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
+function Stamp({ url, size = 40 }: { url?: string | null; size?: number }) {
+  if (!url) return null;
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT }}>
-      <thead>
-        <tr>
-          <th style={{ ...th, textAlign: 'left' }}>품목</th>
-          <th style={{ ...th, textAlign: 'right', width: 60 }}>수량</th>
-          <th style={{ ...th, textAlign: 'right', width: 90 }}>단가</th>
-          <th style={{ ...th, textAlign: 'right', width: 110 }}>금액</th>
-        </tr>
-      </thead>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="" style={{ width: size, height: size, objectFit: 'contain', mixBlendMode: 'multiply' }} />
+  );
+}
+
+function Logo({ url, size }: { url?: string | null; size: number }) {
+  if (!url) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="" style={{ width: size, height: size, objectFit: 'contain' }} />;
+}
+
+function SupplierGrid({ data, accent }: { data: DocData; accent: string }) {
+  const c = data.company;
+  const td: React.CSSProperties = { border: `1px solid ${LINE}`, padding: '4px 7px', fontSize: 10.5, lineHeight: 1.5 };
+  const th: React.CSSProperties = {
+    ...td,
+    background: accent,
+    fontWeight: 700,
+    textAlign: 'center',
+    whiteSpace: 'nowrap',
+    width: 74,
+  };
+  return (
+    <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed' }}>
       <tbody>
-        {data.items.map((it, i) => (
-          <tr key={it.id ?? i}>
-            <td style={{ ...td, fontWeight: 600 }}>
-              {it.itemName ?? ''}
-              {it.itemSpec ? <span style={{ color: p.textLight, fontWeight: 400 }}> · {it.itemSpec}</span> : null}
-            </td>
-            <td style={num}>{money(it.quantity)}</td>
-            <td style={num}>{money(it.unitPrice)}</td>
-            <td style={{ ...num, fontWeight: 700 }}>{money(it.totalAmount)}</td>
-          </tr>
-        ))}
-        {Array.from({ length: Math.max(0, 6 - data.items.length) }).map((_, i) => (
-          <tr key={`b-${i}`}>
-            <td style={{ ...td, height: 24 }} colSpan={4} />
-          </tr>
-        ))}
+        <tr>
+          <td
+            rowSpan={5}
+            style={{
+              ...td,
+              width: 28,
+              background: accent,
+              fontWeight: 700,
+              textAlign: 'center',
+              verticalAlign: 'middle',
+              letterSpacing: '0.4em',
+              writingMode: 'vertical-rl',
+              padding: '10px 2px',
+            }}
+          >
+            공급자
+          </td>
+          <td style={th}>등록번호</td>
+          <td style={{ ...td, letterSpacing: '0.08em' }} colSpan={3}>
+            {formatBizNoLoose(c?.bizno)}
+          </td>
+        </tr>
+        <tr>
+          <td style={th}>상 호</td>
+          <td style={{ ...td, fontWeight: 700 }}>{c?.name ?? ''}</td>
+          <td style={{ ...th, width: 48 }}>성 명</td>
+          <td style={{ ...td, position: 'relative', width: 104 }}>
+            <span>{c?.owner ?? ''}</span>
+            <span style={{ color: '#555', marginLeft: 3 }}>(인)</span>
+            {c?.stamp ? (
+              <span style={{ position: 'absolute', right: 3, top: '50%', transform: 'translateY(-50%)', opacity: 0.85 }}>
+                <Stamp url={c.stamp} />
+              </span>
+            ) : null}
+          </td>
+        </tr>
+        <tr>
+          <td style={th}>사업장주소</td>
+          <td style={td} colSpan={3}>
+            {companyAddress(c)}
+          </td>
+        </tr>
+        <tr>
+          <td style={th}>업 태</td>
+          <td style={td}>{c?.type ?? ''}</td>
+          <td style={{ ...th, width: 48 }}>종 목</td>
+          <td style={td}>{c?.kind ?? ''}</td>
+        </tr>
+        <tr>
+          <td style={th}>전 화</td>
+          <td style={td} colSpan={3}>
+            {c?.phone ?? ''}
+          </td>
+        </tr>
       </tbody>
     </table>
   );
 }
 
-function Stamp({ url }: { url?: string | null }) {
-  if (!url) return null;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />;
+function ItemGrid({ data, accent, headerBg, headerColor }: { data: DocData; accent: string; headerBg: string; headerColor: string }) {
+  const th: React.CSSProperties = {
+    border: `1px solid ${LINE}`,
+    padding: '5px 4px',
+    fontSize: 10.5,
+    fontWeight: 700,
+    textAlign: 'center',
+    background: headerBg,
+    color: headerColor,
+    whiteSpace: 'nowrap',
+  };
+  const td: React.CSSProperties = { border: `1px solid ${LINE}`, padding: '5px 6px', fontSize: 10.5, height: 24 };
+  const num: React.CSSProperties = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
+  const blanks = Math.max(0, ROWS - data.items.length);
+  return (
+    <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed', marginTop: 10 }}>
+      <colgroup>
+        <col style={{ width: 32 }} />
+        <col />
+        <col style={{ width: 82 }} />
+        <col style={{ width: 50 }} />
+        <col style={{ width: 82 }} />
+        <col style={{ width: 100 }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th style={th}>No</th>
+          <th style={th}>품 명</th>
+          <th style={th}>규 격</th>
+          <th style={th}>수량</th>
+          <th style={th}>단 가</th>
+          <th style={th}>금 액</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.items.map((it, i) => (
+          <tr key={it.id ?? i}>
+            <td style={{ ...td, textAlign: 'center', color: '#555' }}>{i + 1}</td>
+            <td style={{ ...td, fontWeight: 600 }}>{it.itemName ?? ''}</td>
+            <td style={{ ...td, textAlign: 'center' }}>{[it.itemSpec, it.unit].filter(Boolean).join(' / ')}</td>
+            <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{money(it.quantity)}</td>
+            <td style={num}>{money(it.unitPrice)}</td>
+            <td style={{ ...num, fontWeight: 700 }}>{money(it.totalAmount)}</td>
+          </tr>
+        ))}
+        {Array.from({ length: blanks }).map((_, i) => (
+          <tr key={`b-${i}`}>
+            <td style={{ ...td, textAlign: 'center', color: '#BBB' }}>{data.items.length + i + 1}</td>
+            <td style={td} />
+            <td style={td} />
+            <td style={td} />
+            <td style={td} />
+            <td style={td} />
+          </tr>
+        ))}
+        <tr>
+          <td colSpan={5} style={{ ...td, background: accent, textAlign: 'center', fontWeight: 700, letterSpacing: '0.4em' }}>
+            합 계
+          </td>
+          <td style={{ ...num, background: accent, fontWeight: 800, fontSize: 12 }}>{money(data.totals.totalAmount)}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
 }
 
-/** 공급자 칸 */
-function Supplier({ data, p, boxed = true }: { data: DocData; p: DocPalette; boxed?: boolean }) {
+function Title({ data, p, styleKey }: { data: DocData; p: DocPalette; styleKey: string }) {
   const c = data.company;
-  const row = (label: string, value?: string | null) =>
-    value ? (
-      <div style={{ display: 'flex', gap: 8, fontSize: 9.5, lineHeight: 1.7 }}>
-        <span style={{ width: 62, flexShrink: 0, color: p.textLight }}>{label}</span>
-        <span style={{ color: p.textDark }}>{value}</span>
+  const meta = (
+    <div style={{ textAlign: 'right', fontSize: 10.5, lineHeight: 1.7 }}>
+      <div>
+        <span style={{ color: '#555' }}>발행일자 </span>
+        {data.meta.today}
       </div>
-    ) : null;
-  return (
-    <div style={boxed ? { border: `1px solid ${p.border}`, padding: 12 } : undefined}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: p.textDark, margin: 0 }}>공급자</p>
-          <p style={{ fontSize: 13, fontWeight: 700, margin: '6px 0 4px' }}>{c?.name ?? ''}</p>
-        </div>
-        <Stamp url={c?.stamp} />
-      </div>
-      {row('대표', c?.owner)}
-      {row('사업자등록번호', formatBizNoLoose(c?.bizno))}
-      {row('주소', companyAddress(c))}
-      {row('업태/종목', [c?.type, c?.kind].filter(Boolean).join(' / '))}
-      {row('연락처', c?.phone)}
-    </div>
-  );
-}
-
-function Closing({ data, p, sentence = RECEIPT_SENTENCE }: { data: DocData; p: DocPalette; sentence?: string }) {
-  return (
-    <div style={{ marginTop: 18, textAlign: 'center' }}>
-      <p style={{ fontSize: 11, color: p.textLight, margin: 0 }}>{sentence}</p>
-      <p style={{ fontSize: 12, fontWeight: 700, color: p.textDark, margin: '10px 0 0' }}>
-        {data.company?.name ?? ''} 드림
-      </p>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════
-// 0 기본 — 국세청 영수증 서식 모양
-// ═══════════════════════════════════════════════
-function Style0({ data, p }: { data: DocData; p: DocPalette }) {
-  const c = data.company;
-  const cell: React.CSSProperties = { border: '1px solid #111', padding: '6px 8px', fontSize: 10.5 };
-  const label: React.CSSProperties = { ...cell, background: '#F3F4F6', width: 92, fontWeight: 600, whiteSpace: 'nowrap' };
-  return (
-    <div style={{ fontFamily: FONT, color: '#111' }}>
-      <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '0.5em', textAlign: 'center', margin: '0 0 4px' }}>
-        영수증
-      </h1>
-      <p style={{ textAlign: 'center', fontSize: 10.5, color: '#555', margin: '0 0 14px' }}>
-        No. {data.meta.docNumber} · {data.meta.today}
-      </p>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
-        <tbody>
-          <tr>
-            <td style={label}>성명(상호)</td>
-            <td style={{ ...cell, fontWeight: 700 }} colSpan={3}>
-              {data.customer?.name ?? ''} 귀하
-            </td>
-          </tr>
-          <tr>
-            <td style={label}>금액</td>
-            <td style={{ ...cell, fontWeight: 800, fontSize: 14 }} colSpan={3}>
-              ₩ {money(data.totals.totalAmount)} 원 (일금 {data.totalAmountKor})
-            </td>
-          </tr>
-          <tr>
-            <td style={label}>등록번호</td>
-            <td style={cell}>{formatBizNoLoose(c?.bizno)}</td>
-            <td style={label}>상호</td>
-            <td style={cell}>{c?.name ?? ''}</td>
-          </tr>
-          <tr>
-            <td style={label}>대표자</td>
-            <td style={cell}>{c?.owner ?? ''}</td>
-            <td style={label}>연락처</td>
-            <td style={cell}>{c?.phone ?? ''}</td>
-          </tr>
-          <tr>
-            <td style={label}>사업장 주소</td>
-            <td style={cell} colSpan={3}>
-              {companyAddress(c)}
-            </td>
-          </tr>
-          <tr>
-            <td style={label}>업태 / 종목</td>
-            <td style={cell} colSpan={3}>
-              {[c?.type, c?.kind].filter(Boolean).join(' / ')}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div style={{ border: '1px solid #111' }}>
-        <ItemTable data={data} p={{ ...p, border: '#111' }} headerBg="#F3F4F6" headerColor="#111" />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10, gap: 12, fontSize: 11 }}>
-        <span style={{ color: '#555' }}>공급가액 {money(data.totals.supplyAmount)}원</span>
-        <span style={{ color: '#555' }}>세액 {money(data.totals.vatAmount)}원</span>
-        <span style={{ fontWeight: 800 }}>합계 {money(data.totals.totalAmount)}원</span>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 22 }}>
-        <p style={{ fontSize: 12, margin: 0 }}>{RECEIPT_SENTENCE}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 700 }}>{c?.name ?? ''} 드림</span>
-          <Stamp url={c?.stamp} />
-        </div>
+      <div>
+        <span style={{ color: '#555' }}>문서번호 </span>
+        {data.meta.docNumber}
       </div>
     </div>
   );
-}
 
-// ═══════════════════════════════════════════════
-// 1 심플
-// ═══════════════════════════════════════════════
-function StyleSimple({ data, p }: { data: DocData; p: DocPalette }) {
-  return (
-    <div style={{ fontFamily: FONT, color: p.textDark }}>
+  if (styleKey === '3' || styleKey === '4')
+    return (
       <div
         style={{
-          borderBottom: `2px solid ${p.primary}`,
-          paddingBottom: 10,
+          background: p.primary,
+          color: '#fff',
+          padding: '12px 14px',
           display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-        }}
-      >
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: p.primary, letterSpacing: '0.2em', margin: 0 }}>영 수 증</h1>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ fontSize: 10, color: p.textLight, margin: 0 }}>No. {data.meta.docNumber}</p>
-          <p style={{ fontSize: 10, color: p.textLight, margin: '4px 0 0' }}>{data.meta.today}</p>
-        </div>
-      </div>
-
-      <div style={{ background: p.accent, padding: '12px 14px', marginTop: 26, display: 'flex', alignItems: 'baseline', gap: 20 }}>
-        <span style={{ fontSize: 11, color: p.textLight }}>받는 분</span>
-        <span style={{ fontSize: 14, fontWeight: 700 }}>{data.customer?.name ?? ''}</span>
-        <span style={{ fontSize: 12 }}>귀하</span>
-      </div>
-
-      <div
-        style={{
-          border: `1px solid ${p.border}`,
-          padding: '14px 16px',
-          marginTop: 18,
-          display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 14,
+          borderRadius: styleKey === '4' ? 6 : 0,
         }}
       >
-        <span style={{ fontSize: 12, color: p.textLight }}>총 금액</span>
-        <span style={{ fontSize: 22, fontWeight: 800, color: p.primary }}>{money(data.totals.totalAmount)}원</span>
-      </div>
-
-      <p style={{ fontSize: 12, fontWeight: 700, margin: '26px 0 10px' }}>품목 내역</p>
-      <ItemTable data={data} p={p} headerBg={p.accent} headerColor={p.textDark} />
-
-      <div style={{ marginTop: 34 }}>
-        <Supplier data={data} p={p} />
-      </div>
-      <Closing data={data} p={p} />
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════
-// 2 클래식 — 갈색 이중 테두리
-// ═══════════════════════════════════════════════
-function StyleClassic({ data, p }: { data: DocData; p: DocPalette }) {
-  return (
-    <div style={{ fontFamily: FONT, color: p.textDark, background: p.accent, padding: 6 }}>
-      <div style={{ border: `2px solid ${p.primary}`, padding: 4 }}>
-        <div style={{ border: `1px solid ${p.border}`, padding: 20, background: '#fff' }}>
-          <h1
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              color: p.primary,
-              letterSpacing: '0.4em',
-              textAlign: 'center',
-              margin: 0,
-            }}
-          >
-            영 수 증
-          </h1>
-          <p style={{ textAlign: 'center', fontSize: 10, color: p.textLight, margin: '6px 0 20px' }}>
-            No. {data.meta.docNumber} · {data.meta.today}
-          </p>
-
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, borderBottom: `1px solid ${p.border}`, paddingBottom: 10 }}>
-            <span style={{ fontSize: 15, fontWeight: 700 }}>{data.customer?.name ?? ''}</span>
-            <span style={{ fontSize: 12 }}>귀하</span>
-          </div>
-
-          <div style={{ textAlign: 'center', margin: '20px 0' }}>
-            <p style={{ fontSize: 11, color: p.textLight, margin: 0 }}>금 액</p>
-            <p style={{ fontSize: 24, fontWeight: 800, color: p.primary, margin: '6px 0 2px' }}>
-              {money(data.totals.totalAmount)} 원
-            </p>
-            <p style={{ fontSize: 11, color: p.textLight, margin: 0 }}>(일금 {data.totalAmountKor})</p>
-          </div>
-
-          <ItemTable data={data} p={p} headerBg={p.primary} headerColor="#FFFFFF" />
-
-          <p style={{ fontSize: 12, textAlign: 'center', margin: '22px 0 0', color: p.textDark }}>
-            위 금액을 정히 영수함.
-          </p>
-
-          <div style={{ marginTop: 18 }}>
-            <Supplier data={data} p={p} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════
-// 3 카드 — 파란 카드
-// ═══════════════════════════════════════════════
-function StyleBlueCard({ data, p }: { data: DocData; p: DocPalette }) {
-  return (
-    <div style={{ fontFamily: FONT, color: p.textDark }}>
-      <div style={{ background: p.primary, borderRadius: 10, padding: '18px 20px', color: '#fff' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '0.2em', margin: 0 }}>영 수 증</h1>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 10, margin: 0, opacity: 0.85 }}>No. {data.meta.docNumber}</p>
-            <p style={{ fontSize: 10, margin: '2px 0 0', opacity: 0.85 }}>{data.meta.today}</p>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <div style={{ flex: 1, background: p.accent, borderRadius: 8, padding: 14 }}>
-          <p style={{ fontSize: 10, color: p.textLight, margin: 0 }}>받는 분</p>
-          <p style={{ fontSize: 15, fontWeight: 700, margin: '6px 0 0' }}>{data.customer?.name ?? ''} 귀하</p>
-        </div>
-        <div style={{ flex: 1, background: p.accent, borderRadius: 8, padding: 14, textAlign: 'right' }}>
-          <p style={{ fontSize: 10, color: p.textLight, margin: 0 }}>총 금액</p>
-          <p style={{ fontSize: 22, fontWeight: 800, color: p.primary, margin: '4px 0 0' }}>
-            {money(data.totals.totalAmount)}원
-          </p>
-          <p style={{ fontSize: 9.5, color: p.textLight, margin: '2px 0 0' }}>{data.totalAmountKor}</p>
-        </div>
-      </div>
-
-      <p style={{ fontSize: 12, fontWeight: 700, margin: '22px 0 10px' }}>품목 내역</p>
-      <div style={{ border: `1px solid ${p.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        <ItemTable data={data} p={p} headerBg={p.secondary} headerColor="#FFFFFF" />
-      </div>
-
-      <div style={{ marginTop: 26 }}>
-        <Supplier data={data} p={p} />
-      </div>
-      <Closing data={data} p={p} />
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════
-// 4 컬러 — 세이지
-// ═══════════════════════════════════════════════
-function StyleColor({ data, p }: { data: DocData; p: DocPalette }) {
-  return (
-    <div style={{ fontFamily: FONT, color: p.textDark }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ width: 6, height: 30, background: p.primary, borderRadius: 3, display: 'inline-block' }} />
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: p.primary, letterSpacing: '0.2em', margin: 0 }}>영 수 증</h1>
-        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          <p style={{ fontSize: 10, color: p.textLight, margin: 0 }}>No. {data.meta.docNumber}</p>
-          <p style={{ fontSize: 10, color: p.textLight, margin: '2px 0 0' }}>{data.meta.today}</p>
-        </div>
-      </div>
-
-      <div style={{ background: p.accent, borderRadius: 8, padding: 14, marginTop: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-          <span style={{ fontSize: 10, color: p.textLight }}>받는 분</span>
-          <span style={{ fontSize: 15, fontWeight: 700 }}>{data.customer?.name ?? ''} 귀하</span>
-          <span style={{ marginLeft: 'auto', fontSize: 22, fontWeight: 800, color: p.primary }}>
-            {money(data.totals.totalAmount)}원
+        {c?.logo ? (
+          <span style={{ background: '#fff', padding: 4, lineHeight: 0, borderRadius: 3 }}>
+            <Logo url={c.logo} size={32} />
           </span>
+        ) : null}
+        <h1 style={{ flex: 1, fontSize: 25, fontWeight: 800, letterSpacing: '0.4em', margin: 0 }}>영 수 증</h1>
+        <div style={{ textAlign: 'right', fontSize: 10.5, lineHeight: 1.7 }}>
+          <div>발행일자 {data.meta.today}</div>
+          <div>문서번호 {data.meta.docNumber}</div>
         </div>
-        <p style={{ fontSize: 9.5, color: p.textLight, textAlign: 'right', margin: '2px 0 0' }}>{data.totalAmountKor}</p>
       </div>
+    );
 
-      <p style={{ fontSize: 12, fontWeight: 700, margin: '22px 0 10px' }}>품목 내역</p>
-      <ItemTable data={data} p={p} headerBg={p.primary} headerColor="#FFFFFF" />
-
-      <div style={{ marginTop: 26 }}>
-        <Supplier data={data} p={p} />
+  if (styleKey === '1')
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {c?.logo ? <Logo url={c.logo} size={38} /> : null}
+            <h1 style={{ fontSize: 27, fontWeight: 800, letterSpacing: '0.35em', margin: 0, color: p.textDark }}>
+              영 수 증
+            </h1>
+          </div>
+          {meta}
+        </div>
+        <div style={{ height: 3, background: p.primary, marginTop: 8 }} />
       </div>
-      <Closing data={data} p={p} />
+    );
+
+  // 0 기본 · 2 클래식 — 가운데 큰 제목
+  return (
+    <div style={{ position: 'relative', paddingBottom: 8 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0 }}>
+        <Logo url={c?.logo} size={42} />
+      </div>
+      <h1
+        style={{
+          fontSize: 30,
+          fontWeight: 800,
+          letterSpacing: '0.6em',
+          textAlign: 'center',
+          margin: 0,
+          textIndent: '0.6em',
+          color: styleKey === '2' ? p.primary : '#111',
+        }}
+      >
+        영 수 증
+      </h1>
+      <div
+        style={{
+          width: 160,
+          height: styleKey === '2' ? 3 : 2,
+          background: styleKey === '2' ? p.primary : '#111',
+          margin: '7px auto 0',
+        }}
+      />
+      <div style={{ position: 'absolute', right: 0, top: 0 }}>{meta}</div>
     </div>
   );
 }
 
 export default function ReceiptDoc({ styleKey, data, palette }: { styleKey: string; data: DocData; palette: DocPalette }) {
-  switch (styleKey) {
-    case '1':
-      return <StyleSimple data={data} p={palette} />;
-    case '2':
-      return <StyleClassic data={data} p={palette} />;
-    case '3':
-      return <StyleBlueCard data={data} p={palette} />;
-    case '4':
-      return <StyleColor data={data} p={palette} />;
-    default:
-      return <Style0 data={data} p={palette} />;
-  }
+  const p = palette;
+  const accent = styleKey === '0' ? '#EFEFEF' : p.accent;
+  const headerBg = styleKey === '0' ? '#EFEFEF' : p.primary;
+  const headerColor = styleKey === '0' ? '#111' : '#FFFFFF';
+  const sentence = styleKey === '2' ? '위 금액을 정히 영수함.' : '위 금액을 정히 영수합니다.';
+  const c = data.company;
+
+  return (
+    <div style={{ fontFamily: FONT, color: '#111', fontSize: 11, lineHeight: 1.5 }}>
+      <Title data={data} p={p} styleKey={styleKey} />
+
+      {/* 받는 분 */}
+      <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed', marginTop: 12 }}>
+        <tbody>
+          <tr>
+            <td
+              style={{
+                border: `1px solid ${LINE}`,
+                background: accent,
+                width: 90,
+                textAlign: 'center',
+                fontWeight: 700,
+                fontSize: 10.5,
+                padding: '6px 8px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              받는 분
+            </td>
+            <td style={{ border: `1px solid ${LINE}`, padding: '6px 10px' }}>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{data.customer?.name ?? ''}</span>
+              <span style={{ fontSize: 12, marginLeft: 6 }}>귀하</span>
+              {data.customer?.phone ? (
+                <span style={{ fontSize: 10, color: '#555', marginLeft: 10 }}>{data.customer.phone}</span>
+              ) : null}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 금액 — 서식에서 가장 큰 글자 */}
+      <div style={{ display: 'flex', alignItems: 'stretch', border: `2px solid ${LINE}`, borderTop: 'none' }}>
+        <div
+          style={{
+            width: 90,
+            background: accent,
+            borderRight: `1px solid ${LINE}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 10.5,
+            fontWeight: 700,
+          }}
+        >
+          금 액
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px' }}>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>一金 {data.totalAmountKor}整</span>
+          <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: p.primary }}>
+            ₩ {money(data.totals.totalAmount)}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <SupplierGrid data={data} accent={accent} />
+      </div>
+
+      <ItemGrid data={data} accent={accent} headerBg={headerBg} headerColor={headerColor} />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, marginTop: 6, fontSize: 10, color: '#444' }}>
+        <span>공급가액 {money(data.totals.supplyAmount)}원</span>
+        <span>세액 {money(data.totals.vatAmount)}원</span>
+      </div>
+
+      {/* 영수 확인 */}
+      <div style={{ textAlign: 'center', marginTop: 22 }}>
+        <p style={{ fontSize: 13, margin: 0 }}>{sentence}</p>
+        <p style={{ fontSize: 11, color: '#444', margin: '10px 0 0' }}>{data.meta.today}</p>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>{c?.name ?? ''}</span>
+          <span style={{ fontSize: 12 }}>{c?.owner ?? ''}</span>
+          <span style={{ fontSize: 11, color: '#555' }}>(인)</span>
+          <Stamp url={c?.stamp} size={36} />
+        </div>
+      </div>
+    </div>
+  );
 }

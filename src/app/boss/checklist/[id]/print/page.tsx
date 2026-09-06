@@ -148,6 +148,22 @@ export default function BossChecklistPrintPage() {
           .no-print {
             display: none !important;
           }
+          /* 화면에서는 레일 · 헤더를 두되, 종이에는 문서만 나가게 한다 */
+          .boss-shell > aside,
+          .boss-shell-main > header,
+          .boss-shell nav[aria-label='주요 메뉴'] {
+            display: none !important;
+          }
+          .boss-shell {
+            display: block !important;
+          }
+          .boss-shell-main {
+            padding: 0 !important;
+          }
+          .boss-shell-main > div {
+            max-width: none !important;
+            padding: 0 !important;
+          }
           .print-area {
             background: #ffffff !important;
             color: #000000 !important;
