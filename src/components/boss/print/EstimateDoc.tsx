@@ -160,7 +160,8 @@ function SupplierLines({ data, p }: { data: DocData; p: DocPalette }) {
 // 0 기본 — 전통 서식
 // ═══════════════════════════════════════════════════
 function Style0({ data }: { data: DocData }) {
-  const p = { primary: '#6B21A8', secondary: '#4B5563', accent: '#DCFCE7', textDark: '#111111', textLight: '#666666', border: '#9E9E9E' };
+  // accent 는 표 아래 라벨 칸(연회색). 일금 강조는 앱과 같이 연녹색을 따로 쓴다.
+  const p = { primary: '#6B21A8', secondary: '#4B5563', accent: '#F3F4F6', textDark: '#111111', textLight: '#666666', border: '#9E9E9E' };
   const c = data.company;
   return (
     <div style={{ fontFamily: FONT, color: p.textDark, padding: '4px 2px' }}>
@@ -221,7 +222,7 @@ function Style0({ data }: { data: DocData }) {
         }}
       >
         <span style={{ fontSize: 12 }}>{taxText(data.hasTaxFree)}</span>
-        <span style={{ background: p.accent, padding: '3px 8px', fontSize: 12 }}>
+        <span style={{ background: '#DCFCE7', padding: '3px 8px', fontSize: 12 }}>
           일금 {data.totalAmountKor} (₩ {money(data.totals.totalAmount)}원)
         </span>
       </div>

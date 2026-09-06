@@ -52,7 +52,7 @@ export const ESTIMATE_STYLES: DocStyleOption[] = [
     palette: {
       primary: '#6B21A8', // purple700 — 표 머리
       secondary: '#4B5563',
-      accent: '#DCFCE7', // green100 — 일금 강조
+      accent: '#F3F4F6', // 라벨 칸 회색 (일금 강조는 문서 안에서 연녹색을 따로 쓴다)
       textDark: '#111111',
       textLight: '#666666',
       border: '#9E9E9E',
