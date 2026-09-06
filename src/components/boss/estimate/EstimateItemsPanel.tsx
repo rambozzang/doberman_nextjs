@@ -133,7 +133,15 @@ export default function EstimateItemsPanel({
   // 입력 중인 값으로 미리 계산해 보여 준다 (앱과 같이 단가는 부가세 포함)
   const preview = calcAmounts(toNumber(form.quantity), toNumber(form.unitPrice), form.taxFree);
 
+  // 앱과 같은 상한 — 인쇄 서식이 14행이라 앱도 "품목은 최대 14개까지" 로 막는다
+  const MAX_ITEMS = 14;
+  const atLimit = items.length >= MAX_ITEMS;
+
   const openCreate = () => {
+    if (atLimit) {
+      toast.error(`품목은 최대 ${MAX_ITEMS}개까지 넣을 수 있습니다.`);
+      return;
+    }
     setForm(EMPTY_FORM);
     setFormOpen(true);
   };
@@ -237,7 +245,9 @@ export default function EstimateItemsPanel({
       />
 
       <div className="flex flex-wrap items-center gap-2 border-b border-boss-border px-5 py-3">
-        <p className="text-[12px] text-boss-text-secondary">단가는 부가세를 포함해 입력합니다.</p>
+        <p className="text-[12px] text-boss-text-secondary">
+          단가는 부가세를 포함해 입력합니다. 품목은 최대 {MAX_ITEMS}개까지 넣을 수 있습니다.
+        </p>
         <div className="ml-auto flex items-center gap-1.5">
           <Button
             variant="secondary"
@@ -248,7 +258,7 @@ export default function EstimateItemsPanel({
           >
             새로고침
           </Button>
-          <Button variant="primary" size="sm" icon={Plus} onClick={openCreate}>
+          <Button variant="primary" size="sm" icon={Plus} onClick={openCreate} disabled={atLimit}>
             품목 추가
           </Button>
         </div>

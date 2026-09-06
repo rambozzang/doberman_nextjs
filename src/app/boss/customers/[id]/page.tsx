@@ -10,6 +10,7 @@ import { bossOrdersApi } from '@/lib/api/boss/orders';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { customerStatus } from '@/lib/boss/customerStatus';
 import { formatAppDateTime, formatPhone } from '@/lib/boss/format';
+import EstimateItemsPanel from '@/components/boss/estimate/EstimateItemsPanel';
 import toast from 'react-hot-toast';
 import type { BossOrderItem } from '@/types/boss';
 import {
@@ -314,6 +315,11 @@ export default function BossOrderDetailPage() {
             기록해야 매출 분석에 잡힙니다.
           </p>
         </Panel>
+      </div>
+
+      {/* 앱과 같이 고객 아래에 견적 품목이 이어진다 (앱: 고객 → 견적 화면) */}
+      <div className="lg:col-span-2">
+        <EstimateItemsPanel customerId={String(item.id)} />
       </div>
 
       <ConfirmDialog
