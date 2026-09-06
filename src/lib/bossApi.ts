@@ -1,4 +1,10 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import { ApiResponse, ApiError } from '@/types/api';
 import { BossAuthManager } from './bossAuth';
 import { ensureDeviceId } from './bossDeviceId';
@@ -49,23 +55,41 @@ bossPrivateApi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+/**
+ * 세션이 끊긴 응답인지 판별한다.
+ * - 401: 토큰 만료 · 위조
+ * - 400 + "다른 기기에서 로그인 되었습니다." : 백엔드 인증 필터가 기기 불일치로 막은 경우.
+ *   이걸 걸러 내지 않으면 화면마다 "요청 처리 중 오류가 발생했습니다" 만 뜨고
+ *   사장님은 왜 안 되는지 알 수 없다.
+ */
+function isSessionLost(error: AxiosError): 'expired' | 'device' | null {
+  const status = error.response?.status;
+  if (status === 401) return 'expired';
+  if (status === 400 || status === 403) {
+    const data = error.response?.data as { error?: string; message?: string } | undefined;
+    const text = `${data?.error ?? ''} ${data?.message ?? ''}`;
+    if (text.includes('다른 기기')) return 'device';
+    if (text.includes('인증') || text.includes('로그인')) return 'expired';
+  }
+  return null;
+}
+
 bossPrivateApi.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      const isDev = process.env.NODE_ENV !== 'production';
-      if (isDev) {
-        console.error('[bossApi 401]', {
+  (error: AxiosError) => {
+    const lost = isSessionLost(error);
+    if (lost) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[bossApi session lost]', lost, {
           url: error.config?.url,
-          requestHeaders: error.config?.headers,
+          status: error.response?.status,
           responseData: error.response?.data,
-          responseHeaders: error.response?.headers,
         });
       }
-      // 401 시 토큰 제거 + 로그인 페이지로 리다이렉트 (production 동작)
+      // 토큰 제거 후 이유를 붙여 로그인 화면으로 보낸다
       BossAuthManager.removeToken();
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/boss/login')) {
-        window.location.href = '/boss/login';
+        window.location.href = `/boss/login?reason=${lost}`;
       }
     }
     return Promise.reject(error);
@@ -141,9 +165,11 @@ class BossApiClient {
   private static handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
       const responseData = error.response?.data as ApiResponse;
+      // 백엔드는 인증 실패를 message=null, error="다른 기기에서 로그인 되었습니다." 로 내려 준다.
+      // message 만 보면 전부 "요청 처리 중 오류" 로 뭉개지므로 error 문구를 먼저 쓴다.
       return {
         success: false,
-        message: responseData?.message || '요청 처리 중 오류가 발생했습니다.',
+        message: responseData?.message || responseData?.error || '요청 처리 중 오류가 발생했습니다.',
         error: responseData?.error || error.message || '알 수 없는 오류가 발생했습니다.',
       };
     }

@@ -22,6 +22,8 @@ export interface BossLoginRequest {
   password: string;
   fcmToken: string;
   deviceId: string;
+  /** "WEB" — 백엔드가 앱의 DEVICE_ID 를 덮어쓰지 않고 WEB_DEVICE_ID 에만 기록하게 한다 */
+  clientType?: string;
 }
 
 // Flutter 의 LoginData (= res.data) 와 동일

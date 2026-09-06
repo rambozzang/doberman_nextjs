@@ -6,7 +6,7 @@
 //   네이비 워드마크 블록 → 26px 제목 → 설명 → 패널 폼 → 하단 안내문
 // 색·서체는 boss-b2b.css 토큰을 그대로 쓴다(.boss-page 가 layout 에서 감싼다).
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -26,6 +26,17 @@ export default function BossLoginPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 세션이 끊겨 여기로 밀려온 경우 이유를 알려 준다 (bossApi 가 ?reason= 을 붙인다)
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get('reason');
+    if (reason === 'device') {
+      setNotice('다른 기기에서 로그인해 이 화면의 접속이 끊겼습니다. 다시 로그인해 주세요.');
+    } else if (reason === 'expired') {
+      setNotice('로그인이 만료되었습니다. 다시 로그인해 주세요.');
+    }
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,6 +53,8 @@ export default function BossLoginPage() {
         password,
         fcmToken: '',
         deviceId: ensureDeviceId() ?? '',
+        // 웹 로그인임을 알려 앱 세션(DEVICE_ID)을 끊지 않게 한다
+        clientType: 'WEB',
       };
       const res = await bossAuthApi.login(payload);
       if (res.success !== false && res.data?.token) {
@@ -123,6 +136,12 @@ export default function BossLoginPage() {
               로그인 상태 유지
             </CheckLine>
           </div>
+
+          {notice && !error && (
+            <div className="mb-4">
+              <AlertBanner tone="warn">{notice}</AlertBanner>
+            </div>
+          )}
 
           {error && (
             <div className="mt-4">
