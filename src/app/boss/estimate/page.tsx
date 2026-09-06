@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw } from 'lucide-react';
 import { bossEstimatesApi } from '@/lib/api/boss/estimates';
+import EstimateItemsPanel from '@/components/boss/estimate/EstimateItemsPanel';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import type { BossEstimate, BossEstimateCreateRequest } from '@/types/boss-estimate';
 import type { BossCustomerData } from '@/types/boss-customer';
@@ -284,6 +285,9 @@ function EstimateList() {
           {error}
         </AlertBanner>
       )}
+
+      {/* 품목(견적 내역) — 인쇄물이 이 표를 그대로 그린다. 고객을 고르면 바로 편집할 수 있다 */}
+      {customerId ? <EstimateItemsPanel customerId={customerId} /> : null}
 
       {!customerId ? (
         <EmptyState
