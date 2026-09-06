@@ -112,11 +112,16 @@ export default function BossCommunityDetailPage() {
   const loadComments = useCallback(async () => {
     if (!boardId) return;
     try {
+      // 앱(bbs_comments_cntr.getReplyData)과 같은 파라미터로 부른다.
+      //   - 글 ID 는 boardId 가 아니라 rootId 로 넘긴다. boardId 를 넘기면 백엔드가
+      //     "그 글 한 건" 으로 좁혀 버리고, rootId 가 없으면 500(게시글 ID가 없습니다) 이 난다.
+      //   - pageNum 은 0 부터다(백엔드 PageRequest.of).
+      //   - 댓글은 SORT_NO 오름차순(ASC)이 대화 순서다.
       const res = await bossCommentApi.list({
-        pageNum: 1,
+        pageNum: 0,
         pageSize: 100,
-        boardId: Number(boardId),
-        sortDesc: 'crtDtm',
+        rootId: String(boardId),
+        sortDesc: 'ASC',
       });
       if (res.success !== false && res.data) {
         setComments(Array.isArray(res.data) ? res.data : []);
@@ -184,13 +189,17 @@ export default function BossCommunityDetailPage() {
     }
     setSubmittingComment(true);
     try {
+      // 앱(bbs_comments_cntr.saveComment)과 같은 본문.
+      //   최상위 댓글은 rootId = parentId = 글 ID, depthNo = '0'(백엔드가 +1 해서 1로 저장).
+      //   rootId 가 없으면 백엔드가 NPE 로 500 을 낸다. 글 종류(typeCd/typeDtCd)는 원글을 따른다.
       const res = await bossCommentApi.create({
-        boardId: Number(boardId),
         contents: text,
-        typeCd: 'BBS',
-        typeDtCd: 'COMMENT',
-        depthNo: '2',
-        parentId: boardId,
+        rootId: String(boardId),
+        parentId: String(boardId),
+        depthNo: '0',
+        sortNo: '0',
+        typeCd: post?.typeCd || 'BBS',
+        typeDtCd: post?.typeDtCd || 'JOB',
       });
       if (res.success !== false) {
         setCommentInput('');

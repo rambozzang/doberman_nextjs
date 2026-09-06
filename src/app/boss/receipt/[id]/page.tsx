@@ -6,7 +6,7 @@
 //   화면 제목과 ← 영수증 관리 링크는 셸 헤더가 그린다. 삭제는 ConfirmDialog.
 // Flutter receipt_detail_page.dart 포팅
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Trash2, RefreshCw, Pencil, Package, ArrowLeft, Receipt as ReceiptIcon } from 'lucide-react';
 import { bossReceiptApi } from '@/lib/api/boss/receipt';
@@ -50,8 +50,10 @@ function formatDate(s?: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function BossReceiptDetailPage({ params }: { params: { id: string } }) {
+export default function BossReceiptDetailPage() {
   const router = useRouter();
+  // Next 16 에서 페이지의 params 는 Promise 라 직접 읽으면 undefined 가 된다 — useParams 를 쓴다
+  const params = useParams<{ id: string }>();
   const id = Number(params?.id);
   const [data, setData] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(false);

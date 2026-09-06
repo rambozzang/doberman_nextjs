@@ -5,7 +5,7 @@
 // 화면 제목 · "← 고객" 링크는 셸 헤더가 그린다.
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { customerStatus } from '@/lib/boss/customerStatus';
@@ -48,8 +48,10 @@ function formatWorkPeriod(start?: string | null, end?: string | null) {
   return formatDate(start);
 }
 
-export default function BossOrderDetailPage({ params }: { params: { id: string } }) {
+export default function BossOrderDetailPage() {
   const router = useRouter();
+  // Next 16 에서 페이지의 params 는 Promise 라 직접 읽으면 undefined 가 된다 — useParams 를 쓴다
+  const params = useParams<{ id: string }>();
   const id = Number(params?.id);
   const [item, setItem] = useState<BossOrderItem | null>(null);
   const [loading, setLoading] = useState(true);
