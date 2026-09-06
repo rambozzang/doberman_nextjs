@@ -14,7 +14,6 @@ import { BossAuthManager } from '@/lib/bossAuth';
 import { PageHeader, ButtonLink, EmptyState, AlertBanner, Skeleton } from '@/components/boss/ui';
 import { PrintActions } from '@/components/boss/print/PrintActions';
 import EstimateDoc from '@/components/boss/print/EstimateDoc';
-import EstimatePdf, { registerPdfFont } from '@/components/boss/print/pdf/EstimatePdf';
 import DocStylePicker from '@/components/boss/print/DocStylePicker';
 import { ESTIMATE_STYLES } from '@/components/boss/print/docTypes';
 import { buildDocMeta } from '@/lib/boss/docMeta';
@@ -62,7 +61,6 @@ export default function BossEstimatePrintPage() {
 
   useEffect(() => {
     setStyleKey(loadDocStyle('estimate', ESTIMATE_STYLES[0].key));
-    registerPdfFont();
   }, []);
 
   const changeStyle = (key: string) => {
@@ -197,7 +195,17 @@ export default function BossEstimatePrintPage() {
               shareText={shareText}
               smsPhone={customer?.phone}
               disabled={items.length === 0}
-              pdfDoc={items.length ? <EstimatePdf data={docData} p={style.palette} styleKey={styleKey} /> : null}
+              pdfDocFactory={
+                items.length
+                  ? async () => {
+                      // 무거운 PDF 라이브러리는 버튼을 누를 때만 불러온다
+                      const mod = await import('@/components/boss/print/pdf/EstimatePdf');
+                      mod.registerPdfFont();
+                      const Doc = mod.default;
+                      return <Doc data={docData} p={style.palette} styleKey={styleKey} />;
+                    }
+                  : null
+              }
             >
               <ButtonLink href="/boss/estimate" variant="secondary">
                 목록으로

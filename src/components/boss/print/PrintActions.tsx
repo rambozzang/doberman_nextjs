@@ -33,10 +33,13 @@ type Props = {
   /** 앞쪽에 둘 보조 버튼(목록으로 등) */
   children?: ReactNode;
   /**
-   * 벡터 PDF 문서. 있으면 PDF · 이미지 · 공유가 모두 이걸로 만들어진다.
-   * (@react-pdf/renderer 의 <Document>. 무거워서 누를 때 동적으로 불러온다)
+   * 벡터 PDF 문서를 만드는 함수. 있으면 PDF · 이미지 · 공유가 모두 이걸로 만들어진다.
+   *
+   * 왜 함수인가: @react-pdf/renderer 는 브라우저에서 무겁고 페이지 번들에 정적으로 들어가면
+   * 화면 자체가 죽는다(2026-09-07 프로덕션 장애). 버튼을 누른 순간에만 동적 import 하도록
+   * 호출부에서 함수로 감싸 넘긴다.
    */
-  pdfDoc?: ReactElement | null;
+  pdfDocFactory?: (() => Promise<ReactElement>) | null;
 };
 
 type Busy = null | 'pdf' | 'png' | 'share';
@@ -155,7 +158,7 @@ export function PrintActions({
   fileName,
   shareTitle,
   shareText,
-  pdfDoc,
+  pdfDocFactory,
   smsPhone,
   disabled,
   children,
@@ -191,11 +194,13 @@ export function PrintActions({
   const handlePdf = async () => {
     if (busy) return;
     const el = getTarget();
-    if (!pdfDoc && !el) return;
+    if (!pdfDocFactory && !el) return;
     setBusy('pdf');
     try {
       // 벡터 PDF 가 우선 — 글자가 이미지가 아니라 글자로 들어간다
-      const blob = pdfDoc ? await renderVectorPdf(pdfDoc) : await canvasToPdf(await renderCanvas(el!));
+      const blob = pdfDocFactory
+        ? await renderVectorPdf(await pdfDocFactory())
+        : await canvasToPdf(await renderCanvas(el!));
       download(blob, `${name}.pdf`);
       toast.success('PDF 를 저장했습니다.');
     } catch (e) {
@@ -209,12 +214,12 @@ export function PrintActions({
   const handlePng = async () => {
     if (busy) return;
     const el = getTarget();
-    if (!pdfDoc && !el) return;
+    if (!pdfDocFactory && !el) return;
     setBusy('png');
     try {
       // 벡터 PDF 를 고해상도로 구워 낸다 — 화면 캡처보다 훨씬 또렷하다
-      const blob = pdfDoc
-        ? await pdfBlobToPng(await renderVectorPdf(pdfDoc))
+      const blob = pdfDocFactory
+        ? await pdfBlobToPng(await renderVectorPdf(await pdfDocFactory()))
         : await canvasToBlob(await renderCanvas(el!));
       download(blob, `${name}.png`);
       toast.success('이미지를 저장했습니다.');
@@ -230,11 +235,11 @@ export function PrintActions({
   const handleShare = async () => {
     if (busy) return;
     const el = getTarget();
-    if (!pdfDoc && !el) return;
+    if (!pdfDocFactory && !el) return;
     setBusy('share');
     try {
-      const png = pdfDoc
-        ? await pdfBlobToPng(await renderVectorPdf(pdfDoc))
+      const png = pdfDocFactory
+        ? await pdfBlobToPng(await renderVectorPdf(await pdfDocFactory()))
         : await canvasToBlob(await renderCanvas(el!));
       const file = new File([png], `${name}.png`, { type: 'image/png' });
       if (!navigator.canShare?.({ files: [file] })) {
