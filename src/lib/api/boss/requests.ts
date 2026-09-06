@@ -9,7 +9,7 @@ import type {
   BossRequestListResponse,
   BossAnswerSubmitRequest,
   BossAnswerSubmitResponse,
-  BossRequestAnswer,
+  BossMyRequestAnswer,
 } from '@/types/boss';
 
 export const bossRequestsApi = {
@@ -25,15 +25,10 @@ export const bossRequestsApi = {
   detail: (id: number) =>
     BossApiClient.postPrivate<BossRequestDetail>(`/web/customer-request/detail/${id}`),
 
-  // 내가 단 답변 목록
-  myAnswers: (id: number) =>
-    BossApiClient.postPrivate<BossRequestListItem[]>(`/web/customer-request/answer-list/${id}`),
-
-  // 특정 요청에 대한 견적 답변 목록
-  answers: (requestId: number) =>
-    BossApiClient.postPrivate<BossRequestAnswer[]>(`/web/customer-request/webRequestAnswerList`, {
-      requestId,
-    }),
+  // 이 요청에 내가 단 답변 한 건 (앱 web_repo.requestAnswer 와 같은 엔드포인트)
+  // 답변이 없으면 백엔드가 실패 응답을 주므로 호출부에서 success 를 본다.
+  myAnswer: (requestId: number) =>
+    BossApiClient.postPrivate<BossMyRequestAnswer>(`/customers/getWebRequestAnswerById/${requestId}`),
 
   // 견적 답변 제출
   submit: (data: BossAnswerSubmitRequest): Promise<ApiResponse<BossAnswerSubmitResponse>> =>

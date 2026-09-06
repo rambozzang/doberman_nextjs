@@ -156,16 +156,19 @@ export interface BossAnswerSubmitResponse {
   message?: string;
 }
 
-export interface BossRequestAnswer {
-  answerId?: number;
+// 이 요청에 내가 단 견적 답변 한 건 (앱 RequestAnswerListRes · 백엔드 TbWebCustomerRequestAnswerDto)
+// status 가 '채택 성공' 이면 고객이 내 견적을 골랐다는 뜻 — 이때만 고객 연락처를 그대로 보여 준다.
+export interface BossMyRequestAnswer {
+  id?: number;
   requestId?: number;
+  webCustomerId?: string;
+  userId?: string;
   answerTitle?: string;
   answerBody?: string;
   cost?: number;
   status?: string;
+  delYn?: string;
   createdDt?: string;
-  userNm?: string;
-  companyNm?: string;
 }
 
 // 채팅 파트너 정보 (사장님이 채팅하는 상대 = 고객)

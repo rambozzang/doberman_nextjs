@@ -114,7 +114,7 @@ export default function BossRequestListPage() {
     if (keyword.trim()) {
       const k = keyword.toLowerCase();
       list = list.filter((it) =>
-        [it.region, it.buildingType, it.customerName, it.constructionLocation, it.wallpaper]
+        [it.region, it.buildingType, it.constructionLocation, it.wallpaper]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(k)),
       );

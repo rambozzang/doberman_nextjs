@@ -29,8 +29,11 @@ const AUTH_PATHS = [
   '/boss/permission',
 ];
 
-// 인쇄용 화면은 크롬 없이 단독 렌더링한다
-const isPrintPath = (p: string) => p.endsWith('/print') || p.endsWith('/receipt');
+// 인쇄용 화면은 크롬 없이 단독 렌더링한다.
+// `/receipt` 로 끝나는 건 견적서의 거래명세서 출력(/boss/estimate/[id]/receipt)뿐이다 —
+// 영수증 지출관리(/boss/receipt)까지 걸리면 레일이 사라진다.
+const isPrintPath = (p: string) =>
+  p.endsWith('/print') || /^\/boss\/estimate\/[^/]+\/receipt$/.test(p);
 
 const WIDTH: Record<'narrow' | 'wide' | 'full', string> = {
   narrow: 'max-w-[620px]',

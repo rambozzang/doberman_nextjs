@@ -12,7 +12,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useBossAuth } from '@/hooks/useBossAuth';
 import { SECTIONS, isNavActive, type NavItem } from './nav';
@@ -47,8 +47,16 @@ export default function BossSidebar() {
     router.replace('/boss/login');
   };
 
-  const displayName =
-    bossAuth.userInfo?.name ?? bossAuth.userInfo?.nickNm ?? bossAuth.userId ?? '사장님';
+  // 이름은 localStorage(useBossAuth 의 동기 초기값)에서 오므로 서버 HTML 에는 없다.
+  // hydration 이 끝나기 전에는 서버와 같은 기본값을 그려 "홍 ≠ 사" 불일치 경고를 막는다.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const displayName = hydrated
+    ? (bossAuth.userInfo?.name ?? bossAuth.userInfo?.nickNm ?? bossAuth.userId ?? '사장님')
+    : '사장님';
   const initial = displayName.charAt(0).toUpperCase();
 
   return (

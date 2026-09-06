@@ -1,18 +1,23 @@
 'use client';
 
-// 견적 요청 상세 — Industry 패턴 (좌 본문 패널 + 우 요약 패널 2열)
-// 화면 제목 · "← 견적 요청" 링크는 셸 헤더가 그린다. 이 화면의 주요 행동(답변 작성)은 우측 요약 패널에 둔다.
+// 웹견적 요청 상세 — Industry 패턴 (좌 본문 패널 + 우 요약 패널 2열)
+// 화면 제목 · "← 웹견적 요청" 링크는 셸 헤더가 그린다. 이 화면의 주요 행동(답변 작성)은 우측 요약 패널에 둔다.
+//
+// 고객 개인정보 공개 규칙 — 앱 web_request_detail_page.dart 와 동일
+//   내 답변(getWebRequestAnswerById)의 status 가 '채택 성공' 일 때만 이름 · 연락처 · 이메일을 그대로 보여 주고
+//   그 전에는 앱과 같은 모양으로 가린다(김*수 · 010-****-5678 · ab***c@…). 전화 · 메일 버튼도 채택 후에만 나온다.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { Lock } from 'lucide-react';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
-import type { BossRequestDetail, BossRequestAnswer } from '@/types/boss';
+import { maskName, maskPhoneNumber, maskEmail } from '@/lib/boss/mask';
+import type { BossRequestDetail, BossMyRequestAnswer } from '@/types/boss';
 import {
   Panel,
   Tag,
-  Badge,
   ButtonLink,
   AlertBanner,
   DescRow,
@@ -23,7 +28,8 @@ export default function BossRequestDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params?.id);
   const [data, setData] = useState<BossRequestDetail | null>(null);
-  const [answers, setAnswers] = useState<BossRequestAnswer[]>([]);
+  // 앱과 같이 "내가 단 답변" 한 건만 다룬다 — 다른 업체의 견적 · 금액은 보여 주지 않는다
+  const [myAnswer, setMyAnswer] = useState<BossMyRequestAnswer | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,9 +39,10 @@ export default function BossRequestDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        const [detailRes, answerRes] = await Promise.all([
+        const [detailRes, myRes] = await Promise.all([
           bossRequestsApi.detail(id),
-          bossRequestsApi.answers(id).catch(() => null),
+          // 답변이 없으면 실패 응답(예외)이 정상 — 미답변 · 채택 전 상태로 본다
+          bossRequestsApi.myAnswer(id).catch(() => null),
         ]);
         if (cancelled) return;
         if (detailRes.success && detailRes.data) {
@@ -43,9 +50,7 @@ export default function BossRequestDetailPage() {
         } else {
           setError(detailRes.message || '상세를 불러오지 못했습니다.');
         }
-        if (answerRes?.success && Array.isArray(answerRes.data)) {
-          setAnswers(answerRes.data);
-        }
+        setMyAnswer(myRes?.success && myRes.data ? myRes.data : null);
       } catch {
         if (!cancelled) setError('네트워크 오류');
       } finally {
@@ -67,6 +72,20 @@ export default function BossRequestDetailPage() {
 
   const badge = statusBadge(data?.status);
   const answerHref = `/boss/requests/${id}/answer`;
+
+  // 앱 규칙: 내 답변이 '채택 성공' 일 때만 고객 정보를 그대로 보여 준다
+  const isChoice = myAnswer?.status === '채택 성공';
+  const rawName = data?.customerName ?? '';
+  const rawPhone = data?.customerPhone ?? '';
+  const rawEmail = data?.customerEmail ?? '';
+  const shownName = rawName ? (isChoice ? rawName : maskName(rawName)) : '';
+  const shownPhone = rawPhone ? (isChoice ? rawPhone : maskPhoneNumber(rawPhone)) : '';
+  const shownEmail = rawEmail ? (isChoice ? rawEmail : maskEmail(rawEmail)) : '';
+  const myAnswerTag = !myAnswer
+    ? { tone: 'neutral' as const, label: '미답변' }
+    : isChoice
+      ? { tone: 'ok' as const, label: '채택 성공' }
+      : { tone: 'info' as const, label: myAnswer.status || '답변 완료' };
 
   if (loading) {
     return <div className="boss-empty text-[13px]">불러오는 중…</div>;
@@ -133,17 +152,17 @@ export default function BossRequestDetailPage() {
           </Panel>
 
           <Panel
-            title="견적 답변"
-            kicker={answers.length > 0 ? `${answers.length}건` : undefined}
+            title="내 견적 답변"
+            kicker={myAnswer ? myAnswerTag.label : undefined}
             right={
               <Link href={answerHref} className="boss-btn boss-btn-sm boss-btn-ghost -mr-2">
-                답변 작성
+                {myAnswer ? '답변 다시 작성' : '답변 작성'}
               </Link>
             }
           >
-            {answers.length === 0 ? (
+            {!myAnswer ? (
               <div className="py-6 text-center">
-                <p className="text-[13.5px] font-semibold text-boss-text">아직 답변이 없습니다</p>
+                <p className="text-[13.5px] font-semibold text-boss-text">아직 답변하지 않았습니다</p>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
                   먼저 답변한 업체가 고객 화면 위쪽에 보입니다. 견적 금액과 시공 범위를 적어 보내세요.
                 </p>
@@ -152,47 +171,57 @@ export default function BossRequestDetailPage() {
                 </ButtonLink>
               </div>
             ) : (
-              <ul className="flex flex-col gap-3">
-                {answers.map((a, i) => (
-                  <li key={a.answerId ?? i} className="border border-boss-border bg-boss-inset p-4">
-                    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="text-[14px] font-semibold text-boss-text">
-                        {a.answerTitle || '제목 없음'}
-                      </p>
-                      <span className="font-boss-head text-[18px] font-semibold tabular-nums text-boss-text">
-                        {a.cost ? `₩${a.cost.toLocaleString('ko-KR')}` : '금액 미정'}
-                      </span>
-                    </div>
-                    <div
-                      className="prose prose-sm max-w-none text-[13.5px] leading-relaxed text-boss-text-soft"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.answerBody) }}
-                    />
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-boss-text-secondary">
-                      <span>{a.userNm || '작성자 미상'}</span>
-                      {a.companyNm && <span>· {a.companyNm}</span>}
-                      <span className="font-boss-head tabular-nums">
-                        · {a.createdDt ? formatDate(a.createdDt) : '-'}
-                      </span>
-                      {a.status && <Badge tone="default">{a.status}</Badge>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <div className="border border-boss-border bg-boss-inset p-4">
+                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-[14px] font-semibold text-boss-text">
+                    {myAnswer.answerTitle || '제목 없음'}
+                  </p>
+                  <span className="font-boss-head text-[18px] font-semibold tabular-nums text-boss-text">
+                    {myAnswer.cost ? `₩${myAnswer.cost.toLocaleString('ko-KR')}` : '금액 미정'}
+                  </span>
+                </div>
+                {/* 답변 본문은 줄바꿈이 들어간 일반 텍스트 — pre-line 으로 줄을 살린다 */}
+                <div
+                  className="whitespace-pre-line text-[13.5px] leading-relaxed text-boss-text-soft"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(myAnswer.answerBody) }}
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-boss-text-secondary">
+                  <Tag tone={myAnswerTag.tone}>{myAnswerTag.label}</Tag>
+                  <span className="font-boss-head tabular-nums">
+                    {myAnswer.createdDt ? formatDate(myAnswer.createdDt) : '-'}
+                  </span>
+                </div>
+              </div>
             )}
           </Panel>
         </div>
 
         {/* ───── 우: 요약 ───── */}
         <div className="flex flex-col gap-4">
-          <Panel kicker="요약" title={data.customerName || '고객'}>
-            <div className="mb-2">
+          <Panel
+            kicker="요약"
+            title={shownName || '고객'}
+            right={
+              !isChoice ? (
+                <span className="inline-flex items-center gap-1 border border-boss-warning/40 bg-boss-warning/10 px-2 py-0.5 text-[11px] font-bold text-boss-warning">
+                  <Lock size={11} strokeWidth={2} /> 채택 후 공개
+                </span>
+              ) : undefined
+            }
+          >
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
               <Tag tone={badge.tone}>{badge.label}</Tag>
+              <Tag tone={myAnswerTag.tone}>내 답변 · {myAnswerTag.label}</Tag>
             </div>
             <dl>
               <DescRow label="접수" value={<span className="font-boss-head tabular-nums">{receivedAt}</span>} />
               <DescRow
-                label="답변 수"
-                value={<span className="font-boss-head tabular-nums">{data.answerCount ?? answers.length}건</span>}
+                label="내 견적"
+                value={
+                  <span className="font-boss-head tabular-nums">
+                    {myAnswer ? (myAnswer.cost ? `₩${myAnswer.cost.toLocaleString('ko-KR')}` : '금액 미정') : '미답변'}
+                  </span>
+                }
               />
               <DescRow
                 label="면적"
@@ -201,33 +230,47 @@ export default function BossRequestDetailPage() {
               <DescRow
                 label="연락처"
                 value={
-                  data.customerPhone ? (
-                    <a href={`tel:${data.customerPhone}`} className="font-boss-head tabular-nums">
-                      {data.customerPhone}
+                  !shownPhone ? (
+                    '—'
+                  ) : isChoice ? (
+                    <a href={`tel:${rawPhone}`} className="font-boss-head tabular-nums">
+                      {rawPhone}
                     </a>
                   ) : (
-                    '—'
+                    <span className="font-boss-head tabular-nums text-boss-text-secondary">{shownPhone}</span>
                   )
                 }
               />
               <DescRow
                 label="이메일"
                 value={
-                  data.customerEmail ? (
-                    <a href={`mailto:${data.customerEmail}`}>{data.customerEmail}</a>
-                  ) : (
+                  !shownEmail ? (
                     '—'
+                  ) : isChoice ? (
+                    <a href={`mailto:${rawEmail}`}>{rawEmail}</a>
+                  ) : (
+                    <span className="text-boss-text-secondary">{shownEmail}</span>
                   )
                 }
               />
             </dl>
+            {!isChoice && (
+              <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">
+                고객이 내 견적을 채택하면 이름 · 연락처 · 이메일이 그대로 공개되고 전화 · 문자 버튼이 열립니다.
+              </p>
+            )}
             <ButtonLink href={answerHref} variant="primary" className="mt-4 w-full">
-              답변 작성
+              {myAnswer ? '답변 다시 작성' : '답변 작성'}
             </ButtonLink>
-            {data.customerPhone && (
-              <a href={`tel:${data.customerPhone}`} className="boss-btn boss-btn-md boss-btn-secondary mt-2 w-full">
-                고객에게 전화
-              </a>
+            {isChoice && rawPhone && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <a href={`tel:${rawPhone}`} className="boss-btn boss-btn-md boss-btn-secondary w-full">
+                  전화
+                </a>
+                <a href={`sms:${rawPhone}`} className="boss-btn boss-btn-md boss-btn-secondary w-full">
+                  문자
+                </a>
+              </div>
             )}
           </Panel>
 

@@ -77,7 +77,7 @@ export default function BossMyRequestsPage() {
     if (!keyword.trim()) return items;
     const k = keyword.toLowerCase();
     return items.filter((it) =>
-      [it.region, it.buildingType, it.customerName, it.constructionLocation, it.preferredDate]
+      [it.region, it.buildingType, it.constructionLocation, it.preferredDate]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(k)),
     );
