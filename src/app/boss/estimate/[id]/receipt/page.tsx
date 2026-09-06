@@ -13,6 +13,12 @@ import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { PageHeader, ButtonLink, EmptyState, AlertBanner, Skeleton } from '@/components/boss/ui';
 import { PrintActions } from '@/components/boss/print/PrintActions';
+import ReceiptDoc from '@/components/boss/print/ReceiptDoc';
+import DocStylePicker from '@/components/boss/print/DocStylePicker';
+import { RECEIPT_STYLES } from '@/components/boss/print/docTypes';
+import { buildDocMeta } from '@/lib/boss/docMeta';
+import { toKoreanAmountApp } from '@/lib/boss/koreanAmount';
+import { loadDocStyle, saveDocStyle } from '@/lib/boss/docStyle';
 import type { BossEstimateItem, BossEstimateTotals } from '@/types/boss-estimate';
 import type { BossCustomerData } from '@/types/boss-customer';
 import type { BossCompanyData } from '@/types/boss';
@@ -38,11 +44,6 @@ function computeTotals(items: BossEstimateItem[]): BossEstimateTotals {
   );
 }
 
-// 인쇄 표 셀 — 사각 · 검정 테두리(인쇄) / 토큰 테두리(화면)
-const TH = 'border border-boss-border px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-boss-text-secondary print:border-black';
-const TD = 'border border-boss-border px-2 py-2 print:border-black';
-const NUM = 'font-boss-head tabular-nums text-right';
-const BOX = 'border border-boss-border p-4 print:border-black';
 
 export default function BossEstimateReceiptPage() {
   const params = useParams<{ id: string }>();
@@ -54,7 +55,18 @@ export default function BossEstimateReceiptPage() {
   // 종이 위 공급받는자 · 공급자 정보. 못 읽으면 칸을 비워 둔다(지어내지 않는다).
   const [customer, setCustomer] = useState<BossCustomerData | null>(null);
   const [company, setCompany] = useState<BossCompanyData | null>(null);
+  // 앱과 같은 5종 양식 — 고른 값을 기억한다
+  const [styleKey, setStyleKey] = useState<string>(RECEIPT_STYLES[0].key);
   const paperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setStyleKey(loadDocStyle('receipt', RECEIPT_STYLES[0].key));
+  }, []);
+
+  const changeStyle = (key: string) => {
+    setStyleKey(key);
+    saveDocStyle('receipt', key);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -117,8 +129,22 @@ export default function BossEstimateReceiptPage() {
     day: 'numeric',
   });
 
-  const customerAddress = [customer?.address1, customer?.address2].filter(Boolean).join(' ');
-  const companyAddress = [company?.address1, company?.address2].filter(Boolean).join(' ');
+  const style = RECEIPT_STYLES.find((s) => s.key === styleKey) ?? RECEIPT_STYLES[0];
+  const docMeta = useMemo(() => buildDocMeta(), []);
+  const docData = useMemo(
+    () => ({
+      company,
+      customer,
+      user: BossAuthManager.getUserInfo(),
+      items,
+      totals,
+      meta: docMeta,
+      hasTaxFree: items.some((it) => it.isTaxFree === 'Y'),
+      totalAmountKor: toKoreanAmountApp(totals.totalAmount),
+    }),
+    [company, customer, items, totals, docMeta]
+  );
+
   const customerLabel = customer?.name ? `${customer.name}님` : `고객 ${customerId}`;
   const fileName = `거래명세서_${customer?.name ?? customerId}_${new Date().toISOString().slice(0, 10)}`;
   // 공유 · 문자에 들어가는 요약 — 파일이 못 붙는 문자에서도 핵심이 전달되게
@@ -143,22 +169,14 @@ export default function BossEstimateReceiptPage() {
           }
           .print-area {
             background: #ffffff !important;
-            color: #000000 !important;
             box-shadow: none !important;
             border: none !important;
           }
+          /* 문서 색(양식별 강조색 · 표 머리)은 그대로 인쇄한다 — 앱 PDF 와 같은 인상 */
+          .print-area,
           .print-area * {
-            color: #000000 !important;
-            background: transparent !important;
-          }
-          /* 표 머리글 · 라벨 칸은 옅은 회색을 남겨 본문 칸과 구분되게 */
-          .print-area .bg-boss-inset {
-            background: #eeeeee !important;
-          }
-          .print-table,
-          .print-table th,
-          .print-table td {
-            border-color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
@@ -192,6 +210,8 @@ export default function BossEstimateReceiptPage() {
         />
       </div>
 
+      <DocStylePicker styles={RECEIPT_STYLES} value={styleKey} onChange={changeStyle} label="영수증 양식" />
+
       {error && (
         <div className="no-print">
           <AlertBanner tone="bad">{error}</AlertBanner>
@@ -221,130 +241,8 @@ export default function BossEstimateReceiptPage() {
           />
         </div>
       ) : (
-        <div ref={paperRef} className="print-area boss-card p-8 print:p-0">
-          {/* 인쇄용 헤더 */}
-          <div className="mb-6 border-b-2 border-boss-text pb-4 text-center print:border-black">
-            <h2 className="font-boss-head text-[28px] font-bold tracking-[0.3em] text-boss-text">
-              거래 명세서
-            </h2>
-            <p className="mt-1 text-[12px] text-boss-text-secondary">(영수증) · 거래일: {today}</p>
-          </div>
-
-          {/* 회사 / 고객 정보 */}
-          <div className="mb-6 grid grid-cols-2 gap-4 text-[13px]">
-            <div className={`${BOX} flex flex-col gap-1`}>
-              <p className="font-semibold text-boss-text">공급받는자 (고객)</p>
-              <p className="text-boss-text-secondary">
-                고객 ID: <span className="font-boss-head tabular-nums">{customerId}</span>
-              </p>
-              <p className="text-boss-text-secondary">
-                상호 / 성명: <span className="text-boss-text">{customer?.name ?? ''}</span>
-              </p>
-              <p className="text-boss-text-secondary">
-                주소: <span className="text-boss-text">{customerAddress}</span>
-              </p>
-              <p className="text-boss-text-secondary">
-                연락처: <span className="font-boss-head tabular-nums text-boss-text">{customer?.phone ?? ''}</span>
-              </p>
-            </div>
-            <div className={`${BOX} flex flex-col gap-1`}>
-              <p className="font-semibold text-boss-text">공급자 (회사)</p>
-              <p className="text-boss-text-secondary">
-                상호: <span className="text-boss-text">{company?.name ?? ''}</span>
-                {company?.owner ? <span className="text-boss-text"> (대표 {company.owner})</span> : null}
-              </p>
-              <p className="text-boss-text-secondary">
-                사업자등록번호:{' '}
-                <span className="font-boss-head tabular-nums text-boss-text">{company?.bizno ?? ''}</span>
-              </p>
-              <p className="text-boss-text-secondary">
-                주소: <span className="text-boss-text">{companyAddress}</span>
-              </p>
-              <p className="text-boss-text-secondary">
-                연락처 / 이메일:{' '}
-                <span className="font-boss-head tabular-nums text-boss-text">
-                  {[company?.phone, company?.email].filter(Boolean).join(' / ')}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          {/* 품목 테이블 */}
-          <table className="print-table mb-6 w-full border-collapse border border-boss-border text-[13px] print:border-black">
-            <thead>
-              <tr className="bg-boss-inset">
-                <th className={TH}>품목명</th>
-                <th className={TH}>규격</th>
-                <th className={TH}>단위</th>
-                <th className={`${TH} text-right`}>수량</th>
-                <th className={`${TH} text-right`}>단가</th>
-                <th className={`${TH} text-right`}>공급가액</th>
-                <th className={`${TH} text-right`}>세액</th>
-                <th className={`${TH} text-right`}>합계액</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((it, idx) => (
-                <tr key={it.id ?? idx}>
-                  <td className={`${TD} text-boss-text`}>{it.itemName || '-'}</td>
-                  <td className={`${TD} text-center text-boss-text-secondary`}>{it.itemSpec || '-'}</td>
-                  <td className={`${TD} text-center text-boss-text-secondary`}>{it.unit || '-'}</td>
-                  <td className={`${TD} ${NUM} text-boss-text-secondary`}>
-                    {(it.quantity ?? 0).toLocaleString('ko-KR')}
-                  </td>
-                  <td className={`${TD} ${NUM} text-boss-text-secondary`}>{fmtMoney(it.unitPrice)}</td>
-                  <td className={`${TD} ${NUM} text-boss-text-secondary`}>{fmtMoney(it.supplyAmount)}</td>
-                  <td className={`${TD} ${NUM} text-boss-text-secondary`}>{fmtMoney(it.vatAmount)}</td>
-                  <td className={`${TD} ${NUM} font-semibold text-boss-text`}>{fmtMoney(it.totalAmount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* 합계 */}
-          <div className={`${BOX} mb-6 ml-auto w-full max-w-sm text-[13px]`}>
-            <div className="flex justify-between py-1 text-boss-text-secondary">
-              <span>공급가액 합계</span>
-              <span className="font-boss-head font-semibold tabular-nums text-boss-text">
-                {fmtMoney(totals.supplyAmount)} 원
-              </span>
-            </div>
-            <div className="flex justify-between py-1 text-boss-text-secondary">
-              <span>세액 합계</span>
-              <span className="font-boss-head font-semibold tabular-nums text-boss-text">
-                {fmtMoney(totals.vatAmount)} 원
-              </span>
-            </div>
-            <div className="mt-2 flex justify-between border-t border-boss-border py-2 text-[15px] font-bold text-boss-text print:border-black">
-              <span>총 합계</span>
-              <span className="font-boss-head text-[18px] tabular-nums">{fmtMoney(totals.totalAmount)} 원</span>
-            </div>
-          </div>
-
-          {/* 서명 / 도장 영역 */}
-          <div className="mb-6 grid grid-cols-2 gap-4 text-[13px]">
-            <div className={BOX}>
-              <p className="mb-8 font-semibold text-boss-text">공급받는자 서명 / 도장</p>
-              <div className="mt-12 border-t border-boss-border pt-2 text-boss-text-secondary print:border-black">
-                서명: _____________________
-              </div>
-            </div>
-            <div className={BOX}>
-              <p className="mb-8 font-semibold text-boss-text">공급자 서명 / 도장</p>
-              <div className="mt-12 border-t border-boss-border pt-2 text-boss-text-secondary print:border-black">
-                서명: _____________________
-              </div>
-            </div>
-          </div>
-
-          {/* 비고 */}
-          <div className={`${BOX} text-[13px]`}>
-            <p className="mb-2 font-semibold text-boss-text">비고</p>
-            <p className="min-h-[60px] whitespace-pre-wrap leading-relaxed text-boss-text-secondary">
-              위 금액을 영수(청구)하였습니다.
-              본 거래 명세서는 견적 품목을 기준으로 작성되었습니다.
-            </p>
-          </div>
+        <div ref={paperRef} className="print-area boss-card p-8 print:border-0 print:p-0 print:shadow-none">
+          <ReceiptDoc styleKey={styleKey} data={docData} palette={style.palette} />
         </div>
       )}
     </div>
