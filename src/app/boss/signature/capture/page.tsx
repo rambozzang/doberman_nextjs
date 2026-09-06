@@ -280,7 +280,7 @@ export default function BossSignatureCapturePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <Field
                 id="orderId"
-                label="연결할 주문 번호"
+                label="연결할 고객 번호"
                 type="text"
                 inputMode="numeric"
                 value={orderIdInput}
@@ -346,7 +346,7 @@ export default function BossSignatureCapturePage() {
             <strong className="font-semibold">이미지(PNG)</strong>와 확인 일시로 저장됩니다.
           </p>
           <p className="mt-2 text-[12.5px] leading-[1.7] text-boss-text-soft">
-            주문 · 시공 기록 번호를 함께 적어 두면 해당 상세에서 서명을 바로 찾을 수 있습니다.
+            고객 · 시공 기록 번호를 함께 적어 두면 해당 상세에서 서명을 바로 찾을 수 있습니다.
           </p>
         </Panel>
       </div>

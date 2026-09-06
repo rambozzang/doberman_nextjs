@@ -1,19 +1,21 @@
 'use client';
 
 // 견적서 목록 — Industry 패턴 (참조 leads 표)
-// - 고객 ID 로 해당 고객의 견적서(헤더) 목록을 조회 (GET /estimates/customer/{customerId})
+// - 고객을 고르면(앱 "내 고객 견적서 보내기"와 같은 흐름) 그 고객의 견적서(헤더) 목록을 조회 (GET /estimates/customer/{customerId})
+// - ?customerId= 로 들어오면 그 고객이 바로 선택된다 (고객 상세 → 견적서)
 // - 각 행 클릭 시 인쇄 화면으로 이동, 행 액션으로 인쇄 / 영수증 출력
 // - 새 견적서 생성 (POST /estimates)
 // 참고: [id] 라우트 파라미터는 customerId 이다 (print/receipt 페이지 동일).
 // 화면 제목 · 부제는 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw } from 'lucide-react';
 import { bossEstimatesApi } from '@/lib/api/boss/estimates';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import type { BossEstimate, BossEstimateCreateRequest } from '@/types/boss-estimate';
+import type { BossCustomerData } from '@/types/boss-customer';
 import {
   SearchInput,
   Button,
@@ -51,10 +53,40 @@ function statusBadge(e: BossEstimate): { label: string; tone: BadgeTone } {
 }
 
 export default function BossEstimateListPage() {
-  const router = useRouter();
+  return (
+    <Suspense fallback={null}>
+      <EstimateList />
+    </Suspense>
+  );
+}
 
+function EstimateList() {
+  const router = useRouter();
+  const search = useSearchParams();
+
+  // 고객 선택 — 앱처럼 목록에서 고른다. 고객 목록을 못 읽으면 번호 직접 입력으로 대신한다.
+  const [customers, setCustomers] = useState<BossCustomerData[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
   const [customerIdInput, setCustomerIdInput] = useState('');
-  const [customerId, setCustomerId] = useState('');
+  // ?customerId= (새 링크) 또는 ?orderId= (고객 상세의 예전 링크) 로 들어오면 그 고객이 바로 선택된다
+  const [customerId, setCustomerId] = useState(search.get('customerId') ?? search.get('orderId') ?? '');
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await bossCustomersApi.list();
+        if (alive && res.success !== false && res.data) setCustomers(res.data);
+      } catch {
+        // 목록 실패 → 아래 직접 입력 폼이 대신 보인다
+      } finally {
+        if (alive) setCustomersLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [estimates, setEstimates] = useState<BossEstimate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -101,7 +133,7 @@ export default function BossEstimateListPage() {
     e.preventDefault();
     const v = customerIdInput.trim();
     if (!v) {
-      toast.error('고객 ID를 입력하세요.');
+      toast.error('고객 번호를 입력하세요.');
       return;
     }
     setCustomerId(v);
@@ -110,7 +142,7 @@ export default function BossEstimateListPage() {
   // 새 견적서 생성
   const onCreate = async () => {
     if (!customerId) {
-      toast.error('먼저 고객 ID를 입력하세요.');
+      toast.error('먼저 고객을 고르세요.');
       return;
     }
     setCreating(true);
@@ -159,23 +191,44 @@ export default function BossEstimateListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 필터 한 줄 — 고객 ID 조회 · 검색 · 우측 건수 · 새 견적서 */}
+      {/* 필터 한 줄 — 고객 선택 · 검색 · 우측 건수 · 새 견적서 */}
       <div className="flex flex-wrap items-center gap-2.5">
-        <form onSubmit={onApplyCustomerId} className="flex items-center gap-1.5">
-          <div className="w-[120px]">
-            <input
-              value={customerIdInput}
-              onChange={(e) => setCustomerIdInput(e.target.value)}
-              placeholder="고객 ID"
-              inputMode="numeric"
-              aria-label="고객 ID"
-              className="boss-input font-boss-head tabular-nums"
-            />
+        {customers.length > 0 || customersLoading ? (
+          <div className="w-full sm:w-[260px]">
+            <select
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              aria-label="고객 선택"
+              className="boss-input"
+              disabled={customersLoading}
+            >
+              <option value="">{customersLoading ? '고객 불러오는 중…' : '고객을 고르세요'}</option>
+              {customers.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                  {c.phone ? ` · ${c.phone}` : ''}
+                  {c.address1 ? ` · ${c.address1}` : ''}
+                </option>
+              ))}
+            </select>
           </div>
-          <Button type="submit" variant="secondary">
-            조회
-          </Button>
-        </form>
+        ) : (
+          <form onSubmit={onApplyCustomerId} className="flex items-center gap-1.5">
+            <div className="w-[140px]">
+              <input
+                value={customerIdInput}
+                onChange={(e) => setCustomerIdInput(e.target.value)}
+                placeholder="고객 번호"
+                inputMode="numeric"
+                aria-label="고객 번호"
+                className="boss-input font-boss-head tabular-nums"
+              />
+            </div>
+            <Button type="submit" variant="secondary">
+              조회
+            </Button>
+          </form>
+        )}
 
         <SearchInput
           value={keyword}
@@ -234,11 +287,11 @@ export default function BossEstimateListPage() {
 
       {!customerId ? (
         <EmptyState
-          title="고객 ID를 먼저 입력하세요"
-          description="견적서는 고객별로 보관됩니다. 위 입력란에 고객 ID를 넣고 조회하면 그 고객의 견적서가 표시됩니다. 고객 ID 는 고객 관리 화면에서 확인할 수 있습니다."
+          title="고객을 먼저 고르세요"
+          description="견적서는 고객별로 보관됩니다. 위에서 고객을 고르면 그 고객의 견적서가 표시됩니다. 아직 고객이 없으면 고객 화면에서 먼저 등록하세요."
           action={
             <ButtonLink href="/boss/customers" variant="secondary" size="sm">
-              고객 관리에서 찾기
+              고객 목록에서 찾기
             </ButtonLink>
           }
         />
@@ -250,7 +303,7 @@ export default function BossEstimateListPage() {
         error ? (
           <EmptyState
             title="견적서를 불러오지 못했습니다"
-            description="고객 ID 가 맞는지 확인하고 다시 시도하세요."
+            description="네트워크 상태를 확인하고 다시 시도하세요."
             action={
               <Button variant="secondary" size="sm" onClick={() => load(customerId)}>
                 다시 시도

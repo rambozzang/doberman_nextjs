@@ -337,7 +337,7 @@ function TaxInvoiceForm() {
               </p>
             </div>
             <div>
-              <FieldLabel htmlFor="customerId">고객(주문)</FieldLabel>
+              <FieldLabel htmlFor="customerId">고객</FieldLabel>
               <select
                 id="customerId"
                 className="boss-input"

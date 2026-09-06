@@ -234,7 +234,7 @@ export default function BossRequestDetailPage() {
           <Panel kicker="안내" title="답변 후 흐름">
             <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
               답변을 보내면 고객 앱에 알림이 갑니다. 고객이 채택하면 상태가 「채택 완료」로 바뀌고,
-              그 뒤 주문 등록에서 시공 일정을 잡습니다.
+              그 뒤 고객 등록에서 시공 일정을 잡습니다.
             </p>
           </Panel>
         </div>

@@ -3,12 +3,17 @@
 // Industry 패턴(agent.opentohome.com)의 헤더는 "kicker + 26px 제목 + 설명"을 항상 노출한다.
 // 사이드바와 헤더가 같은 소스를 보도록 이 파일로 분리했다.
 //
+// 용어는 **앱과 같은 말**을 쓴다 (사장님이 앱 · 웹을 오가며 헷갈리지 않게):
+//   웹견적   = 도배르만 사이트 방문자가 보낸 견적 요청 (앱 "웹견적" · "나의 견적" · "웹견적서관리")
+//   고객     = 사장님이 직접 등록한 시공 건 (앱 "고객 리스트" — 전체 · 진행중 · 수금중). "주문"이라는 말은 쓰지 않는다.
+//   고객 견적서 = 그 고객에게 보내는 견적서 (앱 "내 고객 견적서 보내기")
+//
 // 주의: 부제에는 실데이터가 아닌 목업 숫자를 넣지 않는다.
 // 건수/카운트가 필요한 화면은 각 페이지가 직접 그린다.
 
 import {
   LayoutDashboard,
-  FileText,
+  Globe,
   MessageSquare,
   Calendar,
   Hammer,
@@ -20,7 +25,6 @@ import {
   TrendingUp,
   CreditCard,
   Settings,
-  ShoppingCart,
   BarChart3,
   Briefcase,
   Receipt,
@@ -28,6 +32,8 @@ import {
   PenTool,
   Megaphone,
   FileCheck2,
+  MessageSquareReply,
+  LayoutTemplate,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -43,9 +49,7 @@ export type NavItem = {
 
 export type NavSection = { title: string; items: NavItem[] };
 
-// 도배 사장님의 업무 흐름 순서대로:
-//   견적 요청 → 견적서 → 주문 → 시공 → AS → 수금(영수증)
-// 알림은 헤더의 종 아이콘, 이벤트는 구독·결제 화면에서 진입한다 — 레일은 한 화면에 들어가야 한다.
+// 앱 홈의 두 묶음("업무 · 견적", "고객 관리")을 그대로 따른다.
 export const SECTIONS: NavSection[] = [
   {
     title: '워크스페이스',
@@ -56,29 +60,35 @@ export const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: '영업',
+    title: '웹견적 · 도배르만 사이트',
     items: [
-      { href: '/boss/requests', label: '견적 요청', icon: FileText },
-      { href: '/boss/estimate', label: '견적서', icon: FileSignature },
+      {
+        href: '/boss/requests',
+        label: '웹견적 요청',
+        icon: Globe,
+        exclude: ['/boss/requests/my'],
+      },
+      { href: '/boss/requests/my', label: '나의 견적', icon: MessageSquareReply },
+      { href: '/boss/templates', label: '웹견적서 관리', icon: LayoutTemplate },
+    ],
+  },
+  {
+    title: '고객 관리 · 내 시공 건',
+    items: [
+      { href: '/boss/customers', label: '고객', icon: Contact },
+      { href: '/boss/estimate', label: '고객 견적서', icon: FileSignature },
       { href: '/boss/tax-invoice', label: '세금계산서', icon: FileCheck2 },
-      { href: '/boss/orders', label: '주문 관리', icon: ShoppingCart },
-      { href: '/boss/customers', label: '고객 관리', icon: Contact },
+      { href: '/boss/construction', label: '시공 기록', icon: Hammer },
+      { href: '/boss/checklist', label: '체크리스트', icon: ListChecks },
+      { href: '/boss/signature', label: '고객 서명', icon: PenTool },
+      { href: '/boss/as', label: 'AS 관리', icon: Wrench },
       { href: '/boss/portfolio', label: '포트폴리오', icon: ImageIcon },
     ],
   },
   {
-    title: '시공 · 운영',
+    title: '경영',
     items: [
-      { href: '/boss/construction', label: '시공 기록', icon: Hammer },
-      { href: '/boss/checklist', label: '체크리스트', icon: ListChecks },
-      { href: '/boss/as', label: 'AS 요청', icon: Wrench },
-      { href: '/boss/signature', label: '고객 서명', icon: PenTool },
-      { href: '/boss/receipt', label: '영수증 관리', icon: Receipt },
-    ],
-  },
-  {
-    title: '인사이트',
-    items: [
+      { href: '/boss/receipt', label: '영수증 지출관리', icon: Receipt },
       { href: '/boss/sales', label: '매출 분석', icon: TrendingUp },
       { href: '/boss/statistics', label: '종합 통계', icon: BarChart3 },
     ],
@@ -142,8 +152,8 @@ const PAGE_META: Record<string, PageMeta> = {
   '/boss': {
     title: '대시보드',
     subtitle: '오늘의 일감과 확인이 필요한 항목을 한눈에 봅니다.',
-    secondary: { label: '견적 요청', href: '/boss/requests' },
-    action: { label: '주문 등록', href: '/boss/orders/quick' },
+    secondary: { label: '웹견적 요청', href: '/boss/requests' },
+    action: { label: '고객 등록', href: '/boss/customers/new' },
   },
 
   '/boss/chat': { title: '채팅', subtitle: '고객 문의를 한 곳에서 응대합니다.' },
@@ -153,37 +163,38 @@ const PAGE_META: Record<string, PageMeta> = {
   '/boss/calendar/alarm': { title: '일정 알림', subtitle: '일정 전 알림을 설정합니다.', width: 'wide' },
   '/boss/notifications': { title: '알림', subtitle: '받은 알림 전체 내역입니다.' },
 
+  // ── 웹견적: 도배르만 사이트 방문자가 보낸 요청 ──
   '/boss/requests': {
-    title: '견적 요청',
-    subtitle: '고객이 보낸 견적 요청을 확인하고 답변합니다.',
-    secondary: { label: '내 답변', href: '/boss/requests/my' },
+    title: '웹견적 요청',
+    subtitle: '도배르만 사이트에서 들어온 고객 견적 요청입니다. 답변하면 채팅으로 이어집니다.',
+    secondary: { label: '나의 견적', href: '/boss/requests/my' },
   },
-  '/boss/requests/my': { title: '내 답변', subtitle: '보낸 견적 답변 목록입니다.' },
-  '/boss/orders': {
-    title: '주문 관리',
-    subtitle: '진행 · 수금 · 완료 상태를 관리합니다.',
-    secondary: { label: '견적서', href: '/boss/estimate' },
-    action: { label: '주문 등록', href: '/boss/orders/quick' },
+  '/boss/requests/my': {
+    title: '나의 견적',
+    subtitle: '웹견적 요청에 내가 보낸 견적 답변입니다.',
+    secondary: { label: '웹견적 요청', href: '/boss/requests' },
   },
-  '/boss/orders/quick': {
-    title: '빠른 주문 등록',
-    subtitle: '현장에서 바로 입력합니다.',
+  '/boss/templates': {
+    title: '웹견적서 관리',
+    subtitle: '웹견적 답변에 자주 쓰는 견적서 양식을 저장해 둡니다.',
+    width: 'wide',
+  },
+
+  // ── 고객: 사장님이 직접 등록한 시공 건 (앱 "고객 리스트") ──
+  '/boss/customers': {
+    title: '고객',
+    subtitle: '내 고객(시공 건)을 등록하고 진행 · 수금 · 완료까지 관리합니다.',
+    secondary: { label: '고객 견적서', href: '/boss/estimate' },
+    action: { label: '고객 등록', href: '/boss/customers/new' },
+  },
+  '/boss/customers/new': {
+    title: '고객 등록',
+    subtitle: '현장에서 바로 입력합니다. 이름만 있어도 등록됩니다.',
     width: 'wide',
   },
   '/boss/estimate': {
-    title: '견적서',
-    subtitle: '견적서를 발행 · 출력하고 수납을 기록합니다.',
-  },
-  '/boss/tax-invoice': {
-    title: '세금계산서',
-    subtitle: '고객별 세금계산서 · 현금영수증 발행을 관리하고 분기 부가세를 가늠합니다.',
-    action: { label: '발행 등록', href: '/boss/tax-invoice/new' },
-  },
-  '/boss/tax-invoice/new': {
-    title: '세금계산서 등록',
-    subtitle: '고객 사업자 정보와 금액을 정리해 홈택스 발행을 준비합니다.',
-    // 품목 표(8열)가 있어 wide(860px)로는 좁다 — 폼은 좌측 열이 스스로 max-w 를 잡는다
-    width: 'full',
+    title: '고객 견적서',
+    subtitle: '내 고객에게 보내는 견적서를 만들고 출력 · 공유합니다.',
   },
   '/boss/portfolio': {
     title: '포트폴리오',
@@ -191,10 +202,6 @@ const PAGE_META: Record<string, PageMeta> = {
     action: { label: '새 사례', href: '/boss/portfolio/new' },
   },
   '/boss/portfolio/new': { title: '새 포트폴리오', subtitle: '시공 사례를 등록합니다.', width: 'wide' },
-  '/boss/customers': {
-    title: '고객 관리',
-    subtitle: '연락처와 거래 이력을 관리합니다.',
-  },
 
   '/boss/construction': {
     title: '시공 기록',
@@ -209,22 +216,35 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   '/boss/checklist/new': { title: '새 체크리스트', subtitle: '점검 항목을 구성합니다.', width: 'wide' },
   '/boss/as': {
-    title: 'AS 요청',
+    title: 'AS 관리',
     subtitle: '하자 · 재시공 접수를 처리합니다.',
     action: { label: '새 접수', href: '/boss/as/new' },
   },
   '/boss/as/new': { title: 'AS 접수', subtitle: '하자 내용을 입력합니다.', width: 'wide' },
-  '/boss/receipt': { title: '영수증 관리', subtitle: '영수증을 발행하고 보관합니다.' },
   '/boss/signature': { title: '고객 서명', subtitle: '계약 · 완료 확인 서명을 관리합니다.' },
   '/boss/signature/capture': { title: '서명 받기', subtitle: '현장에서 서명을 입력합니다.', width: 'wide' },
+  '/boss/tax-invoice': {
+    title: '세금계산서',
+    subtitle: '고객별 세금계산서 · 현금영수증 발행을 관리하고 분기 부가세를 가늠합니다.',
+    action: { label: '발행 등록', href: '/boss/tax-invoice/new' },
+  },
+  '/boss/tax-invoice/new': {
+    title: '세금계산서 등록',
+    subtitle: '고객 사업자 정보와 금액을 정리해 홈택스 발행을 준비합니다.',
+    // 품목 표(8열)가 있어 wide(860px)로는 좁다 — 폼은 좌측 열이 스스로 max-w 를 잡는다
+    width: 'full',
+  },
 
+  // ── 경영 ──
+  '/boss/receipt': { title: '영수증 지출관리', subtitle: '자재 · 인건비 등 지출 영수증을 사진으로 모아 관리합니다.' },
   '/boss/sales': {
     title: '매출 분석',
     subtitle: '기간별 매출 추이를 봅니다.',
     secondary: { label: '실시간', href: '/boss/sales/realtime' },
   },
   '/boss/sales/realtime': { title: '실시간 매출', subtitle: '오늘 집계 기준입니다.' },
-  '/boss/statistics': { title: '종합 통계', subtitle: '주문 · 매출 · 고객 지표입니다.' },
+  '/boss/statistics': { title: '종합 통계', subtitle: '고객 · 매출 · 견적 지표입니다.' },
+
   '/boss/community': {
     title: '커뮤니티',
     subtitle: '사장님 게시판입니다.',
@@ -255,7 +275,6 @@ const PAGE_META: Record<string, PageMeta> = {
   '/boss/me/company/new': { title: '회사 등록', subtitle: '사업자 정보를 입력합니다.', width: 'wide' },
   '/boss/photo': { title: '사진 관리', subtitle: '현장 사진을 보관합니다.' },
   '/boss/photo/edit': { title: '사진 편집', width: 'wide' },
-  '/boss/templates': { title: '템플릿', subtitle: '견적 · 문자 양식을 관리합니다.', width: 'wide' },
   '/boss/help': { title: '도움말', subtitle: '사용 가이드', width: 'wide' },
   '/boss/help/faq': { title: '자주 묻는 질문', subtitle: '도움말', width: 'wide' },
   '/boss/help/marketing': { title: '마케팅 정보 수신', width: 'wide' },
@@ -280,7 +299,7 @@ export function getPageMeta(pathname: string | null): PageMeta {
   if (PAGE_META[pathname]) {
     const own = PAGE_META[pathname];
     // 정의된 하위 화면(등록·수정 등)도 상위로 돌아가는 링크를 갖는다.
-    // 단, 레일에 직접 올라간 화면(구인/구직 등)은 자기 자신이 최상위다.
+    // 단, 레일에 직접 올라간 화면(나의 견적 · 구인/구직 등)은 자기 자신이 최상위다.
     const isTopLevel = NAV_ITEMS.some((n) => n.href === pathname);
     if (!own.back && !isTopLevel && parent && parentKey && parentKey !== '/boss') {
       return { ...own, back: { label: parent.title, href: parentKey } };

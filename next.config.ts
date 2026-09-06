@@ -74,6 +74,10 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       // 플랜에 정의된 일부 라우트를 실제 구현 위치로 연결
+      // "주문 관리"를 앱과 같은 "고객"으로 통합하면서 경로를 옮겼다 — 앱 · 알림에 남은 링크 보호
+      { source: '/boss/orders', destination: '/boss/customers', permanent: true },
+      { source: '/boss/orders/quick', destination: '/boss/customers/new', permanent: true },
+      { source: '/boss/orders/:id', destination: '/boss/customers/:id', permanent: true },
       { source: '/boss/home', destination: '/boss', permanent: false },
       { source: '/boss/photo/camera', destination: '/boss/photo', permanent: false },
       { source: '/boss/signatures', destination: '/boss/signature', permanent: false },

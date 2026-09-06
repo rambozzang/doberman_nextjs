@@ -1,18 +1,20 @@
 'use client';
 
-// 주문 상세 — Industry 패턴 (좌 본문 패널 + 우 요약 패널 2열)
+// 고객 상세 — Industry 패턴 (좌 본문 패널 + 우 요약 패널 2열)
 // 별도 상세 API 가 없어 목록에서 조회한 뒤 관련 기능(견적서 / 체크리스트 / 시공 / AS) 링크를 제공한다.
-// 화면 제목 · "← 주문 관리" 링크는 셸 헤더가 그린다.
+// 화면 제목 · "← 고객" 링크는 셸 헤더가 그린다.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
+import { bossCustomersApi } from '@/lib/api/boss/customers';
+import { customerStatus } from '@/lib/boss/customerStatus';
+import toast from 'react-hot-toast';
 import type { BossOrderItem } from '@/types/boss';
 import {
   Panel,
   Button,
   ButtonLink,
-  Badge,
   Tag,
   Skeleton,
   EmptyState,
@@ -21,18 +23,10 @@ import {
   RowItem,
   RowThumb,
   RowChevron,
+  ConfirmDialog,
 } from '@/components/boss/ui';
-import { FileSignature, ListChecks, Hammer, Wrench } from 'lucide-react';
+import { FileSignature, ListChecks, Hammer, Wrench, Trash2 } from 'lucide-react';
 
-function orderStatus(code?: string) {
-  const c = (code ?? '').toUpperCase();
-  if (c.includes('NEW') || c.includes('대기')) return { label: '대기', tone: 'default' as const };
-  if (c.includes('CONFIRM') || c.includes('확정')) return { label: '확정', tone: 'emerald' as const };
-  if (c.includes('PROGRESS') || c.includes('진행')) return { label: '진행', tone: 'sky' as const };
-  if (c.includes('DONE') || c.includes('완료')) return { label: '완료', tone: 'violet' as const };
-  if (c.includes('CANCEL') || c.includes('취소')) return { label: '취소', tone: 'rose' as const };
-  return { label: code || '신규', tone: 'default' as const };
-}
 
 function formatMoney(n?: number) {
   if (!n) return '-';
@@ -61,6 +55,50 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 수금완료 처리 — 앱 "수금완료 처리하시겠습니까?" 와 같은 흐름. 완료되면 앱에서도 수정이 잠긴다.
+  const [confirmPaid, setConfirmPaid] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
+  const handleMarkPaid = async () => {
+    if (!item?.id || markingPaid) return;
+    setMarkingPaid(true);
+    try {
+      const res = await bossCustomersApi.updateStatus(item.id, '10');
+      if (res.success !== false) {
+        toast.success('수금완료로 표시했습니다.');
+        setConfirmPaid(false);
+        setItem({ ...item, statusCd: '10' });
+      } else {
+        toast.error(res.message || res.error || '상태를 바꾸지 못했습니다.');
+      }
+    } catch {
+      toast.error('네트워크 오류로 상태를 바꾸지 못했습니다.');
+    } finally {
+      setMarkingPaid(false);
+    }
+  };
+
+  // 삭제 — 되돌릴 수 없으므로 ConfirmDialog 를 거친다
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    if (!item?.id || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await bossCustomersApi.remove(item.id);
+      if (res.success !== false) {
+        toast.success('고객을 삭제했습니다.');
+        setConfirmDelete(false);
+        router.replace('/boss/customers');
+      } else {
+        toast.error(res.message || res.error || '삭제하지 못했습니다.');
+      }
+    } catch {
+      toast.error('네트워크 오류로 삭제하지 못했습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -71,13 +109,13 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
         if (found) {
           setItem(found);
         } else {
-          setError('주문을 찾을 수 없습니다.');
+          setError('고객을 찾을 수 없습니다.');
         }
       } else {
-        setError(res.message || '주문을 불러오지 못했습니다.');
+        setError(res.message || '고객을 불러오지 못했습니다.');
       }
     } catch {
-      setError('네트워크 오류로 주문을 불러오지 못했습니다.');
+      setError('네트워크 오류로 고객을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
@@ -104,14 +142,14 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
       <div className="flex flex-col gap-4">
         {error && <AlertBanner tone="bad">{error}</AlertBanner>}
         <EmptyState
-          title="주문을 열지 못했습니다"
-          description="삭제됐거나 최근 200건 밖의 주문일 수 있습니다. 목록에서 다시 골라 주세요."
+          title="고객을 열지 못했습니다"
+          description="삭제됐거나 최근 200건 밖의 고객일 수 있습니다. 목록에서 다시 골라 주세요."
           action={
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => load()}>
                 다시 시도
               </Button>
-              <Button variant="primary" size="sm" onClick={() => router.replace('/boss/orders')}>
+              <Button variant="primary" size="sm" onClick={() => router.replace('/boss/customers')}>
                 목록으로
               </Button>
             </div>
@@ -121,20 +159,20 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
     );
   }
 
-  const status = orderStatus(item.statusCd);
+  const status = customerStatus(item.statusCd, item.workDate);
   const fullAddr = [item.address1, item.address2].filter(Boolean).join(' ');
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       {/* ───── 좌: 본문 ───── */}
       <div className="flex flex-col gap-4">
-        <Panel kicker={`주문 #${item.id}`} title={item.name || '고객명 미지정'}>
+        <Panel kicker={`고객 #${item.id}`} title={item.name || '고객명 미지정'}>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge tone={status.tone}>{status.label}</Badge>
+            <Tag tone={status.tone}>{status.label}</Tag>
             {item.isExistChecklist === 'Y' && <Tag tone="info">체크리스트 있음</Tag>}
           </div>
 
-          <h4 className="boss-mono-label mb-2">주문 정보</h4>
+          <h4 className="boss-mono-label mb-2">고객 정보</h4>
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-3">
             <Fact label="총 금액" value={item.totalAmount ? formatMoney(item.totalAmount) : undefined} num />
             <Fact
@@ -203,7 +241,7 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
           <p className="mt-1 text-[12px] text-boss-text-secondary">총 금액</p>
 
           <dl className="mt-3">
-            <DescRow label="상태" value={<Badge tone={status.tone}>{status.label}</Badge>} />
+            <DescRow label="상태" value={<Tag tone={status.tone}>{status.label}</Tag>} />
             <DescRow label="고객" value={item.name || '—'} />
             <DescRow
               label="연락처"
@@ -231,27 +269,63 @@ export default function BossOrderDetailPage({ params }: { params: { id: string }
             />
           </dl>
 
+          {item.statusCd !== '10' && item.statusCd !== '30' && (
+            <Button variant="primary" onClick={() => setConfirmPaid(true)} className="mt-4 w-full">
+              수금완료 처리
+            </Button>
+          )}
           {item.phone && (
-            <a href={`tel:${item.phone}`} className="boss-btn boss-btn-md boss-btn-primary mt-4 w-full">
+            <a
+              href={`tel:${item.phone}`}
+              className={`boss-btn boss-btn-md boss-btn-secondary w-full ${item.statusCd !== '10' && item.statusCd !== '30' ? 'mt-2' : 'mt-4'}`}
+            >
               고객에게 전화
             </a>
           )}
           <ButtonLink
-            href={`/boss/estimate?orderId=${item.id}`}
+            href={`/boss/estimate?customerId=${item.id}`}
             variant="secondary"
             className="mt-2 w-full"
           >
-            견적서 작성
+            고객 견적서 작성
           </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setConfirmDelete(true)}
+            className="mt-2 w-full !text-boss-error"
+          >
+            고객 삭제
+          </Button>
         </Panel>
 
-        <Panel kicker="안내" title="주문 흐름">
+        <Panel kicker="안내" title="업무 흐름">
           <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
             대기 → 확정 → 진행 → 완료 순서로 상태가 바뀝니다. 시공이 끝나면 영수증을 발행하고 수금을
             기록해야 매출 분석에 잡힙니다.
           </p>
         </Panel>
       </div>
+
+      <ConfirmDialog
+        open={confirmPaid}
+        title="수금완료 처리하시겠습니까?"
+        description="수금완료로 바꾸면 매출 분석에 잡히고, 앱에서는 견적 내용을 더 수정할 수 없습니다."
+        confirmLabel="수금완료"
+        tone="primary"
+        loading={markingPaid}
+        onCancel={() => setConfirmPaid(false)}
+        onConfirm={() => void handleMarkPaid()}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        title="이 고객을 삭제할까요?"
+        description={`'${item.name || '고객명 미지정'}' 고객과 연결된 견적서 · 체크리스트 · 시공 기록은 그대로 남지만, 고객 목록에서는 사라지며 복구할 수 없습니다.`}
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

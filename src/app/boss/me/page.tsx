@@ -220,7 +220,7 @@ export default function BossMyInfoPage() {
           <p className="boss-kicker !text-boss-error">주의</p>
           <h3 className="boss-section-title">계정 종료</h3>
           <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
-            탈퇴하면 견적 · 주문 · 시공 기록이 모두 삭제되고 복구할 수 없습니다. 1년간 같은 정보로 다시
+            탈퇴하면 견적 · 고객 · 시공 기록이 모두 삭제되고 복구할 수 없습니다. 1년간 같은 정보로 다시
             가입할 수 없습니다.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">

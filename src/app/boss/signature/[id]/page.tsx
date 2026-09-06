@@ -1,7 +1,7 @@
 'use client';
 
 // 고객 서명 상세 — Industry 패턴
-//   좌: 서명 이미지(흰 종이 위) + 메모 / 우: DescRow 요약 + 주문 이동 · 목록 · 삭제.
+//   좌: 서명 이미지(흰 종이 위) + 메모 / 우: DescRow 요약 + 고객 이동 · 목록 · 삭제.
 //   화면 제목과 ← 고객 서명 링크는 셸 헤더가 그린다. 삭제는 ConfirmDialog.
 // Flutter: lib/app/signature/signature_detail_page.dart 와 대응 — 단건 API 가 없어 목록에서 id 로 찾는다.
 import { useEffect, useState } from 'react';
@@ -254,7 +254,7 @@ export default function BossSignatureDetailPage() {
               }
             />
             <DescRow
-              label="주문"
+              label="고객"
               value={
                 item.orderId ? (
                   <span className="font-boss-head tabular-nums text-boss-primary">#{item.orderId}</span>
@@ -269,8 +269,8 @@ export default function BossSignatureDetailPage() {
         <Panel title="작업" kicker="ACTIONS">
           <div className="flex flex-col gap-2">
             {item.orderId ? (
-              <ButtonLink href="/boss/orders" variant="primary" icon={ArrowUpRight} className="w-full">
-                주문 관리로 이동
+              <ButtonLink href="/boss/customers" variant="primary" icon={ArrowUpRight} className="w-full">
+                고객 상세로 이동
               </ButtonLink>
             ) : null}
             <ButtonLink href="/boss/signature" variant="secondary" icon={ArrowLeft} className="w-full">

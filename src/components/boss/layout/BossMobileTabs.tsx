@@ -2,7 +2,8 @@
 
 // 모바일 하단 탭 — 참조에는 없지만 현장(휴대폰) 사용 편의상 남긴다.
 // 네이비 레일과 같은 색, 사각. 라벨 10.5px, 선택 = 흰색 + 상단 3px 하늘색 선(레일 활성 표시와 같은 색).
-// 가운데는 생성 액션(주문 등록)을 강조한다. 터치 타겟 52px.
+// 가운데는 생성 액션(고객 등록)을 강조한다. 터치 타겟 52px.
+// 라벨은 앱과 같은 말을 쓴다: 웹견적 · 고객.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,8 +20,8 @@ type Tab = {
 
 const TABS: Tab[] = [
   { href: '/boss', label: '대시보드', icon: LayoutDashboard, exact: true },
-  { href: '/boss/requests', label: '견적 요청', icon: FileText },
-  { href: '/boss/orders/quick', label: '주문 등록', icon: Plus, accent: true },
+  { href: '/boss/requests', label: '웹견적', icon: FileText },
+  { href: '/boss/customers/new', label: '고객 등록', icon: Plus, accent: true },
   { href: '/boss/chat', label: '채팅', icon: MessageSquare },
 ];
 

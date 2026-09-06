@@ -5,7 +5,7 @@
 // 구조
 //   필터 줄(월 Seg 3개 + 집계 기준 + 우측 새로고침)
 //   → KPI 3장 (StatCard)
-//   → 해당 월 시공 건 표(고객 · 시공일 · 상태 · 금액 · 주문 보기)
+//   → 해당 월 시공 건 표(고객 · 시공일 · 상태 · 금액 · 고객 보기)
 //
 // 화면 제목은 셸 헤더(PAGE_META)가 그린다. 첫 조회 실패와 0건은 문구를 다르게 낸다.
 
@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { RefreshCw } from 'lucide-react';
 import { bossStatsApi, formatYearMonth } from '@/lib/api/boss/stats';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
+import { customerStatus } from '@/lib/boss/customerStatus';
 import type { BossCurrentMonthStats } from '@/types/boss-stats';
 import type { BossOrderItem } from '@/types/boss';
 import {
@@ -43,16 +44,6 @@ function fmtWon(n?: number): string {
   return `₩${n.toLocaleString('ko-KR')}`;
 }
 
-// 주문 상태 코드 → 표시 라벨 (주문 관리 화면과 같은 규칙)
-function orderStatus(code?: string): { label: string; tone: StatusTone } {
-  const c = (code ?? '').toUpperCase();
-  if (c.includes('NEW') || c.includes('대기')) return { label: '대기', tone: 'neutral' };
-  if (c.includes('CONFIRM') || c.includes('확정')) return { label: '확정', tone: 'ok' };
-  if (c.includes('PROGRESS') || c.includes('진행')) return { label: '진행', tone: 'info' };
-  if (c.includes('DONE') || c.includes('완료')) return { label: '완료', tone: 'ok' };
-  if (c.includes('CANCEL') || c.includes('취소')) return { label: '취소', tone: 'bad' };
-  return { label: code || '신규', tone: 'neutral' };
-}
 
 function yearMonthRange(ym: string) {
   const y = Number(ym.slice(0, 4));
@@ -108,7 +99,7 @@ export default function BossSalesRealtimePage() {
         setStats(statsRes.data ?? null);
       }
       if (ordersRes.success === false) {
-        const msg = ordersRes.error || ordersRes.message || '주문 목록을 불러오지 못했습니다.';
+        const msg = ordersRes.error || ordersRes.message || '고객 목록을 불러오지 못했습니다.';
         setError((prev) => prev ?? msg);
         toast.error(msg);
         setItems([]);
@@ -215,8 +206,8 @@ export default function BossSalesRealtimePage() {
         ) : items.length === 0 ? (
           <p className="px-5 py-10 text-center text-[13px] text-boss-text-secondary">
             {error
-              ? '주문을 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.'
-              : `${monthLabel}에 시공일이 잡힌 주문이 없습니다. 주문 관리에서 시공일을 입력하면 여기에 집계됩니다.`}
+              ? '고객을 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.'
+              : `${monthLabel}에 시공일이 잡힌 고객이 없습니다. 고객 화면에서 시공일을 입력하면 여기에 집계됩니다.`}
           </p>
         ) : (
           <div className="boss-scroll overflow-x-auto">
@@ -232,7 +223,7 @@ export default function BossSalesRealtimePage() {
               </thead>
               <tbody>
                 {items.map((item, i) => {
-                  const status = orderStatus(item.statusCd);
+                  const status = customerStatus(item.statusCd, item.workDate);
                   return (
                     <tr key={item.id ?? i}>
                       <td className="font-semibold">{item.name ?? '이름 없음'}</td>
@@ -243,8 +234,8 @@ export default function BossSalesRealtimePage() {
                       <td className="num font-semibold">{fmtWon(item.totalAmount)}</td>
                       <td className="text-right">
                         {item.id != null && (
-                          <ButtonLink href={`/boss/orders/${item.id}`} variant="ghost" size="sm">
-                            주문 보기
+                          <ButtonLink href={`/boss/customers/${item.id}`} variant="ghost" size="sm">
+                            고객 보기
                           </ButtonLink>
                         )}
                       </td>

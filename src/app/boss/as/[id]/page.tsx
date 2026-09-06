@@ -313,7 +313,7 @@ export default function BossAsDetailPage() {
               value={item.address || <span className="font-normal text-boss-text-muted">—</span>}
             />
             <DescRow
-              label="연결 주문"
+              label="연결 고객"
               value={
                 item.orderId != null ? (
                   <span className="font-boss-head tabular-nums text-boss-primary">#{item.orderId}</span>
@@ -414,7 +414,7 @@ export default function BossAsDetailPage() {
       <ConfirmDialog
         open={pending?.type === 'delete'}
         title="이 AS 요청을 삭제할까요?"
-        description="삭제된 요청과 사진 링크는 복구할 수 없습니다. 연결된 주문은 그대로 남습니다."
+        description="삭제된 요청과 사진 링크는 복구할 수 없습니다. 연결된 고객은 그대로 남습니다."
         loading={deleting}
         onCancel={() => setPending(null)}
         onConfirm={() => void handleDelete()}

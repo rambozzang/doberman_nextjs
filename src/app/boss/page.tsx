@@ -287,7 +287,7 @@ export default function BossDashboardPage() {
         title: `수금 대기 ${current.collectingCount}건`,
         sub: '시공은 끝났지만 아직 수금되지 않았습니다',
         state: { label: '미수금', tone: 'warn' },
-        href: '/boss/orders',
+        href: '/boss/customers',
         cta: '수금',
       });
     }
@@ -300,7 +300,7 @@ export default function BossDashboardPage() {
         title: `이번 달 취소 ${current.canceledCount}건`,
         sub: '취소 사유를 확인하세요',
         state: { label: '취소', tone: 'bad' },
-        href: '/boss/orders',
+        href: '/boss/customers',
         cta: '확인',
       });
     }
@@ -369,25 +369,25 @@ export default function BossDashboardPage() {
           hint={
             current?.uncollectedAmount != null
               ? `미수금 ${fmtWonShort(current.uncollectedAmount)}`
-              : '시공은 끝났지만 아직 수금되지 않은 주문'
+              : '시공은 끝났지만 아직 수금되지 않은 건'
           }
           loading={loading}
-          href="/boss/orders"
+          href="/boss/customers"
           alert={(current?.collectingCount ?? 0) > 0}
         />
         <StatCard
           label="이번 달 완료"
           value={cnt(current?.completedCount)}
-          hint={current ? `이번 달 주문 ${(current.totalCount ?? 0).toLocaleString('ko-KR')}건 중` : '시공 완료 건수'}
+          hint={current ? `이번 달 고객 ${(current.totalCount ?? 0).toLocaleString('ko-KR')}건 중` : '시공 완료 건수'}
           loading={loading}
           href="/boss/statistics"
         />
         <StatCard
           label="취소"
           value={cnt(current?.canceledCount)}
-          hint="이번 달 취소된 주문 · 사유를 확인하세요"
+          hint="이번 달 취소된 건 · 사유를 확인하세요"
           loading={loading}
-          href="/boss/orders"
+          href="/boss/customers"
           alert={(current?.canceledCount ?? 0) > 0}
         />
       </section>
@@ -517,12 +517,12 @@ export default function BossDashboardPage() {
               description={
                 error
                   ? '위의 다시 시도 버튼으로 다시 불러올 수 있습니다.'
-                  : '주문이 등록되고 수금이 완료되면 여기에 표시됩니다.'
+                  : '고객이 등록되고 수금이 완료되면 여기에 표시됩니다.'
               }
               action={
                 error ? undefined : (
-                  <ButtonLink href="/boss/orders/quick" variant="secondary" size="sm">
-                    주문 등록
+                  <ButtonLink href="/boss/customers/new" variant="secondary" size="sm">
+                    고객 등록
                   </ButtonLink>
                 )
               }

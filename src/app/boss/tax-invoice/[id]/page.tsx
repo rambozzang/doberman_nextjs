@@ -237,8 +237,8 @@ export default function BossTaxInvoiceDetailPage() {
               <DescRow
                 label="연결 고객"
                 value={
-                  <Link href={`/boss/orders/${data.customerId}`} className="hover:underline">
-                    주문 #{data.customerId}
+                  <Link href={`/boss/customers/${data.customerId}`} className="hover:underline">
+                    고객 #{data.customerId}
                   </Link>
                 }
               />

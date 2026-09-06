@@ -177,7 +177,7 @@ export default function BossSalesPage() {
       {/* ───── 필터 줄 ───── */}
       <div className="flex flex-wrap items-center gap-2.5">
         <Segmented options={PERIODS} value={period} onChange={setPeriod} ariaLabel="조회 기간" />
-        <p className="text-[12px] text-boss-text-muted">전체 주문 · 수금 기준</p>
+        <p className="text-[12px] text-boss-text-muted">전체 고객 · 수금 기준</p>
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant="secondary"
@@ -261,7 +261,7 @@ export default function BossSalesPage() {
           ) : chartData.length === 0 ? (
             <EmptyState
               title="집계된 매출이 없습니다"
-              description={`최근 ${months}개월에 등록된 주문이 없습니다. 주문을 등록하면 다음 집계부터 표시됩니다.`}
+              description={`최근 ${months}개월에 등록된 고객이 없습니다. 고객을 등록하면 다음 집계부터 표시됩니다.`}
             />
           ) : (
             <BarChart data={chartData} labelEvery={1} formatValue={fmtWonShort} />
@@ -285,7 +285,7 @@ export default function BossSalesPage() {
             <p className="px-5 py-10 text-center text-[13px] text-boss-text-secondary">
               {error
                 ? '월별 상세를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.'
-                : '표시할 월이 없습니다. 주문이 등록된 달부터 이 표에 쌓입니다.'}
+                : '표시할 월이 없습니다. 고객이 등록된 달부터 이 표에 쌓입니다.'}
             </p>
           ) : (
             <div className="boss-scroll overflow-x-auto">
@@ -356,7 +356,7 @@ export default function BossSalesPage() {
                 description={
                   derived.rate >= 80
                     ? `수금률 ${derived.rate.toFixed(0)}%. 지금 속도를 유지하면 현금 흐름 문제는 없습니다.`
-                    : `수금률 ${derived.rate.toFixed(0)}%. 완료됐지만 입금되지 않은 건을 주문 관리에서 먼저 처리하세요.`
+                    : `수금률 ${derived.rate.toFixed(0)}%. 완료됐지만 입금되지 않은 건을 고객 화면에서 먼저 처리하세요.`
                 }
               />
               <InsightCard

@@ -409,7 +409,7 @@ export default function BossSettingsPage() {
       <ConfirmDialog
         open={leaveOpen}
         title="정말 탈퇴하시겠습니까?"
-        description="1년간 재가입이 불가하며, 견적·주문·시공 기록이 모두 삭제되어 복구할 수 없습니다."
+        description="1년간 재가입이 불가하며, 견적·고객·시공 기록이 모두 삭제되어 복구할 수 없습니다."
         confirmLabel="탈퇴 문의"
         onCancel={() => setLeaveOpen(false)}
         onConfirm={() => {

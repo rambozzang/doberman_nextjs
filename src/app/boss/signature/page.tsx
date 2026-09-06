@@ -292,7 +292,7 @@ export default function BossSignatureListPage() {
                   </td>
                   <td>
                     <div className="flex flex-wrap items-center gap-1">
-                      {item.orderId ? <TagPill>주문 #{item.orderId}</TagPill> : null}
+                      {item.orderId ? <TagPill>고객 #{item.orderId}</TagPill> : null}
                       {item.recordId ? <TagPill>시공 #{item.recordId}</TagPill> : null}
                       {!item.orderId && !item.recordId ? (
                         <span className="text-boss-text-ghost">—</span>

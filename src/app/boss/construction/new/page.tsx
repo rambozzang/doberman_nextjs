@@ -193,7 +193,7 @@ function ConstructionFormInner() {
     const images = buildImagePayload(beforeImages, duringImages, afterImages);
     const parsedOrderId = orderId.trim() === '' ? null : Number(orderId);
     if (parsedOrderId !== null && Number.isNaN(parsedOrderId)) {
-      toast.error('주문 ID는 숫자여야 합니다.');
+      toast.error('고객 번호는 숫자여야 합니다.');
       return;
     }
 
@@ -279,12 +279,12 @@ function ConstructionFormInner() {
               />
               <Field
                 id="orderId"
-                label="연결할 주문 번호"
+                label="연결할 고객 번호"
                 type="number"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 placeholder="예: 1234"
-                hint="주문 관리의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다."
+                hint="고객 목록의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다."
                 disabled={loadingDetail}
               />
             </div>

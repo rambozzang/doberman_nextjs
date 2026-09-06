@@ -172,7 +172,7 @@ export default function BossStatisticsPage() {
   const emptyText = (what: string) =>
     error
       ? `${what}을(를) 불러오지 못했습니다. 위의 다시 시도를 눌러 주세요.`
-      : `아직 집계된 ${what}이(가) 없습니다. 주문이 등록되면 다음 집계부터 표시됩니다.`;
+      : `아직 집계된 ${what}이(가) 없습니다. 고객이 등록되면 다음 집계부터 표시됩니다.`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -218,7 +218,7 @@ export default function BossStatisticsPage() {
           label="이번 달 건수"
           value={`${(current?.totalCount ?? 0).toLocaleString('ko-KR')}건`}
           delta={deltaOf(current?.totalCount, current?.lastMonthTotalCount)}
-          hint="등록된 주문 수"
+          hint="등록된 고객 수"
           loading={loading}
         />
         <StatCard
@@ -292,7 +292,7 @@ export default function BossStatisticsPage() {
               <Skeleton className="h-[176px]" />
             ) : statusTotal === 0 ? (
               <p className="py-10 text-center text-[13px] text-boss-text-secondary">
-                {emptyText('주문')}
+                {emptyText('고객')}
               </p>
             ) : (
               <>

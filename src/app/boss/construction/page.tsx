@@ -248,7 +248,7 @@ export default function BossConstructionListPage() {
               <th>상태</th>
               <th>시공일</th>
               <th className="text-right">사진</th>
-              <th>주문</th>
+              <th>고객</th>
               <th />
             </tr>
           </thead>

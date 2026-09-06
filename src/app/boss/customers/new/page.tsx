@@ -1,11 +1,11 @@
 'use client';
 
-// 빠른 주문 등록 (고객 / 주문서 생성) — Industry 패턴의 긴 폼 (참조 매물 등록)
+// 고객 등록 (고객 등록) — Industry 패턴의 긴 폼 (참조 매물 등록)
 // Flutter 의 고객 생성 로직과 동일: POST /customers
 //
 // 조판: 좌 폼 패널(섹션 제목 + 2열 grid) + 하단 액션 패널 / 우 280px 요약 · 입력 확인 패널.
 // nav.ts 가 이 화면 폭을 wide(860px) 로 두므로 전체폭 bleed 컴포저 대신 폼 조판을 쓴다.
-// 화면 제목 · "← 주문 관리" 링크는 셸 헤더가 그린다.
+// 화면 제목 · "← 고객" 링크는 셸 헤더가 그린다.
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ import {
   DescRow,
   Tag,
 } from '@/components/boss/ui';
+import { CUSTOMER_STATUS_OPTIONS, customerStatus } from '@/lib/boss/customerStatus';
 import { useSubmitHotkey } from '@/components/boss/layout/BossSearchContext';
 import toast from 'react-hot-toast';
 
@@ -69,13 +70,13 @@ export default function BossOrderQuickPage() {
       };
       const res = await bossCustomersApi.create(payload);
       if (res.success) {
-        toast.success('주문이 등록되었습니다.');
-        router.push('/boss/orders');
+        toast.success('고객이 등록되었습니다.');
+        router.push('/boss/customers');
       } else {
-        toast.error(res.message || '주문 등록에 실패했습니다.');
+        toast.error(res.message || '고객 등록에 실패했습니다.');
       }
     } catch {
-      toast.error('네트워크 오류로 주문 등록에 실패했습니다.');
+      toast.error('네트워크 오류로 고객 등록에 실패했습니다.');
     } finally {
       setSaving(false);
     }
@@ -99,9 +100,10 @@ export default function BossOrderQuickPage() {
     if (canSubmit) void handleSubmit(new Event('submit') as unknown as React.FormEvent);
   }, canSubmit);
 
-  const statusLabel =
-    { '00': '대기', '01': '진행', '02': '완료', '03': '취소' }[form.statusCd] ?? '대기';
-  const statusTone = form.statusCd === '03' ? 'bad' : form.statusCd === '02' ? 'ok' : 'neutral';
+  // 앱과 같은 코드: 00 진행중 · 10 수금완료 · 20 보류 · 30 취소
+  const statusView = customerStatus(form.statusCd);
+  const statusLabel = statusView.label;
+  const statusTone = statusView.tone;
 
   return (
     <form
@@ -225,12 +227,13 @@ export default function BossOrderQuickPage() {
               value={form.statusCd}
               onChange={(e) => set('statusCd', e.target.value)}
               className="md:max-w-[240px]"
-              hint="현장에서 바로 등록할 때는 「대기」로 두고, 나중에 주문 상세에서 바꿉니다."
+              hint="현장에서 바로 등록할 때는 「진행중」으로 두고, 시공 후 고객 상세에서 수금완료로 바꿉니다."
             >
-              <option value="00">대기</option>
-              <option value="01">진행</option>
-              <option value="02">완료</option>
-              <option value="03">취소</option>
+              {CUSTOMER_STATUS_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>
+                  {o.label}
+                </option>
+              ))}
             </SelectField>
           </div>
         </Panel>
@@ -240,15 +243,15 @@ export default function BossOrderQuickPage() {
           <p className="text-[12.5px] text-boss-text-secondary">
             {warnings.length > 0
               ? `확인할 항목 ${warnings.length}개 · 등록은 가능합니다`
-              : '등록하면 주문 목록에 올라갑니다'}
+              : '등록하면 고객 목록에 올라갑니다'}
             <span className="ml-2 font-boss-head text-[11px] text-boss-text-muted">⌘↵ 로 바로 등록</span>
           </p>
           <div className="flex items-center gap-2">
-            <Link href="/boss/orders" className="boss-btn boss-btn-md boss-btn-secondary">
+            <Link href="/boss/customers" className="boss-btn boss-btn-md boss-btn-secondary">
               취소
             </Link>
             <Button type="submit" variant="primary" disabled={!canSubmit}>
-              {saving ? '등록 중…' : '주문 등록'}
+              {saving ? '등록 중…' : '고객 등록'}
             </Button>
           </div>
         </div>
@@ -256,7 +259,7 @@ export default function BossOrderQuickPage() {
 
       {/* ───── 우: 요약 · 입력 확인 ───── */}
       <div className="flex flex-col gap-4 lg:sticky lg:top-[112px]">
-        <Panel kicker="요약" title={form.name.trim() || '새 주문'}>
+        <Panel kicker="요약" title={form.name.trim() || '새 고객'}>
           <dl>
             <DescRow
               label="연락처"
@@ -304,7 +307,7 @@ export default function BossOrderQuickPage() {
 
         <Panel kicker="안내" title="등록 뒤에는">
           <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-            주문 상세에서 견적서 · 체크리스트 · 시공 기록 · AS 를 이 주문에 이어서 남깁니다. 시공일을
+            고객 상세에서 견적서 · 체크리스트 · 시공 기록 · AS 를 이 고객에 이어서 남깁니다. 시공일을
             넣으면 일정 화면에도 바로 표시됩니다.
           </p>
         </Panel>

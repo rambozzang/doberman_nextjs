@@ -71,7 +71,7 @@ export default function BossLoginPage() {
           사장님 센터
         </h1>
         <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
-          견적 · 주문 · 시공 · 수금까지 한 곳에서 관리합니다
+          견적 · 고객 · 시공 · 수금까지 한 곳에서 관리합니다
         </p>
 
         <form onSubmit={handleSubmit} className="boss-card mt-4 p-6">

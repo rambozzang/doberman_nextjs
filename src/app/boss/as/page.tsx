@@ -304,7 +304,7 @@ export default function BossAsListPage() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-medium text-boss-text">{item.title}</span>
                       {item.priority === '긴급' && <StatusPill tone="bad">긴급</StatusPill>}
-                      {item.orderId != null && <TagPill>주문 #{item.orderId}</TagPill>}
+                      {item.orderId != null && <TagPill>고객 #{item.orderId}</TagPill>}
                     </div>
                     {item.customerName ? (
                       <span className="text-[12px] text-boss-text-muted">{item.customerName}</span>

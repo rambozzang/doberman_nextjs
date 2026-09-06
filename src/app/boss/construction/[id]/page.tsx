@@ -292,7 +292,7 @@ export default function BossConstructionDetailPage() {
               value={<span className="font-boss-head tabular-nums">{formatDate(item.constructionDate)}</span>}
             />
             <DescRow
-              label="연결 주문"
+              label="연결 고객"
               value={
                 item.orderId != null ? (
                   <span className="font-boss-head tabular-nums text-boss-primary">{orderLabel}</span>
@@ -356,7 +356,7 @@ export default function BossConstructionDetailPage() {
       <ConfirmDialog
         open={confirmDelete}
         title="이 시공 기록을 삭제할까요?"
-        description="삭제된 시공 기록은 복구할 수 없습니다. 연결된 주문은 그대로 남습니다."
+        description="삭제된 시공 기록은 복구할 수 없습니다. 연결된 고객은 그대로 남습니다."
         loading={deleting}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => void handleDelete()}
