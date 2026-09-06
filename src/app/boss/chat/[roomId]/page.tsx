@@ -15,9 +15,31 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useChatRooms } from '@/hooks/useChatRooms';
 import { useChatAuth } from '@/hooks/useChatAuth';
+import toast from 'react-hot-toast';
+import { BossAuthManager } from '@/lib/bossAuth';
 import type { ChatApiMessage } from '@/components/chat/types';
 import { Send } from 'lucide-react';
 import { Button, Chip, chipToneOf, ContentCard } from '@/components/boss/ui';
+
+/**
+ * 보낸 메시지를 화면에 먼저 붙인다.
+ *
+ * 서버는 전송 성공(message_sent)에 messageId 만 주고 본문을 주지 않는다.
+ * 화면이 임시 메시지를 먼저 만들어 두어야 useChatMessages 가 그것을 서버 ID 로 바꿔 준다.
+ * 이게 없어서 웹에서는 보낸 글이 화면에 안 보였다(서버에는 저장됐다).
+ */
+function optimisticMessage(text: string): ChatApiMessage {
+  return {
+    messageId: Date.now(), // 1e12 보다 큰 값 = 임시 메시지
+    senderType: 'APP',
+    senderId: BossAuthManager.getUserInfo()?.userId ?? '',
+    message: text,
+    filePath: null,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    timeAgo: '방금 전',
+  };
+}
 
 export default function BossChatRoomPage() {
   const params = useParams<{ roomId: string }>();
@@ -50,13 +72,23 @@ export default function BossChatRoomPage() {
   }, [roomId, loadMessages]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // 메시지 칸만 내린다. scrollIntoView 는 창 전체를 끌어내려서 화면이 잘려 보였다.
+    const end = endRef.current;
+    if (!end) return;
+    const box = end.closest('[data-chat-scroll]') as HTMLElement | null;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+    else end.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages.length]);
 
   const handleSend = () => {
     const text = input.trim();
     if (!text || !isConnected) return;
-    sendMessage(text);
+    const ok = sendMessage(text);
+    if (!ok) {
+      toast.error('메시지를 보내지 못했습니다. 연결 상태를 확인해 주세요.');
+      return;
+    }
+    addMessage(optimisticMessage(text));
     setInput('');
   };
 
@@ -85,7 +117,7 @@ export default function BossChatRoomPage() {
       </div>
 
       {/* 메시지 */}
-      <div className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-boss-bg p-[18px]">
+      <div data-chat-scroll className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-boss-bg p-[18px]">
         {isLoading && messages.length === 0 ? (
           <p className="text-center text-[12.5px] text-boss-text-secondary">불러오는 중…</p>
         ) : messages.length === 0 ? (
