@@ -9,6 +9,7 @@
 // 라이트 전용. 테마 프로바이더는 없다.
 // 토큰 CSS(boss-b2b.css)는 globals.css 가 @import 한다 — 유틸리티보다 앞에 와야 해서 여기서 import 하지 않는다.
 
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import BossHeader from './BossHeader';
 import BossSidebar from './BossSidebar';
@@ -16,6 +17,7 @@ import BossMobileTabs from './BossMobileTabs';
 import { BossSearchProvider } from './BossSearchContext';
 import { BossPortalProvider } from './BossPortalContext';
 import { getPageMeta } from './nav';
+import { clearReloadMark } from '@/lib/boss/chunkReload';
 
 // 인증 화면(로그인/회원가입/아이디·비밀번호 찾기 등)에서는
 // 레일/헤더를 렌더링하지 않는다. 전체 화면 단독 레이아웃 사용.
@@ -42,6 +44,11 @@ const WIDTH: Record<'narrow' | 'wide' | 'full', string> = {
 export default function BossChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const isAuth = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+
+  // 화면이 떴다 = 파일 조각이 멀쩡하다 — 다음 배포 때 자동 새로 고침을 다시 쓸 수 있게 한다
+  useEffect(() => {
+    clearReloadMark();
+  }, []);
 
   if (isAuth) {
     return <main className="boss-page">{children}</main>;

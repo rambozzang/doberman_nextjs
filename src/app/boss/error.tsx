@@ -9,27 +9,12 @@
 
 import { useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
-
-const RELOAD_FLAG = 'boss_chunk_reloaded';
-
-function isChunkError(error: Error): boolean {
-  const text = `${error?.name ?? ''} ${error?.message ?? ''}`;
-  return /ChunkLoadError|Loading chunk|Failed to load chunk|dynamically imported module/i.test(text);
-}
+import { isChunkError, tryReloadOnce } from '@/lib/boss/chunkReload';
 
 export default function BossError({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!isChunkError(error)) return;
     // 무한 새로 고침을 막는다 — 한 번 시도하고 그래도 안 되면 안내를 보여 준다
-    if (sessionStorage.getItem(RELOAD_FLAG)) return;
-    sessionStorage.setItem(RELOAD_FLAG, '1');
-    window.location.reload();
-  }, [error]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!isChunkError(error)) sessionStorage.removeItem(RELOAD_FLAG);
+    if (isChunkError(error)) tryReloadOnce();
   }, [error]);
 
   const chunk = isChunkError(error);
