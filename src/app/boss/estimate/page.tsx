@@ -9,6 +9,7 @@
 // 화면 제목 · 부제는 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { formatPhone } from '@/lib/boss/format';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw } from 'lucide-react';
@@ -207,7 +208,7 @@ function EstimateList() {
               {customers.map((c) => (
                 <option key={c.id} value={String(c.id)}>
                   {c.name}
-                  {c.phone ? ` · ${c.phone}` : ''}
+                  {c.phone ? ` · ${formatPhone(c.phone)}` : ''}
                   {c.address1 ? ` · ${c.address1}` : ''}
                 </option>
               ))}

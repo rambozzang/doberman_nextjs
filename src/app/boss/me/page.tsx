@@ -27,6 +27,7 @@ import {
   Skeleton,
 } from '@/components/boss/ui';
 import { Building2, ShieldCheck, Bell, CreditCard } from 'lucide-react';
+import { formatPhone } from '@/lib/boss/format';
 
 export default function BossMyInfoPage() {
   const router = useRouter();
@@ -200,7 +201,7 @@ export default function BossMyInfoPage() {
             <DescRow label="이메일" value={user?.email || '-'} />
             <DescRow
               label="휴대폰"
-              value={<span className="font-boss-head font-semibold">{user?.phone || '-'}</span>}
+              value={<span className="font-boss-head font-semibold">{user?.phone ? formatPhone(user.phone) : '-'}</span>}
             />
             <DescRow
               label={

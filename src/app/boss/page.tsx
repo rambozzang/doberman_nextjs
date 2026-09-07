@@ -26,6 +26,7 @@ import type { CalendarEvent } from '@/types/boss-calendar';
 import type { BossCompanyData } from '@/types/boss';
 import type { BossSubscriptionStatusResponse } from '@/types/boss-billing';
 import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
+import { formatPhone } from '@/lib/boss/format';
 import {
   ContentCard,
   CardHead,
@@ -712,7 +713,7 @@ function CompanyPanel({ company }: { company: BossCompanyData | null }) {
       <dl>
         <DescRow label="사업자번호" value={company.bizno || '—'} />
         <DescRow label="대표" value={company.owner || '—'} />
-        <DescRow label="전화" value={company.phone || '—'} />
+        <DescRow label="전화" value={company.phone ? formatPhone(company.phone) : '—'} />
         <DescRow label="주소" value={addr || '—'} />
       </dl>
     </Panel>

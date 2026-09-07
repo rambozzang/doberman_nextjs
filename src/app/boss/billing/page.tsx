@@ -51,10 +51,13 @@ export default function BossBillingPage() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  // 서버에 구독 API 자체가 없는 상태(준비 중)와 진짜 통신 오류를 구분한다
+  const [notReady, setNotReady] = useState(false);
 
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
+    setNotReady(false);
     try {
       const [statusRes, historyRes, plansRes] = await Promise.all([
         bossBillingApi.getStatus(),
@@ -62,7 +65,14 @@ export default function BossBillingPage() {
         bossBillingApi.getPlans(),
       ]);
       if (statusRes.success === false) {
-        setErrorMessage(statusRes.error ?? statusRes.message ?? '구독 정보를 불러오지 못했습니다.');
+        // 백엔드에 결제 API 가 아직 없다("No static resource api/subscription/...").
+        // 이걸 빨간 오류로 띄우면 사장님에게는 고장난 화면으로 보인다 — 준비 중으로 안내한다.
+        const raw = `${statusRes.error ?? ''} ${statusRes.message ?? ''}`;
+        if (/No static resource|Not Found|404/i.test(raw)) {
+          setNotReady(true);
+        } else {
+          setErrorMessage(statusRes.error ?? statusRes.message ?? '구독 정보를 불러오지 못했습니다.');
+        }
       } else {
         setStatus(statusRes.data ?? null);
       }
@@ -147,7 +157,14 @@ export default function BossBillingPage() {
         </Button>
       </div>
 
-      {errorMessage && (
+      {notReady && (
+        <AlertBanner tone="info">
+          결제 · 구독 기능은 준비 중입니다. 지금은 <b>무료 플랜</b>으로 모든 기본 기능을 쓰실 수 있고, 이용에 제한은
+          없습니다. 준비되면 이 화면에서 안내해 드리겠습니다.
+        </AlertBanner>
+      )}
+
+      {errorMessage && !notReady && (
         <AlertBanner
           tone="bad"
           action={
@@ -197,8 +214,12 @@ export default function BossBillingPage() {
           </div>
         ) : plans.length === 0 ? (
           <EmptyState
-            title="지금 신청할 수 있는 플랜이 없습니다"
-            description="플랜 정보를 받아오지 못했거나 판매 중인 플랜이 없습니다. 새로고침해도 같으면 고객센터로 문의해주세요."
+            title={notReady ? '요금제는 준비 중입니다' : '지금 신청할 수 있는 플랜이 없습니다'}
+            description={
+              notReady
+                ? '유료 요금제가 준비되면 여기에서 바로 신청할 수 있습니다. 그때까지는 무료로 쓰시면 됩니다.'
+                : '플랜 정보를 받아오지 못했거나 판매 중인 플랜이 없습니다. 새로고침해도 같으면 고객센터로 문의해주세요.'
+            }
           />
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -273,8 +294,12 @@ export default function BossBillingPage() {
         ) : historyFailed ? (
           <div className="p-5">
             <EmptyState
-              title="결제 내역을 불러오지 못했습니다"
-              description="네트워크 상태를 확인하고 새로고침해주세요."
+              title={notReady ? '아직 결제 내역이 없습니다' : '결제 내역을 불러오지 못했습니다'}
+              description={
+                notReady
+                  ? '결제 기능이 열리면 여기에 내역이 쌓입니다.'
+                  : '네트워크 상태를 확인하고 새로고침해주세요.'
+              }
               action={
                 <Button variant="secondary" size="sm" onClick={() => void loadAll()}>
                   다시 시도

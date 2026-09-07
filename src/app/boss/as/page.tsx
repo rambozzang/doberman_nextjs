@@ -5,6 +5,7 @@
 //   상태 탭은 API 재조회(기존 로직), 검색 · 정렬은 클라이언트. 첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 // Flutter: as_request_list_page.dart 포팅
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatPhone } from '@/lib/boss/format';
 import { useRouter } from 'next/navigation';
 import { Plus, RefreshCw, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -315,7 +316,7 @@ export default function BossAsListPage() {
                   </td>
                   <td className="wrap max-w-[260px]">
                     <div className="font-boss-head tabular-nums text-boss-text">
-                      {item.customerPhone || <span className="text-boss-text-ghost">—</span>}
+                      {item.customerPhone ? formatPhone(item.customerPhone) : <span className="text-boss-text-ghost">—</span>}
                     </div>
                     {item.address ? (
                       <span className="text-[12px] text-boss-text-muted">{item.address}</span>
