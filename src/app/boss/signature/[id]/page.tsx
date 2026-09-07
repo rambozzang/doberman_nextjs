@@ -22,6 +22,7 @@ import {
   DescRow,
   Skeleton,
   ConfirmDialog,
+  DetailActions,
 } from '@/components/boss/ui';
 
 // 날짜 포맷터(년 월 일)
@@ -156,6 +157,23 @@ export default function BossSignatureDetailPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 주요 행동은 화면 맨 위에 */}
+      <div className="lg:col-span-2">
+        <DetailActions>
+          <ButtonLink href="/boss/signature" variant="secondary" size="sm">
+            목록
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setConfirmDelete(true)}
+            className="!text-boss-error"
+          >
+            삭제
+          </Button>
+        </DetailActions>
+      </div>
       {/* ── 좌: 서명 이미지 · 메모 ── */}
       <div className="flex min-w-0 flex-col gap-4">
         <Panel

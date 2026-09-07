@@ -210,96 +210,71 @@ export default function BossOrderDetailPage() {
           </Button>
         </DetailActions>
       </div>
-      {/* ───── 좌: 고객 본문 ─────
-          위계를 지킨다: ① 누구인가(연락처 · 주소) ② 언제인가(견적일 · 시공) ③ 메모.
-          금액 · 상태 · 행동은 오른쪽 한 곳에만 둔다(양쪽에 같은 값을 두지 않는다). */}
+      {/* ───── 좌: 고객 정보 ─────
+          값이 짧은 항목이 대부분이라 한 줄을 통째로 쓰지 않는다.
+          라벨+값을 짝지어 2열(넓은 화면)로 촘촘히 깐다. */}
       <div className="flex flex-col gap-4">
         <Panel kicker={`고객 #${item.id}`} title={item.name || '고객명 미지정'}>
-          <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
             <Tag tone={status.tone}>{status.label}</Tag>
             {item.isExistChecklist === 'Y' && <Tag tone="info">체크리스트 있음</Tag>}
             {item.imageCount ? <Tag tone="neutral">사진 {item.imageCount}장</Tag> : null}
           </div>
 
-          <h4 className="boss-mono-label mb-2">연락 · 주소</h4>
-          <dl className="mb-1">
-            <DescRow
-              label="연락처"
-              value={
-                item.phone ? (
-                  <a href={`tel:${item.phone}`} className="font-boss-head tabular-nums">
-                    {formatPhone(item.phone)}
-                  </a>
-                ) : (
-                  '—'
-                )
-              }
-            />
-            <DescRow
-              label="이메일"
-              value={item.email ? <a href={`mailto:${item.email}`}>{item.email}</a> : '—'}
-            />
-            <DescRow label="주소" value={fullAddr || '—'} />
-            <DescRow
-              label="우편번호"
-              value={item.post ? <span className="font-boss-head tabular-nums">{item.post}</span> : '—'}
-            />
+          <dl className="grid grid-cols-[68px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[7px] text-[13px] sm:grid-cols-[68px_minmax(0,1fr)_68px_minmax(0,1fr)] sm:gap-x-5">
+            <dt className="text-boss-text-secondary">연락처</dt>
+            <dd className="truncate font-semibold text-boss-text">
+              {item.phone ? (
+                <a href={`tel:${item.phone}`} className="font-boss-head tabular-nums">
+                  {formatPhone(item.phone)}
+                </a>
+              ) : (
+                '—'
+              )}
+            </dd>
+
+            <dt className="text-boss-text-secondary">이메일</dt>
+            <dd className="truncate font-semibold text-boss-text">
+              {item.email ? <a href={`mailto:${item.email}`}>{item.email}</a> : '—'}
+            </dd>
+
+            <dt className="text-boss-text-secondary">주소</dt>
+            <dd className="truncate font-semibold text-boss-text sm:col-span-3">{fullAddr || '—'}</dd>
+
+            <dt className="text-boss-text-secondary">우편번호</dt>
+            <dd className="font-boss-head font-semibold tabular-nums text-boss-text">{item.post || '—'}</dd>
+
+            <dt className="text-boss-text-secondary">견적일</dt>
+            <dd className="truncate font-boss-head font-semibold tabular-nums text-boss-text">
+              {item.estimateDate ? formatDate(item.estimateDate) : '미정'}
+            </dd>
+
+            <dt className="text-boss-text-secondary">시공</dt>
+            <dd className="truncate font-boss-head font-semibold tabular-nums text-boss-text sm:col-span-3">
+              {item.workDate ? formatWorkPeriod(item.workDate, item.workEndDate) : '미정'}
+            </dd>
+
+            <dt className="text-boss-text-secondary">등록일</dt>
+            <dd className="font-boss-head tabular-nums text-boss-text-secondary">{formatDate(item.createdDt)}</dd>
+
+            <dt className="text-boss-text-secondary">수정일</dt>
+            <dd className="font-boss-head tabular-nums text-boss-text-secondary">{formatDate(item.updatedDt)}</dd>
           </dl>
 
-          <h4 className="boss-mono-label mb-2 mt-5 border-t border-boss-border-row pt-4">일정</h4>
-          <dl>
-            <DescRow
-              label="견적일"
-              value={
-                <span className="font-boss-head tabular-nums">
-                  {item.estimateDate ? formatDate(item.estimateDate) : '미정'}
-                </span>
-              }
-            />
-            <DescRow
-              label="시공"
-              value={
-                <span className="font-boss-head tabular-nums">
-                  {item.workDate ? formatWorkPeriod(item.workDate, item.workEndDate) : '미정'}
-                </span>
-              }
-            />
-            <DescRow
-              label="등록 · 수정"
-              value={
-                <span className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                  {formatDate(item.createdDt)}
-                  {item.updatedDt && item.updatedDt !== item.createdDt ? ` · ${formatDate(item.updatedDt)}` : ''}
-                </span>
-              }
-            />
-          </dl>
-
-          <h4 className="boss-mono-label mb-2 mt-5 border-t border-boss-border-row pt-4">메모</h4>
-          {item.memo ? (
-            <p className="whitespace-pre-wrap border border-boss-border bg-boss-inset px-3.5 py-3 text-[13.5px] leading-relaxed text-boss-text-soft">
-              {item.memo}
-            </p>
-          ) : (
-            <p className="text-[13px] text-boss-text-secondary">등록된 메모가 없습니다.</p>
-          )}
+          <div className="mt-4 border-t border-boss-border-row pt-3">
+            <p className="boss-mono-label mb-1.5">메모</p>
+            {item.memo ? (
+              <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-boss-text-soft">{item.memo}</p>
+            ) : (
+              <p className="text-[12.5px] text-boss-text-muted">등록된 메모가 없습니다.</p>
+            )}
+          </div>
         </Panel>
       </div>
 
-      {/* ───── 우: 금액과 행동 ───── */}
+      {/* ───── 우: 이어서 할 일 ─────
+          상태 · 총액 · 주요 버튼은 위 액션 줄에 있으므로 여기서 반복하지 않는다. */}
       <div className="flex flex-col gap-4">
-        <Panel kicker="금액" title="이 고객의 총액">
-          <p className="font-boss-head text-[32px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-boss-text">
-            {formatMoney(item.totalAmount)}
-          </p>
-          <p className="mt-1 text-[12px] text-boss-text-secondary">아래 견적 품목의 합계입니다</p>
-
-          <dl className="mt-4 border-t border-boss-border-row pt-3">
-            <DescRow label="상태" value={<Tag tone={status.tone}>{status.label}</Tag>} />
-          </dl>
-
-        </Panel>
-
         <Panel kicker="이어서" title="관련 작업" bodyClassName="-mx-5 -mb-5 border-t border-boss-border">
           <div className="divide-y divide-boss-border-row">
             <RowItem
@@ -332,7 +307,6 @@ export default function BossOrderDetailPage() {
             />
           </div>
         </Panel>
-
       </div>
 
       {/* 앱과 같이 고객 아래에 견적 품목이 이어진다 (앱: 고객 → 견적 화면) */}

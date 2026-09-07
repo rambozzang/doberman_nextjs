@@ -11,7 +11,7 @@ import { bossEstimateApi } from '@/lib/api/boss/estimate';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
-import { ButtonLink, EmptyState, AlertBanner, Skeleton } from '@/components/boss/ui';
+import { ButtonLink, EmptyState, AlertBanner, Skeleton, DetailActions } from '@/components/boss/ui';
 import { PrintActions } from '@/components/boss/print/PrintActions';
 import ReceiptDoc from '@/components/boss/print/ReceiptDoc';
 import DocStylePicker from '@/components/boss/print/DocStylePicker';
@@ -198,10 +198,14 @@ export default function BossEstimateReceiptPage() {
       `}</style>
 
       {/* 셸 헤더가 화면 제목을 그린다 — 여기서는 문서 이름과 내보내기 버튼만 */}
-      <div className="no-print flex flex-wrap items-center gap-2">
-        <h2 className="font-boss-head text-[17px] font-semibold text-boss-text">영수증 출력</h2>
-        <span className="text-[12px] text-boss-text-secondary">{customerLabel} · {today}</span>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+      <DetailActions
+        note={
+          <>
+            <span className="font-boss-head text-[14px] font-semibold text-boss-text">영수증 출력</span>
+            <span>{customerLabel} · {today}</span>
+          </>
+        }
+      >
         <PrintActions
           targetRef={paperRef}
           fileName={fileName}
@@ -233,8 +237,7 @@ export default function BossEstimateReceiptPage() {
             세금계산서
           </ButtonLink>
         </PrintActions>
-        </div>
-      </div>
+      </DetailActions>
 
       <DocStylePicker styles={RECEIPT_STYLES} value={styleKey} onChange={changeStyle} label="영수증 양식" />
 
