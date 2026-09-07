@@ -448,7 +448,6 @@ export default function QuoteRequestListPage() {
                       className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white"
                     >
                       <option value="all">모든 지역</option>
-                      <option value="전국">전국</option>
                       <option value="서울특별시">서울특별시</option>
                       <option value="부산광역시">부산광역시</option>
                       <option value="대구광역시">대구광역시</option>
