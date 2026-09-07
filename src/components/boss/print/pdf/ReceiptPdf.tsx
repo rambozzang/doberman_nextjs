@@ -1,282 +1,186 @@
 'use client';
-/* eslint-disable jsx-a11y/alt-text -- 여기 <Image> 는 HTML img 가 아니라 @react-pdf/renderer 의 PDF 요소다 */
 
-// 영수증 PDF — 화면(ReceiptDoc)과 같은 한국 실무 영수증 서식을 벡터로.
+// 영수증 PDF — 한국 실무 영수증(간이영수증) 서식을 벡터로 그린다.
+//
+//   제목 → 받는 분(왼쪽) · 공급자(오른쪽) → 금액 "一金 ○○원整 위 금액을 정히 영수함"
+//   → 항목 표(페이지 바닥까지) → 결제 · 비고 → 영수 문구 · 날짜 · 도장
+//
+// 화면 미리보기도 이 PDF 를 그대로 띄우므로(PdfPreview) 여기가 유일한 원본이다.
 
-import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View } from '@react-pdf/renderer';
 import type { DocData, DocPalette } from '../docTypes';
-import { money, companyAddress } from '../docTypes';
-import { formatBizNoLoose } from '@/lib/boss/docMeta';
+import { money, customerAddress } from '../docTypes';
+import { formatPhone } from '@/lib/boss/format';
+import {
+  base,
+  formColors,
+  registerPdfFont,
+  TitleBlock,
+  SupplierGrid,
+  AmountBox,
+  ItemTable,
+  Box,
+  Row,
+  Cell,
+  Label,
+  Stamp,
+  LINE,
+  THIN,
+  ROW_H,
+  type Column,
+} from './form';
 
-const LINE = '#111111';
-const ROWS = 10;
+export { registerPdfFont };
 
-const s = StyleSheet.create({
-  page: { paddingTop: 38, paddingBottom: 38, paddingHorizontal: 40, fontFamily: 'NotoSansKR', fontSize: 9, color: '#111' },
-  row: { flexDirection: 'row' },
-  spread: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-});
+/** 항목 표가 이 줄 수까지 빈 칸을 채운다 — 영수증은 아래 영수 문구 자리가 필요해 견적서보다 적다 */
+const MIN_ROWS = 21;
 
-const cell = (extra: object = {}) => ({
-  borderRight: `1px solid ${LINE}`,
-  borderBottom: `1px solid ${LINE}`,
-  paddingVertical: 4,
-  paddingHorizontal: 5,
-  fontSize: 8.5,
-  ...extra,
-});
+const COLUMNS: Column[] = [
+  { head: 'No', w: 24, align: 'center' },
+  { head: '품 명', align: 'left', bold: true },
+  { head: '규 격', w: 60, align: 'center' },
+  { head: '수 량', w: 40, align: 'right' },
+  { head: '단 가', w: 62, align: 'right' },
+  { head: '공급가액', w: 68, align: 'right' },
+  { head: '세 액', w: 56, align: 'right' },
+  { head: '비 고', w: 52, align: 'left' },
+];
 
-function SupplierGrid({ data, accent }: { data: DocData; accent: string }) {
-  const c = data.company;
-  const label = (t: string, w: number) => (
-    <Text style={cell({ width: w, backgroundColor: accent, fontWeight: 700, textAlign: 'center' })}>{t}</Text>
-  );
+/** 받는 분 — 왼쪽 라벨 격자. 공급자 격자와 높이를 맞춘다(5줄) */
+function Payer({ data, label }: { data: DocData; label: string }) {
+  const cu = data.customer;
   return (
-    <View style={{ borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${LINE}`, marginTop: 12 }}>
-      <View style={s.row}>
-        <View
-          style={{
-            width: 22,
-            backgroundColor: accent,
-            borderRight: `1px solid ${LINE}`,
-            borderBottom: `1px solid ${LINE}`,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: 6,
-          }}
-        >
-          <Text style={{ fontSize: 8, fontWeight: 700 }}>공</Text>
-          <Text style={{ fontSize: 8, fontWeight: 700 }}>급</Text>
-          <Text style={{ fontSize: 8, fontWeight: 700 }}>자</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={s.row}>
-            {label('등록번호', 66)}
-            <Text style={cell({ flex: 1 })}>{formatBizNoLoose(c?.bizno)}</Text>
-          </View>
-          <View style={s.row}>
-            {label('상 호', 66)}
-            <Text style={cell({ flex: 1, fontWeight: 700 })}>{c?.name ?? ''}</Text>
-            {label('성 명', 44)}
-            <View style={cell({ width: 100, position: 'relative' })}>
-              <Text style={{ fontSize: 8.5 }}>
-                {c?.owner ?? ''} <Text style={{ color: '#555' }}>(인)</Text>
-              </Text>
-              {c?.stamp ? (
-                <Image src={c.stamp} style={{ position: 'absolute', right: 4, top: 0, width: 17, height: 17, opacity: 0.9 }} />
-              ) : null}
-            </View>
-          </View>
-          <View style={s.row}>
-            {label('사업장주소', 66)}
-            <Text style={cell({ flex: 1 })}>{companyAddress(c)}</Text>
-          </View>
-          <View style={s.row}>
-            {label('업 태', 66)}
-            <Text style={cell({ flex: 1 })}>{c?.type ?? ''}</Text>
-            {label('종 목', 44)}
-            <Text style={cell({ width: 100 })}>{c?.kind ?? ''}</Text>
-          </View>
-          <View style={s.row}>
-            {label('전 화', 66)}
-            <Text style={cell({ flex: 1 })}>{c?.phone ?? ''}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function ItemGrid({ data, accent, headerBg, headerColor }: { data: DocData; accent: string; headerBg: string; headerColor: string }) {
-  const w = [26, 0, 74, 44, 74, 88];
-  const heads = ['No', '품 명', '규 격', '수량', '단 가', '금 액'];
-  const align: ('left' | 'center' | 'right')[] = ['center', 'left', 'center', 'right', 'right', 'right'];
-  const c = (i: number, extra: object = {}) =>
-    cell({ width: w[i] === 0 ? undefined : w[i], flex: w[i] === 0 ? 1 : undefined, textAlign: align[i], ...extra });
-
-  const rows = data.items.map((it, i) => [
-    String(i + 1),
-    it.itemName ?? '',
-    [it.itemSpec, it.unit].filter(Boolean).join(' / '),
-    money(it.quantity),
-    money(it.unitPrice),
-    money(it.totalAmount),
-  ]);
-
-  return (
-    <View style={{ borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${LINE}`, marginTop: 10 }}>
-      <View style={s.row}>
-        {heads.map((h, i) => (
-          <Text key={h} style={c(i, { backgroundColor: headerBg, color: headerColor, fontWeight: 700, textAlign: 'center' })}>
-            {h}
-          </Text>
-        ))}
-      </View>
-      {rows.map((r, ri) => (
-        <View key={ri} style={s.row}>
-          {r.map((v, i) => (
-            <Text key={i} style={c(i, { minHeight: 16, fontWeight: i === 1 || i === 5 ? 700 : 400 })}>
-              {v}
-            </Text>
-          ))}
-        </View>
-      ))}
-      {Array.from({ length: Math.max(0, ROWS - rows.length) }).map((_, bi) => (
-        <View key={`b${bi}`} style={s.row}>
-          {heads.map((_h, i) => (
-            <Text key={i} style={c(i, { minHeight: 16, color: '#BBB' })}>
-              {i === 0 ? String(rows.length + bi + 1) : ' '}
-            </Text>
-          ))}
-        </View>
-      ))}
-      <View style={s.row}>
-        <Text style={cell({ flex: 1, backgroundColor: accent, fontWeight: 700, textAlign: 'center', letterSpacing: 4 })}>
-          합 계
-        </Text>
-        <Text style={cell({ width: w[5], backgroundColor: accent, fontWeight: 700, textAlign: 'right', fontSize: 10 })}>
-          {money(data.totals.totalAmount)}
-        </Text>
-      </View>
-    </View>
+    <Box style={{ flex: 1 }}>
+      <Row>
+        <Label w={52} bg={label}>받는 분</Label>
+        <Cell last bold size={10}>
+          {cu?.name ?? ''}
+          <Text style={{ fontSize: 8.5, fontWeight: 400 }}>{'  '}귀하</Text>
+        </Cell>
+      </Row>
+      <Row>
+        <Label w={52} bg={label}>연락처</Label>
+        <Cell last>{cu?.phone ? formatPhone(cu.phone) : ''}</Cell>
+      </Row>
+      <Row>
+        <Label w={52} bg={label}>현 장</Label>
+        <Cell last size={8}>{customerAddress(cu)}</Cell>
+      </Row>
+      <Row>
+        <Label w={52} bg={label}>영수일자</Label>
+        <Cell last>{data.meta.today}</Cell>
+      </Row>
+      <Row>
+        <Label w={52} bg={label} bottom>결제방법</Label>
+        <Cell last bottom>{data.meta.paymentCondition}</Cell>
+      </Row>
+    </Box>
   );
 }
 
 export default function ReceiptPdf({ data, p, styleKey }: { data: DocData; p: DocPalette; styleKey: string }) {
+  const colors = formColors(p, styleKey);
   const c = data.company;
-  const accent = styleKey === '0' ? '#EFEFEF' : p.accent;
-  const headerBg = styleKey === '0' ? '#EFEFEF' : p.primary;
-  const headerColor = styleKey === '0' ? '#111' : '#FFFFFF';
-  const sentence = styleKey === '2' ? '위 금액을 정히 영수함.' : '위 금액을 정히 영수합니다.';
 
-  const title = () => {
-    if (styleKey === '3' || styleKey === '4')
-      return (
-        <View style={{ backgroundColor: p.primary, padding: 11, flexDirection: 'row', alignItems: 'center' }}>
-          {c?.logo ? (
-            <View style={{ backgroundColor: '#fff', padding: 3, marginRight: 12 }}>
-              <Image src={c.logo} style={{ width: 26, height: 26 }} />
-            </View>
-          ) : null}
-          <Text style={{ flex: 1, fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: 9 }}>영 수 증</Text>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 8.5, color: '#fff' }}>발행일자 {data.meta.today}</Text>
-            <Text style={{ fontSize: 8.5, color: '#fff', marginTop: 2 }}>문서번호 {data.meta.docNumber}</Text>
-          </View>
-        </View>
-      );
-    if (styleKey === '1')
-      return (
-        <View>
-          <View style={{ ...s.spread, alignItems: 'flex-end' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {c?.logo ? <Image src={c.logo} style={{ width: 30, height: 30, marginRight: 10 }} /> : null}
-              <Text style={{ fontSize: 22, fontWeight: 700, letterSpacing: 8 }}>영 수 증</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 8.5 }}>발행일자 {data.meta.today}</Text>
-              <Text style={{ fontSize: 8.5, marginTop: 2 }}>문서번호 {data.meta.docNumber}</Text>
-            </View>
-          </View>
-          <View style={{ height: 3, backgroundColor: p.primary, marginTop: 8 }} />
-        </View>
-      );
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        <View style={{ width: 132, flexDirection: 'row', alignItems: 'center' }}>
-          {c?.logo ? <Image src={c.logo} style={{ width: 32, height: 32, marginRight: 6 }} /> : null}
-          <Text style={{ fontSize: 9, fontWeight: 700 }}>{c?.name ?? ''}</Text>
-        </View>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontSize: 25, fontWeight: 700, letterSpacing: 14, color: styleKey === '2' ? p.primary : '#111' }}>
-            영 수 증
-          </Text>
-          <View
-            style={{
-              width: 142,
-              height: styleKey === '2' ? 3 : 2,
-              backgroundColor: styleKey === '2' ? p.primary : LINE,
-              marginTop: 6,
-            }}
-          />
-        </View>
-        <View style={{ width: 132, alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: 8.5 }}>발행일자 {data.meta.today}</Text>
-          <Text style={{ fontSize: 8.5, marginTop: 2 }}>문서번호 {data.meta.docNumber}</Text>
-        </View>
-      </View>
-    );
-  };
+  const rows = data.items.map((it, i) => [
+    String(i + 1),
+    `${it.itemName ?? ''}${it.isTaxFree === 'Y' ? ' *' : ''}`,
+    it.itemSpec ?? '',
+    money(it.quantity),
+    money(it.unitPrice),
+    money(it.supplyAmount),
+    money(it.vatAmount),
+    it.memo ?? '',
+  ]);
 
   return (
     <Document title={`영수증_${data.customer?.name ?? ''}`}>
-      <Page size="A4" style={s.page}>
-        {title()}
+      <Page size="A4" style={base.page}>
+        <TitleBlock title="영수증" data={data} p={p} styleKey={styleKey} dateLabel="영수일자" />
 
-        {/* 받는 분 */}
-        <View style={{ flexDirection: 'row', border: `1px solid ${LINE}`, marginTop: 12 }}>
-          <View
-            style={{
-              width: 84,
-              backgroundColor: accent,
-              borderRight: `1px solid ${LINE}`,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 6,
-            }}
-          >
-            <Text style={{ fontSize: 8.5, fontWeight: 700 }}>받는 분</Text>
-          </View>
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', padding: 7 }}>
-            <Text style={{ fontSize: 13, fontWeight: 700 }}>{data.customer?.name ?? ''}</Text>
-            <Text style={{ fontSize: 10, marginLeft: 6 }}>귀하</Text>
-            {data.customer?.phone ? (
-              <Text style={{ fontSize: 8, color: '#555', marginLeft: 10 }}>{data.customer.phone}</Text>
-            ) : null}
+        {/* 받는 분 · 공급자 */}
+        <View style={{ flexDirection: 'row', marginTop: 12 }}>
+          <Payer data={data} label={colors.label} />
+          <View style={{ width: 8 }} />
+          <View style={{ width: 300 }}>
+            <SupplierGrid data={data} label={colors.label} />
           </View>
         </View>
 
-        {/* 금액 */}
-        <View style={{ flexDirection: 'row', border: `2px solid ${LINE}`, borderTopWidth: 0 }}>
-          <View
-            style={{
-              width: 84,
-              backgroundColor: accent,
-              borderRight: `1px solid ${LINE}`,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 8.5, fontWeight: 700 }}>금 액</Text>
-          </View>
-          <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 9 }}>
-            <Text style={{ fontSize: 13, fontWeight: 700 }}>一金 {data.totalAmountKor}整</Text>
-            <Text style={{ fontSize: 16, fontWeight: 700, color: p.primary }}>₩ {money(data.totals.totalAmount)}</Text>
-          </View>
-        </View>
+        <View style={{ height: 10 }} />
 
-        <SupplierGrid data={data} accent={accent} />
-        <ItemGrid data={data} accent={accent} headerBg={headerBg} headerColor={headerColor} />
-
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 5 }}>
-          <Text style={{ fontSize: 8, color: '#444', marginRight: 12 }}>공급가액 {money(data.totals.supplyAmount)}원</Text>
-          <Text style={{ fontSize: 8, color: '#444' }}>세액 {money(data.totals.vatAmount)}원</Text>
-        </View>
-
-        <View style={{ position: 'absolute', left: 40, right: 40, bottom: 46, alignItems: 'center' }}>
-          <Text style={{ fontSize: 11 }}>{sentence}</Text>
-          <Text style={{ fontSize: 9, color: '#444', marginTop: 9 }}>{data.meta.today}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 7 }}>
-            <Text style={{ fontSize: 12, fontWeight: 700, marginRight: 6 }}>{c?.name ?? ''}</Text>
-            <Text style={{ fontSize: 10, marginRight: 4 }}>{c?.owner ?? ''}</Text>
-            <Text style={{ fontSize: 9, color: '#555', marginRight: 4 }}>(인)</Text>
-            {c?.stamp ? <Image src={c.stamp} style={{ width: 30, height: 30 }} /> : null}
-          </View>
-        </View>
-
-        <Text style={{ position: 'absolute', bottom: 16, right: 40, fontSize: 6, color: '#BDBDBD' }}>
-          Made by 도배르만
+        <AmountBox
+          title="금 액"
+          kor={data.totalAmountKor}
+          amount={money(data.totals.totalAmount)}
+          note={data.hasTaxFree ? 'VAT 별도' : 'VAT 포함'}
+          label={colors.label}
+          strong={colors.strong}
+        />
+        <Text style={{ fontSize: 9.5, fontWeight: 700, textAlign: 'center', marginTop: 6, marginBottom: 6, letterSpacing: 2 }}>
+          위 금액을 정히 영수합니다.
         </Text>
+
+        <ItemTable
+          columns={COLUMNS}
+          rows={rows}
+          minRows={MIN_ROWS}
+          footer={{
+            span: 5,
+            values: [money(data.totals.supplyAmount), money(data.totals.vatAmount), ''],
+          }}
+          headBg={colors.headBg}
+          headFg={colors.headFg}
+          label={colors.label}
+        />
+
+        {/* 비고 */}
+        <View style={{ marginTop: 8 }}>
+          <Box>
+            <Row>
+              <Label w={52} bg={colors.label} h={ROW_H * 2} bottom>비 고</Label>
+              <Cell last h={ROW_H * 2} size={8} bottom>
+                {c?.bigo ?? ''}
+              </Cell>
+            </Row>
+          </Box>
+        </View>
+
+        {/* 영수 확인 — 날짜 · 공급자 · 도장. 실제 영수증의 맨 아래 자리 */}
+        <View style={{ marginTop: 14, alignItems: 'center' }}>
+          <Text style={{ fontSize: 10, letterSpacing: 3 }}>{data.meta.today.replace(/\./g, ' . ')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, position: 'relative' }}>
+            <Text style={{ fontSize: 8.5, color: '#444', marginRight: 10 }}>공급자</Text>
+            <Text style={{ fontSize: 11, fontWeight: 700 }}>{c?.name ?? ''}</Text>
+            <Text style={{ fontSize: 10, marginLeft: 10 }}>{c?.owner ?? ''}</Text>
+            <Text style={{ fontSize: 8.5, color: '#666', marginLeft: 8 }}>(인)</Text>
+            {/* 도장은 (인) 글자 위에 크게 */}
+            <View style={{ width: 10 }} />
+            <Stamp src={c?.stamp} top={7} right={10} size={40} />
+          </View>
+        </View>
+
+        {/* 바닥 — 항목 수 · 발행처. 절대 위치라 표가 길어져도 자리를 지킨다 */}
+        <View
+          fixed
+          style={{
+            position: 'absolute',
+            left: 36,
+            right: 36,
+            bottom: 14,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            borderTopWidth: THIN,
+            borderColor: LINE,
+            paddingTop: 3,
+          }}
+        >
+          <Text style={{ fontSize: 6.5, color: '#888' }}>
+            총 {data.totals.totalItems}개 품목 · 수량 {money(data.totals.totalQuantity)}
+          </Text>
+          <Text style={{ fontSize: 6.5, color: '#888' }} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+          <Text style={{ fontSize: 6.5, color: '#BBB' }}>Made by 도배르만</Text>
+        </View>
       </Page>
     </Document>
   );

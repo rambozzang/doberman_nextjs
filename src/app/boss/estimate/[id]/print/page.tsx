@@ -13,7 +13,7 @@ import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { ButtonLink, EmptyState, AlertBanner, Skeleton, DetailActions } from '@/components/boss/ui';
 import { PrintActions } from '@/components/boss/print/PrintActions';
-import EstimateDoc from '@/components/boss/print/EstimateDoc';
+import PdfPreview from '@/components/boss/print/PdfPreview';
 import DocStylePicker from '@/components/boss/print/DocStylePicker';
 import { ESTIMATE_STYLES } from '@/components/boss/print/docTypes';
 import { buildDocMeta } from '@/lib/boss/docMeta';
@@ -145,6 +145,27 @@ export default function BossEstimatePrintPage() {
     [company, customer, items, totals, docMeta]
   );
 
+  // PDF 문서 만들기 — 미리보기(PdfPreview)와 저장 · 공유(PrintActions)가 같은 함수를 쓴다.
+  // 무거운 PDF 라이브러리는 실제로 그릴 때만 불러온다(정적 import 금지 — 화면이 죽는다).
+  const makePdf = async () => {
+    const mod = await import('@/components/boss/print/pdf/EstimatePdf');
+    mod.registerPdfFont();
+    const Doc = mod.default;
+    return <Doc data={docData} p={style.palette} styleKey={styleKey} />;
+  };
+  // 이 값이 바뀔 때만 미리보기를 다시 굽는다
+  const previewKey = useMemo(
+    () =>
+      JSON.stringify({
+        styleKey,
+        items: docData.items,
+        customer: docData.customer,
+        company: docData.company,
+        meta: docData.meta,
+      }),
+    [styleKey, docData]
+  );
+
   const customerLabel = customer?.name ? `${customer.name}님` : `고객 ${customerId}`;
   const fileName = `견적서_${customer?.name ?? customerId}_${new Date().toISOString().slice(0, 10)}`;
   // 공유 · 문자에 들어가는 요약 — 파일이 못 붙는 문자에서도 핵심이 전달되게
@@ -158,7 +179,7 @@ export default function BossEstimatePrintPage() {
         @media print {
           @page {
             size: A4;
-            margin: 12mm;
+            margin: 0;
           }
           body {
             background: #ffffff !important;
@@ -188,6 +209,16 @@ export default function BossEstimatePrintPage() {
             box-shadow: none !important;
             border: none !important;
           }
+          /* 미리보기 그림이 곧 문서다 — A4 한 장에 꽉 채운다(여백은 PDF 안에 이미 있다) */
+          .print-area .pdf-preview {
+            max-width: none !important;
+          }
+          .print-area .pdf-preview > div {
+            width: 210mm !important;
+            height: 297mm !important;
+            aspect-ratio: auto !important;
+            box-shadow: none !important;
+          }
           /* 문서 색(양식별 강조색 · 표 머리)은 그대로 인쇄한다 — 앱 PDF 와 같은 인상 */
           .print-area,
           .print-area * {
@@ -213,17 +244,7 @@ export default function BossEstimatePrintPage() {
           shareText={shareText}
           smsPhone={customer?.phone}
           disabled={items.length === 0}
-          pdfDocFactory={
-            items.length
-              ? async () => {
-                  // 무거운 PDF 라이브러리는 버튼을 누를 때만 불러온다
-                  const mod = await import('@/components/boss/print/pdf/EstimatePdf');
-                  mod.registerPdfFont();
-                  const Doc = mod.default;
-                  return <Doc data={docData} p={style.palette} styleKey={styleKey} />;
-                }
-              : null
-          }
+          pdfDocFactory={items.length ? makePdf : null}
         >
           <ButtonLink href="/boss/estimate" variant="secondary">
             목록으로
@@ -268,8 +289,8 @@ export default function BossEstimatePrintPage() {
           />
         </div>
       ) : (
-        <div ref={paperRef} className="print-area boss-card p-8 print:border-0 print:p-0 print:shadow-none">
-          <EstimateDoc styleKey={styleKey} data={docData} palette={style.palette} />
+        <div ref={paperRef} className="print-area">
+          <PdfPreview docFactory={makePdf} renderKey={previewKey} alt="견적서 미리보기" />
         </div>
       )}
     </div>
