@@ -6,10 +6,13 @@
 /** "[사무실]" → "사무실", "[방 1개],[전체]" → "방 1개 · 전체" */
 export function stripBrackets(value?: string | null): string {
   if (!value) return '';
-  return String(value)
+  const v = String(value);
+  // 대괄호가 없으면 손대지 않는다 — 특이사항 같은 자유 문구의 쉼표를 · 로 바꾸면 안 된다
+  if (!v.includes('[') && !v.includes(']')) return v.trim();
+  return v
     .replace(/[[\]]/g, '')
     .split(',')
-    .map((v) => v.trim())
+    .map((t) => t.trim())
     .filter(Boolean)
     .join(' · ');
 }

@@ -24,6 +24,7 @@ import {
   EmptyState,
   DetailActions,
 } from '@/components/boss/ui';
+import { formatPreferredDate, stripBrackets } from '@/lib/boss/requestFormat';
 
 export default function BossRequestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -148,7 +149,10 @@ export default function BossRequestDetailPage() {
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* ───── 좌: 본문 ───── */}
         <div className="flex flex-col gap-4">
-          <Panel kicker={`요청 #${id}`} title={`${data.buildingType || '건물 유형 미지정'} · ${data.region || '지역 미지정'}`}>
+          <Panel
+            kicker={`요청 #${id}`}
+            title={`${stripBrackets(data.buildingType) || '건물 유형 미지정'} · ${data.region || '지역 미지정'}`}
+          >
             <h4 className="boss-mono-label mb-2">시공 정보</h4>
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-3">
               <Fact label="건물 유형" value={data.buildingType} />
@@ -163,7 +167,11 @@ export default function BossRequestDetailPage() {
               일정 · 요청사항
             </h4>
             <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
-              <Fact label="희망 일정" value={data.preferredDate} num />
+              <Fact
+                label="희망 일정"
+                value={data.preferredDate ? formatPreferredDate(data.preferredDate) : undefined}
+                num
+              />
               <Fact label="일정 상세" value={data.preferredDateDetail} />
               <Fact label="특이사항" value={data.specialInfo} wide />
               <Fact label="상세 요청" value={data.specialInfoDetail} wide />
@@ -327,6 +335,9 @@ function Fact({
   wide?: boolean;
 }) {
   if (value === undefined || value === null || value === '') return null;
+  // 서버는 "[사무실]" 처럼 대괄호를 씌워 준다 — 사장님 화면에서는 걷어낸다
+  const text = typeof value === 'string' ? stripBrackets(value) : value;
+  if (text === '') return null;
   return (
     <div className={wide ? 'md:col-span-2' : ''}>
       <p className="boss-mono-label">{label}</p>
@@ -335,7 +346,7 @@ function Fact({
           num ? 'font-boss-head tabular-nums' : ''
         }`}
       >
-        {value}
+        {text}
       </p>
     </div>
   );
