@@ -4,12 +4,13 @@
 //   좌: 서명 패드 패널(흰 종이 + 되돌리기 · 지우기) → 고객 정보 패널(2열) → 하단 액션 패널 / 우: 필수 누락 · 안내.
 //   화면 제목은 셸 헤더(PAGE_META)가 그린다. 캔버스 배경은 흰색 유지, 그리기 로직은 불변.
 // Flutter: lib/app/signature/signature_capture_page.dart 와 대응
-//   외부 라이브러리 없이 마우스/터치 입력 → canvas drawing → toDataURL(base64) 저장
+//   외부 라이브러리 없이 마우스/터치 입력 → canvas drawing → 이미지 업로드 후 URL 저장
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Eraser, Undo2 } from 'lucide-react';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
+import { bossUploadApi, canvasToFile } from '@/lib/api/boss/upload';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { Panel, Field, TextareaField, Button, ButtonLink } from '@/components/boss/ui';
 
@@ -182,8 +183,14 @@ export default function BossSignatureCapturePage() {
 
     setIsSaving(true);
     try {
-      // 캔버스 → base64 PNG dataURL
-      const dataUrl = canvas.toDataURL('image/png');
+      // 캔버스 → PNG 파일 → 업로드 → URL 저장
+      // (base64 를 그대로 보내면 서버 컬럼 길이를 넘겨 "Data too long" 으로 저장이 깨진다. 앱도 URL 만 저장한다)
+      const upload = await bossUploadApi.image(await canvasToFile(canvas, 'signature.png'));
+      if (upload.success === false || !upload.data?.url) {
+        toast.error(upload.message || upload.error || '서명 이미지를 올리지 못했습니다.');
+        return;
+      }
+      const imageUrl = upload.data.url;
 
       const orderId = orderIdInput.trim() ? Number(orderIdInput.trim()) : null;
       const recordId = recordIdInput.trim() ? Number(recordIdInput.trim()) : null;
@@ -192,7 +199,7 @@ export default function BossSignatureCapturePage() {
         custId,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || null,
-        signatureImagePath: dataUrl,
+        signatureImagePath: imageUrl,
         signatureData: null,
         orderId: Number.isFinite(orderId as number) ? (orderId as number) : null,
         recordId: Number.isFinite(recordId as number) ? (recordId as number) : null,

@@ -13,6 +13,7 @@
 
 import RegionPicker from '@/components/boss/RegionPicker';
 import { formatRegions } from '@/lib/boss/regions';
+import { bossUploadApi } from '@/lib/api/boss/upload';
 import { FormEvent, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -208,21 +209,24 @@ export default function BossMyCompanyPage() {
     }
   };
 
-  const readFile = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  // 이미지는 업로드해서 URL 만 저장한다 — base64 를 넣으면 서버 컬럼(255자)을 넘겨 저장이 깨진다
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const res = await bossUploadApi.image(file);
+    if (res.success === false || !res.data?.url) {
+      toast.error(res.message || res.error || '이미지를 올리지 못했습니다.');
+      return null;
+    }
+    return res.data.url;
+  };
 
   const handleLogoFile = async (file: File | undefined) => {
     if (!file || !companyId) return;
     try {
-      const dataUrl = await readFile(file);
-      const res = await bossCompanyApi.updateLogoPath(companyId, dataUrl);
+      const url = await uploadImage(file);
+      if (!url) return;
+      const res = await bossCompanyApi.updateLogoPath(companyId, url);
       if (res.success) {
-        setLogo(dataUrl);
+        setLogo(url);
         toast.success('회사 로고가 변경되었습니다.');
       } else {
         toast.error(res.message || res.error || '로고 변경에 실패했습니다.');
@@ -236,10 +240,11 @@ export default function BossMyCompanyPage() {
   const handleStampFile = async (file: File | undefined) => {
     if (!file || !companyId) return;
     try {
-      const dataUrl = await readFile(file);
-      const res = await bossCompanyApi.updateStampPath(companyId, dataUrl);
+      const url = await uploadImage(file);
+      if (!url) return;
+      const res = await bossCompanyApi.updateStampPath(companyId, url);
       if (res.success) {
-        setStamp(dataUrl);
+        setStamp(url);
         toast.success('도장 이미지가 변경되었습니다.');
       } else {
         toast.error(res.message || res.error || '도장 변경에 실패했습니다.');

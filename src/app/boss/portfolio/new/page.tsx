@@ -433,6 +433,19 @@ export default function BossPortfolioNewPage() {
 
       {/* ── 우측 안내 ── */}
       <aside className="flex min-w-0 flex-col gap-3.5">
+        <Panel kicker="필수 항목" title={form.title.trim() ? '문제 없음' : '1항목 남음'}>
+          {form.title.trim() ? (
+            <p className="text-[13px] text-boss-text">제목이 채워졌습니다. 나머지는 모두 선택입니다.</p>
+          ) : (
+            <ul className="flex flex-col gap-1 text-[13px] text-boss-error">
+              <li>· 제목</li>
+            </ul>
+          )}
+          <p className="mt-2 text-[12px] leading-relaxed text-boss-text-secondary">
+            시공일을 비우면 오늘 날짜로 저장됩니다.
+          </p>
+        </Panel>
+
         <Panel kicker="안내" title="등록 전 확인">
           <ul className="flex flex-col gap-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
             <li className="flex gap-2">

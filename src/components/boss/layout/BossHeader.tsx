@@ -8,6 +8,7 @@
 //
 // 제목·부제·버튼은 nav.ts 의 PAGE_META 가 정한다. 페이지 안에 h1 을 두지 않는다.
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Search } from 'lucide-react';
@@ -18,6 +19,15 @@ import { useBossPortal } from './BossPortalContext';
 export default function BossHeader() {
   const pathname = usePathname();
   const meta = getPageMeta(pathname);
+  // 고객 등록 화면은 ?id= 가 붙으면 수정 화면이다 — 제목 · 부제를 바꿔 준다.
+  // useSearchParams 를 쓰면 셸 전체가 Suspense 를 요구해 다른 화면의 사전 렌더가 깨진다.
+  const [hasQueryId, setHasQueryId] = useState(false);
+  useEffect(() => {
+    setHasQueryId(new URLSearchParams(window.location.search).has('id'));
+  }, [pathname]);
+  const editingCustomer = pathname === '/boss/customers/new' && hasQueryId;
+  const title = editingCustomer ? '고객 수정' : meta.title;
+  const subtitle = editingCustomer ? '등록한 고객 정보를 고칩니다.' : meta.subtitle;
   const search = useBossSearchBar();
   const { company } = useBossPortal();
   // 컨텍스트 객체 안에 inputRef 가 있어 react-hooks/refs 규칙이 객체 전체를 ref 로 오인한다 —
@@ -47,11 +57,11 @@ export default function BossHeader() {
             <div className={kicker}>사장님 센터</div>
           )}
           <h1 className="mt-0.5 truncate font-boss-head text-[22px] font-semibold leading-tight tracking-[-0.015em] text-boss-text sm:text-[26px]">
-            {meta.title}
+            {title}
           </h1>
-          {meta.subtitle && (
+          {subtitle && (
             <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
-              {meta.subtitle}
+              {subtitle}
             </p>
           )}
         </div>

@@ -71,7 +71,8 @@ export default function BossCommunityListPage() {
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const loadingRef = useRef(false);
 
   const dedupe = (list: BbsData[]): BbsData[] =>
@@ -85,15 +86,23 @@ export default function BossCommunityListPage() {
       setError(null);
       try {
         const res = await bossCommunityApi.list({
-          pageNum: targetPage,
+          // 서버 페이지는 0 부터 센다 — 1 을 보내면 최신 한 쪽이 통째로 빠진다
+          pageNum: targetPage - 1,
           pageSize: PAGE_SIZE,
           typeDtCd: category === 'ALL' ? undefined : category,
           sortDesc: 'crtDtm',
         });
         if (res.success !== false && res.data) {
           const list = dedupe(pickList(res.data));
+          const p = Array.isArray(res.data)
+            ? { totalCount: list.length, totalPages: 1 }
+            : {
+                totalCount: (res.data as { totalCount?: number }).totalCount ?? list.length,
+                totalPages: Math.max(1, (res.data as { totalPages?: number }).totalPages ?? 1),
+              };
           setItems(list);
-          setHasMore(list.length >= PAGE_SIZE);
+          setTotalCount(p.totalCount);
+          setTotalPages(p.totalPages);
         } else {
           setError(res.message || '게시글을 불러오지 못했습니다.');
         }
@@ -151,7 +160,7 @@ export default function BossCommunityListPage() {
               ? '불러오는 중…'
               : isFiltering
                 ? `${filtered.length}건 · 이 페이지 안에서 검색`
-                : `${page} 페이지 · ${items.length}건`}
+                : `전체 ${totalCount.toLocaleString('ko-KR')}건`}
           </span>
           <Button
             variant="secondary"
@@ -273,7 +282,7 @@ export default function BossCommunityListPage() {
       {!isFiltering && (
         <Pagination
           page={page}
-          totalPages={hasMore ? page + 1 : page}
+          totalPages={totalPages}
           onChange={setPage}
           disabled={loading}
         />

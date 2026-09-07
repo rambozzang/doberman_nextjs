@@ -16,6 +16,7 @@
 //
 // 화면 제목은 셸 헤더(PAGE_META)가 그린다.
 
+import { bossUploadApi } from '@/lib/api/boss/upload';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -75,15 +76,6 @@ function fmtDateTime(v?: string): string {
 }
 
 // 파일을 base64 dataURL 로 변환 (Flutter 의 CDN 업로드 대신 dataURL 로 저장)
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function BossPhotoPage() {
   return (
     <Suspense fallback={<Skeleton className="h-64 w-full" />}>
@@ -209,11 +201,17 @@ function BossPhotoInner() {
     toast.success('이미지가 추가되었습니다. 저장 버튼을 눌러주세요.');
   };
 
-  // 파일 선택으로 추가 (base64 dataURL 사용)
+  // 파일 선택으로 추가 — 업로드해서 URL 만 저장한다(base64 는 서버 컬럼 길이를 넘긴다)
   const handleAddByFile = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     try {
-      const dataUrls = await Promise.all(Array.from(files).map((f) => fileToDataUrl(f)));
+      const uploaded = await Promise.all(Array.from(files).map((f) => bossUploadApi.image(f)));
+      const failed = uploaded.filter((r) => r.success === false || !r.data?.url);
+      if (failed.length > 0) {
+        toast.error(failed[0].message || failed[0].error || '이미지를 올리지 못했습니다.');
+        return;
+      }
+      const dataUrls = uploaded.map((r) => r.data!.url);
       const news: BossImageDataInfo[] = dataUrls.map((url, idx) => ({
         customerId: customerId ? Number(customerId) : undefined,
         filePath: url,

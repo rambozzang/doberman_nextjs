@@ -251,6 +251,7 @@ const PAGE_META: Record<string, PageMeta> = {
     action: { label: "고객 등록", href: "/boss/customers/new" },
   },
   "/boss/customers/new": {
+    // ?id= 가 붙으면 수정 화면 — 제목은 BossHeader 가 검색 파라미터를 보고 바꾼다
     title: "고객 등록",
     subtitle: "현장에서 바로 입력합니다. 이름만 있어도 등록됩니다.",
     width: "wide",

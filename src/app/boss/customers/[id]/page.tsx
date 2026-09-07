@@ -28,7 +28,7 @@ import {
   ConfirmDialog,
   DetailActions,
 } from '@/components/boss/ui';
-import { FileSignature, ListChecks, Hammer, Wrench, Trash2 } from 'lucide-react';
+import { FileSignature, ListChecks, Hammer, Wrench, Trash2, Pencil } from 'lucide-react';
 
 
 function formatMoney(n?: number) {
@@ -191,6 +191,9 @@ export default function BossOrderDetailPage() {
               수금완료 처리
             </Button>
           )}
+          <ButtonLink href={`/boss/customers/new?id=${item.id}`} variant="secondary" size="sm" icon={Pencil}>
+            수정
+          </ButtonLink>
           <ButtonLink href={`/boss/estimate?customerId=${item.id}`} variant="secondary" size="sm">
             견적서 · 영수증
           </ButtonLink>

@@ -28,6 +28,7 @@ import {
   type StatusTone,
 } from '@/components/boss/ui';
 import { RefreshCw } from 'lucide-react';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 const PAGE_SIZE = 20;
 
@@ -46,6 +47,19 @@ function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
   return payload.list ?? payload.content ?? [];
 }
 
+/** 서버가 준 전체 건수 · 전체 페이지 — 없으면 이번 쪽 길이로 대신한다 */
+function pickPaging(
+  payload: BbsListResponse | BbsData[] | undefined,
+  fallbackLen: number
+): { totalCount: number; totalPages: number } {
+  if (!payload || Array.isArray(payload)) return { totalCount: fallbackLen, totalPages: 1 };
+  const p = payload as { totalCount?: number; totalPages?: number };
+  return {
+    totalCount: p.totalCount ?? fallbackLen,
+    totalPages: Math.max(1, p.totalPages ?? 1),
+  };
+}
+
 function categoryTone(code?: string): StatusTone {
   return code === 'JOB' ? 'warn' : code === 'ANON' ? 'neutral' : 'info';
 }
@@ -53,21 +67,6 @@ function categoryTone(code?: string): StatusTone {
 function authorName(item: BbsData): string {
   if (item.anonyYn === 'Y') return '익명';
   return item.nickNm ?? item.userNm ?? '사용자';
-}
-
-function relativeTime(input?: string): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  const diff = Date.now() - d.getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return '방금';
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const day = Math.floor(h / 24);
-  if (day < 7) return `${day}일 전`;
-  return d.toLocaleDateString('ko-KR');
 }
 
 export function CommunityList({
@@ -86,7 +85,8 @@ export function CommunityList({
   const [category, setCategory] = useState<CategoryCode>(fixedCategory ?? 'ALL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const loadingRef = useRef(false);
 
   const dedupe = (list: BbsData[]): BbsData[] =>
@@ -100,7 +100,8 @@ export function CommunityList({
       setError(null);
       try {
         const res = await bossCommunityApi.list({
-          pageNum: targetPage,
+          // 서버 페이지는 0 부터 센다(PageRequest.of) — 1 을 보내면 최신 한 쪽이 통째로 빠진다
+          pageNum: targetPage - 1,
           pageSize: PAGE_SIZE,
           searchWord: searchWord || undefined,
           typeDtCd: category === 'ALL' ? undefined : category,
@@ -108,8 +109,10 @@ export function CommunityList({
         });
         if (res.success !== false && res.data) {
           const list = dedupe(pickList(res.data));
+          const paging = pickPaging(res.data, list.length);
           setItems(list);
-          setHasMore(list.length >= PAGE_SIZE);
+          setTotalCount(paging.totalCount);
+          setTotalPages(paging.totalPages);
         } else {
           setError(res.message || '게시글을 불러오지 못했습니다.');
         }
@@ -180,8 +183,8 @@ export function CommunityList({
             {loading
               ? '불러오는 중…'
               : keyword
-                ? `'${keyword}' ${items.length}건`
-                : `${page} 페이지 · ${items.length}건`}
+                ? `'${keyword}' ${totalCount.toLocaleString('ko-KR')}건`
+                : `전체 ${totalCount.toLocaleString('ko-KR')}건`}
           </span>
           <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRefresh} disabled={loading}>
             새로고침
@@ -248,12 +251,12 @@ export function CommunityList({
         <DataTable>
           <thead>
             <tr>
+              <th>등록일</th>
               <th>제목</th>
               <th>작성자</th>
               <th className="num">댓글</th>
               <th className="num">좋아요</th>
               <th className="num">조회</th>
-              <th>날짜</th>
             </tr>
           </thead>
           <tbody>
@@ -261,6 +264,9 @@ export function CommunityList({
               const href = `/boss/community/${item.boardId}`;
               return (
                 <tr key={item.boardId} className="cursor-pointer" onClick={() => router.push(href)}>
+                  <td>
+                    <ListDateCell at={item.crtDtm} id={item.boardId} />
+                  </td>
                   <td className="wrap max-w-[520px]">
                     <div className="flex items-center gap-2">
                       {item.typeDtNm && !fixedCategory && (
@@ -279,9 +285,6 @@ export function CommunityList({
                   <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
                   <td className="num text-boss-text-secondary">{item.likeCnt ?? 0}</td>
                   <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {relativeTime(item.crtDtm)}
-                  </td>
                 </tr>
               );
             })}
@@ -289,12 +292,7 @@ export function CommunityList({
         </DataTable>
       )}
 
-      <Pagination
-        page={page}
-        totalPages={hasMore ? page + 1 : page}
-        onChange={setPage}
-        disabled={loading}
-      />
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} disabled={loading} />
     </div>
   );
 }

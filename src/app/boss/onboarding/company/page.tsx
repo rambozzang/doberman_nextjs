@@ -55,7 +55,8 @@ export default function BossOnboardingCompanyPage() {
   const [fax, setFax] = useState('');
   const [email, setEmail] = useState('');
   const [post, setPost] = useState('');
-  const [regions, setRegions] = useState<string[]>([]);
+  // 처음 등록할 때는 전국으로 시작한다 — 비워 두면 웹견적 알림을 하나도 못 받는다(2026-09-08)
+  const [regions, setRegions] = useState<string[]>([NATIONWIDE_REGION]);
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
   const [type, setType] = useState('');

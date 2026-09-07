@@ -1,15 +1,16 @@
 'use client';
 
-// 고객 등록 (고객 등록) — Industry 패턴의 긴 폼 (참조 매물 등록)
-// Flutter 의 고객 생성 로직과 동일: POST /customers
+// 고객 등록 · 수정 — Industry 패턴의 긴 폼 (참조 매물 등록)
+// Flutter 와 같다: 등록 POST /customers · 수정 PUT /customers
+// ?id=123 이 붙으면 그 고객을 불러와 수정 화면이 된다(등록과 같은 폼을 쓴다).
 //
 // 조판: 좌 폼 패널(섹션 제목 + 2열 grid) + 하단 액션 패널 / 우 280px 요약 · 입력 확인 패널.
 // nav.ts 가 이 화면 폭을 wide(860px) 로 두므로 전체폭 bleed 컴포저 대신 폼 조판을 쓴다.
 // 화면 제목 · "← 고객" 링크는 셸 헤더가 그린다.
 
-import { useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useBossAuth } from '@/hooks/useBossAuth';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import {
@@ -20,6 +21,8 @@ import {
   TextareaField,
   DescRow,
   Tag,
+  Skeleton,
+  AlertBanner,
 } from '@/components/boss/ui';
 import PostcodeField from '@/components/boss/PostcodeField';
 import { CUSTOMER_STATUS_OPTIONS, customerStatus } from '@/lib/boss/customerStatus';
@@ -31,8 +34,29 @@ function toYyyyMMddHHmm(v: string): string {
   return v.replace(/[-T:]/g, '');
 }
 
+/** 'yyyyMMddHHmm' → date-time 입력값('yyyy-MM-ddTHH:mm') */
+function toInputDateTime(v?: string | null): string {
+  const d = String(v ?? '').replace(/[^0-9]/g, '');
+  if (d.length < 8) return '';
+  const date = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+  return d.length >= 12 ? `${date}T${d.slice(8, 10)}:${d.slice(10, 12)}` : `${date}T00:00`;
+}
+
 export default function BossOrderQuickPage() {
+  // useSearchParams 는 Suspense 안에서만 사전 렌더가 된다
+  return (
+    <Suspense fallback={null}>
+      <CustomerForm />
+    </Suspense>
+  );
+}
+
+function CustomerForm() {
   const router = useRouter();
+  const search = useSearchParams();
+  const editId = search.get('id');
+  const [loadingEdit, setLoadingEdit] = useState(!!editId);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { bossAuth } = useBossAuth();
   const userInfo = bossAuth.userInfo;
   const [saving, setSaving] = useState(false);
@@ -54,6 +78,44 @@ export default function BossOrderQuickPage() {
 
   const set = (key: keyof typeof form, value: string) => setForm((p) => ({ ...p, [key]: value }));
 
+  // 수정 — 기존 고객을 불러와 폼을 채운다
+  const loadForEdit = useCallback(async () => {
+    if (!editId) return;
+    setLoadingEdit(true);
+    setLoadError(null);
+    try {
+      const res = await bossCustomersApi.get(editId);
+      if (res.success !== false && res.data) {
+        const d = res.data;
+        setForm({
+          name: d.name ?? '',
+          phone: d.phone ?? '',
+          email: d.email ?? '',
+          estimateDate: toInputDateTime(d.estimateDate),
+          workDate: toInputDateTime(d.workDate),
+          workEndDate: toInputDateTime(d.workEndDate),
+          post: d.post ?? '',
+          address1: d.address1 ?? '',
+          address2: d.address2 ?? '',
+          commonPw: d.commonPw ?? '',
+          housePw: d.housePw ?? '',
+          memo: d.memo ?? '',
+          statusCd: d.statusCd ?? '00',
+        });
+      } else {
+        setLoadError(res.message || res.error || '고객 정보를 불러오지 못했습니다.');
+      }
+    } catch {
+      setLoadError('네트워크 오류로 고객 정보를 불러오지 못했습니다.');
+    } finally {
+      setLoadingEdit(false);
+    }
+  }, [editId]);
+
+  useEffect(() => {
+    void loadForEdit();
+  }, [loadForEdit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -69,15 +131,17 @@ export default function BossOrderQuickPage() {
         workEndDate: toYyyyMMddHHmm(form.workEndDate),
         companyId: userInfo?.companyId ?? undefined,
       };
-      const res = await bossCustomersApi.create(payload);
+      const res = editId
+        ? await bossCustomersApi.update({ ...payload, id: Number(editId) })
+        : await bossCustomersApi.create(payload);
       if (res.success) {
-        toast.success('고객이 등록되었습니다.');
-        router.push('/boss/customers');
+        toast.success(editId ? '고객 정보를 수정했습니다.' : '고객이 등록되었습니다.');
+        router.push(editId ? `/boss/customers/${editId}` : '/boss/customers');
       } else {
-        toast.error(res.message || '고객 등록에 실패했습니다.');
+        toast.error(res.message || (editId ? '고객 수정에 실패했습니다.' : '고객 등록에 실패했습니다.'));
       }
     } catch {
-      toast.error('네트워크 오류로 고객 등록에 실패했습니다.');
+      toast.error('네트워크 오류로 저장하지 못했습니다.');
     } finally {
       setSaving(false);
     }
@@ -95,7 +159,7 @@ export default function BossOrderQuickPage() {
     warnings.push('시공일이 잡혔는데 주소가 비어 있습니다.');
   }
 
-  const canSubmit = form.name.trim().length > 0 && !saving;
+  const canSubmit = form.name.trim().length > 0 && !saving && !loadingEdit;
   // ⌘↵ 로 바로 등록 (KEYBOARD 원칙)
   useSubmitHotkey(() => {
     if (canSubmit) void handleSubmit(new Event('submit') as unknown as React.FormEvent);
@@ -113,6 +177,8 @@ export default function BossOrderQuickPage() {
     >
       {/* ───── 좌: 폼 ───── */}
       <div className="flex flex-col gap-4">
+        {loadError && <AlertBanner tone="bad">{loadError}</AlertBanner>}
+        {loadingEdit && <Skeleton className="h-10" />}
         <Panel>
           <h3 className="boss-section-title mb-3">고객</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -253,16 +319,21 @@ export default function BossOrderQuickPage() {
         <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
           <p className="text-[12.5px] text-boss-text-secondary">
             {warnings.length > 0
-              ? `확인할 항목 ${warnings.length}개 · 등록은 가능합니다`
-              : '등록하면 고객 목록에 올라갑니다'}
-            <span className="ml-2 font-boss-head text-[11px] text-boss-text-muted">⌘↵ 로 바로 등록</span>
+              ? `확인할 항목 ${warnings.length}개 · 저장은 가능합니다`
+              : editId
+                ? '저장하면 고객 상세로 돌아갑니다'
+                : '등록하면 고객 목록에 올라갑니다'}
+            <span className="ml-2 font-boss-head text-[11px] text-boss-text-muted">⌘↵ 로 바로 저장</span>
           </p>
           <div className="flex items-center gap-2">
-            <Link href="/boss/customers" className="boss-btn boss-btn-md boss-btn-secondary">
+            <Link
+              href={editId ? `/boss/customers/${editId}` : '/boss/customers'}
+              className="boss-btn boss-btn-md boss-btn-secondary"
+            >
               취소
             </Link>
             <Button type="submit" variant="primary" disabled={!canSubmit}>
-              {saving ? '등록 중…' : '고객 등록'}
+              {saving ? '저장 중…' : editId ? '수정 저장' : '고객 등록'}
             </Button>
           </div>
         </div>

@@ -53,7 +53,7 @@ export default function BossCommunityMyPage() {
         return;
       }
       const res = await bossCommunityApi.list({
-        pageNum: 1,
+        pageNum: 0,
         pageSize: PAGE_SIZE,
         searchCustId: userId,
         sortDesc: 'crtDtm',
