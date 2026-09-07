@@ -24,6 +24,7 @@ import {
   DescRow,
   Skeleton,
   ConfirmDialog,
+  DetailActions,
 } from '@/components/boss/ui';
 
 type TabKey = 'BEFORE' | 'DURING' | 'AFTER';
@@ -186,6 +187,24 @@ export default function BossConstructionDetailPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 주요 행동은 화면 맨 위에 */}
+      <div className="lg:col-span-2">
+        <DetailActions>
+          <ButtonLink href={`/boss/construction/new?edit=${item.id}`} variant="primary" size="sm" icon={Pencil}>
+            기록 수정
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+            className="!text-boss-error"
+          >
+            삭제
+          </Button>
+        </DetailActions>
+      </div>
       {/* ── 좌: 본문 ── */}
       <div className="flex min-w-0 flex-col gap-4">
         {/* 제목 · 상태 */}

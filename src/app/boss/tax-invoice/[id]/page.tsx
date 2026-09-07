@@ -37,6 +37,7 @@ import {
   Skeleton,
   Tag,
   type StatusTone,
+  DetailActions,
 } from '@/components/boss/ui';
 
 const STATUS_TONE: Record<TaxInvoiceStatus, StatusTone> = {
@@ -194,6 +195,31 @@ export default function BossTaxInvoiceDetailPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* 주요 행동은 화면 맨 위에 — 스크롤하지 않고 바로 누른다 */}
+      <div className="lg:col-span-2">
+        <DetailActions note={<Tag tone={STATUS_TONE[data.status]}>{STATUS_LABEL[data.status]}</Tag>}>
+          {data.status !== 'ISSUED' && (
+            <Button variant="primary" size="sm" onClick={() => setIssueOpen(true)} disabled={changing}>
+              발행 완료 처리
+            </Button>
+          )}
+          <ButtonLink href={printHref} variant="secondary" size="sm" icon={FileText}>
+            서식 보기 · 보내기
+          </ButtonLink>
+          <ButtonLink href={`/boss/tax-invoice/new?id=${data.id}`} variant="secondary" size="sm" icon={Pencil}>
+            수정
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setConfirmDelete(true)}
+            className="!text-boss-error"
+          >
+            삭제
+          </Button>
+        </DetailActions>
+      </div>
       {/* ── 좌 ── */}
       <div className="flex flex-col gap-4">
         {error && <AlertBanner tone="bad">{error}</AlertBanner>}
@@ -358,22 +384,10 @@ export default function BossTaxInvoiceDetailPage() {
             국세청 서식으로 출력하거나 PDF · 이미지로 저장해 고객에게 보냅니다. 핸드폰에서는 공유 버튼으로 문자 ·
             카카오톡에 바로 첨부됩니다.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3">
             <ButtonLink href={printHref} variant="primary" size="sm" icon={FileText}>
               서식 보기 · 보내기
             </ButtonLink>
-            <ButtonLink href={`/boss/tax-invoice/new?id=${data.id}`} variant="secondary" size="sm" icon={Pencil}>
-              수정
-            </ButtonLink>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Trash2}
-              onClick={() => setConfirmDelete(true)}
-              className="!text-boss-error"
-            >
-              삭제
-            </Button>
           </div>
         </Panel>
 

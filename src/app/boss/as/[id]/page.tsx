@@ -24,6 +24,7 @@ import {
   Skeleton,
   ConfirmDialog,
   type StatusTone,
+  DetailActions,
 } from '@/components/boss/ui';
 
 type Tab = 'defect' | 'repair';
@@ -194,6 +195,35 @@ export default function BossAsDetailPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 주요 행동은 화면 맨 위에 */}
+      <div className="lg:col-span-2">
+        <DetailActions note={badge ? <StatusPill tone={badge.tone}>{badge.label}</StatusPill> : null}>
+          {!isClosed && next && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={CheckCircle2}
+              onClick={() => setPending({ type: 'status', next: next.next, label: next.label })}
+              disabled={statusChanging}
+            >
+              {statusChanging ? '변경 중…' : next.label}
+            </Button>
+          )}
+          <ButtonLink href={`/boss/as/new?id=${encodeURIComponent(item.id)}`} variant="secondary" size="sm" icon={Pencil}>
+            수정
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setPending({ type: 'delete' })}
+            disabled={deleting}
+            className="!text-boss-error"
+          >
+            삭제
+          </Button>
+        </DetailActions>
+      </div>
       {/* ── 좌: 본문 ── */}
       <div className="flex min-w-0 flex-col gap-4">
         {error && <AlertBanner tone="bad">{error}</AlertBanner>}

@@ -22,6 +22,7 @@ import {
   AlertBanner,
   DescRow,
   EmptyState,
+  DetailActions,
 } from '@/components/boss/ui';
 
 export default function BossRequestDetailPage() {
@@ -116,6 +117,33 @@ export default function BossRequestDetailPage() {
   return (
     <div className="flex flex-col gap-4">
       {error && <AlertBanner tone="bad">{error}</AlertBanner>}
+
+      {/* 주요 행동은 화면 맨 위에 */}
+      <DetailActions
+        note={
+          <>
+            <Tag tone={badge.tone}>{badge.label}</Tag>
+            <Tag tone={myAnswerTag.tone}>내 답변 · {myAnswerTag.label}</Tag>
+          </>
+        }
+      >
+        <ButtonLink href={answerHref} variant="primary" size="sm">
+          {myAnswer ? '답변 다시 작성' : '답변 작성'}
+        </ButtonLink>
+        {isChoice && rawPhone && (
+          <>
+            <a href={`tel:${rawPhone}`} className="boss-btn boss-btn-sm boss-btn-secondary">
+              전화
+            </a>
+            <a href={`sms:${rawPhone}`} className="boss-btn boss-btn-sm boss-btn-secondary">
+              문자
+            </a>
+          </>
+        )}
+        <ButtonLink href="/boss/requests" variant="secondary" size="sm">
+          목록
+        </ButtonLink>
+      </DetailActions>
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* ───── 좌: 본문 ───── */}

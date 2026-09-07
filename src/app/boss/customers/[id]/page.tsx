@@ -26,6 +26,7 @@ import {
   RowThumb,
   RowChevron,
   ConfirmDialog,
+  DetailActions,
 } from '@/components/boss/ui';
 import { FileSignature, ListChecks, Hammer, Wrench, Trash2 } from 'lucide-react';
 
@@ -173,6 +174,42 @@ export default function BossOrderDetailPage() {
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 주요 행동은 화면 맨 위에 — 스크롤하지 않고 바로 누른다 */}
+      <div className="lg:col-span-2">
+        <DetailActions
+          note={
+            <>
+              <Tag tone={status.tone}>{status.label}</Tag>
+              <span className="font-boss-head text-[14px] font-semibold tabular-nums text-boss-text">
+                {formatMoney(item.totalAmount)}
+              </span>
+            </>
+          }
+        >
+          {item.statusCd !== '10' && item.statusCd !== '30' && (
+            <Button variant="primary" size="sm" onClick={() => setConfirmPaid(true)}>
+              수금완료 처리
+            </Button>
+          )}
+          <ButtonLink href={`/boss/estimate?customerId=${item.id}`} variant="secondary" size="sm">
+            견적서 · 영수증
+          </ButtonLink>
+          {item.phone && (
+            <a href={`tel:${item.phone}`} className="boss-btn boss-btn-sm boss-btn-secondary">
+              전화
+            </a>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setConfirmDelete(true)}
+            className="!text-boss-error"
+          >
+            삭제
+          </Button>
+        </DetailActions>
+      </div>
       {/* ───── 좌: 고객 본문 ─────
           위계를 지킨다: ① 누구인가(연락처 · 주소) ② 언제인가(견적일 · 시공) ③ 메모.
           금액 · 상태 · 행동은 오른쪽 한 곳에만 둔다(양쪽에 같은 값을 두지 않는다). */}
@@ -261,21 +298,6 @@ export default function BossOrderDetailPage() {
             <DescRow label="상태" value={<Tag tone={status.tone}>{status.label}</Tag>} />
           </dl>
 
-          <div className="mt-4 flex flex-col gap-2">
-            {item.statusCd !== '10' && item.statusCd !== '30' && (
-              <Button variant="primary" onClick={() => setConfirmPaid(true)} className="w-full">
-                수금완료 처리
-              </Button>
-            )}
-            <ButtonLink href={`/boss/estimate?customerId=${item.id}`} variant="secondary" className="w-full">
-              견적서 · 영수증 출력
-            </ButtonLink>
-            {item.phone && (
-              <a href={`tel:${item.phone}`} className="boss-btn boss-btn-md boss-btn-secondary w-full">
-                고객에게 전화
-              </a>
-            )}
-          </div>
         </Panel>
 
         <Panel kicker="이어서" title="관련 작업" bodyClassName="-mx-5 -mb-5 border-t border-boss-border">
@@ -311,15 +333,6 @@ export default function BossOrderDetailPage() {
           </div>
         </Panel>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={Trash2}
-          onClick={() => setConfirmDelete(true)}
-          className="w-full !text-boss-error"
-        >
-          고객 삭제
-        </Button>
       </div>
 
       {/* 앱과 같이 고객 아래에 견적 품목이 이어진다 (앱: 고객 → 견적 화면) */}

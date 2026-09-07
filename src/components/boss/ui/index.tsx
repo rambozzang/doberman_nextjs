@@ -1006,6 +1006,31 @@ export function SectionHeader({
   );
 }
 
+/**
+ * 상세 화면 상단 액션 줄.
+ *
+ * 상세 화면의 주요 버튼(상태 변경 · 출력 · 삭제 등)이 오른쪽 패널 아래에 있어
+ * 매번 스크롤해야 눌렀다. 사장님은 현장에서 폰으로 쓰기 때문에 더 불편하다.
+ * 상세 화면은 이 줄을 제목 바로 아래(본문 맨 위)에 두고 주요 버튼을 여기 모은다.
+ *
+ * 화면 위에 붙어 따라다니고(sticky), 인쇄에는 나오지 않는다.
+ */
+export function DetailActions({
+  children,
+  note,
+}: {
+  children: ReactNode;
+  /** 버튼 왼쪽에 놓을 짧은 설명(상태 등) */
+  note?: ReactNode;
+}) {
+  return (
+    <div className="no-print sticky top-0 z-20 -mx-5 flex flex-wrap items-center gap-2 border-b border-boss-border bg-boss-surface px-5 py-2.5 sm:-mx-7 sm:px-7">
+      {note ? <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-boss-text-secondary">{note}</div> : null}
+      <div className="ml-auto flex flex-wrap items-center gap-2">{children}</div>
+    </div>
+  );
+}
+
 export function PageHeader({
   eyebrow,
   title,

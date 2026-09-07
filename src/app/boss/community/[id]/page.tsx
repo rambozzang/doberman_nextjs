@@ -31,6 +31,7 @@ import {
   ConfirmDialog,
   Skeleton,
   type StatusTone,
+  DetailActions,
 } from '@/components/boss/ui';
 
 const CATEGORY_TONE: Record<string, StatusTone> = {
@@ -290,6 +291,28 @@ export default function BossCommunityDetailPage() {
           </div>
         )
       ) : (
+        <>
+        {/* 주요 행동은 화면 맨 위에 */}
+        <DetailActions>
+          {isMine ? (
+            <>
+              <ButtonLink href={`/boss/community/${boardId}/edit`} variant="secondary" size="sm" icon={Pencil}>
+                수정
+              </ButtonLink>
+              <Button variant="secondary" size="sm" icon={Trash2} onClick={() => setDeleteOpen(true)} className="!text-boss-error">
+                삭제
+              </Button>
+            </>
+          ) : (
+            <ButtonLink href={`/boss/community/${boardId}/report`} variant="secondary" size="sm">
+              신고
+            </ButtonLink>
+          )}
+          <ButtonLink href="/boss/community" variant="secondary" size="sm">
+            목록
+          </ButtonLink>
+        </DetailActions>
+
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* ───── 좌: 본문 ───── */}
           <div className="flex min-w-0 flex-col gap-4">
@@ -532,6 +555,7 @@ export default function BossCommunityDetailPage() {
             </Panel>
           </div>
         </div>
+        </>
       )}
 
       <ConfirmDialog

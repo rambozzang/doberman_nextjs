@@ -25,6 +25,7 @@ import {
   Skeleton,
   StatusPill,
   TagPill,
+  DetailActions,
 } from '@/components/boss/ui';
 import { Eye, EyeOff, Trash2, Image as ImageIcon, ExternalLink } from 'lucide-react';
 
@@ -223,6 +224,33 @@ export default function BossPortfolioDetailPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 주요 행동은 화면 맨 위에 */}
+      <div className="lg:col-span-2">
+        <DetailActions>
+          <ButtonLink href={`/boss/portfolio/new?edit=${item.id}`} variant="primary" size="sm">
+            수정
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={isPublic ? EyeOff : Eye}
+            onClick={handleToggle}
+            disabled={toggling}
+          >
+            {toggling ? '전환 중…' : isPublic ? '비공개로' : '공개로'}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Trash2}
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+            className="!text-boss-error"
+          >
+            삭제
+          </Button>
+        </DetailActions>
+      </div>
       {/* ── 좌: 본문 ── */}
       <div className="flex min-w-0 flex-col gap-4">
         <Panel
