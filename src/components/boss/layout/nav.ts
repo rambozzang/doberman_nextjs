@@ -122,7 +122,7 @@ export const SECTIONS: NavSection[] = [
         adminOnly: true,
       },
       {
-        href: "/도배-용품",
+        href: "https://www.doberman.kr/도배-용품",
         label: "도배 용품 보기",
         icon: ShoppingBag,
         external: true,
@@ -233,7 +233,7 @@ const PAGE_META: Record<string, PageMeta> = {
     title: "도배 용품 관리",
     subtitle:
       "쿠팡 파트너스 상품을 담아 도배르만 사이트 도배 용품 페이지에 소개합니다. 담은 링크로 구매되면 수수료가 붙습니다.",
-    secondary: { label: "페이지 보기", href: "/도배-용품" },
+    secondary: { label: "페이지 보기", href: "https://www.doberman.kr/도배-용품" },
   },
   "/boss/templates": {
     title: "웹견적서 관리",

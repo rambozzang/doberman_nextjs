@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
+ * 호스트별 처리
+ *   · boss.doberman.kr → /boss 화면 (사장님 전용 주소)
+ *   · doberman.kr      → www.doberman.kr 301 (아래 설명)
+ *
  * 도메인 정규화 — non-www → www 301.
  *
  * doberman.kr 과 www.doberman.kr 이 둘 다 200 을 반환해 같은 콘텐츠가 두
@@ -11,12 +15,39 @@ import type { NextRequest } from 'next/server';
  * nginx 에서 처리해도 되지만, 여기 두면 배포 단위가 앱과 같아져
  * canonical 과 리디렉션 방향이 어긋날 일이 없다.
  */
+/** 사장님 전용 호스트 — boss.doberman.kr 로 들어오면 /boss 아래 화면을 보여 준다 */
+const BOSS_HOSTS = new Set(['boss.doberman.kr']);
+
+/** 사장님 호스트에서 그대로 통과시킬 경로 — 사장님 화면 · API 프록시 · 정적 파일 */
+function passesOnBossHost(pathname: string): boolean {
+  return (
+    pathname === '/boss' ||
+    pathname.startsWith('/boss/') ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/fonts/') ||
+    /\.[a-z0-9]{2,5}$/i.test(pathname) // logo.png · manifest 등 파일
+  );
+}
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host');
   if (!host) return NextResponse.next();
 
   // 포트가 붙은 로컬 개발 환경은 건드리지 않는다.
   const hostname = host.split(':')[0];
+
+  // boss.doberman.kr → www.doberman.kr/boss 와 같은 화면.
+  //   boss.doberman.kr/            → /boss
+  //   boss.doberman.kr/customers   → /boss/customers  (주소는 그대로, 안에서만 바꿔 그린다)
+  //   boss.doberman.kr/boss/...    → 그대로 (화면 안의 링크가 /boss/... 라 그대로 통한다)
+  if (BOSS_HOSTS.has(hostname)) {
+    const url = request.nextUrl.clone();
+    if (passesOnBossHost(url.pathname)) return NextResponse.next();
+    url.pathname = url.pathname === '/' ? '/boss' : `/boss${url.pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
   if (hostname !== 'doberman.kr') return NextResponse.next();
 
   const url = request.nextUrl.clone();

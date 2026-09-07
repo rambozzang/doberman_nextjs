@@ -242,7 +242,7 @@ export default function BossStorePage() {
         title="운영자만 쓸 수 있는 화면입니다"
         description="도배 용품 페이지는 소비자 사이트에서 볼 수 있습니다."
         action={
-          <ButtonLink href="/도배-용품" variant="secondary" size="sm">
+          <ButtonLink href="https://www.doberman.kr/도배-용품" variant="secondary" size="sm">
             도배 용품 보기
           </ButtonLink>
         }
@@ -533,7 +533,7 @@ export default function BossStorePage() {
               담은 상품은 도배르만 사이트의 <b className="text-boss-text">/도배-용품</b> 페이지에 바로 보입니다(10분 안에
               반영). 고객이 그 링크로 들어가 24시간 안에 산 상품에 수수료가 붙습니다.
             </p>
-            <ButtonLink href="/도배-용품" variant="secondary" size="sm" className="mt-3">
+            <ButtonLink href="https://www.doberman.kr/도배-용품" variant="secondary" size="sm" className="mt-3">
               페이지 열어 보기
             </ButtonLink>
           </Panel>
