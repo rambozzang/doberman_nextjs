@@ -54,7 +54,8 @@ export interface CalendarEvent {
 
 // 등록 요청 — Flutter CalendarCreate
 export interface CalendarCreateRequest {
-  custoomerId?: string | null; // 백엔드 필드명 오타 그대로 유지
+  custoomerId?: string | null; // 앱이 쓰는 오타 필드 — 서버는 읽지 않는다
+  customerId?: number | null; // 서버(CalendaVo.CalendarCreate)가 실제로 읽는 이름
   companyId?: string | null;
   eventType?: CalendarEventType | string | null;
   title?: string | null;

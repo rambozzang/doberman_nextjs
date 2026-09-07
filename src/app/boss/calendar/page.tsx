@@ -198,6 +198,12 @@ function formToCreate(form: FormState, overrides?: { startTime?: string; endTime
     isrepeat: form.isRepeat,
     color: eventColor(form.eventType),
     repeatData: repeat,
+    // 서버 엔티티가 널을 받지 않는 항목 — 앱(calendar_add_cntr)과 같은 기본값을 보낸다.
+    // 빠뜨리면 "Validation failed for TbCalendarEvent" 로 등록 · 수정이 모두 500 이 난다.
+    customerId: 0,
+    visibility: 'N',
+    busyStatus: 'N',
+    reminderList: '',
   };
 }
 
