@@ -4,7 +4,7 @@
 //
 //   lg↑ : grid 236px 레일 + 본문. 레일은 sticky 100dvh, 본문은 페이지 스크롤.
 //   lg↓ : 네이비 상단 바(레일이 접힘) + 본문 + 하단 탭.
-//   본문 폭은 PAGE_META.width — nav.ts 의 CONTENT_MAX_WIDTH(full 1280 / wide 860 / narrow 620).
+//   본문 폭은 PAGE_META.width — nav.ts 의 CONTENT_MAX_WIDTH(full 1080 / wide 860 / narrow 620). 왼쪽(레일) 정렬.
 //   헤더도 같은 값으로 가운데 정렬해 넓은 화면에서 제목줄과 내용 끝이 맞는다. 패딩 20px 28px 56px.
 //
 // 라이트 전용. 테마 프로바이더는 없다.
@@ -59,7 +59,8 @@ export default function BossChrome({ children }: { children: React.ReactNode }) 
 
           <main className="boss-shell-main flex min-w-0 flex-col pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0">
             <BossHeader />
-            <div className={`mx-auto w-full ${CONTENT_MAX_WIDTH[width]} px-5 pb-14 pt-5 sm:px-7`}>{children}</div>
+            {/* 가운데가 아니라 레일 쪽에 붙인다 — 메뉴와 본문이 한 덩어리로 읽힌다 */}
+            <div className={`w-full ${CONTENT_MAX_WIDTH[width]} px-5 pb-14 pt-5 sm:px-7`}>{children}</div>
           </main>
 
           <BossMobileTabs />

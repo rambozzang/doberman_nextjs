@@ -166,10 +166,12 @@ export type PageWidth = "narrow" | "wide" | "full";
  * full 은 대시보드·목록 등 기본값이다. 예전에는 1560 이라 27인치 이상에서
  * 사실상 100% 로 펼쳐져 카드 안 내용이 서로 멀어지고 한 줄이 너무 길어졌다.
  */
+// 본문은 레일 쪽(왼쪽)에 붙여 그리고, 넓은 화면에서 끝까지 늘어나지 않게 상한을 둔다.
+// full 을 1080 으로 줄인 이유: 1280 은 보통 모니터에서 사실상 100% 라 표가 옆으로 퍼져 읽기 어려웠다(2026-09-08).
 export const CONTENT_MAX_WIDTH: Record<PageWidth, string> = {
   narrow: "max-w-[620px]",
   wide: "max-w-[860px]",
-  full: "max-w-[1280px]",
+  full: "max-w-[1080px]",
 };
 
 export type PageMeta = {

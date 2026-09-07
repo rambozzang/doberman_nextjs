@@ -33,7 +33,7 @@ export default function BossHeader() {
     <header className="sticky top-[53px] z-30 border-b border-boss-border bg-boss-bg/95 px-5 pb-4 pt-5 backdrop-blur sm:px-7 lg:top-0">
       {/* 면색·하단 보더는 화면 전체 폭을 유지하고, 내용만 본문과 같은 폭으로 가운데 정렬한다 */}
       <div
-        className={`mx-auto flex w-full ${CONTENT_MAX_WIDTH[meta.width ?? 'full']} flex-wrap items-end justify-between gap-x-6 gap-y-3`}
+        className={`flex w-full ${CONTENT_MAX_WIDTH[meta.width ?? 'full']} flex-wrap items-end justify-between gap-x-6 gap-y-3`}
       >
         <div className="min-w-0">
           {meta.back ? (
