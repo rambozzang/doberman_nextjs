@@ -173,85 +173,19 @@ export default function BossOrderDetailPage() {
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      {/* ───── 좌: 본문 ───── */}
+      {/* ───── 좌: 고객 본문 ─────
+          위계를 지킨다: ① 누구인가(연락처 · 주소) ② 언제인가(견적일 · 시공) ③ 메모.
+          금액 · 상태 · 행동은 오른쪽 한 곳에만 둔다(양쪽에 같은 값을 두지 않는다). */}
       <div className="flex flex-col gap-4">
         <Panel kicker={`고객 #${item.id}`} title={item.name || '고객명 미지정'}>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="mb-4 flex flex-wrap items-center gap-1.5">
             <Tag tone={status.tone}>{status.label}</Tag>
             {item.isExistChecklist === 'Y' && <Tag tone="info">체크리스트 있음</Tag>}
+            {item.imageCount ? <Tag tone="neutral">사진 {item.imageCount}장</Tag> : null}
           </div>
 
-          <h4 className="boss-mono-label mb-2">고객 정보</h4>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-3">
-            <Fact label="총 금액" value={item.totalAmount ? formatMoney(item.totalAmount) : undefined} num />
-            <Fact
-              label="시공 기간"
-              value={item.workDate ? formatWorkPeriod(item.workDate, item.workEndDate) : undefined}
-              num
-            />
-            <Fact label="견적일" value={item.estimateDate ? formatDate(item.estimateDate) : undefined} num />
-            <Fact label="주소" value={fullAddr || undefined} wide />
-            <Fact label="우편번호" value={item.post} num />
-            <Fact label="첨부 이미지" value={item.imageCount ? `${item.imageCount}장` : undefined} num />
-            <Fact label="등록일" value={item.createdDt ? formatDate(item.createdDt) : undefined} num />
-            <Fact label="수정일" value={item.updatedDt ? formatDate(item.updatedDt) : undefined} num />
-          </div>
-
-          <h4 className="boss-mono-label mb-2 mt-5 border-t border-boss-border-row pt-4">메모</h4>
-          {item.memo ? (
-            <p className="whitespace-pre-wrap border border-boss-border bg-boss-inset px-3.5 py-3 text-[13.5px] leading-relaxed text-boss-text-soft">
-              {item.memo}
-            </p>
-          ) : (
-            <p className="text-[13px] text-boss-text-secondary">등록된 메모가 없습니다.</p>
-          )}
-        </Panel>
-
-        <Panel kicker="이어서" title="관련 작업" bodyClassName="-mx-5 -mb-5 border-t border-boss-border">
-          <div className="divide-y divide-boss-border-row">
-            <RowItem
-              href={`/boss/estimate?orderId=${item.id}`}
-              leading={<RowThumb icon={FileSignature} />}
-              title="견적서"
-              subtitle="견적서 작성 · 출력 · 영수증"
-              actions={<RowChevron />}
-            />
-            <RowItem
-              href={`/boss/checklist/new?orderId=${item.id}`}
-              leading={<RowThumb icon={ListChecks} />}
-              title="체크리스트"
-              subtitle="현장 실측 · 시공 전후 점검"
-              actions={<RowChevron />}
-            />
-            <RowItem
-              href={`/boss/construction/new?orderId=${item.id}`}
-              leading={<RowThumb icon={Hammer} />}
-              title="시공 기록"
-              subtitle="시공 전 · 중 · 후 사진 등록"
-              actions={<RowChevron />}
-            />
-            <RowItem
-              href={`/boss/as/new?orderId=${item.id}`}
-              leading={<RowThumb icon={Wrench} />}
-              title="AS 요청"
-              subtitle="하자 보수 접수"
-              actions={<RowChevron />}
-            />
-          </div>
-        </Panel>
-      </div>
-
-      {/* ───── 우: 요약 ───── */}
-      <div className="flex flex-col gap-4">
-        <Panel kicker="요약" title="고객 · 금액">
-          <p className="font-boss-head text-[32px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-boss-text">
-            {formatMoney(item.totalAmount)}
-          </p>
-          <p className="mt-1 text-[12px] text-boss-text-secondary">총 금액</p>
-
-          <dl className="mt-3">
-            <DescRow label="상태" value={<Tag tone={status.tone}>{status.label}</Tag>} />
-            <DescRow label="고객" value={item.name || '—'} />
+          <h4 className="boss-mono-label mb-2">연락 · 주소</h4>
+          <dl className="mb-1">
             <DescRow
               label="연락처"
               value={
@@ -268,6 +202,23 @@ export default function BossOrderDetailPage() {
               label="이메일"
               value={item.email ? <a href={`mailto:${item.email}`}>{item.email}</a> : '—'}
             />
+            <DescRow label="주소" value={fullAddr || '—'} />
+            <DescRow
+              label="우편번호"
+              value={item.post ? <span className="font-boss-head tabular-nums">{item.post}</span> : '—'}
+            />
+          </dl>
+
+          <h4 className="boss-mono-label mb-2 mt-5 border-t border-boss-border-row pt-4">일정</h4>
+          <dl>
+            <DescRow
+              label="견적일"
+              value={
+                <span className="font-boss-head tabular-nums">
+                  {item.estimateDate ? formatDate(item.estimateDate) : '미정'}
+                </span>
+              }
+            />
             <DescRow
               label="시공"
               value={
@@ -276,45 +227,99 @@ export default function BossOrderDetailPage() {
                 </span>
               }
             />
+            <DescRow
+              label="등록 · 수정"
+              value={
+                <span className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
+                  {formatDate(item.createdDt)}
+                  {item.updatedDt && item.updatedDt !== item.createdDt ? ` · ${formatDate(item.updatedDt)}` : ''}
+                </span>
+              }
+            />
           </dl>
 
-          {item.statusCd !== '10' && item.statusCd !== '30' && (
-            <Button variant="primary" onClick={() => setConfirmPaid(true)} className="mt-4 w-full">
-              수금완료 처리
-            </Button>
+          <h4 className="boss-mono-label mb-2 mt-5 border-t border-boss-border-row pt-4">메모</h4>
+          {item.memo ? (
+            <p className="whitespace-pre-wrap border border-boss-border bg-boss-inset px-3.5 py-3 text-[13.5px] leading-relaxed text-boss-text-soft">
+              {item.memo}
+            </p>
+          ) : (
+            <p className="text-[13px] text-boss-text-secondary">등록된 메모가 없습니다.</p>
           )}
-          {item.phone && (
-            <a
-              href={`tel:${item.phone}`}
-              className={`boss-btn boss-btn-md boss-btn-secondary w-full ${item.statusCd !== '10' && item.statusCd !== '30' ? 'mt-2' : 'mt-4'}`}
-            >
-              고객에게 전화
-            </a>
-          )}
-          <ButtonLink
-            href={`/boss/estimate?customerId=${item.id}`}
-            variant="secondary"
-            className="mt-2 w-full"
-          >
-            고객 견적서 작성
-          </ButtonLink>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={Trash2}
-            onClick={() => setConfirmDelete(true)}
-            className="mt-2 w-full !text-boss-error"
-          >
-            고객 삭제
-          </Button>
+        </Panel>
+      </div>
+
+      {/* ───── 우: 금액과 행동 ───── */}
+      <div className="flex flex-col gap-4">
+        <Panel kicker="금액" title="이 고객의 총액">
+          <p className="font-boss-head text-[32px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-boss-text">
+            {formatMoney(item.totalAmount)}
+          </p>
+          <p className="mt-1 text-[12px] text-boss-text-secondary">아래 견적 품목의 합계입니다</p>
+
+          <dl className="mt-4 border-t border-boss-border-row pt-3">
+            <DescRow label="상태" value={<Tag tone={status.tone}>{status.label}</Tag>} />
+          </dl>
+
+          <div className="mt-4 flex flex-col gap-2">
+            {item.statusCd !== '10' && item.statusCd !== '30' && (
+              <Button variant="primary" onClick={() => setConfirmPaid(true)} className="w-full">
+                수금완료 처리
+              </Button>
+            )}
+            <ButtonLink href={`/boss/estimate?customerId=${item.id}`} variant="secondary" className="w-full">
+              견적서 · 영수증 출력
+            </ButtonLink>
+            {item.phone && (
+              <a href={`tel:${item.phone}`} className="boss-btn boss-btn-md boss-btn-secondary w-full">
+                고객에게 전화
+              </a>
+            )}
+          </div>
         </Panel>
 
-        <Panel kicker="안내" title="업무 흐름">
-          <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-            대기 → 확정 → 진행 → 완료 순서로 상태가 바뀝니다. 시공이 끝나면 영수증을 발행하고 수금을
-            기록해야 매출 분석에 잡힙니다.
-          </p>
+        <Panel kicker="이어서" title="관련 작업" bodyClassName="-mx-5 -mb-5 border-t border-boss-border">
+          <div className="divide-y divide-boss-border-row">
+            <RowItem
+              href={`/boss/checklist/new?orderId=${item.id}`}
+              leading={<RowThumb icon={ListChecks} />}
+              title="체크리스트"
+              subtitle="현장 실측 · 시공 전후 점검"
+              actions={<RowChevron />}
+            />
+            <RowItem
+              href={`/boss/construction/new?orderId=${item.id}`}
+              leading={<RowThumb icon={Hammer} />}
+              title="시공 기록"
+              subtitle="시공 전 · 중 · 후 사진"
+              actions={<RowChevron />}
+            />
+            <RowItem
+              href={`/boss/as/new?orderId=${item.id}`}
+              leading={<RowThumb icon={Wrench} />}
+              title="AS 요청"
+              subtitle="하자 보수 접수"
+              actions={<RowChevron />}
+            />
+            <RowItem
+              href={`/boss/tax-invoice/new?customerId=${item.id}`}
+              leading={<RowThumb icon={FileSignature} />}
+              title="세금계산서"
+              subtitle="사업자 고객에게 발행"
+              actions={<RowChevron />}
+            />
+          </div>
         </Panel>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={Trash2}
+          onClick={() => setConfirmDelete(true)}
+          className="w-full !text-boss-error"
+        >
+          고객 삭제
+        </Button>
       </div>
 
       {/* 앱과 같이 고객 아래에 견적 품목이 이어진다 (앱: 고객 → 견적 화면) */}

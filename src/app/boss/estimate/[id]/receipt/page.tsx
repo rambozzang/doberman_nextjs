@@ -1,8 +1,8 @@
 'use client';
 
-// 거래 명세서(영수증) 인쇄 — Industry 패턴의 인쇄 화면
+// 영수증 인쇄 — Industry 패턴의 인쇄 화면
 // - URL [id] 는 customerId
-// - GET /estimateitems/{customerId} 로 품목을 불러와 거래 명세서로 표시
+// - GET /estimateitems/{customerId} 로 품목을 불러와 영수증으로 표시
 // - 셸(레일 · 헤더) 없이 단독 렌더링된다(BossChrome 이 /receipt 경로를 제외한다). 그래서 PageHeader 를 여기서 그린다.
 // - 화면에서는 패널 위 종이, 인쇄에서는 흰 종이 · 검정 글자 · 사각 테두리.
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -146,9 +146,9 @@ export default function BossEstimateReceiptPage() {
   );
 
   const customerLabel = customer?.name ? `${customer.name}님` : `고객 ${customerId}`;
-  const fileName = `거래명세서_${customer?.name ?? customerId}_${new Date().toISOString().slice(0, 10)}`;
+  const fileName = `영수증_${customer?.name ?? customerId}_${new Date().toISOString().slice(0, 10)}`;
   // 공유 · 문자에 들어가는 요약 — 파일이 못 붙는 문자에서도 핵심이 전달되게
-  const shareText = `[${company?.name ?? '도배르만'}] ${customerLabel} 거래 명세서입니다. 총 합계 ${fmtMoney(
+  const shareText = `[${company?.name ?? '도배르만'}] ${customerLabel} 영수증입니다. 총 합계 ${fmtMoney(
     totals.totalAmount
   )}원 · ${today}`;
 
@@ -205,7 +205,7 @@ export default function BossEstimateReceiptPage() {
         <PrintActions
           targetRef={paperRef}
           fileName={fileName}
-          shareTitle={`${customerLabel} 거래 명세서`}
+          shareTitle={`${customerLabel} 영수증`}
           shareText={shareText}
           smsPhone={customer?.phone}
           disabled={items.length === 0}

@@ -10,7 +10,7 @@ import { money, taxText, companyAddress, customerAddress } from '../docTypes';
 import { formatBizNoLoose } from '@/lib/boss/docMeta';
 
 const LINE = '#111111';
-const ROWS = 12;
+const ROWS = 10;
 
 let fontRegistered = false;
 export function registerPdfFont() {
@@ -79,7 +79,7 @@ function SupplierGrid({ data, accent }: { data: DocData; accent: string }) {
                 {c?.owner ?? ''} <Text style={{ color: '#555' }}>(인)</Text>
               </Text>
               {c?.stamp ? (
-                <Image src={c.stamp} style={{ position: 'absolute', right: 3, top: -4, width: 30, height: 30 }} />
+                <Image src={c.stamp} style={{ position: 'absolute', right: 4, top: 0, width: 17, height: 17, opacity: 0.9 }} />
               ) : null}
             </View>
           </View>
@@ -246,7 +246,10 @@ export default function EstimatePdf({ data, p, styleKey }: { data: DocData; p: D
     return (
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-          <View style={{ width: 90 }}>{c?.logo ? <Image src={c.logo} style={{ width: 36, height: 36 }} /> : null}</View>
+          <View style={{ width: 132, flexDirection: 'row', alignItems: 'center' }}>
+            {c?.logo ? <Image src={c.logo} style={{ width: 34, height: 34, marginRight: 6 }} /> : null}
+            <Text style={{ fontSize: 9, fontWeight: 700 }}>{c?.name ?? ''}</Text>
+          </View>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Text style={{ fontSize: 25, fontWeight: 700, letterSpacing: 13 }}>견 적 서</Text>
             <View
@@ -258,7 +261,7 @@ export default function EstimatePdf({ data, p, styleKey }: { data: DocData; p: D
               }}
             />
           </View>
-          <View style={{ width: 90, alignItems: 'flex-end' }}>
+          <View style={{ width: 132, alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 8.5 }}>견적일자 {data.meta.today}</Text>
             <Text style={{ fontSize: 8.5, marginTop: 2 }}>문서번호 {data.meta.docNumber}</Text>
           </View>
@@ -273,8 +276,8 @@ export default function EstimatePdf({ data, p, styleKey }: { data: DocData; p: D
         {title()}
 
         {/* 수신 · 공급자 */}
-        <View style={{ flexDirection: 'row', marginTop: 12 }}>
-          <View style={{ width: 190, border: `1px solid ${LINE}`, padding: 9, marginRight: 8 }}>
+        <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'stretch' }}>
+          <View style={{ width: 190, border: `1px solid ${LINE}`, padding: 9, marginRight: 8, justifyContent: 'space-between' }}>
             <Text style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 4 }}>수 신</Text>
             <Text style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>
               {data.customer?.name ?? ''} <Text style={{ fontSize: 10, fontWeight: 400 }}>귀하</Text>
@@ -328,11 +331,35 @@ export default function EstimatePdf({ data, p, styleKey }: { data: DocData; p: D
           상황에 따라 금액이 조정될 수 있습니다.
         </Text>
 
-        <View style={{ alignItems: 'center', marginTop: 16 }}>
-          <Text style={{ fontSize: 11, fontWeight: 700 }}>
-            {c?.name ?? ''}
-            {c?.phone ? <Text style={{ fontWeight: 400, color: '#444' }}>   {c.phone}</Text> : null}
+        {/* 확인란 — 서류로 주고받을 때 필요한 서명 자리. A4 바닥에 고정한다 */}
+        <View
+          style={{
+            position: 'absolute',
+            left: 32,
+            right: 32,
+            bottom: 40,
+            flexDirection: 'row',
+            borderTop: `1px solid ${LINE}`,
+            borderLeft: `1px solid ${LINE}`,
+          }}
+        >
+          <Text style={cell({ width: 74, backgroundColor: accent, fontWeight: 700, textAlign: 'center', paddingVertical: 10 })}>
+            공급자
           </Text>
+          <View style={cell({ flex: 1, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' })}>
+            <Text style={{ fontSize: 10, fontWeight: 700 }}>{c?.name ?? ''}</Text>
+            <Text style={{ fontSize: 9, marginLeft: 8 }}>{c?.owner ?? ''}</Text>
+            <Text style={{ fontSize: 8.5, color: '#555', marginLeft: 4 }}>(인)</Text>
+            {c?.stamp ? <Image src={c.stamp} style={{ width: 20, height: 20, marginLeft: 6 }} /> : null}
+            <Text style={{ fontSize: 8.5, color: '#444', marginLeft: 'auto' }}>{c?.phone ?? ''}</Text>
+          </View>
+          <Text style={cell({ width: 74, backgroundColor: accent, fontWeight: 700, textAlign: 'center', paddingVertical: 10 })}>
+            수 신
+          </Text>
+          <View style={cell({ width: 150, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' })}>
+            <Text style={{ fontSize: 10, fontWeight: 700 }}>{data.customer?.name ?? ''}</Text>
+            <Text style={{ fontSize: 8.5, color: '#555', marginLeft: 6 }}>(인)</Text>
+          </View>
         </View>
 
         <Text style={{ position: 'absolute', bottom: 14, right: 32, fontSize: 6, color: '#BDBDBD' }}>

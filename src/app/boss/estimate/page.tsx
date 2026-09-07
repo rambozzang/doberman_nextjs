@@ -327,7 +327,7 @@ function EstimateList() {
         ) : (
           <EmptyState
             title="이 고객의 견적서가 아직 없습니다"
-            description="새 견적서를 만들면 품목을 넣고 견적서 · 거래명세서로 출력할 수 있습니다."
+            description="새 견적서를 만들면 품목을 넣고 견적서 · 영수증으로 출력할 수 있습니다."
             action={
               <Button variant="primary" size="sm" icon={Plus} onClick={onCreate} disabled={creating}>
                 {creating ? '생성 중…' : '새 견적서'}

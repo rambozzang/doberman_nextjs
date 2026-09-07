@@ -3,7 +3,7 @@
 // 고객 견적서 품목(견적 내역) — 앱 `lib/app/estimate` 와 같은 규칙
 //
 // 품목은 견적서 헤더가 아니라 "고객" 에 붙는다 (GET /estimateitems/{customerId}).
-// 견적서 · 거래명세서 인쇄물은 전적으로 이 품목을 읽어 그린다. 웹에는 등록 화면이 없어서
+// 견적서 · 영수증 인쇄물은 전적으로 이 품목을 읽어 그린다. 웹에는 등록 화면이 없어서
 // 사장님이 품목을 넣을 수 없었고, 그래서 인쇄물이 빈 채로 나왔다.
 //
 // 금액 계산은 앱 estimate_cntr.calculate() 와 똑같이 맞춘다.
@@ -239,7 +239,7 @@ export default function EstimateItemsPanel({
     <ContentCard>
       <CardHead
         title="견적 품목"
-        meta="견적서 · 거래명세서는 이 품목으로 만들어집니다"
+        meta="견적서 · 영수증은 이 품목으로 만들어집니다"
         count={loading ? undefined : `${totals.count}건`}
         countTone="muted"
       />
@@ -388,7 +388,7 @@ export default function EstimateItemsPanel({
       ) : items.length === 0 ? (
         <EmptyState
           title="등록된 품목이 없습니다"
-          description="품목을 넣어야 견적서 · 거래명세서에 내역과 금액이 찍힙니다. 단가는 부가세를 포함해 입력하세요."
+          description="품목을 넣어야 견적서 · 영수증에 내역과 금액이 찍힙니다. 단가는 부가세를 포함해 입력하세요."
           action={
             <Button variant="primary" size="sm" icon={Plus} onClick={openCreate}>
               품목 추가
@@ -497,7 +497,7 @@ export default function EstimateItemsPanel({
               견적서 인쇄 · PDF
             </ButtonLink>
             <ButtonLink href={`/boss/estimate/${customerId}/receipt`} variant="secondary" size="sm">
-              거래명세서 · 영수증
+              영수증 인쇄 · PDF
             </ButtonLink>
           </div>
         </>

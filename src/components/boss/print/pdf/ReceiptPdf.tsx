@@ -9,7 +9,7 @@ import { money, companyAddress } from '../docTypes';
 import { formatBizNoLoose } from '@/lib/boss/docMeta';
 
 const LINE = '#111111';
-const ROWS = 8;
+const ROWS = 10;
 
 const s = StyleSheet.create({
   page: { paddingTop: 38, paddingBottom: 38, paddingHorizontal: 40, fontFamily: 'NotoSansKR', fontSize: 9, color: '#111' },
@@ -63,7 +63,7 @@ function SupplierGrid({ data, accent }: { data: DocData; accent: string }) {
                 {c?.owner ?? ''} <Text style={{ color: '#555' }}>(인)</Text>
               </Text>
               {c?.stamp ? (
-                <Image src={c.stamp} style={{ position: 'absolute', right: 3, top: -4, width: 30, height: 30 }} />
+                <Image src={c.stamp} style={{ position: 'absolute', right: 4, top: 0, width: 17, height: 17, opacity: 0.9 }} />
               ) : null}
             </View>
           </View>
@@ -183,7 +183,10 @@ export default function ReceiptPdf({ data, p, styleKey }: { data: DocData; p: Do
       );
     return (
       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        <View style={{ width: 92 }}>{c?.logo ? <Image src={c.logo} style={{ width: 34, height: 34 }} /> : null}</View>
+        <View style={{ width: 132, flexDirection: 'row', alignItems: 'center' }}>
+          {c?.logo ? <Image src={c.logo} style={{ width: 32, height: 32, marginRight: 6 }} /> : null}
+          <Text style={{ fontSize: 9, fontWeight: 700 }}>{c?.name ?? ''}</Text>
+        </View>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={{ fontSize: 25, fontWeight: 700, letterSpacing: 14, color: styleKey === '2' ? p.primary : '#111' }}>
             영 수 증
@@ -197,7 +200,7 @@ export default function ReceiptPdf({ data, p, styleKey }: { data: DocData; p: Do
             }}
           />
         </View>
-        <View style={{ width: 92, alignItems: 'flex-end' }}>
+        <View style={{ width: 132, alignItems: 'flex-end' }}>
           <Text style={{ fontSize: 8.5 }}>발행일자 {data.meta.today}</Text>
           <Text style={{ fontSize: 8.5, marginTop: 2 }}>문서번호 {data.meta.docNumber}</Text>
         </View>
@@ -260,7 +263,7 @@ export default function ReceiptPdf({ data, p, styleKey }: { data: DocData; p: Do
           <Text style={{ fontSize: 8, color: '#444' }}>세액 {money(data.totals.vatAmount)}원</Text>
         </View>
 
-        <View style={{ alignItems: 'center', marginTop: 22 }}>
+        <View style={{ position: 'absolute', left: 40, right: 40, bottom: 46, alignItems: 'center' }}>
           <Text style={{ fontSize: 11 }}>{sentence}</Text>
           <Text style={{ fontSize: 9, color: '#444', marginTop: 9 }}>{data.meta.today}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 7 }}>

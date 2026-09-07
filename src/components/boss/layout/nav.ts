@@ -194,7 +194,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   '/boss/estimate': {
     title: '고객 견적서',
-    subtitle: '고객을 고르고 품목 · 금액을 넣으면 견적서 · 거래명세서로 출력됩니다.',
+    subtitle: '고객을 고르고 품목 · 금액을 넣으면 견적서 · 영수증으로 출력됩니다.',
     width: 'wide',
   },
   '/boss/portfolio': {
