@@ -10,6 +10,7 @@
 // 좁은 화면(<lg)에서는 상단 네이비 바(워드마크 + 메뉴 버튼)가 되고,
 // 메뉴 버튼이 같은 내비를 담은 서랍을 연다.
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
@@ -179,16 +180,39 @@ export default function BossSidebar() {
 // ── 조각 ─────────────────────────────────────────────────────
 
 function Wordmark({ compact = false }: { compact?: boolean }) {
+  const size = compact ? 28 : 34;
   return (
-    <Link href="/boss" className={`flex flex-col gap-[3px] !text-boss-rail-text ${compact ? '' : 'px-5'}`}>
-      <span className="font-boss-head text-[21px] font-bold leading-none tracking-[0.04em]">
-        도배르만
-      </span>
-      {!compact && (
-        <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.09em] text-boss-rail-text/55">
-          사장님 전용 · doberman.kr
+    <Link
+      href="/boss"
+      className={`flex items-center gap-2.5 !text-boss-rail-text ${compact ? '' : 'px-5'}`}
+      aria-label="도배르만 사장님 센터 (베타)"
+    >
+      {/* 로고 — 소비자 사이트와 같은 파일. 검은 바탕이라 레일 위에서 타일처럼 보이게 모서리만 살짝 */}
+      <Image
+        src="/logo.png"
+        alt=""
+        width={size}
+        height={size}
+        priority
+        className="shrink-0 rounded-[7px] ring-1 ring-white/15"
+      />
+      <span className="flex min-w-0 flex-col gap-[3px]">
+        <span className="flex items-center gap-2">
+          <span className="font-boss-head text-[21px] font-bold leading-none tracking-[0.04em]">도배르만</span>
+          {/* 베타 딱지 — 로고 옆에 비스듬히 붙인다 */}
+          <span
+            aria-hidden
+            className="inline-block -translate-y-[5px] -rotate-[10deg] rounded-[3px] bg-[#F5B301] px-[5px] py-[2px] font-boss-head text-[9px] font-extrabold leading-none tracking-[0.14em] text-[#1B1B1B] shadow-[0_1px_0_rgba(0,0,0,0.35)]"
+          >
+            BETA
+          </span>
         </span>
-      )}
+        {!compact && (
+          <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.09em] text-boss-rail-text/55">
+            사장님 전용 · doberman.kr
+          </span>
+        )}
+      </span>
     </Link>
   );
 }
