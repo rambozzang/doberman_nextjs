@@ -6,11 +6,15 @@
 // 견적서 · 영수증 인쇄물은 전적으로 이 품목을 읽어 그린다. 웹에는 등록 화면이 없어서
 // 사장님이 품목을 넣을 수 없었고, 그래서 인쇄물이 빈 채로 나왔다.
 //
-// 금액 계산은 앱 estimate_cntr.calculate() 와 똑같이 맞춘다.
-//   단가는 부가세가 포함된 값으로 입력한다.
-//   합계 = 수량 × 단가
-//   비과세(isTaxFree='Y') → 공급가 = 합계, 부가세 = 0
-//   과세                  → 공급가 = floor(합계 / 1.1), 부가세 = 합계 − 공급가
+// 금액 계산은 앱 estimate_cntr 의 calculate() · calculate3() 와 똑같이 맞춘다.
+// 체크는 둘 중 하나만 켜진다(앱 changeTaxFree · changeVat 가 서로를 끈다).
+//
+//   (기본, 둘 다 해제)  단가에 부가세가 들어 있다.
+//                       합계 = 수량 × 단가 · 공급가 = floor(합계 / 1.1) · 부가세 = 합계 − 공급가
+//   비과세 isTaxFree=Y  부가세가 없다.
+//                       합계 = 수량 × 단가 · 공급가 = 합계 · 부가세 = 0
+//   ±과세  isVat=Y      단가는 부가세 별도, 10% 를 얹는다.
+//                       공급가 = 수량 × 단가 · 부가세 = trunc(공급가 × 0.1) · 합계 = 공급가 + 부가세
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -33,13 +37,33 @@ import {
   Tag,
 } from '@/components/boss/ui';
 
-/** 앱 calculate() 와 동일한 금액 계산 */
-export function calcAmounts(quantity: number, unitPrice: number, taxFree: boolean) {
-  const total = Math.max(0, Math.trunc(quantity)) * Math.max(0, Math.trunc(unitPrice));
-  if (taxFree) return { supplyAmount: total, vatAmount: 0, totalAmount: total };
-  const supplyAmount = Math.floor(total / 1.1);
-  return { supplyAmount, vatAmount: total - supplyAmount, totalAmount: total };
+/** 과세 방식 — 앱의 isTaxFree · isVat 두 체크를 하나의 값으로 */
+export type TaxMode = 'included' | 'taxFree' | 'addVat';
+
+export function taxModeOf(isTaxFree?: string | null, isVat?: string | null): TaxMode {
+  if (isTaxFree === 'Y') return 'taxFree';
+  if (isVat === 'Y') return 'addVat';
+  return 'included';
 }
+
+/** 앱 calculate()(기본 · 비과세) · calculate3()(±과세) 와 동일한 금액 계산 */
+export function calcAmounts(quantity: number, unitPrice: number, mode: TaxMode) {
+  const base = Math.max(0, Math.trunc(quantity)) * Math.max(0, Math.trunc(unitPrice));
+  if (mode === 'addVat') {
+    // 공급가에 10% 를 얹는다 — 앱은 toInt() 로 소수점을 버린다
+    const vatAmount = Math.trunc(base * 0.1);
+    return { supplyAmount: base, vatAmount, totalAmount: base + vatAmount };
+  }
+  if (mode === 'taxFree') return { supplyAmount: base, vatAmount: 0, totalAmount: base };
+  const supplyAmount = Math.floor(base / 1.1);
+  return { supplyAmount, vatAmount: base - supplyAmount, totalAmount: base };
+}
+
+const TAX_MODE_LABEL: Record<TaxMode, string> = {
+  included: '부가세 포함',
+  taxFree: '비과세',
+  addVat: '±과세 (부가세 10% 추가)',
+};
 
 function won(n?: number | null) {
   if (n == null || Number.isNaN(n)) return '₩0';
@@ -59,7 +83,7 @@ type FormState = {
   unit: string;
   quantity: string;
   unitPrice: string;
-  taxFree: boolean;
+  taxMode: TaxMode;
   memo: string;
 };
 
@@ -69,7 +93,7 @@ const EMPTY_FORM: FormState = {
   unit: '',
   quantity: '1',
   unitPrice: '',
-  taxFree: false,
+  taxMode: 'included',
   memo: '',
 };
 
@@ -130,8 +154,8 @@ export default function EstimateItemsPanel({
     onTotalChange?.(totals.total);
   }, [totals.total, onTotalChange]);
 
-  // 입력 중인 값으로 미리 계산해 보여 준다 (앱과 같이 단가는 부가세 포함)
-  const preview = calcAmounts(toNumber(form.quantity), toNumber(form.unitPrice), form.taxFree);
+  // 입력 중인 값으로 미리 계산해 보여 준다 — 과세 방식에 따라 식이 달라진다
+  const preview = calcAmounts(toNumber(form.quantity), toNumber(form.unitPrice), form.taxMode);
 
   // 앱과 같은 상한 — 인쇄 서식이 14행이라 앱도 "품목은 최대 14개까지" 로 막는다
   const MAX_ITEMS = 14;
@@ -154,7 +178,7 @@ export default function EstimateItemsPanel({
       unit: it.unit ?? '',
       quantity: String(it.quantity ?? 0),
       unitPrice: String(it.unitPrice ?? 0),
-      taxFree: it.isTaxFree === 'Y',
+      taxMode: taxModeOf(it.isTaxFree, it.isVat),
       memo: it.memo ?? '',
     });
     setFormOpen(true);
@@ -176,7 +200,7 @@ export default function EstimateItemsPanel({
       toast.error('단가를 입력하세요.');
       return;
     }
-    const amounts = calcAmounts(quantity, unitPrice, form.taxFree);
+    const amounts = calcAmounts(quantity, unitPrice, form.taxMode);
     setSaving(true);
     try {
       const payload = {
@@ -188,9 +212,9 @@ export default function EstimateItemsPanel({
         unit: form.unit.trim(),
         quantity,
         unitPrice,
-        isTaxFree: (form.taxFree ? 'Y' : 'N') as 'Y' | 'N',
-        // 단가에 부가세가 포함돼 있으므로 "부가세 별도 추가" 플래그는 앱과 같이 N 이다
-        isVat: 'N' as 'Y' | 'N',
+        // 앱과 같은 두 플래그 — 둘 중 하나만 Y 가 된다
+        isTaxFree: (form.taxMode === 'taxFree' ? 'Y' : 'N') as 'Y' | 'N',
+        isVat: (form.taxMode === 'addVat' ? 'Y' : 'N') as 'Y' | 'N',
         memo: form.memo.trim(),
         supplyAmount: amounts.supplyAmount,
         vatAmount: amounts.vatAmount,
@@ -246,7 +270,7 @@ export default function EstimateItemsPanel({
 
       <div className="flex flex-wrap items-center gap-2 border-b border-boss-border px-5 py-3">
         <p className="text-[12px] text-boss-text-secondary">
-          단가는 부가세를 포함해 입력합니다. 품목은 최대 {MAX_ITEMS}개까지 넣을 수 있습니다.
+          단가는 부가세 포함이 기본입니다. 비과세 · ±과세를 고르면 계산이 달라집니다. 품목은 최대 {MAX_ITEMS}개까지.
         </p>
         <div className="ml-auto flex items-center gap-1.5">
           <Button
@@ -333,7 +357,7 @@ export default function EstimateItemsPanel({
               label="단가"
               required
               inputMode="numeric"
-              hint="부가세 포함"
+              hint={TAX_MODE_LABEL[form.taxMode]}
               value={form.unitPrice ? toNumber(form.unitPrice).toLocaleString('ko-KR') : ''}
               onChange={(e) => setForm((f) => ({ ...f, unitPrice: e.target.value }))}
             />
@@ -348,13 +372,22 @@ export default function EstimateItemsPanel({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-boss-border pt-3">
-            <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-boss-text">
+            {/* 앱과 같은 두 체크 — 하나를 켜면 다른 하나는 꺼진다 */}
+            <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-boss-text" title="부가세 없음. 공급가 = 합계">
               <input
                 type="checkbox"
-                checked={form.taxFree}
-                onChange={(e) => setForm((f) => ({ ...f, taxFree: e.target.checked }))}
+                checked={form.taxMode === 'taxFree'}
+                onChange={(e) => setForm((f) => ({ ...f, taxMode: e.target.checked ? 'taxFree' : 'included' }))}
               />
               비과세
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-boss-text" title="단가는 부가세 별도. 공급가에 10% 를 얹는다">
+              <input
+                type="checkbox"
+                checked={form.taxMode === 'addVat'}
+                onChange={(e) => setForm((f) => ({ ...f, taxMode: e.target.checked ? 'addVat' : 'included' }))}
+              />
+              ±과세
             </label>
             <span className="text-[12px] text-boss-text-secondary">
               공급가{' '}
@@ -388,7 +421,7 @@ export default function EstimateItemsPanel({
       ) : items.length === 0 ? (
         <EmptyState
           title="등록된 품목이 없습니다"
-          description="품목을 넣어야 견적서 · 영수증에 내역과 금액이 찍힙니다. 단가는 부가세를 포함해 입력하세요."
+          description="품목을 넣어야 견적서 · 영수증에 내역과 금액이 찍힙니다. 단가는 부가세 포함이 기본이고, 비과세 · ±과세를 고를 수 있습니다."
           action={
             <Button variant="primary" size="sm" icon={Plus} onClick={openCreate}>
               품목 추가
@@ -419,6 +452,11 @@ export default function EstimateItemsPanel({
                       {it.isTaxFree === 'Y' && (
                         <Tag tone="neutral" className="ml-1.5">
                           비과세
+                        </Tag>
+                      )}
+                      {it.isTaxFree !== 'Y' && it.isVat === 'Y' && (
+                        <Tag tone="info" className="ml-1.5">
+                          ±과세
                         </Tag>
                       )}
                       {it.memo ? (
