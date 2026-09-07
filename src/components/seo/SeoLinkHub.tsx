@@ -23,6 +23,7 @@ const GROUPS: Array<{ title: string; links: Array<{ label: string; href: string 
       { label: '도배 종류', href: '/도배-종류' },
       { label: '아파트 도배', href: '/아파트-도배' },
       { label: '저렴한 도배', href: '/저렴한-도배' },
+      { label: '도배 용품', href: '/도배-용품' },
     ],
   },
   {

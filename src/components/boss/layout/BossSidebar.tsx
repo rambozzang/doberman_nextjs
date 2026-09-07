@@ -12,10 +12,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useBossAuth } from '@/hooks/useBossAuth';
-import { SECTIONS, isNavActive, type NavItem } from './nav';
+import { SECTIONS, isNavActive, type NavItem, type NavSection } from './nav';
+import { currentBossIsAdmin } from '@/lib/boss/admin';
 import { useBossPortal } from './BossPortalContext';
 import type { BossSubscriptionStatusResponse } from '@/types/boss-billing';
 
@@ -23,6 +24,7 @@ const RAIL = 'bg-boss-rail text-boss-rail-text';
 
 export default function BossSidebar() {
   const pathname = usePathname();
+  const sections = useVisibleSections();
   const router = useRouter();
   const { bossAuth, bossLogout } = useBossAuth();
   const { subscription } = useBossPortal();
@@ -68,7 +70,7 @@ export default function BossSidebar() {
         <Wordmark />
 
         <nav aria-label="사장님 메뉴" className="boss-rail-scroll min-h-0 flex-1 overflow-y-auto">
-          {SECTIONS.map((section, idx) => (
+          {sections.map((section, idx) => (
             <div key={section.title} className={idx > 0 ? 'mt-2.5' : ''}>
               <p className="px-5 pb-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-rail-text/45">
                 {section.title}
@@ -139,7 +141,7 @@ export default function BossSidebar() {
             </div>
 
             <div className="boss-rail-scroll min-h-0 flex-1 overflow-y-auto">
-              {SECTIONS.map((section, idx) => (
+              {sections.map((section, idx) => (
                 <div key={section.title} className={idx > 0 ? 'mt-4' : ''}>
                   <p className="px-5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-rail-text/45">
                     {section.title}
@@ -191,8 +193,39 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** 운영자가 아니면 adminOnly 항목을 뺀다 — 마운트 뒤에 판정해 서버 · 첫 화면이 어긋나지 않게 */
+function useVisibleSections(): NavSection[] {
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    setAdmin(currentBossIsAdmin());
+  }, []);
+  return useMemo(
+    () =>
+      SECTIONS.map((s) => ({ ...s, items: s.items.filter((it) => !it.adminOnly || admin) })).filter(
+        (s) => s.items.length > 0
+      ),
+    [admin]
+  );
+}
+
 function RailLink({ item, active, touch = false }: { item: NavItem; active: boolean; touch?: boolean }) {
   const Icon = item.icon;
+  const cls = [
+    'flex w-full items-center gap-2.5 whitespace-nowrap border-l-[3px] px-5 text-[13.5px] transition-colors',
+    touch ? 'min-h-[44px] py-2.5' : 'py-[6px]',
+    active
+      ? 'border-boss-rail-active bg-white/[0.14] !text-boss-rail-text'
+      : 'border-transparent !text-boss-rail-text/75 hover:bg-white/10 hover:!text-boss-rail-text',
+  ].join(' ');
+  if (item.external) {
+    return (
+      <a href={item.href} target="_blank" rel="noopener" className={cls}>
+        <Icon size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />
+        <span className="flex-1">{item.label}</span>
+        <span className="text-[10px] uppercase tracking-[0.08em] opacity-50">site</span>
+      </a>
+    );
+  }
   return (
     <Link
       href={item.href}
