@@ -26,7 +26,7 @@ function passesOnBossHost(pathname: string): boolean {
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/fonts/') ||
-    /\.[a-z0-9]{2,5}$/i.test(pathname) // logo.png · manifest 등 파일
+    /\.[a-z0-9]{2,12}$/i.test(pathname) // logo.png · manifest.webmanifest 등 파일
   );
 }
 
