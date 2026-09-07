@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-27",
+  "partner": {
+    "name": "자재로",
+    "note": "사업자 회원 가입 후 로그인하면 사업자 단가가 표시됩니다.",
+    "homeUrl": "https://zzro.kr/"
+  },
+  "categories": [
+    {
+      "code": "GLUE",
+      "name": "풀 · 본드",
+      "icon": "water_drop"
+    },
+    {
+      "code": "BASE",
+      "name": "초배 · 부직포",
+      "icon": "layers"
+    },
+    {
+      "code": "TOOL",
+      "name": "도배 공구",
+      "icon": "handyman"
+    },
+    {
+      "code": "WALLPAPER",
+      "name": "벽지",
+      "icon": "wallpaper"
+    }
+  ],
+  "items": [
+    {
+      "id": "glue-paste",
+      "category": "GLUE",
+      "name": "도배용 풀",
+      "spec": "시공용 분말/액상",
+      "unit": "봉",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "glue-bond-205",
+      "category": "GLUE",
+      "name": "205 본드",
+      "spec": "초배 · 부직포 접착용",
+      "unit": "통",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "glue-bond-general",
+      "category": "GLUE",
+      "name": "도배용 본드",
+      "spec": "일반 접착용",
+      "unit": "통",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "glue-insul-bond",
+      "category": "GLUE",
+      "name": "단열초배지 전용 본드",
+      "spec": "단열초배 시공용",
+      "unit": "통",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "glue-primer",
+      "category": "GLUE",
+      "name": "프라이머 · 바인더",
+      "spec": "바탕면 처리용",
+      "unit": "통",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "glue-silicone",
+      "category": "GLUE",
+      "name": "수성 실리콘",
+      "spec": "마감 코킹용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+
+    {
+      "id": "base-chobae",
+      "category": "BASE",
+      "name": "초배지",
+      "spec": "일반 초배",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "base-insul-4t",
+      "category": "BASE",
+      "name": "단열 초배지 4mm",
+      "spec": "1m × 30m",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "base-insul-5t",
+      "category": "BASE",
+      "name": "단열 초배지 5mm",
+      "spec": "1m × 30m",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "base-nonwoven",
+      "category": "BASE",
+      "name": "부직포",
+      "spec": "바탕 보강용",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "base-nonwoven-charcoal",
+      "category": "BASE",
+      "name": "숯 부직포",
+      "spec": "탈취 · 바탕 보강용",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "base-moisture",
+      "category": "BASE",
+      "name": "방습지",
+      "spec": "습기 차단용",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+    {
+      "id": "base-unyong",
+      "category": "BASE",
+      "name": "운용지",
+      "spec": "이음 보강용",
+      "unit": "m",
+      "url": "https://zzro.kr/product-subsidiary-all"
+    },
+
+    {
+      "id": "tool-hera-pvc",
+      "category": "TOOL",
+      "name": "PVC 헤라",
+      "spec": "정배 마감용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-hera-steel",
+      "category": "TOOL",
+      "name": "쇠 헤라",
+      "spec": "구벽지 제거 · 마감용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-scraper",
+      "category": "TOOL",
+      "name": "스크래퍼",
+      "spec": "바탕 정리용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-brush-jeongbae",
+      "category": "TOOL",
+      "name": "정배솔",
+      "spec": "벽지 압착용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-brush-pul",
+      "category": "TOOL",
+      "name": "풀솔",
+      "spec": "전문가용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-roller-joint",
+      "category": "TOOL",
+      "name": "쪼인트 롤러",
+      "spec": "이음매 압착용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-knife",
+      "category": "TOOL",
+      "name": "카타칼 · 카타날",
+      "spec": "재단용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+    {
+      "id": "tool-silicone-gun",
+      "category": "TOOL",
+      "name": "실리콘건",
+      "spec": "코킹 시공용",
+      "unit": "개",
+      "url": "https://zzro.kr/product-subsidiary-hardware"
+    },
+
+    {
+      "id": "wp-all",
+      "category": "WALLPAPER",
+      "name": "벽지 전체 보기",
+      "spec": "LX · 코스모스 · DID 등",
+      "unit": "롤",
+      "isCategoryLink": true,
+      "url": "https://zzro.kr/product"
+    },
+    {
+      "id": "wp-lx-diamant",
+      "category": "WALLPAPER",
+      "name": "LX 디아망",
+      "spec": "실크 벽지",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-papering-LX-highsilk"
+    },
+    {
+      "id": "wp-lx-retar",
+      "category": "WALLPAPER",
+      "name": "LX 방염벽지",
+      "spec": "방염 인증",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-papering-LX-retar"
+    },
+    {
+      "id": "wp-cosmos-soho",
+      "category": "WALLPAPER",
+      "name": "코스모스 소호",
+      "spec": "실크 벽지",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-papering-cosmos-soho"
+    },
+    {
+      "id": "wp-did-thefair",
+      "category": "WALLPAPER",
+      "name": "DID 더페어",
+      "spec": "실크 벽지",
+      "unit": "롤",
+      "url": "https://zzro.kr/product-papering-did-thefair"
+    }
+  ]
+}
