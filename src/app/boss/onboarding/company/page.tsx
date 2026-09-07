@@ -15,6 +15,7 @@ import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossCompanyData } from '@/types/boss';
 import { Button, Field, Panel, Skeleton, TextareaField } from '@/components/boss/ui';
+import PostcodeField from '@/components/boss/PostcodeField';
 
 // 견적 수신 지역: 최대 3개까지 선택. '전국'은 모든 지역을 의미하므로 단독 선택만 가능하다.
 const MAX_RECEIVE_REGIONS = 3;
@@ -291,15 +292,17 @@ export default function BossOnboardingCompanyPage() {
         </Panel>
 
         <Panel kicker="주소" title="사업장 주소">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)]">
-            <Field
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[250px_minmax(0,1fr)]">
+            {/* 우편번호 창(카카오)에서 고르면 우편번호 · 주소가 채워진다 — 앱과 같다 */}
+            <PostcodeField
               id="ob-post"
-              label="우편번호"
-              type="text"
-              inputMode="numeric"
               value={post}
-              onChange={(e) => setPost(e.target.value)}
-              placeholder="12345"
+              onChange={setPost}
+              onSelect={({ zonecode, address }) => {
+                setPost(zonecode);
+                setAddress1(address);
+              }}
+              detailInputId="ob-address2"
             />
             <Field
               id="ob-address1"

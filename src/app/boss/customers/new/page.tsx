@@ -21,6 +21,7 @@ import {
   DescRow,
   Tag,
 } from '@/components/boss/ui';
+import PostcodeField from '@/components/boss/PostcodeField';
 import { CUSTOMER_STATUS_OPTIONS, customerStatus } from '@/lib/boss/customerStatus';
 import { useSubmitHotkey } from '@/components/boss/layout/BossSearchContext';
 import toast from 'react-hot-toast';
@@ -172,13 +173,15 @@ export default function BossOrderQuickPage() {
 
           <h3 className="boss-section-title mb-3 mt-6 border-t border-boss-border-row pt-5">현장</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Field
+            {/* 우편번호 창(카카오)에서 고르면 우편번호 · 주소가 채워진다 — 앱과 같다 */}
+            <PostcodeField
               id="post"
-              label="우편번호"
-              inputMode="numeric"
               value={form.post}
-              onChange={(e) => set('post', e.target.value)}
-              placeholder="12345"
+              onChange={(v) => set('post', v)}
+              onSelect={({ zonecode, address }) => {
+                setForm((p) => ({ ...p, post: zonecode, address1: address }));
+              }}
+              detailInputId="address2"
             />
             <Field
               id="address1"

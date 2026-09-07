@@ -29,6 +29,7 @@ import {
   Skeleton,
   TextareaField,
 } from '@/components/boss/ui';
+import PostcodeField from '@/components/boss/PostcodeField';
 
 export default function BossMyCompanyPage() {
   const router = useRouter();
@@ -432,15 +433,17 @@ export default function BossMyCompanyPage() {
 
         {/* 주소 */}
         <Panel kicker="주소" title="사업장 주소">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)]">
-            <Field
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[250px_minmax(0,1fr)]">
+            {/* 우편번호 창(카카오)에서 고르면 우편번호 · 주소가 채워진다 — 앱과 같다 */}
+            <PostcodeField
               id="co-post"
-              label="우편번호"
-              type="text"
-              inputMode="numeric"
               value={post}
-              onChange={(e) => setPost(e.target.value)}
-              placeholder="12345"
+              onChange={setPost}
+              onSelect={({ zonecode, address }) => {
+                setPost(zonecode);
+                setAddress1(address);
+              }}
+              detailInputId="co-address2"
             />
             <Field
               id="co-address1"
