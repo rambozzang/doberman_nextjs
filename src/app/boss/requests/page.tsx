@@ -21,7 +21,13 @@ import {
   AlertBanner,
 } from '@/components/boss/ui';
 import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
-import { RefreshCw } from 'lucide-react';
+import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
+import { bossCompanyApi } from '@/lib/api/boss/company';
+import { BossAuthManager } from '@/lib/bossAuth';
+import RegionPicker from '@/components/boss/RegionPicker';
+import { formatRegions, matchesMyRegions, isNationwide } from '@/lib/boss/regions';
+import toast from 'react-hot-toast';
+import { MapPin, RefreshCw } from 'lucide-react';
 
 type StatusFilter = 'all' | 'new' | 'progress' | 'done';
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet';
@@ -92,16 +98,51 @@ export default function BossRequestListPage() {
     }
   }, []);
 
+  // ── 내 견적 수신 지역 ──
+  // 사장님에게 가장 중요한 정보다: 어느 지역 요청을 받을 수 있는지.
+  const { company, refreshCompany } = useBossPortal();
+  const myRegions = company?.region ?? '';
+  const [regionOpen, setRegionOpen] = useState(false);
+  const [regionSaving, setRegionSaving] = useState(false);
+  const [onlyMyRegion, setOnlyMyRegion] = useState(true);
+
+  const saveRegions = async (regions: string) => {
+    const companyId = company?.id ?? BossAuthManager.getUserInfo()?.companyId;
+    if (!companyId) {
+      toast.error('회사 정보가 없습니다. 설정에서 회사를 먼저 등록해 주세요.');
+      return;
+    }
+    setRegionSaving(true);
+    try {
+      const res = await bossCompanyApi.updateRegion(companyId, regions);
+      if (res.success !== false) {
+        toast.success('견적 수신 지역을 저장했습니다.');
+        setRegionOpen(false);
+        refreshCompany?.();
+      } else {
+        toast.error(res.message || res.error || '지역을 저장하지 못했습니다.');
+      }
+    } catch {
+      toast.error('네트워크 오류로 지역을 저장하지 못했습니다.');
+    } finally {
+      setRegionSaving(false);
+    }
+  };
+
   useEffect(() => {
     void load(page);
   }, [load, page]);
 
   useEffect(() => {
     setPage(1);
-  }, [tab, keyword]);
+  }, [tab, keyword, onlyMyRegion]);
 
   const filtered = useMemo(() => {
     let list = items;
+    // 내 수신 지역 밖의 요청은 답변해도 매칭되기 어렵다 — 기본으로 걸러 준다
+    if (onlyMyRegion && myRegions) {
+      list = list.filter((it) => matchesMyRegions(it.region, myRegions));
+    }
     if (tab !== 'all') {
       list = list.filter((it) => {
         const s = (it.status ?? '').toLowerCase();
@@ -120,7 +161,7 @@ export default function BossRequestListPage() {
       );
     }
     return list;
-  }, [items, tab, keyword]);
+  }, [items, tab, keyword, onlyMyRegion, myRegions]);
 
   const counts = useMemo(() => {
     const c = { all: items.length, new: 0, progress: 0, done: 0 };
@@ -137,6 +178,51 @@ export default function BossRequestListPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 내 견적 수신 지역 — 이 지역의 요청만 알림이 오고, 답변해도 채택될 확률이 높다 */}
+      <div
+        className={`flex flex-wrap items-center gap-x-3 gap-y-2 border px-4 py-3 ${
+          myRegions ? 'border-boss-border bg-boss-surface' : 'border-boss-warning/40 bg-boss-warning/10'
+        }`}
+      >
+        <MapPin size={15} strokeWidth={1.75} className="shrink-0 text-boss-text-secondary" />
+        <span className="boss-mono-label">내 견적 수신 지역</span>
+        {myRegions ? (
+          <span className="text-[14px] font-semibold text-boss-text">{formatRegions(myRegions)}</span>
+        ) : (
+          <span className="text-[13px] font-semibold text-boss-warning">
+            아직 지정하지 않았습니다 — 지역을 정해야 새 요청 알림을 받습니다
+          </span>
+        )}
+        {isNationwide(myRegions) && (
+          <span className="text-[12px] text-boss-text-secondary">
+            모든 지역의 요청을 받습니다. 알림이 많으면 시 · 도를 골라 좁히세요.
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          {myRegions ? (
+            <label className="flex cursor-pointer items-center gap-1.5 text-[12.5px] text-boss-text-secondary">
+              <input
+                type="checkbox"
+                checked={onlyMyRegion}
+                onChange={(e) => setOnlyMyRegion(e.target.checked)}
+              />
+              내 지역만 보기
+            </label>
+          ) : null}
+          <Button variant="secondary" size="sm" onClick={() => setRegionOpen(true)}>
+            지역 {myRegions ? '변경' : '설정'}
+          </Button>
+        </div>
+      </div>
+
+      <RegionPicker
+        open={regionOpen}
+        value={myRegions}
+        saving={regionSaving}
+        onCancel={() => setRegionOpen(false)}
+        onSave={(r) => void saveRegions(r)}
+      />
+
       {/* 필터 한 줄 — 상태 탭 · (헤더 검색) · 우측 건수 */}
       <div className="flex flex-wrap items-center gap-2.5">
         <ListTabs

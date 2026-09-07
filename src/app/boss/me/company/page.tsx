@@ -11,6 +11,8 @@
 //   로고 · 도장 업로드는 회사 id 가 있어야 동작한다(API 가 companyId 를 받는다) —
 //   등록 전에는 버튼을 잠그고 그 이유를 적는다.
 
+import RegionPicker from '@/components/boss/RegionPicker';
+import { formatRegions } from '@/lib/boss/regions';
 import { FormEvent, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -47,6 +49,7 @@ export default function BossMyCompanyPage() {
   const [type, setType] = useState('');
   const [kind, setKind] = useState('');
   const [region, setRegion] = useState('');
+  const [regionOpen, setRegionOpen] = useState(false);
   const [intro, setIntro] = useState('');
   const [url, setUrl] = useState('');
   const [bigo, setBigo] = useState('');
@@ -353,15 +356,23 @@ export default function BossMyCompanyPage() {
               placeholder="123-45-67890"
               className="[&_input]:font-boss-head [&_input]:tabular-nums"
             />
-            <Field
-              id="co-region"
-              label="활동 지역"
-              type="text"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              placeholder="서울 강남구"
-              hint="견적 요청 알림을 받을 지역입니다."
-            />
+            {/* 견적 수신 지역 — 자유 입력이 아니라 시 · 도 선택(최대 3개). 앱과 같은 규칙 */}
+            <div>
+              <FieldLabel>견적 수신 지역</FieldLabel>
+              <button
+                type="button"
+                onClick={() => setRegionOpen(true)}
+                className="boss-input flex items-center justify-between text-left"
+              >
+                <span className={region ? 'text-boss-text' : 'text-boss-text-muted'}>
+                  {region ? formatRegions(region) : '지역을 고르세요'}
+                </span>
+                <span className="text-[12px] text-boss-primary">고르기</span>
+              </button>
+              <p className="mt-1 text-[11.5px] text-boss-text-secondary">
+                이 지역의 견적 요청 알림을 받습니다. 최대 3개, 전국은 단독 선택입니다.
+              </p>
+            </div>
             <Field
               id="co-type"
               label="업태"
@@ -521,6 +532,15 @@ export default function BossMyCompanyPage() {
           </p>
         </section>
       </aside>
+      <RegionPicker
+        open={regionOpen}
+        value={region}
+        onCancel={() => setRegionOpen(false)}
+        onSave={(r) => {
+          setRegion(r);
+          setRegionOpen(false);
+        }}
+      />
     </form>
   );
 }

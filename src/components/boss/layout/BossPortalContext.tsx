@@ -18,12 +18,15 @@ type PortalValue = {
   subscription: BossSubscriptionStatusResponse | null;
   /** 구독 상태를 다시 읽는다 — 결제·취소 화면이 부른다 */
   refreshSubscription: () => void;
+  /** 회사 정보를 다시 읽는다 — 지역 · 회사 정보를 바꾼 화면이 부른다 */
+  refreshCompany: () => void;
 };
 
 const PortalCtx = createContext<PortalValue>({
   company: null,
   subscription: null,
   refreshSubscription: () => {},
+  refreshCompany: () => {},
 });
 
 /** BossChrome 안에서만 의미가 있다 — 밖에서 부르면 전부 null 이다. */
@@ -36,6 +39,7 @@ export function BossPortalProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<BossCompanyData | null>(null);
   const [subscription, setSubscription] = useState<BossSubscriptionStatusResponse | null>(null);
   const [tick, setTick] = useState(0);
+  const [companyTick, setCompanyTick] = useState(0);
 
   const companyId = bossAuth.userInfo?.companyId;
   const authed = bossAuth.isAuthenticated;
@@ -56,7 +60,7 @@ export function BossPortalProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [authed, companyId]);
+  }, [authed, companyId, companyTick]);
 
   useEffect(() => {
     if (!authed) {
@@ -78,7 +82,12 @@ export function BossPortalProvider({ children }: { children: ReactNode }) {
 
   return (
     <PortalCtx.Provider
-      value={{ company, subscription, refreshSubscription: () => setTick((n) => n + 1) }}
+      value={{
+        company,
+        subscription,
+        refreshSubscription: () => setTick((n) => n + 1),
+        refreshCompany: () => setCompanyTick((n) => n + 1),
+      }}
     >
       {children}
     </PortalCtx.Provider>

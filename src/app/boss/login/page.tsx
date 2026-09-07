@@ -18,16 +18,32 @@ import type { BossLoginRequest } from '@/types/boss';
 import { AlertBanner, Button, CheckLine, FieldLabel } from '@/components/boss/ui';
 import { AuthWordmark } from '@/components/boss/AuthFrame';
 
+/** 저장한 아이디 (비밀번호는 저장하지 않는다) */
+const SAVED_ID_KEY = 'boss_saved_user_id';
+
 export default function BossLoginPage() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  // 아이디 저장 — 다음 방문 때 아이디를 채워 둔다(비밀번호는 저장하지 않는다)
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 세션이 끊겨 여기로 밀려온 경우 이유를 알려 준다 (bossApi 가 ?reason= 을 붙인다)
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 저장해 둔 아이디가 있으면 채우고, 비밀번호로 바로 넘어가게 한다
+    try {
+      const saved = window.localStorage.getItem(SAVED_ID_KEY);
+      // 처음 오는 사장님은 켜진 채로 둔다(대부분 자기 폰 · 자기 컴퓨터라 저장이 편하다).
+      // 끄고 로그인하면 저장된 아이디를 지운다.
+      if (saved) setUserId(saved);
+    } catch {
+      // 저장소를 못 쓰면 그냥 빈 칸으로 둔다
+    }
+  }, []);
 
   useEffect(() => {
     const reason = new URLSearchParams(window.location.search).get('reason');
@@ -58,6 +74,13 @@ export default function BossLoginPage() {
       };
       const res = await bossAuthApi.login(payload);
       if (res.success !== false && res.data?.token) {
+        // 로그인에 성공했을 때만 아이디를 저장한다
+        try {
+          if (remember) window.localStorage.setItem(SAVED_ID_KEY, userId.trim());
+          else window.localStorage.removeItem(SAVED_ID_KEY);
+        } catch {
+          // 저장 실패는 로그인을 막지 않는다
+        }
         BossAuthManager.setToken(res.data.token);
         if (res.data.userInfo) {
           BossAuthManager.setUserInfo(res.data.userInfo);
@@ -133,7 +156,7 @@ export default function BossLoginPage() {
 
           <div className="mt-4">
             <CheckLine checked={remember} onChange={setRemember}>
-              로그인 상태 유지
+              아이디 저장
             </CheckLine>
           </div>
 
