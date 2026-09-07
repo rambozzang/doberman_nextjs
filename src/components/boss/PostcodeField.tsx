@@ -206,6 +206,7 @@ export default function PostcodeField({
           placeholder="12345"
           className="min-w-0 flex-1"
           maxLength={5}
+          hideCounter
         />
         <Button type="button" variant="secondary" icon={Search} onClick={() => setOpen(true)} className="shrink-0">
           주소 찾기

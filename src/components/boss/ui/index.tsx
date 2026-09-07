@@ -1365,6 +1365,7 @@ export function Field({
   suffix,
   id,
   className = '',
+  hideCounter = false,
   ...rest
 }: {
   label: string;
@@ -1372,9 +1373,11 @@ export function Field({
   hint?: ReactNode;
   suffix?: string;
   className?: string;
+  /** 글자 수를 감춘다 — 옆에 버튼이 붙는 줄에서는 칸 아래 글자 수가 버튼을 밀어낸다 */
+  hideCounter?: boolean;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   // maxLength 가 있으면 "n/최대" 를 오른쪽에 보여 준다 — 어디까지 쓸 수 있는지 사장님이 바로 안다
-  const counter = fieldCounter(rest.value, rest.maxLength);
+  const counter = hideCounter ? null : fieldCounter(rest.value, rest.maxLength);
   return (
     <div className={className}>
       <FieldLabel required={required} htmlFor={id}>
@@ -1456,14 +1459,16 @@ export function TextareaField({
   hint,
   id,
   className = '',
+  hideCounter = false,
   ...rest
 }: {
   label: string;
   required?: boolean;
   hint?: ReactNode;
   className?: string;
+  hideCounter?: boolean;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const counter = fieldCounter(rest.value, rest.maxLength);
+  const counter = hideCounter ? null : fieldCounter(rest.value, rest.maxLength);
   return (
     <div className={className}>
       <FieldLabel required={required} htmlFor={id}>

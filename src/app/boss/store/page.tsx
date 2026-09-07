@@ -286,6 +286,7 @@ export default function BossStorePage() {
                 placeholder="예) 도배풀, 실크벽지, 초배지, 도배 헤라"
                 className="min-w-[220px] flex-1"
                 maxLength={100}
+                hideCounter
               />
               <SelectField
                 id="store-category"
