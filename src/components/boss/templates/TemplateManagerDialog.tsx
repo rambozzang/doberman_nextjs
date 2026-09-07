@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { X, Plus, Lock, Pencil, Trash2, Check } from 'lucide-react';
 import { bossTemplatesApi } from '@/lib/api/boss/templates';
 import { getBossCustId } from '@/lib/api/boss/as';
+import { mergeWithDefaults } from '@/lib/boss/defaultTemplates';
 import type { BossTemplate, BossTemplateFormValue } from '@/types/boss-templates';
 import RichEditor from '@/components/boss/RichEditor';
 import { Button, Field, FieldLabel, ConfirmDialog, Tag } from '@/components/boss/ui';
@@ -26,20 +27,17 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** 양식 목록을 서버에서 읽어 정렬해 준다 — 답변 화면과 대화상자가 같이 쓴다 */
+/** 양식 목록 — 기본 2개(앱과 같은 글) + 서버에 저장한 것. 답변 화면과 대화상자가 같이 쓴다 */
 export async function loadTemplates(): Promise<{ list: BossTemplate[]; error?: string }> {
   const cid = getBossCustId();
-  if (!cid) return { list: [], error: '로그인 정보가 없습니다.' };
+  if (!cid) return { list: mergeWithDefaults([]), error: '로그인 정보가 없습니다.' };
   try {
     const res = await bossTemplatesApi.list(cid);
-    if (!res.success) return { list: [], error: res.message || '양식을 불러오지 못했습니다.' };
-    const list = ((res.data ?? []) as BossTemplate[]).slice().sort((a, b) => {
-      const so = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-      return so !== 0 ? so : String(a.id).localeCompare(String(b.id));
-    });
-    return { list };
+    // 서버가 실패해도 기본 양식 2개는 남긴다 — 양식이 하나도 없는 사장님도 답변할 수 있어야 한다
+    if (!res.success) return { list: mergeWithDefaults([]), error: res.message || '양식을 불러오지 못했습니다.' };
+    return { list: mergeWithDefaults((res.data ?? []) as BossTemplate[]) };
   } catch {
-    return { list: [], error: '양식을 불러오지 못했습니다.' };
+    return { list: mergeWithDefaults([]), error: '양식을 불러오지 못했습니다.' };
   }
 }
 

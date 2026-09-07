@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Inbox, Lock, Copy } from 'lucide-react';
 import { bossTemplatesApi } from '@/lib/api/boss/templates';
 import { getBossCustId } from '@/lib/api/boss/as';
+import { mergeWithDefaults } from '@/lib/boss/defaultTemplates';
 import type { BossTemplate, BossTemplateFormValue } from '@/types/boss-templates';
 import RichEditor from '@/components/boss/RichEditor';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
@@ -111,18 +112,14 @@ export default function BossTemplatesPage() {
     try {
       const res = await bossTemplatesApi.list(cid);
       if (res.success) {
-        const list = (res.data ?? []) as BossTemplate[];
-        const sorted = [...list].sort((a, b) => {
-          const so = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-          if (so !== 0) return so;
-          return String(a.id).localeCompare(String(b.id));
-        });
-        setTemplates(sorted);
+        // 기본 2개(앱과 같은 글)가 맨 앞, 그 뒤에 내가 만든 양식
+        setTemplates(mergeWithDefaults((res.data ?? []) as BossTemplate[]));
       } else {
-        setTemplates([]);
+        setTemplates(mergeWithDefaults([]));
         setError(res.message || '템플릿을 불러오지 못했습니다.');
       }
     } catch {
+      setTemplates(mergeWithDefaults([]));
       setError('템플릿을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
