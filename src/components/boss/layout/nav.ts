@@ -31,7 +31,6 @@ import {
   PenTool,
   Megaphone,
   FileCheck2,
-  MessageSquareReply,
   LayoutTemplate,
   ShoppingBag,
   type LucideIcon,
@@ -70,14 +69,10 @@ export const SECTIONS: NavSection[] = [
         href: "/boss/requests",
         label: "웹견적 요청",
         icon: Globe,
-        exclude: ["/boss/requests/my"],
       },
-      {
-        href: "/boss/requests/my",
-        label: "나의 견적",
-        icon: MessageSquareReply,
-      },
-      { href: "/boss/templates", label: "웹견적서 관리", icon: LayoutTemplate },
+      // "나의 견적" 은 웹견적 요청 화면의 "내가 답변함" 탭으로 합쳤다(2026-09-08).
+      // 같은 요청이 두 메뉴로 갈라져 사장님이 헷갈렸다. 주소(/boss/requests/my)는 넘겨주기만 한다.
+      { href: "/boss/templates", label: "답변 양식", icon: LayoutTemplate },
     ],
   },
   {
@@ -223,13 +218,13 @@ const PAGE_META: Record<string, PageMeta> = {
   "/boss/requests": {
     title: "웹견적 요청",
     subtitle:
-      "도배르만 사이트에서 들어온 고객 견적 요청입니다. 답변하면 채팅으로 이어집니다.",
-    secondary: { label: "나의 견적", href: "/boss/requests/my" },
+      "도배르만 사이트에서 들어온 고객 견적 요청입니다. 내가 답변했는지 · 채택됐는지도 여기서 봅니다.",
+    secondary: { label: "답변 양식", href: "/boss/templates" },
   },
   "/boss/requests/my": {
-    title: "나의 견적",
-    subtitle: "웹견적 요청에 내가 보낸 견적 답변입니다.",
-    secondary: { label: "웹견적 요청", href: "/boss/requests" },
+    // 넘겨주기 전용 — 화면은 웹견적 요청의 "내가 답변함" 탭이다
+    title: "웹견적 요청",
+    subtitle: "내가 답변한 요청으로 이동합니다.",
   },
   "/boss/store": {
     title: "도배 용품 관리",
@@ -238,8 +233,10 @@ const PAGE_META: Record<string, PageMeta> = {
     secondary: { label: "페이지 보기", href: "https://www.doberman.kr/도배-용품" },
   },
   "/boss/templates": {
-    title: "웹견적서 관리",
-    subtitle: "웹견적 답변에 자주 쓰는 견적서 양식을 저장해 둡니다.",
+    // "웹견적서 관리" 는 고객 견적서와 헷갈려 "답변 양식" 으로 바꿨다(2026-09-08)
+    title: "답변 양식",
+    subtitle: "웹견적 답변에 자주 쓰는 문구를 저장해 두고 골라 씁니다.",
+    secondary: { label: "웹견적 요청", href: "/boss/requests" },
     width: "wide",
   },
 

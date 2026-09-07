@@ -6,7 +6,7 @@
 // 웹은 쓰던 답변이 날아가지 않도록 화면 위에 띄워서 추가 · 수정 · 삭제하고,
 // 고른 양식을 바로 답변에 넣을 수도 있다("이 양식 쓰기").
 //
-// 저장 규칙은 웹견적서 관리 화면(/boss/templates)과 같다:
+// 저장 규칙은 답변 양식 화면(/boss/templates)과 같다:
 //   이름 · 제목 · 내용이 모두 있어야 저장, 기본 양식(isDefault)은 수정 · 삭제 불가.
 
 import { useCallback, useEffect, useState } from 'react';

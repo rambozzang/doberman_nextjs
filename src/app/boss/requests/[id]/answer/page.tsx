@@ -5,7 +5,7 @@
 //
 // 답변 양식은 앱 `web_request_answer_page.dart` 와 같은 규칙:
 //   양식 고르기(제목 · 내용이 채워진다) · 양식 관리(⚙) · 지우기.
-// 양식은 웹견적서 관리(/boss/templates)와 같은 저장소(/web-templates)를 쓴다.
+// 양식은 답변 양식(/boss/templates)와 같은 저장소(/web-templates)를 쓴다.
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';

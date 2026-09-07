@@ -4,10 +4,14 @@
 // 화면 제목 · 부제 · "내 답변" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
 // 필터 한 줄: 상태 탭(ListTabs) + 헤더 검색 + 우측 "전체 n건". 목록은 표, 행 CTA 는 답변 화면으로 바로 진입.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
-import type { BossRequestListItem } from '@/types/boss';
+import type {
+  BossRequestTab,
+  BossUnifiedRequestItem,
+  BossUnifiedRequestSummary,
+} from '@/types/boss';
 import {
   Button,
   ButtonLink,
@@ -37,15 +41,25 @@ import {
   stripBrackets,
 } from '@/lib/boss/requestFormat';
 
-type StatusFilter = 'all' | 'new' | 'progress' | 'done';
-type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet';
+type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
 
-const STATUS_TABS: { key: StatusFilter; label: string }[] = [
-  { key: 'all', label: '전체' },
-  { key: 'new', label: '신규' },
-  { key: 'progress', label: '진행 중' },
-  { key: 'done', label: '완료' },
+// 탭 — "웹견적 요청"과 "나의 견적"을 한 화면에서 본다(2026-09-08).
+// 같은 요청이 두 메뉴로 갈라져 있어 "내가 답변했는지" 를 보려면 메뉴를 오가야 했다.
+const TABS: { key: BossRequestTab; label: string; hint: string }[] = [
+  { key: 'new', label: '새 요청', hint: '아직 답변하지 않은 요청' },
+  { key: 'answered', label: '내가 답변함', hint: '내가 견적을 보낸 요청' },
+  { key: 'adopted', label: '채택됨', hint: '고객이 내 견적을 고른 요청' },
+  { key: 'all', label: '전체', hint: '들어온 모든 요청' },
 ];
+
+/** 내 답변 상태 — 목록에서 이것만 보면 다음 할 일이 정해진다 */
+function myAnswerBadge(item: BossUnifiedRequestItem): { label: string; tone: BadgeTone } {
+  if (item.myAnswerYn !== 'Y') return { label: '미답변', tone: 'default' };
+  const s = item.myAnswerStatus ?? '';
+  if (s.includes('채택 성공')) return { label: '채택', tone: 'emerald' };
+  if (s.includes('미채택')) return { label: '미채택', tone: 'rose' };
+  return { label: '답변함', tone: 'sky' };
+}
 
 function statusBadge(status?: string) {
   const s = (status ?? '').toLowerCase();
@@ -62,34 +76,64 @@ function statusBadge(status?: string) {
 }
 
 export default function BossRequestListPage() {
+  return (
+    <Suspense fallback={null}>
+      <RequestList />
+    </Suspense>
+  );
+}
+
+function RequestList() {
   const router = useRouter();
-  const [items, setItems] = useState<BossRequestListItem[]>([]);
+  const search = useSearchParams();
+  const [items, setItems] = useState<BossUnifiedRequestItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<StatusFilter>('all');
+  // ?tab=answered 로 들어오면 그 탭으로 — 예전 "나의 견적" 링크가 여기로 온다
+  const [tab, setTab] = useState<BossRequestTab>(() => {
+    const t = search.get('tab');
+    return t === 'answered' || t === 'adopted' || t === 'all' ? t : 'new';
+  });
+  const [summary, setSummary] = useState<BossUnifiedRequestSummary>({});
 
   // 상단바 검색(`/` 로 포커스)을 이 화면에 연결한다
   const { query: keyword } = useBossSearch('지역 · 건물 · 고객');
 
-  const load = useCallback(async (targetPage: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await bossRequestsApi.list({ page: targetPage - 1, size: 24 });
-      if (res.success && res.data) {
-        setItems(res.data.content ?? []);
-        setTotalPages(res.data.totalPages ?? 1);
-      } else {
-        setError(res.message || '목록을 불러오지 못했습니다.');
+  const load = useCallback(
+    async (targetPage: number, currentTab: BossRequestTab, myRegionOnly: boolean, kw: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = {
+          page: targetPage - 1,
+          size: 24,
+          tab: currentTab,
+          myRegionOnly,
+          keyword: kw.trim() || undefined,
+        };
+        const [listRes, sumRes] = await Promise.all([
+          bossRequestsApi.unified(params),
+          bossRequestsApi.unifiedSummary({ myRegionOnly }),
+        ]);
+        if (listRes.success !== false && listRes.data) {
+          setItems(listRes.data.content ?? []);
+          setTotalPages(Math.max(1, listRes.data.totalPages ?? 1));
+          setTotalCount(listRes.data.totalCount ?? listRes.data.content?.length ?? 0);
+        } else {
+          setError(listRes.message || '목록을 불러오지 못했습니다.');
+        }
+        if (sumRes.success !== false && sumRes.data) setSummary(sumRes.data);
+      } catch {
+        setError('네트워크 오류로 목록을 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError('네트워크 오류로 목록을 불러오지 못했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   // ── 내 견적 수신 지역 ──
   // 사장님에게 가장 중요한 정보다: 어느 지역 요청을 받을 수 있는지.
@@ -123,51 +167,22 @@ export default function BossRequestListPage() {
   };
 
   useEffect(() => {
-    void load(page);
-  }, [load, page]);
+    void load(page, tab, onlyMyRegion, keyword);
+  }, [load, page, tab, onlyMyRegion, keyword]);
 
   useEffect(() => {
     setPage(1);
   }, [tab, keyword, onlyMyRegion]);
 
-  const filtered = useMemo(() => {
-    let list = items;
-    // 내 수신 지역 밖의 요청은 답변해도 매칭되기 어렵다 — 기본으로 걸러 준다
-    if (onlyMyRegion && myRegions) {
-      list = list.filter((it) => matchesMyRegions(it.region, myRegions));
-    }
-    if (tab !== 'all') {
-      list = list.filter((it) => {
-        const s = (it.status ?? '').toLowerCase();
-        if (tab === 'new') return s.includes('new') || s.includes('신규') || s.includes('대기') || !s;
-        if (tab === 'progress') return s.includes('progress') || s.includes('진행');
-        if (tab === 'done') return s.includes('done') || s.includes('완료');
-        return true;
-      });
-    }
-    if (keyword.trim()) {
-      const k = keyword.toLowerCase();
-      list = list.filter((it) =>
-        [it.region, it.buildingType, it.constructionLocation, it.wallpaper]
-          .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(k)),
-      );
-    }
-    return list;
-  }, [items, tab, keyword, onlyMyRegion, myRegions]);
-
-  const counts = useMemo(() => {
-    const c = { all: items.length, new: 0, progress: 0, done: 0 };
-    items.forEach((it) => {
-      const s = (it.status ?? '').toLowerCase();
-      if (s.includes('progress') || s.includes('진행')) c.progress++;
-      else if (s.includes('done') || s.includes('완료')) c.done++;
-      else c.new++;
-    });
-    return c;
-  }, [items]);
-
-  const isFiltering = tab !== 'all' || keyword.trim().length > 0;
+  // 거르기 · 세기는 서버가 한다 — 페이지를 넘겨도 어긋나지 않는다
+  const filtered = items;
+  const counts: Record<BossRequestTab, number | undefined> = {
+    new: summary.newCount,
+    answered: summary.answeredCount,
+    adopted: summary.adoptedCount,
+    all: summary.totalCount,
+  };
+  const isFiltering = keyword.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -219,9 +234,9 @@ export default function BossRequestListPage() {
       {/* 필터 한 줄 — 상태 탭 · (헤더 검색) · 우측 건수 */}
       <div className="flex flex-wrap items-center gap-2.5">
         <ListTabs
-          tabs={STATUS_TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
+          tabs={TABS.map(({ key, label }) => ({ key, label, count: counts[key] }))}
           active={tab}
-          onChange={setTab}
+          onChange={(k) => setTab(k as BossRequestTab)}
         />
         {isFiltering && (
           <span className="text-[12px] text-boss-text-secondary">
@@ -241,7 +256,7 @@ export default function BossRequestListPage() {
           variant="secondary"
           size="sm"
           icon={RefreshCw}
-          onClick={() => (page === 1 ? load(1) : setPage(1))}
+          onClick={() => (page === 1 ? load(1, tab, onlyMyRegion, keyword) : setPage(1))}
           disabled={loading}
         >
           새로고침
@@ -252,7 +267,7 @@ export default function BossRequestListPage() {
         <AlertBanner
           tone="bad"
           action={
-            <Button variant="primary" size="sm" onClick={() => load(page)}>
+            <Button variant="primary" size="sm" onClick={() => load(page, tab, onlyMyRegion, keyword)}>
               다시 시도
             </Button>
           }
@@ -271,7 +286,7 @@ export default function BossRequestListPage() {
             title="견적 요청을 불러오지 못했습니다"
             description="네트워크 상태를 확인한 뒤 다시 시도하세요. 서버 응답이 없으면 잠시 후에 다시 열어 주세요."
             action={
-              <Button variant="secondary" size="sm" onClick={() => load(page)}>
+              <Button variant="secondary" size="sm" onClick={() => load(page, tab, onlyMyRegion, keyword)}>
                 다시 시도
               </Button>
             }
@@ -302,7 +317,7 @@ export default function BossRequestListPage() {
         {/* 폰: 표를 옆으로 밀지 않게 카드로 — 접수 시각과 NEW 를 맨 앞에 둔다 */}
         <ul className="flex flex-col border border-boss-border lg:hidden">
           {filtered.map((item) => {
-            const badge = statusBadge(item.status);
+            const mine = myAnswerBadge(item);
             const at = item.requestDate ?? item.createdDt;
             const fresh = isToday(at);
             return (
@@ -318,7 +333,7 @@ export default function BossRequestListPage() {
                         {formatReceivedAt(at)}
                       </span>
                       {fresh && <Badge tone="emerald">NEW</Badge>}
-                      <Badge tone={badge.tone}>{badge.label}</Badge>
+                      <Badge tone={mine.tone}>{mine.label}</Badge>
                     </div>
                     <p className="mt-1 truncate text-[14px] font-semibold text-boss-text">
                       {item.region ?? '지역 미지정'}
@@ -328,9 +343,12 @@ export default function BossRequestListPage() {
                     </p>
                     <p className="mt-0.5 truncate font-boss-head text-[11.5px] tabular-nums text-boss-text-muted">
                       희망 {formatPreferredDate(item.preferredDate)} · 답변 {item.answerCount ?? 0}건
+                      {item.myAnswerCost ? ` · 내 견적 ₩${item.myAnswerCost.toLocaleString('ko-KR')}` : ''}
                     </p>
                   </div>
-                  <span className="boss-btn boss-btn-sm boss-btn-secondary shrink-0">답변</span>
+                  <span className="boss-btn boss-btn-sm boss-btn-secondary shrink-0">
+                    {item.myAnswerYn === 'Y' ? '내 답변' : '답변'}
+                  </span>
                 </button>
               </li>
             );
@@ -344,14 +362,15 @@ export default function BossRequestListPage() {
               <th>지역</th>
               <th>요청 내용</th>
               <th>희망일</th>
-              <th>상태</th>
-              <th className="text-right">답변</th>
+              <th>내 답변</th>
+              <th className="text-right">내 견적</th>
+              <th className="text-right">답변 수</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => {
-              const badge = statusBadge(item.status);
+              const mine = myAnswerBadge(item);
               const at = item.requestDate ?? item.createdDt;
               return (
                 <tr
@@ -376,13 +395,22 @@ export default function BossRequestListPage() {
                     {formatPreferredDate(item.preferredDate)}
                   </td>
                   <td>
-                    <Badge tone={badge.tone}>{badge.label}</Badge>
+                    <Badge tone={mine.tone}>{mine.label}</Badge>
+                  </td>
+                  <td className="num text-boss-text">
+                    {item.myAnswerCost ? `₩${item.myAnswerCost.toLocaleString('ko-KR')}` : '-'}
                   </td>
                   <td className="num text-boss-text-secondary">{item.answerCount ?? 0}</td>
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActions
-                      editLabel="답변"
-                      onEdit={() => router.push(`/boss/requests/${item.id}/answer`)}
+                      editLabel={item.myAnswerYn === 'Y' ? '내 답변' : '답변'}
+                      onEdit={() =>
+                        router.push(
+                          item.myAnswerYn === 'Y'
+                            ? `/boss/requests/${item.id}`
+                            : `/boss/requests/${item.id}/answer`
+                        )
+                      }
                     />
                   </td>
                 </tr>

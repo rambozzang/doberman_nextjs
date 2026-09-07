@@ -117,6 +117,37 @@ export interface BossRequestListItem {
   webCustomerId?: number;
 }
 
+/** 통합 목록 한 줄 — 요청 + 내 답변 상태 (백엔드 WebRequestUnifiedIvo) */
+export interface BossUnifiedRequestItem extends BossRequestListItem {
+  /** 내가 답변했는가 */
+  myAnswerYn?: 'Y' | 'N' | string | null;
+  /** 내 답변 상태 — 검토중 · 채택 성공 · 미채택. 답변 전이면 null */
+  myAnswerStatus?: string | null;
+  /** 내가 낸 금액 */
+  myAnswerCost?: number | null;
+  /** 내가 답변한 시각 */
+  myAnswerDt?: string | null;
+}
+
+/** 통합 목록 탭 — 새 요청(미답변) · 내가 답변함 · 채택됨 · 전체 */
+export type BossRequestTab = 'new' | 'answered' | 'adopted' | 'all';
+
+export interface BossUnifiedRequestParams {
+  page: number;
+  size: number;
+  tab: BossRequestTab;
+  /** 내 견적 수신 지역만 */
+  myRegionOnly?: boolean;
+  keyword?: string;
+}
+
+export interface BossUnifiedRequestSummary {
+  totalCount?: number;
+  newCount?: number;
+  answeredCount?: number;
+  adoptedCount?: number;
+}
+
 export interface BossRequestDetail extends BossRequestListItem {
   customerEmail?: string;
   etc1?: string;

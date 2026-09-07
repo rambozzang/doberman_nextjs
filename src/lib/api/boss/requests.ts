@@ -10,6 +10,9 @@ import type {
   BossAnswerSubmitRequest,
   BossAnswerSubmitResponse,
   BossMyRequestAnswer,
+  BossUnifiedRequestItem,
+  BossUnifiedRequestParams,
+  BossUnifiedRequestSummary,
 } from '@/types/boss';
 
 export const bossRequestsApi = {
@@ -17,7 +20,18 @@ export const bossRequestsApi = {
   list: (params: BossRequestListParams) =>
     BossApiClient.postPrivate<BossRequestListResponse>('/web/customer-request/all-list', params),
 
-  // 내가 답변한 견적 요청 목록
+  // 통합 목록 — 요청에 내 답변 상태를 얹어 준다. 화면 하나로 합치면서 이걸 쓴다.
+  unified: (params: BossUnifiedRequestParams) =>
+    BossApiClient.postPrivate<BossRequestListResponse & { content?: BossUnifiedRequestItem[] }>(
+      '/webapp/unified-list',
+      params,
+    ),
+
+  // 통합 목록 탭 건수 (목록 페이징과 무관하게 전체 기준)
+  unifiedSummary: (params: Pick<BossUnifiedRequestParams, 'myRegionOnly'>) =>
+    BossApiClient.postPrivate<BossUnifiedRequestSummary>('/webapp/unified-summary', params),
+
+  // 내가 답변한 견적 요청 목록 (앱 호환 — 통합 목록으로 대체 중)
   myList: (params: BossRequestListParams) =>
     BossApiClient.postPrivate<BossRequestListResponse>('/webapp/myrequsetlist', params),
 
