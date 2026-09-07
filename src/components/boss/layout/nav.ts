@@ -19,7 +19,7 @@ import {
   Hammer,
   Wrench,
   Image as ImageIcon,
-  FileSignature,
+  // FileSignature, ← 고객 견적서 메뉴를 되살릴 때 함께
   ListChecks,
   Users,
   TrendingUp,
@@ -84,7 +84,9 @@ export const SECTIONS: NavSection[] = [
     title: "고객 관리 · 내 시공 건",
     items: [
       { href: "/boss/customers", label: "고객", icon: Contact },
-      { href: "/boss/estimate", label: "고객 견적서", icon: FileSignature },
+      // 고객 견적서 — 메뉴에서 감춤(2026-09-07, 사장님 지시). 고객 상세의 견적 품목에서 여전히 들어갈 수 있다.
+      // 되살릴 때는 아래 한 줄만 풀면 된다.
+      // { href: "/boss/estimate", label: "고객 견적서", icon: FileSignature },
       { href: "/boss/tax-invoice", label: "세금계산서", icon: FileCheck2 },
       { href: "/boss/construction", label: "시공 기록", icon: Hammer },
       { href: "/boss/checklist", label: "체크리스트", icon: ListChecks },
