@@ -30,8 +30,12 @@ export function registerPdfFont() {
       { src: '/fonts/NotoSansKR-Bold.subset.ttf', fontWeight: 700 },
     ],
   });
-  // 한글은 음절 단위로 줄을 바꾸면 되므로 하이픈 분리를 끈다
-  Font.registerHyphenationCallback((word) => [word]);
+  // 한글은 음절 단위로 줄을 바꾸면 되므로 하이픈 분리를 끈다.
+  // 다만 띄어쓰기 없는 긴 영문 · 숫자 나열은 칸을 뚫고 나가므로 글자 단위로 끊는다.
+  // (한글은 끊으면 하이픈이 붙어 어색하므로 그대로 둔다 — 한글은 보통 띄어쓰기가 있다)
+  Font.registerHyphenationCallback((word) =>
+    word.length <= 10 || /[가-힣]/.test(word) ? [word] : word.split('')
+  );
   fontRegistered = true;
 }
 
@@ -126,10 +130,10 @@ export function Cell({
   );
 }
 
-/** 라벨 칸 — 배경색 · 굵게 · 가운데 */
-export function Label({ children, w, bg, last, bottom, h, spacing = 1 }: CellProps) {
+/** 라벨 칸 — 배경색 · 가운데. 굵게는 표 머리처럼 꼭 필요한 곳에서만 켠다 */
+export function Label({ children, w, bg, last, bottom, h, spacing = 1, bold = false }: CellProps) {
   return (
-    <Cell w={w} bg={bg} bold align="center" last={last} bottom={bottom} h={h} spacing={spacing}>
+    <Cell w={w} bg={bg} bold={bold} align="center" last={last} bottom={bottom} h={h} spacing={spacing}>
       {children}
     </Cell>
   );
@@ -240,11 +244,11 @@ export function SupplierGrid({ data, label }: { data: DocData; label: string }) 
   const rows: ReactNode[] = [
     <Row key="r0">
       <Label w={54} bg={label}>등록번호</Label>
-      <Cell last bold>{formatBizNoLoose(c?.bizno)}</Cell>
+      <Cell last>{formatBizNoLoose(c?.bizno)}</Cell>
     </Row>,
     <Row key="r1">
       <Label w={54} bg={label}>상 호</Label>
-      <Cell bold>{c?.name ?? ''}</Cell>
+      <Cell>{c?.name ?? ''}</Cell>
       <Label w={36} bg={label}>성 명</Label>
       <Cell w={92} last>
         {c?.owner ?? ''}
@@ -281,7 +285,7 @@ export function SupplierGrid({ data, label }: { data: DocData; label: string }) 
         }}
       >
         {['공', '급', '자'].map((ch) => (
-          <Text key={ch} style={{ fontSize: 8.5, fontWeight: 700, lineHeight: 1.6 }}>
+          <Text key={ch} style={{ fontSize: 8.5, lineHeight: 1.6 }}>
             {ch}
           </Text>
         ))}
@@ -334,6 +338,8 @@ export function AmountBox({
   label: string;
   strong: string;
 }) {
+  // 억 단위처럼 한글이 길어지면 글자를 줄인다 — 그래도 넘치면 줄이 바뀐다(숫자와 겹치지 않는다)
+  const korSize = kor.length <= 12 ? 13 : kor.length <= 16 ? 11.5 : 10;
   return (
     <Box style={{ flexDirection: 'row', minHeight: 34 }}>
       <View
@@ -349,16 +355,16 @@ export function AmountBox({
         <Text style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2 }}>{title}</Text>
         {sub ? <Text style={{ fontSize: 6.5, color: '#444', marginTop: 1 }}>{sub}</Text> : null}
       </View>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10 }}>
-        <Text style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>一金 {kor}整</Text>
-        <Text style={{ fontSize: 9, marginLeft: 8, color: '#333' }}>(₩ {amount})</Text>
-        <View style={{ flex: 1 }} />
-        <Text style={{ fontSize: 15, fontWeight: 700, color: strong }}>₩ {amount}</Text>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4 }}>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={{ fontSize: korSize, fontWeight: 700, letterSpacing: 0.5 }}>一金 {kor}整</Text>
+        </View>
+        <Text style={{ fontSize: 15, fontWeight: 700, color: strong, flexShrink: 0 }}>₩ {amount}</Text>
       </View>
       {note ? (
         <View
           style={{
-            width: 64,
+            width: 60,
             borderLeftWidth: THIN,
             borderColor: LINE,
             alignItems: 'center',
@@ -366,7 +372,7 @@ export function AmountBox({
             backgroundColor: label,
           }}
         >
-          <Text style={{ fontSize: 7.5, fontWeight: 700 }}>{note}</Text>
+          <Text style={{ fontSize: 7.5 }}>{note}</Text>
         </View>
       ) : null}
     </Box>
@@ -413,7 +419,7 @@ export function ItemTable({
     <Box>
       <Row>
         {columns.map((col, i) => (
-          <Label key={col.head} w={col.w} bg={headBg} last={i === lastIdx} spacing={2}>
+          <Label key={col.head} w={col.w} bg={headBg} last={i === lastIdx} spacing={2} bold>
             <Text style={{ color: headFg }}>{col.head}</Text>
           </Label>
         ))}

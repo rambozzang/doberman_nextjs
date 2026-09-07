@@ -37,7 +37,7 @@ const MIN_ROWS = 21;
 
 const COLUMNS: Column[] = [
   { head: 'No', w: 24, align: 'center' },
-  { head: '품 명', align: 'left', bold: true },
+  { head: '품 명', align: 'left' },
   { head: '규 격', w: 60, align: 'center' },
   { head: '수 량', w: 40, align: 'right' },
   { head: '단 가', w: 62, align: 'right' },
@@ -53,7 +53,7 @@ function Payer({ data, label }: { data: DocData; label: string }) {
     <Box style={{ flex: 1 }}>
       <Row>
         <Label w={52} bg={label}>받는 분</Label>
-        <Cell last bold size={10}>
+        <Cell last size={10}>
           {cu?.name ?? ''}
           <Text style={{ fontSize: 8.5, fontWeight: 400 }}>{'  '}귀하</Text>
         </Cell>
