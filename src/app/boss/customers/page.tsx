@@ -191,7 +191,55 @@ export default function BossOrderListPage() {
         )
       ) : (
         <div>
-          <DataTable className="border-b-0">
+          {/* 폰: 표를 옆으로 밀지 않게 카드로 — 현장에서 이름 · 금액 · 상태를 한눈에 본다 */}
+          <ul className="flex flex-col border border-boss-border lg:hidden">
+            {filtered.map((item) => {
+              const st = customerStatus(item.statusCd, item.workDate);
+              const addr = [item.address1, item.address2].filter(Boolean).join(' ');
+              return (
+                <li key={`m-${item.id}`} className="border-b border-boss-border-row last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/boss/customers/${item.id}`)}
+                    className="flex w-full items-start gap-3 px-4 py-3 text-left active:bg-boss-elevated"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-[14px] font-semibold text-boss-text">
+                          {item.name ?? '이름 없음'}
+                        </span>
+                        <Tag tone={st.tone}>{st.label}</Tag>
+                      </div>
+                      <p className="mt-0.5 truncate font-boss-head text-[12px] tabular-nums text-boss-text-secondary">
+                        {maskPhoneForList(item.phone)}
+                        {addr ? ` · ${addr}` : ''}
+                      </p>
+                      <p className="mt-0.5 truncate font-boss-head text-[11.5px] tabular-nums text-boss-text-muted">
+                        {formatAppDateTime(item.workDate ?? item.estimateDate)}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-boss-head text-[14px] font-semibold tabular-nums text-boss-text">
+                        {formatMoney(item.totalAmount)}
+                      </p>
+                      {item.phone ? (
+                        <a
+                          href={`tel:${item.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1 inline-flex h-7 w-7 items-center justify-center border border-boss-border !text-boss-text-secondary"
+                          aria-label={`${item.name ?? '고객'}에게 전화`}
+                        >
+                          <Phone size={13} strokeWidth={1.75} />
+                        </a>
+                      ) : null}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <DataTable className="hidden border-b-0 lg:block">
             <thead>
               <tr>
                 <th>번호</th>

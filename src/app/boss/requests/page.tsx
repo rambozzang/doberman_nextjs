@@ -305,7 +305,40 @@ export default function BossRequestListPage() {
           />
         )
       ) : (
-        <DataTable>
+        <>
+        {/* 폰: 표를 옆으로 밀지 않게 카드로 */}
+        <ul className="flex flex-col border border-boss-border lg:hidden">
+          {filtered.map((item) => {
+            const badge = statusBadge(item.status);
+            return (
+              <li key={`m-${item.id}`} className="border-b border-boss-border-row last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/boss/requests/${item.id}`)}
+                  className="flex w-full items-start gap-3 px-4 py-3 text-left active:bg-boss-elevated"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-[14px] font-semibold text-boss-text">
+                        {item.region ?? '지역 미지정'}
+                      </span>
+                      <Badge tone={badge.tone}>{badge.label}</Badge>
+                    </div>
+                    <p className="mt-0.5 truncate text-[12.5px] text-boss-text-secondary">
+                      {[item.buildingType, item.constructionLocation].filter(Boolean).join(' · ') || '유형 미지정'}
+                    </p>
+                    <p className="mt-0.5 truncate font-boss-head text-[11.5px] tabular-nums text-boss-text-muted">
+                      희망 {item.preferredDate ?? '-'} · 접수 {relativeTime(item.requestDate ?? item.createdDt)}
+                    </p>
+                  </div>
+                  <span className="boss-btn boss-btn-sm boss-btn-secondary shrink-0">답변</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <DataTable className="hidden lg:block">
           <thead>
             <tr>
               <th>번호</th>
@@ -371,6 +404,7 @@ export default function BossRequestListPage() {
             })}
           </tbody>
         </DataTable>
+        </>
       )}
 
       {!isFiltering && totalPages > 1 && (
