@@ -86,7 +86,8 @@ export default function BossSidebar() {
 
         <div className="flex flex-col gap-3 px-5">
           {/* 낮은 화면(노트북)에서는 카드를 접어 내비가 먼저 보이게 한다 */}
-          <PlanCard sub={subscription} className="[@media(max-height:860px)]:hidden" />
+          {/* 결제 기능이 열릴 때까지 구독 카드를 감춘다 */}
+          {/* <PlanCard sub={subscription} className="[@media(max-height:860px)]:hidden" /> */}
           <div className="flex items-center justify-between gap-2">
             <AccountRow name={displayName} initial={initial} />
             <button
@@ -156,7 +157,7 @@ export default function BossSidebar() {
             </div>
 
             <div className="flex flex-col gap-3.5 px-5">
-              <PlanCard sub={subscription} />
+              {/* <PlanCard sub={subscription} /> */}
               <AccountRow name={displayName} initial={initial} />
               <button
                 type="button"

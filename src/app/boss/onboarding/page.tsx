@@ -41,10 +41,11 @@ const STEPS: Step[] = [
     href: '/boss/calendar',
   },
   {
+    // 결제 기능이 열릴 때까지 세금계산서 안내로 대신한다
     no: 5,
-    title: '결제 / 정산 설정',
-    description: '계약금, 중도금, 잔금 단계별 정산을 손쉽게 관리하세요.',
-    href: '/boss/billing',
+    title: '세금계산서 · 영수증',
+    description: '고객에게 견적서 · 영수증을 보내고 세금계산서 발행을 준비합니다.',
+    href: '/boss/tax-invoice',
   },
   {
     no: 6,

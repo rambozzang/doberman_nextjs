@@ -63,6 +63,11 @@ export function BossPortalProvider({ children }: { children: ReactNode }) {
   }, [authed, companyId, companyTick]);
 
   useEffect(() => {
+    // 결제 기능을 감춰 둔 동안에는 구독 상태를 부르지 않는다.
+    // (서버에 결제 API 가 없어 페이지마다 404 가 쌓였다. 결제가 열리면 이 블록을 되살린다)
+    setSubscription(null);
+    return;
+
     if (!authed) {
       setSubscription(null);
       return;

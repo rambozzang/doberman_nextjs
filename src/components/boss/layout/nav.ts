@@ -23,7 +23,6 @@ import {
   ListChecks,
   Users,
   TrendingUp,
-  CreditCard,
   Settings,
   BarChart3,
   Briefcase,
@@ -109,7 +108,8 @@ export const SECTIONS: NavSection[] = [
   {
     title: '계정',
     items: [
-      { href: '/boss/billing', label: '구독 · 결제', icon: CreditCard },
+      // 결제 API 가 서버에 아직 없어 화면을 감춰 둔다. 결제가 열리면 이 줄만 되살리면 된다.
+      // { href: '/boss/billing', label: '구독 · 결제', icon: CreditCard },  ← 되살릴 때 CreditCard import 도 함께
       { href: '/boss/settings', label: '설정', icon: Settings },
     ],
   },

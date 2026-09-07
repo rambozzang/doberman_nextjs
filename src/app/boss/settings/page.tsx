@@ -206,11 +206,12 @@ export default function BossSettingsPage() {
                 title="회사 정보"
                 description="상호 · 사업자등록번호 · 시공 가능 지역"
               />
+              {/* 결제 기능이 열릴 때까지 감춘다
               <LinkRow
                 href="/boss/billing"
                 title="구독 · 결제"
                 description="현재 플랜과 결제 수단을 확인합니다"
-              />
+              /> */}
             </ContentCard>
           </>
         )}
@@ -357,6 +358,7 @@ export default function BossSettingsPage() {
 
         {/* ───── 하단 3패널 — minmax(270px, 1fr) ───── */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-3">
+          {/* 결제 기능이 열릴 때까지 감춘다
           <Card>
             <p className="boss-kicker">구독</p>
             <p className="mt-1 text-[13.5px] font-bold text-boss-text">요금제</p>
@@ -371,7 +373,7 @@ export default function BossSettingsPage() {
                 구독 · 결제 보기 →
               </Link>
             </div>
-          </Card>
+          </Card> */}
 
           <Card>
             <p className="boss-kicker">운영사</p>

@@ -496,7 +496,8 @@ export default function BossDashboardPage() {
             </div>
           </Panel>
 
-          <PlanPanel sub={subscription} />
+          {/* 결제 기능이 열릴 때까지 구독 패널을 감춘다 */}
+          {/* <PlanPanel sub={subscription} /> */}
           <CompanyPanel company={company} />
         </div>
       </section>
