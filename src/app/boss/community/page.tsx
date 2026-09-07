@@ -29,6 +29,7 @@ import {
   ContentCard,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 import { RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 20;
@@ -60,21 +61,6 @@ function categoryMeta(item: BbsData): { label: string; tone: StatusTone } {
 function authorName(item: BbsData): string {
   if (item.anonyYn === 'Y') return '익명';
   return item.nickNm ?? item.userNm ?? '사용자';
-}
-
-function relativeTime(input?: string): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  const diff = Date.now() - d.getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return '방금';
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const day = Math.floor(h / 24);
-  if (day < 7) return `${day}일 전`;
-  return d.toLocaleDateString('ko-KR');
 }
 
 export default function BossCommunityListPage() {
@@ -239,12 +225,12 @@ export default function BossCommunityListPage() {
         <DataTable>
           <thead>
             <tr>
+              <th>등록일</th>
               <th>제목</th>
               <th>작성자</th>
               <th className="num">댓글</th>
               <th className="num">좋아요</th>
               <th className="num">조회</th>
-              <th>날짜</th>
             </tr>
           </thead>
           <tbody>
@@ -257,6 +243,9 @@ export default function BossCommunityListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(href)}
                 >
+                  <td>
+                    <ListDateCell at={item.crtDtm} id={item.boardId} />
+                  </td>
                   <td className="wrap max-w-[520px]">
                     <div className="flex items-center gap-2">
                       <StatusPill tone={cat.tone}>{cat.label}</StatusPill>
@@ -274,9 +263,6 @@ export default function BossCommunityListPage() {
                   <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
                   <td className="num text-boss-text-secondary">{item.likeCnt ?? 0}</td>
                   <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {relativeTime(item.crtDtm)}
-                  </td>
                 </tr>
               );
             })}

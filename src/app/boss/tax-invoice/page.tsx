@@ -37,6 +37,7 @@ import {
   Tag,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 type Tab = 'all' | TaxInvoiceStatus;
 
@@ -304,7 +305,9 @@ function TaxInvoiceList() {
 function InvoiceRow({ inv, onOpen }: { inv: TaxInvoice; onOpen: () => void }) {
   return (
     <tr className="cursor-pointer" onClick={onOpen}>
-      <td className="font-boss-head tabular-nums text-boss-text-secondary">{inv.issueDate ?? '미정'}</td>
+      <td>
+        <ListDateCell at={inv.createdDt ?? inv.issueDate} id={inv.id} />
+      </td>
       <td>
         <Tag tone={inv.docType === 'TAX' ? 'info' : 'neutral'}>{DOC_TYPE_LABEL[inv.docType]}</Tag>
       </td>

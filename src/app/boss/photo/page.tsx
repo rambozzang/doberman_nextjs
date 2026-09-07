@@ -41,6 +41,7 @@ import {
   Kicker,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 import {
   BOSS_PHOTO_TYPES,
   BOSS_ROOM_CATEGORIES,
@@ -524,11 +525,11 @@ function BossPhotoInner() {
         <DataTable>
           <thead>
             <tr>
+              <th>등록일</th>
               <th>사진</th>
               <th>방</th>
               <th>유형</th>
               <th>파일</th>
-              <th>등록일</th>
               <th />
             </tr>
           </thead>
@@ -540,6 +541,9 @@ function BossPhotoInner() {
               const isNew = it.num === undefined && it.fileKey === undefined;
               return (
                 <tr key={`${path}-${originIndex}`}>
+                  <td>
+                    <ListDateCell at={it.crtDtm} showNew={false} />
+                  </td>
                   <td>
                     <div className="h-10 w-10 overflow-hidden border border-boss-border bg-boss-inset">
                       {isImg ? (
@@ -563,9 +567,6 @@ function BossPhotoInner() {
                     <span className="line-clamp-1 text-[12.5px] text-boss-text-secondary">
                       {it.fileNm || (path.startsWith('data:') ? '(파일 선택으로 추가)' : it.filePath) || '—'}
                     </span>
-                  </td>
-                  <td className="font-boss-head tabular-nums text-boss-text-secondary">
-                    {fmtDateTime(it.crtDtm)}
                   </td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-0.5">

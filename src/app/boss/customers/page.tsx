@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import {
   Button,
   ButtonLink,
+  Badge,
   ListTabs,
   DataTable,
   Tag,
@@ -22,6 +23,8 @@ import {
   AlertBanner,
   DashedCta,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
+import { formatReceivedAt, isToday } from '@/lib/boss/requestFormat';
 import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
 import { CUSTOMER_LIST_TABS, customerStatus } from '@/lib/boss/customerStatus';
 import { formatAppDateTime, maskPhoneForList } from '@/lib/boss/format';
@@ -205,17 +208,21 @@ export default function BossOrderListPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-[14px] font-semibold text-boss-text">
-                          {item.name ?? '이름 없음'}
+                        <span className="font-boss-head text-[12.5px] font-semibold tabular-nums text-boss-text">
+                          {formatReceivedAt(item.createdDt)}
                         </span>
+                        {isToday(item.createdDt) && <Badge tone="emerald">NEW</Badge>}
                         <Tag tone={st.tone}>{st.label}</Tag>
                       </div>
+                      <p className="mt-1 truncate text-[14px] font-semibold text-boss-text">
+                        {item.name ?? '이름 없음'}
+                      </p>
                       <p className="mt-0.5 truncate font-boss-head text-[12px] tabular-nums text-boss-text-secondary">
                         {maskPhoneForList(item.phone)}
                         {addr ? ` · ${addr}` : ''}
                       </p>
                       <p className="mt-0.5 truncate font-boss-head text-[11.5px] tabular-nums text-boss-text-muted">
-                        {formatAppDateTime(item.workDate ?? item.estimateDate)}
+                        작업 {formatAppDateTime(item.workDate ?? item.estimateDate)}
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
@@ -242,7 +249,7 @@ export default function BossOrderListPage() {
           <DataTable className="hidden border-b-0 lg:block">
             <thead>
               <tr>
-                <th>번호</th>
+                <th>등록일</th>
                 <th>고객</th>
                 <th>전화</th>
                 <th>주소</th>
@@ -262,8 +269,8 @@ export default function BossOrderListPage() {
                     className="cursor-pointer"
                     onClick={() => router.push(`/boss/customers/${item.id}`)}
                   >
-                    <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                      {item.id}
+                    <td>
+                      <ListDateCell at={item.createdDt} id={item.id} />
                     </td>
                     <td className="font-semibold text-boss-text">{item.name ?? '-'}</td>
                     <td className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary">

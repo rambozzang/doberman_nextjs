@@ -21,6 +21,7 @@ import {
   RowActions,
   ConfirmDialog,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 import { bossConstructionApi, normalizeConstructionRecord } from '@/lib/api/boss/construction';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { ConstructionRecord } from '@/types/boss-construction';
@@ -243,7 +244,7 @@ export default function BossConstructionListPage() {
         <DataTable>
           <thead>
             <tr>
-              <th>번호</th>
+              <th>등록일</th>
               <th>제목</th>
               <th>상태</th>
               <th>시공일</th>
@@ -262,8 +263,8 @@ export default function BossConstructionListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/construction/${item.id}`)}
                 >
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {String(item.id)}
+                  <td>
+                    <ListDateCell at={item.createdAt} id={item.id} />
                   </td>
                   <td className="wrap max-w-[420px]">
                     <span className="font-medium text-boss-text">{item.title || '제목 없음'}</span>

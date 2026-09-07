@@ -29,6 +29,7 @@ import {
   RowSkeleton,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 function fmtDate(s?: string): string {
   if (!s) return '-';
@@ -214,6 +215,7 @@ export default function BossSalesRealtimePage() {
             <table className="boss-table">
               <thead>
                 <tr>
+                  <th>등록일</th>
                   <th>고객</th>
                   <th>시공일</th>
                   <th>상태</th>
@@ -226,6 +228,9 @@ export default function BossSalesRealtimePage() {
                   const status = customerStatus(item.statusCd, item.workDate);
                   return (
                     <tr key={item.id ?? i}>
+                      <td>
+                        <ListDateCell at={item.createdDt} id={item.id} />
+                      </td>
                       <td className="font-semibold">{item.name ?? '이름 없음'}</td>
                       <td className="num text-left text-boss-text-secondary">{fmtDate(item.workDate)}</td>
                       <td>

@@ -28,6 +28,7 @@ import {
   ConfirmDialog,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 type StatusFilter = 'all' | 'done' | 'pending';
 
@@ -242,6 +243,7 @@ export default function BossSignatureListPage() {
         <DataTable>
           <thead>
             <tr>
+              <th>등록일</th>
               <th>고객</th>
               <th>상태</th>
               <th>연락처</th>
@@ -259,6 +261,9 @@ export default function BossSignatureListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/signature/${item.id}`)}
                 >
+                  <td>
+                    <ListDateCell at={item.createdDt} id={item.id} />
+                  </td>
                   <td className="wrap max-w-[360px]">
                     <div className="flex items-center gap-2.5">
                       {/* 서명 썸네일 — 캔버스 저장본이라 흰 배경 위에 그린다 */}

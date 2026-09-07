@@ -23,6 +23,7 @@ import {
   ContentCard,
   RowSkeleton,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 import { RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 100;
@@ -31,13 +32,6 @@ function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
   return payload.list ?? payload.content ?? [];
-}
-
-function relativeTime(input?: string): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  return d.toLocaleDateString('ko-KR');
 }
 
 export default function BossCommunityMyPage() {
@@ -165,11 +159,11 @@ export default function BossCommunityMyPage() {
         <DataTable>
           <thead>
             <tr>
+              <th>작성일</th>
               <th>제목</th>
               <th>게시판</th>
               <th className="num">댓글</th>
               <th className="num">조회</th>
-              <th>작성일</th>
               <th />
             </tr>
           </thead>
@@ -178,6 +172,9 @@ export default function BossCommunityMyPage() {
               const href = `/boss/community/${item.boardId}`;
               return (
                 <tr key={item.boardId} className="cursor-pointer" onClick={() => router.push(href)}>
+                  <td>
+                    <ListDateCell at={item.crtDtm} id={item.boardId} />
+                  </td>
                   <td className="wrap max-w-[520px]">
                     <Link
                       href={href}
@@ -198,9 +195,6 @@ export default function BossCommunityMyPage() {
                   </td>
                   <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
                   <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {relativeTime(item.crtDtm)}
-                  </td>
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <ButtonLink href={`${href}/edit`} variant="ghost" size="sm">
                       수정

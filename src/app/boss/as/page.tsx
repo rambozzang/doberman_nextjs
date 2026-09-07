@@ -28,6 +28,7 @@ import {
   ConfirmDialog,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 type StatusFilter = '' | '접수' | '진행중' | '완료';
 type SortType = 'CREATED_DT' | 'REQUEST_DATE';
@@ -52,21 +53,6 @@ function formatDate(input?: string | null): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}.${mm}.${dd}`;
-}
-
-function relativeTime(input?: string | null): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  const diff = Date.now() - d.getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return '방금';
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const day = Math.floor(h / 24);
-  if (day < 7) return `${day}일 전`;
-  return d.toLocaleDateString('ko-KR');
 }
 
 function statusTone(status: string): StatusTone {
@@ -174,7 +160,7 @@ export default function BossAsListPage() {
     if (sortType === 'REQUEST_DATE') {
       list.sort((a, b) => (b.requestDate || '').localeCompare(a.requestDate || ''));
     } else {
-      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      list.sort((a, b) => (b.createdDt || '').localeCompare(a.createdDt || ''));
     }
     return list;
   }, [items, query, sortType]);
@@ -277,13 +263,12 @@ export default function BossAsListPage() {
         <DataTable>
           <thead>
             <tr>
-              <th>번호</th>
+              <th>등록일</th>
               <th>제목 · 고객</th>
               <th>상태</th>
               <th>연락처 · 주소</th>
               <th>사진</th>
               <th>요청일</th>
-              <th>접수</th>
               <th />
             </tr>
           </thead>
@@ -298,8 +283,8 @@ export default function BossAsListPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/as/${item.id}`)}
                 >
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {item.id}
+                  <td>
+                    <ListDateCell at={item.createdDt} id={item.id} />
                   </td>
                   <td className="wrap max-w-[360px]">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -333,9 +318,6 @@ export default function BossAsListPage() {
                   </td>
                   <td className="font-boss-head tabular-nums text-boss-text-secondary">
                     {formatDate(item.requestDate)}
-                  </td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {relativeTime(item.createdAt)}
                   </td>
                   <td className="text-right">
                     <RowActions

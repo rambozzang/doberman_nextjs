@@ -43,6 +43,7 @@ import {
   AlertBanner,
   type StatusTone,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 const PAGE_SIZE = 20;
 
@@ -79,21 +80,6 @@ function stripHtml(input?: string): string {
     .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function relativeTime(input?: string): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  const diff = Date.now() - d.getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return '방금';
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const day = Math.floor(h / 24);
-  if (day < 7) return `${day}일 전`;
-  return d.toLocaleDateString('ko-KR');
 }
 
 export default function BossNotificationsPage() {
@@ -300,11 +286,11 @@ export default function BossNotificationsPage() {
         <DataTable>
           <thead>
             <tr>
+              <th>받은 시각</th>
               <th>유형</th>
               <th>제목</th>
               <th>내용</th>
               <th className="num">조회</th>
-              <th>시간</th>
               <th />
             </tr>
           </thead>
@@ -325,6 +311,9 @@ export default function BossNotificationsPage() {
                       isRead ? 'border-l-transparent' : 'border-l-boss-primary'
                     }`}
                   >
+                    <ListDateCell at={item.crtDtm} id={item.boardId} />
+                  </td>
+                  <td>
                     <Tag tone={tag.tone}>{tag.label}</Tag>
                   </td>
                   <td className="wrap max-w-[360px]">
@@ -343,9 +332,6 @@ export default function BossNotificationsPage() {
                     </span>
                   </td>
                   <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {relativeTime(item.crtDtm)}
-                  </td>
                   <td className="text-right">
                     <RowActions
                       onDelete={() => setPendingDelete(item)}

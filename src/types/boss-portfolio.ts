@@ -31,6 +31,7 @@ export interface BossPortfolioItem {
   cost?: number | null;
   workDate?: string | null;   // yyyy-MM-dd
   createdAt?: string | null;  // ISO 또는 yyyy-MM-dd
+  createdDt?: string | null;  // 서버(PortfolioVo.Response)가 쓰는 이름
   isPublic?: boolean | 'Y' | 'N';
 
   // 서버는 BEFORE/AFTER 가 섞인 images 배열로 내려준다

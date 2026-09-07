@@ -29,6 +29,7 @@ import {
   RowSkeleton,
   AlertBanner,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 type BadgeTone = 'default' | 'emerald' | 'rose';
 
@@ -40,12 +41,6 @@ const fmtMoney = (v?: number | string | null): string => {
   const n = typeof v === 'string' ? Number(v.replace(/,/g, '')) : v;
   if (Number.isNaN(n)) return '0';
   return n.toLocaleString('ko-KR');
-};
-
-// 날짜(작성일) 표시 — 'YYYY-MM-DD' 또는 ISO datetime 모두 대응
-const fmtDate = (v?: string | null): string => {
-  if (!v) return '-';
-  return v.length > 10 ? v.slice(0, 10) : v;
 };
 
 // 견적서 상태 뱃지 (deletedDt 유무로 판단)
@@ -340,12 +335,11 @@ function EstimateList() {
         <DataTable>
           <thead>
             <tr>
-              <th>번호</th>
+              <th>작성일</th>
               <th>고객 · 메모</th>
               <th className="text-right">품목</th>
               <th className="text-right">금액</th>
               <th>상태</th>
-              <th>작성일</th>
               <th className="text-right">출력</th>
             </tr>
           </thead>
@@ -359,8 +353,8 @@ function EstimateList() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/estimate/${cid}/print`)}
                 >
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {e.id}
+                  <td>
+                    <ListDateCell at={e.createdDt ?? e.estimateDate} id={e.id} />
                   </td>
                   <td className="wrap max-w-[320px]">
                     <span className="font-semibold text-boss-text">
@@ -376,9 +370,6 @@ function EstimateList() {
                   <td className="num font-semibold text-boss-text">{fmtMoney(e.totalAmount)}</td>
                   <td>
                     <Badge tone={badge.tone}>{badge.label}</Badge>
-                  </td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                    {fmtDate(e.estimateDate ?? e.createdDt)}
                   </td>
                   <td className="text-right" onClick={(ev) => ev.stopPropagation()}>
                     <div className="flex items-center justify-end gap-0.5">

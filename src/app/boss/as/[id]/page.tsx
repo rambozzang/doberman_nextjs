@@ -375,11 +375,11 @@ export default function BossAsDetailPage() {
             />
             <DescRow
               label="등록"
-              value={<span className="font-boss-head tabular-nums">{formatDate(item.createdAt)}</span>}
+              value={<span className="font-boss-head tabular-nums">{formatDate(item.createdDt)}</span>}
             />
             <DescRow
               label="수정"
-              value={<span className="font-boss-head tabular-nums">{formatDate(item.updatedAt)}</span>}
+              value={<span className="font-boss-head tabular-nums">{formatDate(item.updatedDt)}</span>}
             />
           </dl>
         </Panel>

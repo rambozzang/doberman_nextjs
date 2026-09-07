@@ -34,8 +34,9 @@ export interface AsRequestItem {
   status: AsStatus | string;
   priority: AsPriority | string;
   images: AsRequestImage[];
-  createdAt: string;
-  updatedAt?: string | null;
+  // 서버(AsRequestVo.Response)는 createdDt · updatedDt 로 내려준다
+  createdDt?: string | null;
+  updatedDt?: string | null;
 }
 
 // 생성 요청 페이로드

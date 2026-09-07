@@ -21,13 +21,7 @@ import {
   ContentCard,
   RowSkeleton,
 } from '@/components/boss/ui';
-
-function formatDate(input?: string): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  return d.toLocaleDateString('ko-KR');
-}
+import ListDateCell from '@/components/boss/ListDateCell';
 
 export default function BossCommunityBlocksPage() {
   const [items, setItems] = useState<BbsBlockData[]>([]);
@@ -161,21 +155,21 @@ export default function BossCommunityBlocksPage() {
         <DataTable>
           <thead>
             <tr>
+              <th>차단일</th>
               <th>사용자</th>
               <th>아이디</th>
-              <th>차단일</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => (
               <tr key={item.denyCustId ?? item.custId}>
+                <td>
+                  <ListDateCell at={item.crtDtm} showNew={false} />
+                </td>
                 <td className="font-semibold">{nameOf(item)}</td>
                 <td className="font-boss-head text-[12.5px] text-boss-text-secondary">
                   {item.denyCustId ?? '-'}
-                </td>
-                <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                  {formatDate(item.crtDtm)}
                 </td>
                 <td className="text-right">
                   <Button

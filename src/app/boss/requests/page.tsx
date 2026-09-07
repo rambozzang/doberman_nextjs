@@ -20,6 +20,7 @@ import {
   RowActions,
   AlertBanner,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
 import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import { bossCompanyApi } from '@/lib/api/boss/company';
@@ -28,6 +29,13 @@ import RegionPicker from '@/components/boss/RegionPicker';
 import { formatRegions, matchesMyRegions, isNationwide } from '@/lib/boss/regions';
 import toast from 'react-hot-toast';
 import { MapPin, RefreshCw } from 'lucide-react';
+import {
+  formatReceivedAt,
+  formatPreferredDate,
+  isToday,
+  requestSummary,
+  stripBrackets,
+} from '@/lib/boss/requestFormat';
 
 type StatusFilter = 'all' | 'new' | 'progress' | 'done';
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet';
@@ -51,21 +59,6 @@ function statusBadge(status?: string) {
     return { label: status || '완료', tone: 'violet' as BadgeTone };
   }
   return { label: status || '신규', tone: 'default' as BadgeTone };
-}
-
-function relativeTime(input?: string): string {
-  if (!input) return '-';
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  const diff = Date.now() - d.getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return '방금';
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const day = Math.floor(h / 24);
-  if (day < 7) return `${day}일 전`;
-  return d.toLocaleDateString('ko-KR');
 }
 
 export default function BossRequestListPage() {
@@ -306,10 +299,12 @@ export default function BossRequestListPage() {
         )
       ) : (
         <>
-        {/* 폰: 표를 옆으로 밀지 않게 카드로 */}
+        {/* 폰: 표를 옆으로 밀지 않게 카드로 — 접수 시각과 NEW 를 맨 앞에 둔다 */}
         <ul className="flex flex-col border border-boss-border lg:hidden">
           {filtered.map((item) => {
             const badge = statusBadge(item.status);
+            const at = item.requestDate ?? item.createdDt;
+            const fresh = isToday(at);
             return (
               <li key={`m-${item.id}`} className="border-b border-boss-border-row last:border-b-0">
                 <button
@@ -319,16 +314,20 @@ export default function BossRequestListPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="truncate text-[14px] font-semibold text-boss-text">
-                        {item.region ?? '지역 미지정'}
+                      <span className="font-boss-head text-[12.5px] font-semibold tabular-nums text-boss-text">
+                        {formatReceivedAt(at)}
                       </span>
+                      {fresh && <Badge tone="emerald">NEW</Badge>}
                       <Badge tone={badge.tone}>{badge.label}</Badge>
                     </div>
+                    <p className="mt-1 truncate text-[14px] font-semibold text-boss-text">
+                      {item.region ?? '지역 미지정'}
+                    </p>
                     <p className="mt-0.5 truncate text-[12.5px] text-boss-text-secondary">
-                      {[item.buildingType, item.constructionLocation].filter(Boolean).join(' · ') || '유형 미지정'}
+                      {requestSummary(item) || '요청 내용 미기재'}
                     </p>
                     <p className="mt-0.5 truncate font-boss-head text-[11.5px] tabular-nums text-boss-text-muted">
-                      희망 {item.preferredDate ?? '-'} · 접수 {relativeTime(item.requestDate ?? item.createdDt)}
+                      희망 {formatPreferredDate(item.preferredDate)} · 답변 {item.answerCount ?? 0}건
                     </p>
                   </div>
                   <span className="boss-btn boss-btn-sm boss-btn-secondary shrink-0">답변</span>
@@ -341,59 +340,46 @@ export default function BossRequestListPage() {
         <DataTable className="hidden lg:block">
           <thead>
             <tr>
-              <th>번호</th>
-              <th>유형</th>
+              <th>접수</th>
               <th>지역</th>
+              <th>요청 내용</th>
               <th>희망일</th>
               <th>상태</th>
               <th className="text-right">답변</th>
-              <th>접수</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => {
               const badge = statusBadge(item.status);
+              const at = item.requestDate ?? item.createdDt;
               return (
                 <tr
                   key={item.id}
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/requests/${item.id}`)}
                 >
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {item.id}
-                  </td>
+                  {/* 접수 시각을 맨 앞에 — 사장님은 새 요청부터 본다 */}
                   <td>
-                    <span className="font-semibold text-boss-text">
-                      {item.buildingType ?? '견적 요청'}
-                    </span>
-                    {item.areaSize ? (
-                      <span className="ml-1.5 font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                        {item.areaSize}㎡
-                      </span>
-                    ) : null}
-                    {item.roomCount ? (
-                      <span className="ml-1.5 text-[12px] text-boss-text-secondary">
-                        방 {item.roomCount}개
+                    <ListDateCell at={at} id={item.id} />
+                  </td>
+                  <td className="font-semibold text-boss-text">{item.region ?? '-'}</td>
+                  <td className="wrap max-w-[360px]">
+                    <span className="text-boss-text">{requestSummary(item) || '-'}</span>
+                    {item.specialInfo ? (
+                      <span className="block text-[11.5px] text-boss-text-muted">
+                        {stripBrackets(item.specialInfo)}
                       </span>
                     ) : null}
                   </td>
-                  <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
                   <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                    {item.preferredDate ?? '-'}
+                    {formatPreferredDate(item.preferredDate)}
                   </td>
                   <td>
                     <Badge tone={badge.tone}>{badge.label}</Badge>
                   </td>
-                  <td className="num text-boss-text-secondary">
-                    {typeof item.answerCount === 'number' && item.answerCount > 0
-                      ? item.answerCount
-                      : '-'}
-                  </td>
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {relativeTime(item.createdDt ?? item.requestDate)}
-                  </td>
-                  <td className="text-right">
+                  <td className="num text-boss-text-secondary">{item.answerCount ?? 0}</td>
+                  <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActions
                       editLabel="답변"
                       onEdit={() => router.push(`/boss/requests/${item.id}/answer`)}

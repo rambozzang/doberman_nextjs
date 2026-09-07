@@ -20,6 +20,8 @@ import {
   RowActions,
   AlertBanner,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
+import { formatPreferredDate, requestSummary } from '@/lib/boss/requestFormat';
 import { RefreshCw } from 'lucide-react';
 
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet';
@@ -174,9 +176,9 @@ export default function BossMyRequestsPage() {
         <DataTable>
           <thead>
             <tr>
-              <th>번호</th>
-              <th>유형</th>
+              <th>접수</th>
               <th>지역</th>
+              <th>요청 내용</th>
               <th>희망일</th>
               <th>상태</th>
               <th />
@@ -191,27 +193,15 @@ export default function BossMyRequestsPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/boss/requests/${item.id}`)}
                 >
-                  <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">
-                    {item.id}
-                  </td>
                   <td>
-                    <span className="font-semibold text-boss-text">
-                      {item.buildingType ?? '견적 요청'}
-                    </span>
-                    {item.areaSize ? (
-                      <span className="ml-1.5 font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                        {item.areaSize}㎡
-                      </span>
-                    ) : null}
-                    {item.roomCount ? (
-                      <span className="ml-1.5 text-[12px] text-boss-text-secondary">
-                        방 {item.roomCount}개
-                      </span>
-                    ) : null}
+                    <ListDateCell at={item.requestDate ?? item.createdDt} id={item.id} />
                   </td>
-                  <td className="text-boss-text-secondary">{item.region ?? '-'}</td>
+                  <td className="font-semibold text-boss-text">{item.region ?? '-'}</td>
+                  <td className="wrap max-w-[360px] text-boss-text">
+                    {requestSummary(item) || '-'}
+                  </td>
                   <td className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">
-                    {item.preferredDate ?? '-'}
+                    {formatPreferredDate(item.preferredDate)}
                   </td>
                   <td>
                     <Badge tone={badge.tone}>{badge.label}</Badge>

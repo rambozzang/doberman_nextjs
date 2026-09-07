@@ -19,6 +19,7 @@ import {
   Toolbar,
   Button,
   ButtonLink,
+  Badge,
   ListTabs,
   DataTable,
   StatusPill,
@@ -32,6 +33,8 @@ import {
   RowActions,
   ConfirmDialog,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
+import { formatReceivedAt, isToday } from '@/lib/boss/requestFormat';
 import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
 
 // 응답이 'Y'/'N' 또는 boolean 두 형태로 모두 올 수 있어 통일
@@ -160,8 +163,8 @@ export default function BossPortfolioListPage() {
       );
     }
     list.sort((a, b) => {
-      const aKey = sort === 'WORK_DATE' ? a.workDate ?? '' : a.createdAt ?? '';
-      const bKey = sort === 'WORK_DATE' ? b.workDate ?? '' : b.createdAt ?? '';
+      const aKey = sort === 'WORK_DATE' ? a.workDate ?? '' : a.createdAt ?? a.createdDt ?? '';
+      const bKey = sort === 'WORK_DATE' ? b.workDate ?? '' : b.createdAt ?? b.createdDt ?? '';
       return bKey.localeCompare(aKey);
     });
     return list;
@@ -242,6 +245,7 @@ export default function BossPortfolioListPage() {
           <DataTable>
             <thead>
               <tr>
+                <th>등록일</th>
                 <th>사례</th>
                 <th>지역</th>
                 <th className="num">평형</th>
@@ -252,6 +256,7 @@ export default function BossPortfolioListPage() {
             <tbody>
               {Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
+                  <td><Skeleton className="h-4 w-20" /></td>
                   <td><Skeleton className="h-4 w-40" /></td>
                   <td><Skeleton className="h-4 w-24" /></td>
                   <td><Skeleton className="h-4 w-16" /></td>
@@ -330,6 +335,12 @@ export default function BossPortfolioListPage() {
                 </Link>
 
                 <div className="flex flex-1 flex-col gap-2 p-3.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-boss-head text-[11.5px] font-semibold tabular-nums text-boss-text-muted">
+                      {formatReceivedAt(item.createdAt ?? item.createdDt)}
+                    </span>
+                    {isToday(item.createdAt ?? item.createdDt) && <Badge tone="emerald">NEW</Badge>}
+                  </div>
                   <Link href={href} className="min-w-0">
                     <p className="truncate text-[14px] font-bold !text-boss-text">
                       {item.title || '제목 없음'}
@@ -384,6 +395,7 @@ export default function BossPortfolioListPage() {
         <DataTable>
           <thead>
             <tr>
+              <th>등록일</th>
               <th>사례</th>
               <th>유형</th>
               <th>지역</th>
@@ -402,6 +414,9 @@ export default function BossPortfolioListPage() {
               const href = `/boss/portfolio/${item.id}`;
               return (
                 <tr key={item.id}>
+                  <td>
+                    <ListDateCell at={item.createdAt ?? item.createdDt} id={item.id} />
+                  </td>
                   <td className="wrap">
                     <Link href={href} className="block font-semibold !text-boss-text hover:!text-boss-primary">
                       {item.title || '제목 없음'}

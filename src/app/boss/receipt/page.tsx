@@ -28,17 +28,11 @@ import {
   RowActions,
   ConfirmDialog,
 } from '@/components/boss/ui';
+import ListDateCell from '@/components/boss/ListDateCell';
 
 function formatWon(n?: number): string {
   if (n == null) return '-';
   return `₩${n.toLocaleString('ko-KR')}`;
-}
-
-function fmtDate(s?: string): string {
-  if (!s) return '-';
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s.length >= 10 ? s.substring(0, 10).replace(/-/g, '.') : s;
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function ymLabel(ym: string): string {
@@ -277,8 +271,8 @@ export default function BossReceiptListPage() {
                       className={id != null ? 'cursor-pointer' : ''}
                       onClick={goDetail}
                     >
-                      <td className="font-boss-head tabular-nums text-boss-text-secondary">
-                        {fmtDate(item.txDate)}
+                      <td>
+                        <ListDateCell at={item.txDate} id={id} />
                       </td>
                       <td className="wrap max-w-[320px]">
                         <span className="font-medium text-boss-text">{item.vendorName ?? '상호 없음'}</span>
