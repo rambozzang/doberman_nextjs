@@ -90,7 +90,23 @@ const getAdditionalRequestLabelsStatic = (values: string[]): string => {
   return labels.join(', ');
 };
 
-const regionData = [
+type RegionOption = {
+  id: string;
+  name: string;
+  icon: string;
+  districts: { id: string; name: string }[];
+};
+
+// 전국(구/군 선택 없이 전국 도배사에게 발송) 지역 ID
+const NATIONWIDE_REGION_ID = "nationwide";
+
+const regionData: RegionOption[] = [
+  {
+    id: NATIONWIDE_REGION_ID,
+    name: "전국",
+    icon: "🇰🇷",
+    districts: []
+  },
   {
     id: "seoul",
     name: "서울특별시",
@@ -862,7 +878,8 @@ export default function QuoteRequestPage() {
         return !!formState.wallpaperType;
       case 4: // 추가 요청사항 (선택사항)
         return true;
-      case 5: // 지역 선택
+      case 5: // 지역 선택 (전국은 구/군 선택 없이 통과)
+        if (formState.region === NATIONWIDE_REGION_ID) return true;
         return !!(formState.region && formState.district);
       case 6: // 고객 정보 (로그인된 경우 스킵)
         if (isLoggedIn) return true; // 로그인된 경우 항상 통과
@@ -1713,7 +1730,7 @@ export default function QuoteRequestPage() {
                       <div className="space-y-6">
                         <div>
                           {/* 선택된 지역 표시 */}
-                          {formState.region && formState.district && (
+                          {formState.region && (formState.district || formState.region === NATIONWIDE_REGION_ID) && (
                             <div className="mb-4 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/30 rounded-xl">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center">
@@ -1723,8 +1740,11 @@ export default function QuoteRequestPage() {
                                   <div>
                                     <p className="text-sm text-blue-300">선택된 지역</p>
                                     <p className="text-lg font-bold text-white">
-                                      {regionData.find(r => r.id === formState.region)?.name} {regionData.find(r => r.id === formState.region)?.districts.find(d => d.id === formState.district)?.name}
+                                      {getRegionLabel(formState.region, formState.district)}
                                     </p>
+                                    {formState.region === NATIONWIDE_REGION_ID && (
+                                      <p className="text-xs text-slate-400 mt-0.5">전국 도배 전문가에게 견적 요청이 전달됩니다</p>
+                                    )}
                                   </div>
                                 </div>
                                 <button
@@ -1754,6 +1774,12 @@ export default function QuoteRequestPage() {
                                     updateField('region', region.id);
                                     updateField('district', ''); // 구/군 초기화
 
+                                    // 전국은 구/군 선택이 없으므로 바로 다음 단계로 이동
+                                    if (region.id === NATIONWIDE_REGION_ID) {
+                                      advanceToNextStep();
+                                      return;
+                                    }
+
                                     // 모바일에서 구/군 선택 영역으로 스크롤
                                     setTimeout(() => {
                                       if (districtRef.current && window.innerWidth < 1024) {
@@ -1768,9 +1794,11 @@ export default function QuoteRequestPage() {
                                       }
                                     }, 150);
                                   }}
-                                  className={`relative py-4 px-3 border-2 rounded-lg transition-all duration-300 hover:scale-[1.02] min-h-[80px] ${formState.region === region.id
+                                  className={`relative py-4 px-3 border-2 rounded-lg transition-all duration-300 hover:scale-[1.02] min-h-[80px] ${region.id === NATIONWIDE_REGION_ID ? 'col-span-full ' : ''}${formState.region === region.id
                                     ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/25'
-                                    : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60'
+                                    : region.id === NATIONWIDE_REGION_ID
+                                      ? 'border-amber-400/60 hover:border-amber-300 bg-gradient-to-br from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20'
+                                      : 'border-slate-600/50 hover:border-blue-400/50 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:from-slate-700/60 hover:to-slate-600/60'
                                     }`}
                                 >
                                   {formState.region === region.id && (
@@ -1784,14 +1812,19 @@ export default function QuoteRequestPage() {
                                       }`}>
                                       {region.name}
                                     </span>
+                                    {region.id === NATIONWIDE_REGION_ID && (
+                                      <span className="mt-1 text-xs text-amber-200/80">
+                                        지역 상관없이 전국 도배 전문가에게 견적받기
+                                      </span>
+                                    )}
                                   </div>
                                 </button>
                               ))}
                             </div>
                           </div>
 
-                          {/* 구/군 선택 - 시/도가 선택된 경우만 표시 */}
-                          {formState.region && (
+                          {/* 구/군 선택 - 시/도가 선택된 경우만 표시 (전국은 제외) */}
+                          {formState.region && formState.region !== NATIONWIDE_REGION_ID && (
                             <div ref={districtRef} className="animate-in slide-in-from-top duration-300">
                               <label className="block text-sm font-medium text-white mb-3">
                                 구/군 선택 *

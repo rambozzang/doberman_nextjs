@@ -170,6 +170,7 @@ export default function BossChatRoomPage() {
           aria-label="메시지 입력"
           disabled={!isConnected}
           className="boss-input"
+          maxLength={100}
         />
         <Button
           variant="primary"

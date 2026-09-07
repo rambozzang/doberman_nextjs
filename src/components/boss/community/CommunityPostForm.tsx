@@ -296,36 +296,42 @@ export default function CommunityPostForm({ mode, boardId, initial, defaultCateg
                 value={jobMeta.region}
                 onChange={(e) => setJobMeta((m) => ({ ...m, region: e.target.value }))}
                 placeholder="예: 서울 강남구"
+                maxLength={100}
               />
               <Field
                 label="직종 / 업무"
                 value={jobMeta.jobType}
                 onChange={(e) => setJobMeta((m) => ({ ...m, jobType: e.target.value }))}
                 placeholder="예: 도배 공수, 현장 보조"
+                maxLength={200}
               />
               <Field
                 label="급여 / 조건"
                 value={jobMeta.pay}
                 onChange={(e) => setJobMeta((m) => ({ ...m, pay: e.target.value }))}
                 placeholder="예: 일당 15만원"
+                maxLength={100}
               />
               <Field
                 label="연락처"
                 value={jobMeta.contact}
                 onChange={(e) => setJobMeta((m) => ({ ...m, contact: e.target.value }))}
                 placeholder="예: 010-1234-5678"
+                maxLength={20}
               />
               <Field
                 label="모집 인원"
                 value={jobMeta.headcount}
                 onChange={(e) => setJobMeta((m) => ({ ...m, headcount: e.target.value }))}
                 placeholder="예: 2명"
+                maxLength={100}
               />
               <Field
                 label="근무 기간"
                 value={jobMeta.period}
                 onChange={(e) => setJobMeta((m) => ({ ...m, period: e.target.value }))}
                 placeholder="예: 6개월 이상"
+                maxLength={100}
               />
             </div>
           </Panel>

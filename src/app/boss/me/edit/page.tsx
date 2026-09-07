@@ -155,6 +155,7 @@ export default function BossMyInfoEditPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="example@email.com"
+            maxLength={100}
           />
         </div>
       </section>

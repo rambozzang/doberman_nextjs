@@ -18,6 +18,7 @@ import { Plus, RefreshCw, Inbox, Lock, Copy } from 'lucide-react';
 import { bossTemplatesApi } from '@/lib/api/boss/templates';
 import { getBossCustId } from '@/lib/api/boss/as';
 import { mergeWithDefaults } from '@/lib/boss/defaultTemplates';
+import { TEMPLATE_CONTENT_MAX } from '@/components/boss/templates/TemplateManagerDialog';
 import type { BossTemplate, BossTemplateFormValue } from '@/types/boss-templates';
 import RichEditor from '@/components/boss/RichEditor';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
@@ -180,6 +181,10 @@ export default function BossTemplatesPage() {
     }
     if (!v.content.trim()) {
       toast.error('견적서 내용을 입력해주세요');
+      return;
+    }
+    if (v.content.length > TEMPLATE_CONTENT_MAX) {
+      toast.error(`견적서 내용은 서식 포함 ${TEMPLATE_CONTENT_MAX.toLocaleString('ko-KR')}자까지 저장할 수 있습니다.`);
       return;
     }
     if (!custId) {
@@ -361,6 +366,7 @@ export default function BossTemplatesPage() {
                   onChange={(e) => update('name', e.target.value)}
                   placeholder="예) 도배 공사용, 인테리어용"
                   autoFocus
+                  maxLength={100}
                 />
                 <Field
                   id="tpl-title"
@@ -369,6 +375,7 @@ export default function BossTemplatesPage() {
                   value={editor.value.title}
                   onChange={(e) => update('title', e.target.value)}
                   placeholder="예) 견적서 보내드립니다."
+                  maxLength={200}
                 />
               </div>
               <div className="mt-4">
@@ -379,6 +386,13 @@ export default function BossTemplatesPage() {
                   placeholder="굵게 · 목록 · 링크를 써서 고객에게 보낼 답변을 작성하세요."
                   minHeight={260}
                 />
+                <p
+                  className={`mt-1 text-right font-boss-head text-[12px] tabular-nums ${
+                    editor.value.content.length > TEMPLATE_CONTENT_MAX ? 'text-boss-error' : 'text-boss-text-muted'
+                  }`}
+                >
+                  {editor.value.content.length.toLocaleString('ko-KR')}/{TEMPLATE_CONTENT_MAX.toLocaleString('ko-KR')} (서식 포함)
+                </p>
               </div>
             </Panel>
 

@@ -339,6 +339,7 @@ export default function BossMyCompanyPage() {
               onChange={(e) => setName(e.target.value)}
               placeholder="(주)도배르만"
               autoFocus={!isEdit}
+              maxLength={50}
             />
             <Field
               id="co-owner"
@@ -347,6 +348,7 @@ export default function BossMyCompanyPage() {
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
               placeholder="홍길동"
+              maxLength={50}
             />
             <Field
               id="co-bizno"
@@ -356,6 +358,7 @@ export default function BossMyCompanyPage() {
               onChange={(e) => setBizno(e.target.value)}
               placeholder="123-45-67890"
               className="[&_input]:font-boss-head [&_input]:tabular-nums"
+              maxLength={12}
             />
             {/* 견적 수신 지역 — 자유 입력이 아니라 시 · 도 선택(최대 3개). 앱과 같은 규칙 */}
             <div>
@@ -381,6 +384,7 @@ export default function BossMyCompanyPage() {
               value={type}
               onChange={(e) => setType(e.target.value)}
               placeholder="서비스업"
+              maxLength={50}
             />
             <Field
               id="co-kind"
@@ -389,6 +393,7 @@ export default function BossMyCompanyPage() {
               value={kind}
               onChange={(e) => setKind(e.target.value)}
               placeholder="도배"
+              maxLength={50}
             />
           </div>
         </Panel>
@@ -403,6 +408,7 @@ export default function BossMyCompanyPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="02-1234-5678"
+              maxLength={20}
             />
             <Field
               id="co-fax"
@@ -411,6 +417,7 @@ export default function BossMyCompanyPage() {
               value={fax}
               onChange={(e) => setFax(e.target.value)}
               placeholder="02-1234-5679"
+              maxLength={20}
             />
             <Field
               id="co-email"
@@ -419,6 +426,7 @@ export default function BossMyCompanyPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="company@example.com"
+              maxLength={100}
             />
             <Field
               id="co-url"
@@ -427,6 +435,7 @@ export default function BossMyCompanyPage() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
+              maxLength={500}
             />
           </div>
         </Panel>
@@ -452,6 +461,7 @@ export default function BossMyCompanyPage() {
               value={address1}
               onChange={(e) => setAddress1(e.target.value)}
               placeholder="도로명 또는 지번 주소"
+              maxLength={200}
             />
             <Field
               id="co-address2"
@@ -461,6 +471,7 @@ export default function BossMyCompanyPage() {
               onChange={(e) => setAddress2(e.target.value)}
               placeholder="층 · 호수 등"
               className="md:col-span-2"
+              maxLength={200}
             />
           </div>
         </Panel>
@@ -475,6 +486,7 @@ export default function BossMyCompanyPage() {
               onChange={(e) => setIntro(e.target.value)}
               rows={3}
               placeholder="고객에게 보여 줄 한두 문장. 시공 경력 · 주력 공종 · 지역을 적으면 좋습니다."
+              maxLength={2000}
             />
             <TextareaField
               id="co-bigo"
@@ -483,6 +495,7 @@ export default function BossMyCompanyPage() {
               onChange={(e) => setBigo(e.target.value)}
               rows={2}
               placeholder="내부 메모 (고객에게 보이지 않습니다)"
+              maxLength={2000}
             />
           </div>
         </Panel>

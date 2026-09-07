@@ -838,6 +838,7 @@ function EventFormModal({
           onChange={(e) => onChange({ ...form, title: e.target.value })}
           placeholder="예) 김OO 고객 견적 방문"
           autoFocus
+          maxLength={200}
         />
 
         <CheckLine
@@ -889,6 +890,7 @@ function EventFormModal({
             value={form.location}
             onChange={(e) => onChange({ ...form, location: e.target.value })}
             placeholder="현장 주소"
+            maxLength={200}
           />
           <Field
             id="ev-phone"
@@ -897,6 +899,7 @@ function EventFormModal({
             value={form.phone}
             onChange={(e) => onChange({ ...form, phone: e.target.value })}
             placeholder="010-0000-0000"
+            maxLength={20}
           />
         </div>
 
@@ -907,6 +910,7 @@ function EventFormModal({
           value={form.description}
           onChange={(e) => onChange({ ...form, description: e.target.value })}
           placeholder="준비물 · 특이사항"
+          maxLength={2000}
         />
 
         {/* 반복 / 알림 */}
@@ -1034,6 +1038,7 @@ function ShareModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
               onChange={(e) => setReceiveUserId(e.target.value)}
               placeholder="상대방 로그인 아이디"
               className="boss-input"
+              maxLength={50}
             />
             <Button variant="primary" onClick={handleShare} disabled={submitting}>
               {submitting ? '공유 중…' : '공유'}

@@ -329,6 +329,7 @@ export default function EstimateItemsPanel({
               value={form.itemName}
               onChange={(e) => setForm((f) => ({ ...f, itemName: e.target.value }))}
               placeholder="예: 실크 도배"
+              maxLength={100}
             />
             <Field
               id="itemSpec"
@@ -336,6 +337,7 @@ export default function EstimateItemsPanel({
               value={form.itemSpec}
               onChange={(e) => setForm((f) => ({ ...f, itemSpec: e.target.value }))}
               placeholder="예: 광폭"
+              maxLength={50}
             />
             <Field
               id="unit"
@@ -343,6 +345,7 @@ export default function EstimateItemsPanel({
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
               placeholder="예: 롤"
+              maxLength={20}
             />
             <Field
               id="quantity"
@@ -351,6 +354,7 @@ export default function EstimateItemsPanel({
               inputMode="numeric"
               value={form.quantity}
               onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
+              maxLength={12}
             />
             <Field
               id="unitPrice"
@@ -360,6 +364,7 @@ export default function EstimateItemsPanel({
               hint={TAX_MODE_LABEL[form.taxMode]}
               value={form.unitPrice ? toNumber(form.unitPrice).toLocaleString('ko-KR') : ''}
               onChange={(e) => setForm((f) => ({ ...f, unitPrice: e.target.value }))}
+              maxLength={12}
             />
             <TextareaField
               className="col-span-2 md:col-span-6"
@@ -368,6 +373,7 @@ export default function EstimateItemsPanel({
               rows={2}
               value={form.memo}
               onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
+              maxLength={2000}
             />
           </div>
 

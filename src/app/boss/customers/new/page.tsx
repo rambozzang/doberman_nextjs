@@ -124,6 +124,7 @@ export default function BossOrderQuickPage() {
               onChange={(e) => set('name', e.target.value)}
               placeholder="홍길동"
               autoFocus
+              maxLength={100}
             />
             <Field
               id="phone"
@@ -132,6 +133,7 @@ export default function BossOrderQuickPage() {
               value={form.phone}
               onChange={(e) => set('phone', e.target.value)}
               placeholder="010-0000-0000"
+              maxLength={20}
             />
             <Field
               id="email"
@@ -141,6 +143,7 @@ export default function BossOrderQuickPage() {
               onChange={(e) => set('email', e.target.value)}
               placeholder="customer@example.com"
               className="md:col-span-2"
+              maxLength={100}
             />
           </div>
 
@@ -189,6 +192,7 @@ export default function BossOrderQuickPage() {
               value={form.address1}
               onChange={(e) => set('address1', e.target.value)}
               placeholder="도로명 주소"
+              maxLength={200}
             />
             <Field
               id="address2"
@@ -197,6 +201,7 @@ export default function BossOrderQuickPage() {
               onChange={(e) => set('address2', e.target.value)}
               placeholder="동 · 호수"
               className="md:col-span-2"
+              maxLength={200}
             />
             <Field
               id="commonPw"
@@ -204,6 +209,7 @@ export default function BossOrderQuickPage() {
               value={form.commonPw}
               onChange={(e) => set('commonPw', e.target.value)}
               placeholder="****"
+              maxLength={50}
             />
             <Field
               id="housePw"
@@ -211,6 +217,7 @@ export default function BossOrderQuickPage() {
               value={form.housePw}
               onChange={(e) => set('housePw', e.target.value)}
               placeholder="****"
+              maxLength={50}
             />
           </div>
 
@@ -223,6 +230,7 @@ export default function BossOrderQuickPage() {
               onChange={(e) => set('memo', e.target.value)}
               placeholder="추가 요청사항이나 메모를 입력하세요."
               rows={4}
+              maxLength={2000}
             />
             <SelectField
               id="statusCd"

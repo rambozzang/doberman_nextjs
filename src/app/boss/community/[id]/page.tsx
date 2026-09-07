@@ -424,6 +424,7 @@ export default function BossCommunityDetailPage() {
                   rows={2}
                   aria-label="댓글 입력"
                   className="boss-input !min-h-[60px] flex-1 resize-none"
+                  maxLength={1000}
                 />
                 <Button
                   variant="primary"

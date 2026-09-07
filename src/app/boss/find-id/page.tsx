@@ -69,6 +69,7 @@ export default function BossFindIdPage() {
           onChange={(e) => setName(e.target.value)}
           placeholder="홍길동"
           autoFocus
+          maxLength={50}
         />
         <Field
           id="phone"

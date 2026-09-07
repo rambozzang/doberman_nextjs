@@ -235,6 +235,7 @@ export default function BossAnswerPage() {
               placeholder="0"
               className="max-w-[280px] [&_input]:text-right [&_input]:font-boss-head [&_input]:text-[16px] [&_input]:font-semibold"
               hint={formattedCost ? <span className="font-boss-head tabular-nums">{formattedCost}</span> : '부가세 포함 여부를 본문에 적어 주세요.'}
+              maxLength={12}
             />
           </div>
         </Panel>

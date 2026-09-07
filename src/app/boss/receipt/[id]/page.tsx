@@ -206,6 +206,7 @@ export default function BossReceiptDetailPage() {
                   value={vendorName}
                   onChange={(e) => setVendorName(e.target.value)}
                   placeholder="예: OO벽지 · OO자재"
+                  maxLength={50}
                 />
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field
@@ -239,6 +240,7 @@ export default function BossReceiptDetailPage() {
                     onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d]/g, ''))}
                     placeholder="0"
                     className="[&_input]:font-boss-head [&_input]:tabular-nums"
+                    maxLength={12}
                   />
                   <Field
                     id="taxAmount"
@@ -251,6 +253,7 @@ export default function BossReceiptDetailPage() {
                     placeholder="0"
                     hint="비워 두면 부가세 없음으로 저장됩니다."
                     className="[&_input]:font-boss-head [&_input]:tabular-nums"
+                    maxLength={12}
                   />
                 </div>
                 <SelectField
@@ -271,6 +274,7 @@ export default function BossReceiptDetailPage() {
                   onChange={(e) => setMemo(e.target.value)}
                   rows={3}
                   placeholder="용도 · 현장 · 특이사항"
+                  maxLength={2000}
                 />
               </div>
             </Panel>

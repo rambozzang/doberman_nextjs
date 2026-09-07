@@ -134,6 +134,7 @@ function TextField({
           inputMode={numeric ? 'numeric' : 'text'}
           aria-label={ariaLabel ?? label}
           className={`boss-input ${numeric ? 'font-boss-head tabular-nums' : ''} ${suffix ? 'pr-12' : ''}`}
+          maxLength={100}
         />
         {suffix && (
           <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-[12.5px] text-boss-text-muted">
@@ -544,6 +545,7 @@ function BossChecklistNewForm() {
             onChange={(e) => patch({ bigo: e.target.value })}
             rows={4}
             placeholder="고객과 확인한 특이사항 · 약속 · 주의점을 적어 두세요. 인쇄물 맨 아래에 나옵니다."
+            maxLength={2000}
           />
         </Panel>
 

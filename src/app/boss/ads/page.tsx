@@ -430,6 +430,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
           placeholder="강남구"
           disabled={!form.regionSido}
           hint="비우면 시도 전체에 노출됩니다"
+          maxLength={100}
         />
         <Field
           id="ad-start"
@@ -451,6 +452,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
           value={form.imageUrl ?? ''}
           onChange={(e) => set('imageUrl', e.target.value)}
           placeholder="https://..."
+          maxLength={500}
         />
         <Field
           id="ad-landing"
@@ -459,6 +461,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
           onChange={(e) => set('landingUrl', e.target.value)}
           placeholder="https://..."
           hint="비우면 지도의 업체 상세로 이동합니다"
+          maxLength={500}
         />
       </div>
 

@@ -267,6 +267,7 @@ function BossAsAddForm() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 안방 벽지 들뜸 재시공"
+              maxLength={200}
             />
             <div className="grid gap-4 md:grid-cols-2">
               <Field
@@ -277,6 +278,7 @@ function BossAsAddForm() {
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="고객 이름"
+                maxLength={50}
               />
               <Field
                 id="customerPhone"
@@ -285,6 +287,7 @@ function BossAsAddForm() {
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="010-0000-0000"
+                maxLength={20}
               />
             </div>
             <Field
@@ -294,6 +297,7 @@ function BossAsAddForm() {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="시공 현장 주소"
+              maxLength={200}
             />
           </div>
         </Panel>
@@ -336,6 +340,7 @@ function BossAsAddForm() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="위치 · 증상 · 발생 시점을 적어 두면 재방문 때 도움이 됩니다"
+              maxLength={2000}
             />
           </div>
         </Panel>
@@ -366,6 +371,7 @@ function BossAsAddForm() {
                 }}
                 placeholder="https:// 로 시작하는 이미지 주소"
                 className="boss-input min-w-0 flex-1"
+                maxLength={500}
               />
               <Button
                 variant="secondary"

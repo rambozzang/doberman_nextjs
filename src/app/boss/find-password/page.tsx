@@ -122,6 +122,7 @@ export default function BossFindPasswordPage() {
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
             autoFocus
+            maxLength={50}
           />
           <Field
             id="name"
@@ -133,6 +134,7 @@ export default function BossFindPasswordPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="홍길동"
             className="mt-4"
+            maxLength={50}
           />
           <Field
             id="phone"
@@ -178,6 +180,7 @@ export default function BossFindPasswordPage() {
                 className="boss-input pr-10"
                 placeholder="6자 이상"
                 autoFocus
+                maxLength={50}
               />
               <button
                 type="button"
@@ -205,6 +208,7 @@ export default function BossFindPasswordPage() {
               ) : undefined
             }
             className="mt-4"
+            maxLength={50}
           />
 
           <Button type="submit" variant="primary" disabled={loading} className="mt-5 w-full py-3">

@@ -285,6 +285,7 @@ export default function BossStorePage() {
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="예) 도배풀, 실크벽지, 초배지, 도배 헤라"
                 className="min-w-[220px] flex-1"
+                maxLength={100}
               />
               <SelectField
                 id="store-category"
@@ -358,6 +359,7 @@ export default function BossStorePage() {
                 onChange={(e) => setUrlForm((f) => ({ ...f, coupangUrl: e.target.value }))}
                 placeholder="https://www.coupang.com/vp/products/…"
                 className="md:col-span-2"
+                maxLength={500}
               />
               <Field
                 id="store-url-name"
@@ -365,6 +367,7 @@ export default function BossStorePage() {
                 value={urlForm.productName}
                 onChange={(e) => setUrlForm((f) => ({ ...f, productName: e.target.value }))}
                 placeholder="고객에게 보일 이름"
+                maxLength={500}
               />
               <Field
                 id="store-url-price"
@@ -373,6 +376,7 @@ export default function BossStorePage() {
                 value={urlForm.productPrice}
                 onChange={(e) => setUrlForm((f) => ({ ...f, productPrice: e.target.value.replace(/[^\d]/g, '') }))}
                 placeholder="비워도 됩니다"
+                maxLength={500}
               />
               <Field
                 id="store-url-image"
@@ -381,6 +385,7 @@ export default function BossStorePage() {
                 onChange={(e) => setUrlForm((f) => ({ ...f, productImage: e.target.value }))}
                 placeholder="https://… (비워도 됩니다)"
                 className="md:col-span-2"
+                maxLength={500}
               />
               <div className="flex items-center justify-end gap-2 md:col-span-2">
                 <span className="mr-auto text-[12px] text-boss-text-secondary">

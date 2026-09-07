@@ -220,6 +220,7 @@ export default function BossPortfolioNewPage() {
             onChange={(e) => update('title', e.target.value)}
             placeholder="예) 강남구 아파트 32평 전체 도배"
             hint="고객 검색 결과에 그대로 보입니다. 지역 · 평수 · 시공 범위를 넣어 주세요."
+            maxLength={200}
           />
           <div className="grid gap-3.5 sm:grid-cols-2">
             <SelectField
@@ -254,6 +255,7 @@ export default function BossPortfolioNewPage() {
               value={form.region}
               onChange={(e) => update('region', e.target.value)}
               placeholder="예) 서울 강남구"
+              maxLength={100}
             />
             <Field
               id="area"
@@ -263,6 +265,7 @@ export default function BossPortfolioNewPage() {
               onChange={(e) => update('area', e.target.value.replace(/[^0-9.]/g, ''))}
               placeholder="32"
               inputMode="decimal"
+              maxLength={100}
             />
             <Field
               id="cost"
@@ -275,6 +278,7 @@ export default function BossPortfolioNewPage() {
               hint={
                 form.cost ? `${Number(form.cost).toLocaleString('ko-KR')}원` : '숫자만 입력합니다.'
               }
+              maxLength={12}
             />
             <Field
               id="workDate"
@@ -291,6 +295,7 @@ export default function BossPortfolioNewPage() {
             onChange={(e) => update('description', e.target.value)}
             placeholder="작업 범위, 사용 자재, 특이사항을 적어 주세요."
             rows={4}
+            maxLength={2000}
           />
           <div>
             <FieldLabel>공개 여부</FieldLabel>
@@ -346,6 +351,7 @@ export default function BossPortfolioNewPage() {
               placeholder="https://"
               aria-label="링크 URL"
               className="boss-input"
+              maxLength={500}
             />
             <input
               value={linkTitle}
@@ -353,6 +359,7 @@ export default function BossPortfolioNewPage() {
               placeholder="제목 (선택)"
               aria-label="링크 제목"
               className="boss-input"
+              maxLength={500}
             />
             <input
               value={linkThumb}
@@ -360,6 +367,7 @@ export default function BossPortfolioNewPage() {
               placeholder="썸네일 URL (선택)"
               aria-label="썸네일 URL"
               className="boss-input"
+              maxLength={500}
             />
             <Button variant="secondary" icon={Plus} onClick={addLink} disabled={!linkUrl.trim()} className="h-9">
               추가
@@ -584,6 +592,7 @@ function ImageGroup({
               onAdd();
             }
           }}
+          maxLength={500}
         />
         <Button variant="secondary" size="sm" onClick={onAdd} disabled={!inputValue.trim()} className="h-9">
           추가

@@ -219,6 +219,7 @@ function EstimateList() {
                 inputMode="numeric"
                 aria-label="고객 번호"
                 className="boss-input font-boss-head tabular-nums"
+                maxLength={12}
               />
             </div>
             <Button type="submit" variant="secondary">

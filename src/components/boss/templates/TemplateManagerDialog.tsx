@@ -23,6 +23,9 @@ export const DEFAULT_TEMPLATE_TITLE = '견적서 보내드립니다.';
 
 const emptyForm: BossTemplateFormValue = { name: '', title: DEFAULT_TEMPLATE_TITLE, content: '' };
 
+/** 서버 TB_WEB_TEMPLATE.CONTENT 가 2,000자 — 서식(HTML) 포함 길이라 편집기 아래에 남은 글자를 보여 준다 */
+export const TEMPLATE_CONTENT_MAX = 2000;
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -104,6 +107,10 @@ export default function TemplateManagerDialog({
   const save = async () => {
     if (missing.length > 0) {
       toast.error(`${missing.join(' · ')}을(를) 입력해 주세요.`);
+      return;
+    }
+    if (form.content.length > TEMPLATE_CONTENT_MAX) {
+      toast.error(`양식 내용은 서식 포함 ${TEMPLATE_CONTENT_MAX.toLocaleString('ko-KR')}자까지 저장할 수 있습니다.`);
       return;
     }
     const custId = getBossCustId();
@@ -272,6 +279,7 @@ export default function TemplateManagerDialog({
                   onChange={(e) => update('name', e.target.value)}
                   placeholder="예) 아파트 실크벽지, 원룸 합지"
                   autoFocus
+                  maxLength={100}
                 />
                 <Field
                   id="tm-title"
@@ -280,6 +288,7 @@ export default function TemplateManagerDialog({
                   value={form.title}
                   onChange={(e) => update('title', e.target.value)}
                   placeholder={DEFAULT_TEMPLATE_TITLE}
+                  maxLength={200}
                 />
               </div>
               <div>
@@ -290,6 +299,13 @@ export default function TemplateManagerDialog({
                   placeholder="시공 범위 · 자재 · 일정 · AS 조건처럼 매번 적는 문구를 넣어 두세요."
                   minHeight={220}
                 />
+                <p
+                  className={`mt-1 text-right font-boss-head text-[12px] tabular-nums ${
+                    form.content.length > TEMPLATE_CONTENT_MAX ? 'text-boss-error' : 'text-boss-text-muted'
+                  }`}
+                >
+                  {form.content.length.toLocaleString('ko-KR')}/{TEMPLATE_CONTENT_MAX.toLocaleString('ko-KR')} (서식 포함)
+                </p>
               </div>
             </div>
           )}

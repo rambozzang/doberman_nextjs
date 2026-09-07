@@ -1373,6 +1373,8 @@ export function Field({
   suffix?: string;
   className?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
+  // maxLength 가 있으면 "n/최대" 를 오른쪽에 보여 준다 — 어디까지 쓸 수 있는지 사장님이 바로 안다
+  const counter = fieldCounter(rest.value, rest.maxLength);
   return (
     <div className={className}>
       <FieldLabel required={required} htmlFor={id}>
@@ -1394,7 +1396,28 @@ export function Field({
           </span>
         )}
       </div>
-      {hint && <div className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">{hint}</div>}
+      <FieldFoot hint={hint} counter={counter} />
+    </div>
+  );
+}
+
+/** 글자 수 표시 — 값이 문자열이고 maxLength 가 있을 때만 */
+function fieldCounter(value: unknown, maxLength?: number): string | null {
+  if (!maxLength || typeof value !== 'string') return null;
+  return `${value.length}/${maxLength}`;
+}
+
+/** 칸 아래 줄 — 왼쪽 안내, 오른쪽 글자 수. 둘 다 없으면 그리지 않는다 */
+function FieldFoot({ hint, counter }: { hint?: ReactNode; counter: string | null }) {
+  if (!hint && !counter) return null;
+  return (
+    <div className="mt-1 flex items-start justify-between gap-3 text-[12px] leading-relaxed">
+      <div className="min-w-0 text-boss-text-secondary">{hint}</div>
+      {counter && (
+        <span className="shrink-0 font-boss-head tabular-nums text-boss-text-muted" aria-live="polite">
+          {counter}
+        </span>
+      )}
     </div>
   );
 }
@@ -1440,13 +1463,14 @@ export function TextareaField({
   hint?: ReactNode;
   className?: string;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const counter = fieldCounter(rest.value, rest.maxLength);
   return (
     <div className={className}>
       <FieldLabel required={required} htmlFor={id}>
         {label}
       </FieldLabel>
       <textarea id={id} {...rest} className="boss-input" />
-      {hint && <div className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">{hint}</div>}
+      <FieldFoot hint={hint} counter={counter} />
     </div>
   );
 }

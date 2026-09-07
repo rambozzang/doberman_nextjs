@@ -422,6 +422,7 @@ export default function BossChatInboxPage() {
                   aria-label="답변 입력"
                   disabled={!isConnected}
                   className="min-h-[62px] w-full resize-none bg-transparent px-3.5 py-3 text-[13.5px] leading-[1.6] text-boss-text outline-none placeholder:text-boss-text-faint disabled:opacity-50"
+                  maxLength={2000}
                 />
                 <div className="flex items-center gap-[7px] border-t border-boss-border px-[11px] py-[8px]">
                   <select

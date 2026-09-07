@@ -266,6 +266,7 @@ export default function BossSignatureCapturePage() {
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="서명하는 고객 이름"
                 autoComplete="off"
+                maxLength={50}
               />
               <Field
                 id="customerPhone"
@@ -275,6 +276,7 @@ export default function BossSignatureCapturePage() {
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="010-0000-0000"
+                maxLength={20}
               />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -286,6 +288,7 @@ export default function BossSignatureCapturePage() {
                 value={orderIdInput}
                 onChange={(e) => setOrderIdInput(e.target.value)}
                 placeholder="예: 1234"
+                maxLength={12}
               />
               <Field
                 id="recordId"
@@ -295,6 +298,7 @@ export default function BossSignatureCapturePage() {
                 value={recordIdInput}
                 onChange={(e) => setRecordIdInput(e.target.value)}
                 placeholder="예: 56"
+                maxLength={12}
               />
             </div>
             <TextareaField
@@ -304,6 +308,7 @@ export default function BossSignatureCapturePage() {
               onChange={(e) => setMemo(e.target.value)}
               rows={3}
               placeholder="현장 · 시공 내용 · 고객 요청 사항"
+              maxLength={2000}
             />
           </div>
         </Panel>

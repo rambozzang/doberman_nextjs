@@ -114,6 +114,7 @@ export default function BossCommunityReportPage() {
             rows={6}
             placeholder="어떤 부분이 문제인지 구체적으로 적어 주세요. 운영팀이 판단하는 근거가 됩니다."
             hint={`${reason.trim().length.toLocaleString()}자 입력`}
+            maxLength={2000}
           />
         </div>
       </Panel>

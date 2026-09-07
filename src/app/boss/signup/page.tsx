@@ -232,6 +232,7 @@ export default function BossSignupPage() {
                 }}
                 className="boss-input min-w-0 flex-1"
                 placeholder="영문 · 숫자 6자 이상"
+                maxLength={50}
               />
               <Button
                 variant="secondary"
@@ -268,6 +269,7 @@ export default function BossSignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="boss-input pr-10"
                 placeholder="6자 이상"
+                maxLength={50}
               />
               <button
                 type="button"
@@ -296,6 +298,7 @@ export default function BossSignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="홍길동"
+              maxLength={50}
             />
             <Field
               id="phone"
@@ -321,6 +324,7 @@ export default function BossSignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="example@email.com"
             hint="아이디 찾기 안내를 받을 주소입니다."
+            maxLength={100}
           />
         </Section>
 
@@ -338,6 +342,7 @@ export default function BossSignupPage() {
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder="(주) 도배르만"
+            maxLength={50}
           />
           <div className="grid gap-3.5 sm:grid-cols-2">
             <Field
@@ -348,6 +353,7 @@ export default function BossSignupPage() {
               value={companyOwner}
               onChange={(e) => setCompanyOwner(e.target.value)}
               placeholder="홍길동"
+              maxLength={50}
             />
             <Field
               id="companyBizno"
@@ -380,6 +386,7 @@ export default function BossSignupPage() {
               value={companyAddress1}
               onChange={(e) => setCompanyAddress1(e.target.value)}
               placeholder="서울시 강남구 …"
+              maxLength={200}
             />
           </div>
         </Section>

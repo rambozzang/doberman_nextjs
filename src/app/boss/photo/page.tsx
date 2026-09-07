@@ -643,6 +643,7 @@ function BossPhotoInner() {
                   onChange={(e) => setAddUrl(e.target.value)}
                   placeholder="https://…"
                   className="boss-input"
+                  maxLength={500}
                 />
                 <Button variant="secondary" onClick={handleAddByUrl}>
                   추가

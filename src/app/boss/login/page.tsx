@@ -121,6 +121,7 @@ export default function BossLoginPage() {
               onChange={(e) => setUserId(e.target.value)}
               className="boss-input"
               autoFocus
+              maxLength={50}
             />
           </div>
 
@@ -142,6 +143,7 @@ export default function BossLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="boss-input pr-10"
+                maxLength={50}
               />
               <button
                 type="button"

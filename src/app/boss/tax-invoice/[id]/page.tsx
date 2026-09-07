@@ -336,6 +336,7 @@ export default function BossTaxInvoiceDetailPage() {
                 onChange={(e) => setApprovalNo(e.target.value)}
                 placeholder="20260906-41000000-12345678"
                 hint="홈택스 발급 완료 화면의 승인번호. 현금영수증은 승인번호 8자리."
+                maxLength={50}
               />
               <Field
                 id="issueDate"

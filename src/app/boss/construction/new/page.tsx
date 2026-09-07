@@ -257,6 +257,7 @@ function ConstructionFormInner() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 신촌 OO아파트 거실 도배 시공"
               disabled={loadingDetail}
+              maxLength={200}
             />
             <TextareaField
               id="description"
@@ -266,6 +267,7 @@ function ConstructionFormInner() {
               rows={4}
               placeholder="자재 · 평수 · 특이사항 등 시공 내용을 자유롭게 적어 두세요"
               disabled={loadingDetail}
+              maxLength={2000}
             />
             <div className="grid gap-4 md:grid-cols-2">
               <Field
@@ -341,6 +343,7 @@ function ConstructionFormInner() {
                       }}
                       placeholder="https:// 로 시작하는 이미지 주소"
                       className="boss-input flex-1"
+                      maxLength={500}
                     />
                     <Button
                       variant="secondary"

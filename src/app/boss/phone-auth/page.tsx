@@ -101,6 +101,7 @@ export default function BossPhoneAuthPage() {
           placeholder="실명"
           disabled={verified}
           autoFocus
+          maxLength={50}
         />
 
         {showBirth && (

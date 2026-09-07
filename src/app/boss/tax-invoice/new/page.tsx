@@ -374,6 +374,7 @@ function TaxInvoiceForm() {
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
               placeholder={docType === 'TAX' ? '(주)OO인테리어' : '홍길동'}
+              maxLength={100}
             />
             <div>
               <Field
@@ -399,6 +400,7 @@ function TaxInvoiceForm() {
                     '고객 사업자등록증의 10자리 번호'
                   )
                 }
+                maxLength={12}
               />
             </div>
             {docType === 'TAX' ? (
@@ -408,6 +410,7 @@ function TaxInvoiceForm() {
                   label="대표자"
                   value={buyerCeo}
                   onChange={(e) => setBuyerCeo(e.target.value)}
+                  maxLength={100}
                 />
                 <Field
                   id="buyerEmail"
@@ -417,6 +420,7 @@ function TaxInvoiceForm() {
                   onChange={(e) => setBuyerEmail(e.target.value)}
                   placeholder="tax@example.com"
                   hint="홈택스 발행 시 이 주소로 계산서가 전송됩니다."
+                  maxLength={100}
                 />
                 <Field
                   id="buyerAddress"
@@ -424,6 +428,7 @@ function TaxInvoiceForm() {
                   className="md:col-span-2"
                   value={buyerAddress}
                   onChange={(e) => setBuyerAddress(e.target.value)}
+                  maxLength={200}
                 />
                 <Field
                   id="buyerBizType"
@@ -431,6 +436,7 @@ function TaxInvoiceForm() {
                   value={buyerBizType}
                   onChange={(e) => setBuyerBizType(e.target.value)}
                   placeholder="건설업"
+                  maxLength={50}
                 />
                 <Field
                   id="buyerBizKind"
@@ -438,6 +444,7 @@ function TaxInvoiceForm() {
                   value={buyerBizKind}
                   onChange={(e) => setBuyerBizKind(e.target.value)}
                   placeholder="실내건축공사"
+                  maxLength={50}
                 />
               </>
             ) : (
@@ -450,6 +457,7 @@ function TaxInvoiceForm() {
                 inputMode="tel"
                 placeholder="010-0000-0000"
                 hint="소득공제용은 휴대폰번호, 지출증빙용은 사업자번호로 발급합니다."
+                maxLength={20}
               />
             )}
           </div>
@@ -489,6 +497,7 @@ function TaxInvoiceForm() {
                         onChange={(e) => updateRow(r.key, { name: e.target.value })}
                         placeholder="도배 시공"
                         aria-label="품목"
+                        maxLength={100}
                       />
                     </td>
                     <td className="min-w-[120px]">
@@ -498,6 +507,7 @@ function TaxInvoiceForm() {
                         onChange={(e) => updateRow(r.key, { spec: e.target.value })}
                         placeholder="84㎡ 실크"
                         aria-label="규격"
+                        maxLength={50}
                       />
                     </td>
                     <td className="w-[90px]">
@@ -584,6 +594,7 @@ function TaxInvoiceForm() {
               onChange={(e) => setMemo(e.target.value)}
               placeholder="현장명 · 담당자 · 요청 경위 등"
               rows={3}
+              maxLength={2000}
             />
           </div>
         </Panel>
