@@ -38,14 +38,16 @@ export function middleware(request: NextRequest) {
   const hostname = host.split(':')[0];
 
   // boss.doberman.kr → www.doberman.kr/boss 와 같은 화면.
-  //   boss.doberman.kr/            → /boss
-  //   boss.doberman.kr/customers   → /boss/customers  (주소는 그대로, 안에서만 바꿔 그린다)
-  //   boss.doberman.kr/boss/...    → 그대로 (화면 안의 링크가 /boss/... 라 그대로 통한다)
+  //   boss.doberman.kr/            → /boss            (주소를 바꿔 준다)
+  //   boss.doberman.kr/customers   → /boss/customers
+  //   boss.doberman.kr/boss/...    → 그대로
+  // rewrite 가 아니라 redirect 인 이유: 화면(SiteChrome)이 브라우저 주소로 /boss 여부를 판단해
+  // 소비자 사이트 헤더 · 푸터를 붙일지 정한다. 안에서만 바꾸면 주소가 / 라서 헤더 · 푸터가 붙는다.
   if (BOSS_HOSTS.has(hostname)) {
     const url = request.nextUrl.clone();
     if (passesOnBossHost(url.pathname)) return NextResponse.next();
     url.pathname = url.pathname === '/' ? '/boss' : `/boss${url.pathname}`;
-    return NextResponse.rewrite(url);
+    return NextResponse.redirect(url, 307);
   }
 
   if (hostname !== 'doberman.kr') return NextResponse.next();
