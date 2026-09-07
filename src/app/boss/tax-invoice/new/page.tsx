@@ -240,12 +240,13 @@ function TaxInvoiceForm() {
     return { supply, vat, total: supply + vat };
   }, [rows]);
 
-  const bizNoOk = docType === 'CASH' ? true : isValidBizNo(buyerBizNo);
+  // 현금영수증은 사업자번호가 선택이지만, 적었다면 형식은 맞아야 한다(지출증빙용으로 홈택스에 그대로 들어간다)
+  const bizNoOk = docType === 'CASH' ? !buyerBizNo.trim() || isValidBizNo(buyerBizNo) : isValidBizNo(buyerBizNo);
   const missing = useMemo(() => {
     const list: string[] = [];
     if (!buyerName.trim()) list.push(docType === 'TAX' ? '상호(법인명)' : '고객명');
     if (docType === 'TAX' && !buyerBizNo.trim()) list.push('사업자등록번호');
-    if (docType === 'TAX' && buyerBizNo.trim() && !bizNoOk) list.push('사업자등록번호 형식(체크섬 불일치)');
+    if (buyerBizNo.trim() && !bizNoOk) list.push('사업자등록번호 형식(체크섬 불일치)');
     if (docType === 'CASH' && !buyerPhone.trim() && !buyerBizNo.trim()) list.push('휴대폰번호 또는 사업자번호');
     if (totals.total <= 0) list.push('금액(품목)');
     if (!issueDate) list.push('작성일자');
