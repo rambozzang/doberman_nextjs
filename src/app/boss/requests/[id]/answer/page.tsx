@@ -2,31 +2,41 @@
 
 // 견적 답변 작성 — Industry 패턴의 긴 폼 (참조 매물 등록: 좌 폼 + 하단 액션 패널 + 우 280px 안내 패널)
 // 화면 제목 · "← 견적 요청" 링크는 셸 헤더가 그린다.
+//
+// 답변 양식은 앱 `web_request_answer_page.dart` 와 같은 규칙:
+//   양식 고르기(제목 · 내용이 채워진다) · 양식 관리(⚙) · 지우기.
+// 양식은 웹견적서 관리(/boss/templates)와 같은 저장소(/web-templates)를 쓴다.
 
-import { FormEvent, useState, useMemo } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { Settings2, Eraser } from 'lucide-react';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import RichEditor from '@/components/boss/RichEditor';
 import { Panel, Button, Field, FieldLabel } from '@/components/boss/ui';
-
-const TEMPLATES = [
-  {
-    label: '표준 견적',
-    body: '<h3>시공 범위</h3><ul><li>거실 + 주방 도배</li><li>침실 2개 도배</li></ul><h3>사용 자재</h3><p>실크벽지 (LG하우시스)</p><h3>일정</h3><p>방문 상담 후 1주 이내 시공 가능합니다.</p>',
-  },
-  {
-    label: '프리미엄 견적',
-    body: '<h3>프리미엄 패키지</h3><ul><li>전체 도배 + 천장 마감</li><li>친환경 수입 벽지</li><li>가구 이동/복구 포함</li></ul><blockquote>1년 무상 AS 제공</blockquote>',
-  },
-];
+import TemplateManagerDialog, { loadTemplates } from '@/components/boss/templates/TemplateManagerDialog';
+import type { BossTemplate } from '@/types/boss-templates';
+import type { BossRequestDetail } from '@/types/boss';
+import { looksLikePlainText, sanitizeHtml } from '@/lib/sanitizeHtml';
+import { formatPreferredDate, requestSummary, stripBrackets } from '@/lib/boss/requestFormat';
 
 function stripHtml(html: string): string {
   if (typeof window === 'undefined') return html.replace(/<[^>]*>/g, '');
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   return (tmp.textContent || tmp.innerText || '').trim();
+}
+
+/** 저장된 양식 내용을 편집기에 넣을 HTML 로 — 앱에서 만든 줄글은 문단으로 바꾼다 */
+function templateToHtml(content: string): string {
+  if (looksLikePlainText(content)) {
+    return content
+      .split(/\r?\n/)
+      .map((line) => `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '<br>'}</p>`)
+      .join('');
+  }
+  return sanitizeHtml(content);
 }
 
 export default function BossAnswerPage() {
@@ -38,6 +48,58 @@ export default function BossAnswerPage() {
   const [body, setBody] = useState('');
   const [cost, setCost] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // 요청 요약 — 답변하면서 무엇을 요청했는지 보게 (앱 _buildCustomerSummary)
+  const [request, setRequest] = useState<BossRequestDetail | null>(null);
+
+  // 답변 양식
+  const [templates, setTemplates] = useState<BossTemplate[]>([]);
+  const [templateId, setTemplateId] = useState<string>('');
+  const [managerOpen, setManagerOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!requestId) return;
+    bossRequestsApi
+      .detail(requestId)
+      .then((res) => {
+        if (!cancelled && res.success !== false && res.data) setRequest(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [requestId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadTemplates().then(({ list, error }) => {
+      if (cancelled) return;
+      setTemplates(list);
+      if (error) toast.error(error);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const applyTemplate = useCallback((t: BossTemplate) => {
+    setTemplateId(String(t.id));
+    setTitle(t.title || '');
+    setBody(templateToHtml(t.content || ''));
+  }, []);
+
+  const clearForm = () => {
+    setTemplateId('');
+    setTitle('');
+    setBody('');
+  };
+
+  const onTemplatesChanged = useCallback((list: BossTemplate[]) => {
+    setTemplates(list);
+    // 쓰고 있던 양식이 지워졌으면 선택만 푼다 (적어 둔 내용은 남긴다)
+    setTemplateId((cur) => (cur && !list.some((t) => String(t.id) === cur) ? '' : cur));
+  }, []);
 
   const formattedCost = useMemo(() => {
     const n = Number(cost.replace(/[^\d]/g, ''));
@@ -87,6 +149,8 @@ export default function BossAnswerPage() {
     !cost.trim() && '견적 금액',
   ].filter((v): v is string => Boolean(v));
 
+  const summary = request ? requestSummary(request) : '';
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -96,6 +160,43 @@ export default function BossAnswerPage() {
       <div className="flex flex-col gap-4">
         <Panel kicker={`요청 #${requestId}`} title="답변 내용">
           <div className="flex flex-col gap-4">
+            {/* 답변 양식 — 앱과 같은 자리: 폼 맨 위 */}
+            <div className="flex flex-wrap items-end gap-2 border-b border-boss-border-row pb-4">
+              <div className="min-w-[220px] flex-1">
+                <FieldLabel htmlFor="answer-template">답변 양식</FieldLabel>
+                <select
+                  id="answer-template"
+                  className="boss-input"
+                  value={templateId}
+                  onChange={(e) => {
+                    const t = templates.find((x) => String(x.id) === e.target.value);
+                    if (t) applyTemplate(t);
+                    else setTemplateId('');
+                  }}
+                >
+                  <option value="">양식 고르기 — 제목과 내용이 채워집니다</option>
+                  {templates.map((t) => (
+                    <option key={String(t.id)} value={String(t.id)}>
+                      {t.name}
+                      {t.isDefault ? ' (기본)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                icon={Settings2}
+                onClick={() => setManagerOpen(true)}
+                title="양식 추가 · 수정 · 삭제"
+              >
+                양식 관리
+              </Button>
+              <Button type="button" variant="ghost" icon={Eraser} onClick={clearForm} title="제목과 내용을 비웁니다">
+                지우기
+              </Button>
+            </div>
+
             <Field
               id="title"
               label="제목"
@@ -107,25 +208,9 @@ export default function BossAnswerPage() {
             />
 
             <div>
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <FieldLabel required>
-                  <span id="answer-body-label">상세 내용</span>
-                </FieldLabel>
-                <div className="mb-[5px] flex items-center gap-1.5">
-                  <span className="text-[11px] text-boss-text-muted">양식 넣기</span>
-                  {TEMPLATES.map((t) => (
-                    <Button
-                      key={t.label}
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setBody(t.body)}
-                    >
-                      {t.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              <FieldLabel required>
+                <span id="answer-body-label">상세 내용</span>
+              </FieldLabel>
               <div id="answer-body" role="group" aria-labelledby="answer-body-label">
                 <RichEditor
                   value={body}
@@ -177,6 +262,30 @@ export default function BossAnswerPage() {
 
       {/* ───── 우: 안내 패널 ───── */}
       <div className="flex flex-col gap-4">
+        {request && (
+          <Panel kicker="고객 요청" title={request.region || '지역 미지정'}>
+            <dl className="grid grid-cols-[56px_minmax(0,1fr)] gap-x-2 gap-y-1 text-[12.5px]">
+              <dt className="text-boss-text-muted">요청</dt>
+              <dd className="text-boss-text">{summary || '-'}</dd>
+              <dt className="text-boss-text-muted">희망일</dt>
+              <dd className="font-boss-head tabular-nums text-boss-text">
+                {formatPreferredDate(request.preferredDate)}
+                {request.preferredDateDetail ? (
+                  <span className="ml-1 font-sans text-boss-text-secondary">· {stripBrackets(request.preferredDateDetail)}</span>
+                ) : null}
+              </dd>
+              {request.specialInfo || request.specialInfoDetail ? (
+                <>
+                  <dt className="text-boss-text-muted">특이사항</dt>
+                  <dd className="text-boss-text">
+                    {[stripBrackets(request.specialInfo), request.specialInfoDetail].filter(Boolean).join(' · ')}
+                  </dd>
+                </>
+              ) : null}
+            </dl>
+          </Panel>
+        )}
+
         <Panel kicker="필수 확인" title={missing.length > 0 ? `${missing.length}항목 남음` : '준비 완료'}>
           {missing.length > 0 ? (
             <ul className="flex flex-col gap-1 text-[13px]">
@@ -200,9 +309,21 @@ export default function BossAnswerPage() {
             <li>· 벽지 종류와 브랜드를 명시합니다.</li>
             <li>· 시공 가능한 가장 빠른 날짜를 적습니다.</li>
             <li>· AS 기간과 조건을 한 줄로 밝힙니다.</li>
+            <li>· 자주 쓰는 문구는 양식으로 저장해 두면 다음 답변이 빨라집니다.</li>
           </ul>
         </Panel>
       </div>
+
+      <TemplateManagerDialog
+        open={managerOpen}
+        templates={templates}
+        onClose={() => setManagerOpen(false)}
+        onChanged={onTemplatesChanged}
+        onPick={(t) => {
+          applyTemplate(t);
+          setManagerOpen(false);
+        }}
+      />
     </form>
   );
 }
