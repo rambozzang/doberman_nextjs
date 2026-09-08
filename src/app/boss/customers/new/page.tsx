@@ -201,7 +201,7 @@ function CustomerForm() {
               value={form.phone}
               onChange={(e) => set('phone', e.target.value)}
               placeholder="010-0000-0000"
-              maxLength={20}
+              maxLength={13}
             />
             <Field
               id="email"

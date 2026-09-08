@@ -298,7 +298,7 @@ function BossAsAddForm() {
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="010-0000-0000"
-                maxLength={20}
+                maxLength={13}
               />
             </div>
             <Field
