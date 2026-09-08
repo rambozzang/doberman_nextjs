@@ -102,7 +102,8 @@ function optimisticMessage(text: string): ChatApiMessage {
 
 export default function BossChatInboxPage() {
   const router = useRouter();
-  const { chatRooms, isLoading, error, refreshChatRooms } = useChatRooms();
+  // realtime: true — 지금 열어 둔 방이 아닌 다른 방에 새 메시지가 와도 목록이 바로 갱신된다
+  const { chatRooms, isLoading, error, refreshChatRooms } = useChatRooms({ realtime: true });
   const { chatAuth } = useChatAuth();
   const { query } = useBossSearch('고객명 · 메시지');
 
