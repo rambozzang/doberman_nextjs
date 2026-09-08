@@ -12,6 +12,7 @@
 //   등록 전에는 버튼을 잠그고 그 이유를 적는다.
 
 import RegionPicker from '@/components/boss/RegionPicker';
+import StampCropModal from '@/components/boss/StampCropModal';
 import { formatRegions } from '@/lib/boss/regions';
 import { bossUploadApi } from '@/lib/api/boss/upload';
 import { FormEvent, useEffect, useState, useCallback, useRef } from 'react';
@@ -57,6 +58,7 @@ export default function BossMyCompanyPage() {
   const [bigo, setBigo] = useState('');
   const [logo, setLogo] = useState('');
   const [stamp, setStamp] = useState('');
+  const [stampCropFile, setStampCropFile] = useState<File | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const stampInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -319,7 +321,7 @@ export default function BossMyCompanyPage() {
               src={stamp}
               alt="회사 도장"
               inputRef={stampInputRef}
-              onFile={handleStampFile}
+              onFile={(f) => f && setStampCropFile(f)}
               onDelete={handleDeleteStamp}
               canUpload={canUploadImages}
               canDelete={Boolean(stamp && isEdit)}
@@ -562,6 +564,16 @@ export default function BossMyCompanyPage() {
           setRegionOpen(false);
         }}
       />
+      {stampCropFile && (
+        <StampCropModal
+          file={stampCropFile}
+          onCancel={() => setStampCropFile(null)}
+          onCropped={(croppedFile) => {
+            setStampCropFile(null);
+            void handleStampFile(croppedFile);
+          }}
+        />
+      )}
     </form>
   );
 }
