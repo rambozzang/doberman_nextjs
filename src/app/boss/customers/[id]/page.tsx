@@ -174,6 +174,15 @@ export default function BossOrderDetailPage() {
 
   const status = customerStatus(item.statusCd, item.workDate);
   const fullAddr = [item.address1, item.address2].filter(Boolean).join(' ');
+  // 시공 기록 · AS 요청 화면에서 이 고객 정보를 그대로 받아 화면에 채우도록 querystring 으로 넘긴다.
+  // (연동이 안 돼도 등록은 그대로 되게 — 넘어간 값은 각 화면에서 자유롭게 지우거나 바꿀 수 있다)
+  const linkParams = new URLSearchParams({ orderId: String(item.id) });
+  if (item.name) linkParams.set('custNm', item.name);
+  const constructionHref = `/boss/construction/new?${linkParams.toString()}`;
+  const asLinkParams = new URLSearchParams(linkParams);
+  if (item.phone) asLinkParams.set('custPhone', item.phone);
+  if (fullAddr) asLinkParams.set('addr', fullAddr);
+  const asHref = `/boss/as/new?${asLinkParams.toString()}`;
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -305,14 +314,14 @@ export default function BossOrderDetailPage() {
               actions={<RowChevron />}
             />
             <RowItem
-              href={`/boss/construction/new?orderId=${item.id}`}
+              href={constructionHref}
               leading={<RowThumb icon={Hammer} />}
               title="시공 기록"
               subtitle="시공 전 · 중 · 후 사진"
               actions={<RowChevron />}
             />
             <RowItem
-              href={`/boss/as/new?orderId=${item.id}`}
+              href={asHref}
               leading={<RowThumb icon={Wrench} />}
               title="AS 요청"
               subtitle="하자 보수 접수"

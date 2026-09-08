@@ -55,10 +55,14 @@ function ConstructionFormInner() {
   const sp = useSearchParams();
   const editId = sp?.get('edit') ?? null;
   const isEditMode = !!editId;
+  // 고객 상세 > "시공 기록"으로 들어오면 그 고객 번호 · 이름이 넘어온다. 연동이 안 돼도
+  // 등록은 그대로 되도록, 이 값은 그냥 입력칸의 기본값일 뿐 자유롭게 지우거나 바꿀 수 있다.
+  const linkedOrderId = isEditMode ? '' : sp?.get('orderId') ?? '';
+  const linkedCustNm = sp?.get('custNm') ?? '';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [orderId, setOrderId] = useState<string>('');
+  const [orderId, setOrderId] = useState<string>(linkedOrderId);
   const [constructionDate, setConstructionDate] = useState<string>(todayStr());
   const [status, setStatus] = useState<'진행중' | '완료'>('진행중');
   const [beforeImages, setBeforeImages] = useState<string[]>([]);
@@ -289,7 +293,11 @@ function ConstructionFormInner() {
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 placeholder="예: 1234"
-                hint="고객 목록의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다."
+                hint={
+                  linkedCustNm && orderId === linkedOrderId
+                    ? `'${linkedCustNm}' 고객과 연결됩니다. 다른 번호로 바꾸거나 비워 둘 수 있습니다.`
+                    : '고객 목록의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다.'
+                }
                 disabled={loadingDetail}
               />
             </div>

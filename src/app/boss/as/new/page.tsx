@@ -48,16 +48,24 @@ function BossAsAddForm() {
   const searchParams = useSearchParams();
   const editId = searchParams?.get('id') ?? '';
   const isEditMode = !!editId;
+  // 고객 상세 > "AS 요청"으로 들어오면 그 고객 정보가 넘어온다. 연동이 안 돼도 등록은
+  // 그대로 되도록, 아래 값들은 입력칸의 기본값일 뿐 자유롭게 지우거나 바꿀 수 있다.
+  const linkedOrderId = isEditMode ? null : searchParams?.get('orderId');
+  const linkedCustNm = isEditMode ? '' : (searchParams?.get('custNm') ?? '');
+  const linkedCustPhone = isEditMode ? '' : (searchParams?.get('custPhone') ?? '');
+  const linkedAddr = isEditMode ? '' : (searchParams?.get('addr') ?? '');
 
   // 폼 상태
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [customerName, setCustomerName] = useState(linkedCustNm);
+  const [customerPhone, setCustomerPhone] = useState(linkedCustPhone);
+  const [address, setAddress] = useState(linkedAddr);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [requestDate, setRequestDate] = useState(todayStr());
   const [priority, setPriority] = useState<AsPriority>('보통');
-  const [orderId, setOrderId] = useState<number | null>(null);
+  const [orderId, setOrderId] = useState<number | null>(
+    linkedOrderId ? Number(linkedOrderId) : null,
+  );
 
   // 이미지(URL 입력 + 로컬 파일 dataURL 방식)
   const [defectImages, setDefectImages] = useState<string[]>([]);
@@ -333,7 +341,11 @@ function BossAsAddForm() {
               value={orderId ?? ''}
               onChange={(e) => setOrderId(e.target.value ? Number(e.target.value) : null)}
               placeholder="예: 1234"
-              hint="고객 목록의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다."
+              hint={
+                linkedCustNm && String(orderId ?? '') === linkedOrderId
+                  ? `'${linkedCustNm}' 고객과 연결됩니다. 다른 번호로 바꾸거나 비워 둘 수 있습니다.`
+                  : '고객 목록의 번호를 넣으면 상세에서 서로 오갈 수 있습니다. 비워 둬도 됩니다.'
+              }
               className="md:w-1/2 md:pr-2"
             />
             <TextareaField
