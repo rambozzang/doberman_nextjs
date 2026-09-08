@@ -29,7 +29,7 @@ import {
   ConfirmDialog,
   DetailActions,
 } from '@/components/boss/ui';
-import { FileSignature, ListChecks, Hammer, Wrench, Trash2, Pencil, MapPin } from 'lucide-react';
+import { FileSignature, ListChecks, Hammer, Wrench, Trash2, Pencil, MapPin, Camera } from 'lucide-react';
 
 
 function formatMoney(n?: number) {
@@ -183,6 +183,10 @@ export default function BossOrderDetailPage() {
   if (item.phone) asLinkParams.set('custPhone', item.phone);
   if (fullAddr) asLinkParams.set('addr', fullAddr);
   const asHref = `/boss/as/new?${asLinkParams.toString()}`;
+  // 사진 갤러리는 customerId 기준으로 조회한다(주문/AS 와 querystring 이름이 다르다) — /boss/photo 참고
+  const photoParams = new URLSearchParams({ customerId: String(item.id) });
+  if (item.name) photoParams.set('custNm', item.name);
+  const photoHref = `/boss/photo?${photoParams.toString()}`;
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -311,6 +315,13 @@ export default function BossOrderDetailPage() {
               leading={<RowThumb icon={ListChecks} />}
               title="체크리스트"
               subtitle="현장 실측 · 시공 전후 점검"
+              actions={<RowChevron />}
+            />
+            <RowItem
+              href={photoHref}
+              leading={<RowThumb icon={Camera} />}
+              title="사진"
+              subtitle={item.imageCount ? `${item.imageCount}장 등록됨` : '아직 등록된 사진 없음'}
               actions={<RowChevron />}
             />
             <RowItem

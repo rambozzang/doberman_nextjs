@@ -11,6 +11,10 @@ export const bossAdsApi = {
   create: (data: BossAdCreateRequest) =>
     BossApiClient.postPrivate<BossAd>('/web/vendor-ad/create', data),
 
+  // 광고 수정
+  update: (adId: number, data: BossAdCreateRequest) =>
+    BossApiClient.postPrivate<BossAd>(`/web/vendor-ad/${adId}/update`, data),
+
   // 광고 게시 중지
   stop: (adId: number) => BossApiClient.postPrivate<boolean>(`/web/vendor-ad/${adId}/stop`, {}),
 };

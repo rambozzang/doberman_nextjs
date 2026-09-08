@@ -66,6 +66,8 @@ export default function BossAdsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  // 수정 중인 광고 — 있으면 새 광고 등록 패널 대신 이 값으로 채운 수정 패널을 띄운다
+  const [editTarget, setEditTarget] = useState<BossAd | null>(null);
   // 중지 확인창에 올라간 광고
   const [stopTarget, setStopTarget] = useState<BossAd | null>(null);
   const [stopping, setStopping] = useState(false);
@@ -207,7 +209,10 @@ export default function BossAdsPage() {
               variant={showForm ? 'secondary' : 'primary'}
               size="sm"
               icon={Plus}
-              onClick={() => setShowForm((v) => !v)}
+              onClick={() => {
+                setEditTarget(null);
+                setShowForm((v) => !v);
+              }}
             >
               {showForm ? '등록 닫기' : '광고 등록'}
             </Button>
@@ -215,11 +220,16 @@ export default function BossAdsPage() {
         </div>
       )}
 
-      {!loading && vendorId != null && showForm && (
+      {!loading && vendorId != null && (showForm || editTarget) && (
         <AdForm
-          onCancel={() => setShowForm(false)}
+          initial={editTarget}
+          onCancel={() => {
+            setShowForm(false);
+            setEditTarget(null);
+          }}
           onDone={() => {
             setShowForm(false);
+            setEditTarget(null);
             load();
           }}
         />
@@ -295,16 +305,28 @@ export default function BossAdsPage() {
                           <StatusPill tone={status.tone}>{status.label}</StatusPill>
                         </td>
                         <td className="text-right">
-                          {ad.status === 'Y' && (
+                          <span className="flex items-center justify-end gap-0.5">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setStopTarget(ad)}
-                              className="!text-boss-text-muted hover:!text-boss-error"
+                              onClick={() => {
+                                setShowForm(false);
+                                setEditTarget(ad);
+                              }}
                             >
-                              중지
+                              수정
                             </Button>
-                          )}
+                            {ad.status === 'Y' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setStopTarget(ad)}
+                                className="!text-boss-text-muted hover:!text-boss-error"
+                              >
+                                중지
+                              </Button>
+                            )}
+                          </span>
                         </td>
                       </tr>
                     );
@@ -329,18 +351,42 @@ export default function BossAdsPage() {
   );
 }
 
-function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void }) {
-  const [form, setForm] = useState<BossAdCreateRequest>({
-    tier: 1,
-    title: '',
-    body: '',
-    landingUrl: '',
-    imageUrl: '',
-    regionSido: '',
-    regionSigungu: '',
-    startDt: today(),
-    endDt: today(30),
-  });
+function AdForm({
+  initial,
+  onCancel,
+  onDone,
+}: {
+  /** 있으면 수정 모드 — 이 값으로 폼을 채우고 저장 시 update 를 호출한다 */
+  initial?: BossAd | null;
+  onCancel: () => void;
+  onDone: () => void;
+}) {
+  const isEdit = Boolean(initial);
+  const [form, setForm] = useState<BossAdCreateRequest>(() =>
+    initial
+      ? {
+          tier: initial.tier,
+          title: initial.title,
+          body: initial.body ?? '',
+          landingUrl: initial.landingUrl ?? '',
+          imageUrl: initial.imageUrl ?? '',
+          regionSido: initial.regionSido ?? '',
+          regionSigungu: initial.regionSigungu ?? '',
+          startDt: initial.startDt,
+          endDt: initial.endDt,
+        }
+      : {
+          tier: 1,
+          title: '',
+          body: '',
+          landingUrl: '',
+          imageUrl: '',
+          regionSido: '',
+          regionSigungu: '',
+          startDt: today(),
+          endDt: today(30),
+        },
+  );
   const [saving, setSaving] = useState(false);
 
   const set = <K extends keyof BossAdCreateRequest>(key: K, value: BossAdCreateRequest[K]) =>
@@ -356,7 +402,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
       return;
     }
     setSaving(true);
-    const res = await bossAdsApi.create({
+    const payload: BossAdCreateRequest = {
       ...form,
       title: form.title.trim(),
       body: form.body?.trim() || undefined,
@@ -364,18 +410,20 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
       imageUrl: form.imageUrl?.trim() || undefined,
       regionSido: form.regionSido || undefined,
       regionSigungu: form.regionSigungu?.trim() || undefined,
-    });
+    };
+    const res =
+      isEdit && initial ? await bossAdsApi.update(initial.adId, payload) : await bossAdsApi.create(payload);
     setSaving(false);
     if (res.success) {
-      toast.success('광고를 등록했습니다.');
+      toast.success(isEdit ? '광고를 수정했습니다.' : '광고를 등록했습니다.');
       onDone();
     } else {
-      toast.error(res.message || res.error || '등록에 실패했습니다.');
+      toast.error(res.message || res.error || (isEdit ? '수정에 실패했습니다.' : '등록에 실패했습니다.'));
     }
   };
 
   return (
-    <Panel kicker="새 광고" title="광고 등록">
+    <Panel kicker={isEdit ? '광고 수정' : '새 광고'} title={isEdit ? '광고 수정' : '광고 등록'}>
       <div className="grid gap-3.5 md:grid-cols-2">
         <Field
           id="ad-title"
@@ -470,7 +518,7 @@ function AdForm({ onCancel, onDone }: { onCancel: () => void; onDone: () => void
           취소
         </Button>
         <Button variant="primary" onClick={submit} disabled={saving}>
-          {saving ? '등록 중…' : '등록'}
+          {saving ? (isEdit ? '수정 중…' : '등록 중…') : isEdit ? '수정' : '등록'}
         </Button>
       </div>
     </Panel>
