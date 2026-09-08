@@ -178,6 +178,9 @@ export default function BossLoginPage() {
             {loading ? '로그인 중…' : '로그인'}
           </Button>
 
+          {/* 웹(boss)에서는 가입 신청을 받지 않는다 — 사장님 가입은 앱에서만 가능하다.
+              링크는 없애지 않고 주석으로 남겨 둔다(가입을 웹으로 다시 열 때 참고). */}
+          {/*
           <p className="mt-5 border-t border-boss-border pt-4 text-center text-[12.5px] text-boss-text-secondary">
             아직 계정이 없으신가요?{' '}
             <Link
@@ -187,6 +190,41 @@ export default function BossLoginPage() {
               사장님 가입 신청
             </Link>
           </p>
+          */}
+
+          <div className="mt-5 border-t border-boss-border pt-4 text-center">
+            <p className="text-[12.5px] text-boss-text-secondary">
+              아직 계정이 없으신가요? 가입은 <span className="font-semibold text-boss-text">도배르만 앱</span>에서만 가능해요.
+            </p>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <a
+                href="https://apps.apple.com/app/6740186789"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="App Store에서 도배르만 다운로드"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ko-kr?size=250x83"
+                  alt="App Store에서 다운로드"
+                  className="h-10 w-auto"
+                />
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=com.codelabtiger.doberman&hl=ko"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Google Play에서 도배르만 다운로드"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://play.google.com/intl/ko/badges/static/images/badges/ko_badge_web_generic.png"
+                  alt="Google Play에서 다운로드"
+                  className="h-10 w-auto"
+                />
+              </a>
+            </div>
+          </div>
           <p className="mt-2 text-center text-[12.5px] text-boss-text-secondary">
             아이디를 잊으셨나요?{' '}
             <Link
