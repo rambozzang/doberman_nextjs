@@ -35,12 +35,12 @@ import { RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
-type CategoryCode = 'ALL' | 'FREE' | 'JOB' | 'ANON';
+// 구인 / 구직은 전용 화면(/boss/community/jobs)에서만 보여준다 — 여기서는 목록·집계 모두 뺀다
+type CategoryCode = 'ALL' | 'FREE' | 'ANON';
 
 const CATEGORY_TABS: { key: CategoryCode; label: string }[] = [
   { key: 'ALL', label: '전체' },
   { key: 'FREE', label: '자유' },
-  { key: 'JOB', label: '구인 / 구직' },
   { key: 'ANON', label: '익명' },
 ];
 
@@ -52,10 +52,8 @@ function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
 
 function categoryMeta(item: BbsData): { label: string; tone: StatusTone } {
   const code = item.typeDtCd;
-  const label =
-    item.typeDtNm ??
-    (code === 'FREE' ? '자유' : code === 'JOB' ? '구인/구직' : code === 'ANON' ? '익명' : '게시글');
-  const tone: StatusTone = code === 'JOB' ? 'warn' : code === 'ANON' ? 'neutral' : 'info';
+  const label = item.typeDtNm ?? (code === 'FREE' ? '자유' : code === 'ANON' ? '익명' : '게시글');
+  const tone: StatusTone = code === 'ANON' ? 'neutral' : 'info';
   return { label, tone };
 }
 
@@ -99,7 +97,8 @@ export default function BossCommunityListPage() {
           // 서버 페이지는 0 부터 센다 — 1 을 보내면 최신 한 쪽이 통째로 빠진다
           pageNum: targetPage - 1,
           pageSize: PAGE_SIZE,
-          typeDtCd: category === 'ALL' ? undefined : category,
+          // ALL 이어도 구인/구직은 뺀다 — 전용 화면(/boss/community/jobs)에서만 보여준다
+          typeDtCd: category === 'ALL' ? 'ALL_EXCEPT_JOB' : category,
           sortDesc: 'crtDtm',
         });
         if (res.success !== false && res.data) {
