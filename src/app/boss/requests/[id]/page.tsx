@@ -128,9 +128,13 @@ export default function BossRequestDetailPage() {
           </>
         }
       >
-        <ButtonLink href={answerHref} variant="primary" size="sm">
-          {myAnswer ? '답변 다시 작성' : '답변 작성'}
-        </ButtonLink>
+        {/* 답변은 요청당 한 번만 — 이미 답변했으면 다시 작성할 수 있는 것처럼 보이는
+            버튼을 두지 않는다(눌러도 서버가 중복 답변으로 거부한다). */}
+        {!myAnswer && (
+          <ButtonLink href={answerHref} variant="primary" size="sm">
+            답변 작성
+          </ButtonLink>
+        )}
         {isChoice && rawPhone && (
           <>
             <a href={`tel:${rawPhone}`} className="boss-btn boss-btn-sm boss-btn-secondary">
@@ -191,9 +195,11 @@ export default function BossRequestDetailPage() {
             title="내 견적 답변"
             kicker={myAnswer ? myAnswerTag.label : undefined}
             right={
-              <Link href={answerHref} className="boss-btn boss-btn-sm boss-btn-ghost -mr-2">
-                {myAnswer ? '답변 다시 작성' : '답변 작성'}
-              </Link>
+              !myAnswer ? (
+                <Link href={answerHref} className="boss-btn boss-btn-sm boss-btn-ghost -mr-2">
+                  답변 작성
+                </Link>
+              ) : undefined
             }
           >
             {!myAnswer ? (
@@ -295,9 +301,11 @@ export default function BossRequestDetailPage() {
                 고객이 내 견적을 채택하면 이름 · 연락처 · 이메일이 그대로 공개되고 전화 · 문자 버튼이 열립니다.
               </p>
             )}
-            <ButtonLink href={answerHref} variant="primary" className="mt-4 w-full">
-              {myAnswer ? '답변 다시 작성' : '답변 작성'}
-            </ButtonLink>
+            {!myAnswer && (
+              <ButtonLink href={answerHref} variant="primary" className="mt-4 w-full">
+                답변 작성
+              </ButtonLink>
+            )}
             {isChoice && rawPhone && (
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <a href={`tel:${rawPhone}`} className="boss-btn boss-btn-md boss-btn-secondary w-full">

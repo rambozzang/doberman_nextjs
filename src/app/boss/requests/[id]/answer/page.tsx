@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { Settings2, Eraser } from 'lucide-react';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import RichEditor from '@/components/boss/RichEditor';
-import { Panel, Button, Field, FieldLabel } from '@/components/boss/ui';
+import { Panel, Button, ButtonLink, EmptyState, Field, FieldLabel } from '@/components/boss/ui';
 import TemplateManagerDialog, { loadTemplates } from '@/components/boss/templates/TemplateManagerDialog';
 import type { BossTemplate } from '@/types/boss-templates';
 import type { BossRequestDetail } from '@/types/boss';
@@ -58,6 +58,11 @@ export default function BossAnswerPage() {
   // 요청 요약 — 답변하면서 무엇을 요청했는지 보게 (앱 _buildCustomerSummary)
   const [request, setRequest] = useState<BossRequestDetail | null>(null);
 
+  // 이미 이 요청에 답변했는지 — 백엔드는 요청당 답변을 1건만 허용한다(중복 제출 시 실패).
+  // 폼을 다 채운 뒤에야 실패를 알기보다, 열자마자 막고 기존 답변으로 보낸다.
+  // null = 아직 확인 중, false = 답변 없음(정상 진행), true = 이미 답변함(폼 대신 안내)
+  const [alreadyAnswered, setAlreadyAnswered] = useState<boolean | null>(null);
+
   // 답변 양식
   const [templates, setTemplates] = useState<BossTemplate[]>([]);
   const [templateId, setTemplateId] = useState<string>('');
@@ -72,6 +77,15 @@ export default function BossAnswerPage() {
         if (!cancelled && res.success !== false && res.data) setRequest(res.data);
       })
       .catch(() => {});
+    // 답변이 없으면 서버가 실패 응답(예외)을 준다 — 그게 정상(미답변) 상태다.
+    bossRequestsApi
+      .myAnswer(requestId)
+      .then((res) => {
+        if (!cancelled) setAlreadyAnswered(res.success === true && !!res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setAlreadyAnswered(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -111,6 +125,12 @@ export default function BossAnswerPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // 화면 진입 시점엔 미답변이었다가 다른 탭 · 기기에서 먼저 답변을 넣었을 수 있다 —
+    // 제출 직전에도 한 번 더 막는다(서버도 같은 이유로 막지만, 여기서 먼저 알려준다).
+    if (alreadyAnswered) {
+      toast.error('이미 이 요청에 답변을 등록했습니다.');
+      return;
+    }
     if (!title.trim() || !bodyText || !cost.trim()) {
       toast.error('제목, 내용, 견적 금액을 모두 입력해주세요.');
       return;
@@ -167,6 +187,22 @@ export default function BossAnswerPage() {
   ].filter((v): v is string => Boolean(v));
 
   const summary = request ? requestSummary(request) : '';
+
+  // 이미 답변한 요청 — 빈 폼을 다시 보여 주면 재제출로 오해해 중복 답변을 만든다.
+  // 백엔드도 같은 요청에 두 번째 답변을 거부하므로, 여기서 폼 자체를 막고 기존 답변으로 보낸다.
+  if (alreadyAnswered) {
+    return (
+      <EmptyState
+        title="이미 답변한 요청입니다"
+        description="한 요청에는 답변을 한 번만 등록할 수 있습니다. 이미 보낸 답변은 요청 상세에서 확인하세요."
+        action={
+          <ButtonLink href={`/boss/requests/${requestId}`} variant="primary" size="sm">
+            요청 상세로
+          </ButtonLink>
+        }
+      />
+    );
+  }
 
   return (
     <form
