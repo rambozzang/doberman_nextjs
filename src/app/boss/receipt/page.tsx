@@ -5,11 +5,12 @@
 //   화면 제목은 셸 헤더가 그린다. 첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 //   월 요약(totalAmount · byCategory)은 API 응답을 그대로 쓴다 — 없는 지표는 만들지 않는다.
 // Flutter receipt_home_page.dart 포팅
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, RefreshCw, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossReceiptApi } from '@/lib/api/boss/receipt';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import type { MonthlySummary, ReceiptData } from '@/types/boss-receipt';
 import { categoryLabel, paymentLabel } from '@/types/boss-receipt';
 import {
@@ -52,13 +53,20 @@ function shiftYm(ym: string, delta: number): string {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+type Filters = { ym: string; keyword: string };
+type Data = { summary: MonthlySummary | null };
+
 export default function BossReceiptListPage() {
   const router = useRouter();
-  const [ym, setYm] = useState(currentYm());
-  const [summary, setSummary] = useState<MonthlySummary | null>(null);
+  // 상세를 다녀왔으면 보던 달 · 검색어와 목록을 그대로 되살린다 (고치거나 지웠으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.receipt), []);
+  const [ym, setYm] = useState(restored?.filters.ym ?? currentYm());
+  const [summary, setSummary] = useState<MonthlySummary | null>(restored?.data.summary ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
+  const [loaded, setLoaded] = useState(restored != null);
+  const skipFirstLoad = useRef(restored != null);
 
   const load = useCallback(async (targetYm: string) => {
     setLoading(true);
@@ -67,6 +75,7 @@ export default function BossReceiptListPage() {
       const res = await bossReceiptApi.monthly(targetYm);
       if (res.success !== false && res.data) {
         setSummary(res.data);
+        setLoaded(true);
       } else {
         setSummary(null);
         if (res.success === false) {
@@ -82,8 +91,14 @@ export default function BossReceiptListPage() {
   }, []);
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     void load(ym);
   }, [ym, load]);
+
+  useSaveListSnapshot<Filters, Data>(LIST_KEYS.receipt, { ym, keyword }, { summary }, loaded);
 
   const receipts = useMemo(() => summary?.receipts ?? [], [summary]);
 

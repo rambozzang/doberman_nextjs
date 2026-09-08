@@ -10,6 +10,7 @@ import { useRouter, useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Trash2, RefreshCw, Pencil, Package, ArrowLeft, Receipt as ReceiptIcon } from 'lucide-react';
 import { bossReceiptApi } from '@/lib/api/boss/receipt';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import type { ReceiptData, ReceiptSaveRequest } from '@/types/boss-receipt';
 import {
   RECEIPT_CATEGORIES,
@@ -121,6 +122,7 @@ export default function BossReceiptDetailPage() {
       const res = await bossReceiptApi.save(payload);
       if (res.success !== false) {
         toast.success('수정되었습니다.');
+        markListDirty(LIST_KEYS.receipt);
         setEditing(false);
         await load();
       } else {
@@ -140,6 +142,7 @@ export default function BossReceiptDetailPage() {
       const res = await bossReceiptApi.remove(data.id);
       if (res.success !== false) {
         toast.success('삭제되었습니다.');
+        markListDirty(LIST_KEYS.receipt);
         router.replace('/boss/receipt');
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');

@@ -15,6 +15,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, Trash2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { bossEstimateApi } from '@/lib/api/boss/estimate';
 import { formatBizNo, isValidBizNo, maskBizNo } from '@/lib/boss/bizno';
@@ -289,6 +290,7 @@ function TaxInvoiceForm() {
       const res = await bossTaxInvoiceApi.save(body);
       if (res.success !== false && res.data?.id) {
         toast.success(editId ? '수정했습니다.' : '등록했습니다. 홈택스에서 발행한 뒤 승인번호를 남겨 주세요.');
+        markListDirty(LIST_KEYS.taxInvoice);
         router.replace(`/boss/tax-invoice/${res.data.id}`);
       } else {
         setError(res.message || res.error || '저장하지 못했습니다.');

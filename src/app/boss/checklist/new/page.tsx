@@ -9,6 +9,7 @@ import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossChecklistApi } from '@/lib/api/boss/checklist';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { getBossCustId } from '@/lib/api/boss/as';
 import {
   type CheckData,
@@ -242,6 +243,7 @@ function BossChecklistNewForm() {
       const res = await bossChecklistApi.save(payload);
       if (res.success !== false) {
         toast.success('저장되었습니다.');
+        markListDirty(LIST_KEYS.checklist);
         router.push('/boss/checklist');
       } else {
         toast.error(res.message || '저장에 실패했습니다.');

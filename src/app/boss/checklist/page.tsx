@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, Printer, RefreshCw, Inbox } from 'lucide-react';
 import { bossChecklistApi } from '@/lib/api/boss/checklist';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import { getBossCustId } from '@/lib/api/boss/as';
 import type { CheckData } from '@/types/boss-checklist';
 import {
@@ -52,13 +53,18 @@ function statusBadge(data: CheckData): { label: string; tone: StatusTone } {
   return { label: '작성됨', tone: 'ok' };
 }
 
+type Data = { data: CheckData | null; customerId: string };
+
 export default function BossChecklistPage() {
   const router = useRouter();
-  const [data, setData] = useState<CheckData | null>(null);
+  // 인쇄 · 수정을 다녀왔으면 되살린다 (저장 · 삭제했으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Record<string, never>, Data>(LIST_KEYS.checklist), []);
+  const [data, setData] = useState<CheckData | null>(restored?.data.data ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState<string>('');
+  const [customerId, setCustomerId] = useState<string>(restored?.data.customerId ?? '');
   const [keyword, setKeyword] = useState('');
+  const [loaded, setLoaded] = useState(restored != null);
 
   const load = useCallback(async () => {
     const cid = getBossCustId();
@@ -76,6 +82,7 @@ export default function BossChecklistPage() {
       } else {
         setData(null);
       }
+      setLoaded(true);
     } catch {
       setError('체크리스트를 불러오지 못했습니다.');
     } finally {
@@ -84,8 +91,12 @@ export default function BossChecklistPage() {
   }, []);
 
   useEffect(() => {
+    if (restored) return; // 되살렸으면 다시 부르지 않는다
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useSaveListSnapshot<Record<string, never>, Data>(LIST_KEYS.checklist, {}, { data, customerId }, loaded);
 
   // 체크리스트는 고객 1인당 1건 — 목록은 0/1행으로 표현
   const rows = useMemo<CheckData[]>(() => (data ? [data] : []), [data]);

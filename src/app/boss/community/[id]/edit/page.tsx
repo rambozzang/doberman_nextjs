@@ -50,7 +50,7 @@ export default function BossCommunityEditPage() {
     if (!boardId) return { success: false, message: '게시글 ID가 없습니다.' };
     const res = await bossCommunityApi.update({ ...payload, boardId });
     if (res.success !== false) {
-      markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob);
+      markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob, LIST_KEYS.communityMy);
       router.push(`/boss/community/${boardId}`);
       return { success: true };
     }

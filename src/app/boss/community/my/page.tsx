@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { bossCommunityApi } from '@/lib/api/boss/community';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
 import {
@@ -34,12 +35,18 @@ function pickList(payload: BbsListResponse | BbsData[] | undefined): BbsData[] {
   return payload.list ?? payload.content ?? [];
 }
 
+type Filters = { keyword: string };
+type Data = { items: BbsData[] };
+
 export default function BossCommunityMyPage() {
   const router = useRouter();
-  const [items, setItems] = useState<BbsData[]>([]);
+  // 글을 보고 돌아왔으면 목록과 검색어를 그대로 되살린다 (쓰거나 고치거나 지웠으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.communityMy), []);
+  const [items, setItems] = useState<BbsData[]>(restored?.data.items ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
+  const [loaded, setLoaded] = useState(restored != null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,6 +67,7 @@ export default function BossCommunityMyPage() {
       });
       if (res.success !== false && res.data) {
         setItems(pickList(res.data));
+        setLoaded(true);
       } else {
         setError(res.message || '내 글을 불러오지 못했습니다.');
       }
@@ -71,8 +79,12 @@ export default function BossCommunityMyPage() {
   }, []);
 
   useEffect(() => {
+    if (restored) return; // 되살렸으면 다시 부르지 않는다
     void load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useSaveListSnapshot<Filters, Data>(LIST_KEYS.communityMy, { keyword }, { items }, loaded);
 
   const filtered = useMemo(() => {
     if (!keyword.trim()) return items;

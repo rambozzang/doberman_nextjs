@@ -14,7 +14,7 @@
 //
 // 화면 제목은 셸 헤더(PAGE_META)가 그린다.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, CheckCheck, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -22,6 +22,7 @@ import {
   bossNotificationsApi,
   bossNotificationsReadStore,
 } from '@/lib/api/boss/notifications';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import type {
   BossNotificationCategory,
   BossNotificationCategoryMeta,
@@ -82,15 +83,22 @@ function stripHtml(input?: string): string {
     .trim();
 }
 
+type Filters = { category: BossNotificationCategory; page: number; keyword: string };
+type Data = { items: BossNotificationItem[]; hasMore: boolean };
+
 export default function BossNotificationsPage() {
   const router = useRouter();
-  const [category, setCategory] = useState<BossNotificationCategory>('ALL');
-  const [items, setItems] = useState<BossNotificationItem[]>([]);
-  const [page, setPage] = useState(0);
-  const [keyword, setKeyword] = useState('');
+  // 알림을 보고 돌아왔으면 보던 탭 · 쪽과 목록을 그대로 되살린다 (지웠으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.notifications), []);
+  const [category, setCategory] = useState<BossNotificationCategory>(restored?.filters.category ?? 'ALL');
+  const [items, setItems] = useState<BossNotificationItem[]>(restored?.data.items ?? []);
+  const [page, setPage] = useState(restored?.filters.page ?? 0);
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(restored?.data.hasMore ?? false);
+  const [loaded, setLoaded] = useState(restored != null);
+  const skipFirstLoad = useRef(restored != null);
   const [readVersion, setReadVersion] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<BossNotificationItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -110,6 +118,7 @@ export default function BossNotificationsPage() {
           const list = pickList(res.data);
           setItems(list);
           setHasMore(list.length >= PAGE_SIZE);
+          setLoaded(true);
         } else {
           setError(res.message || '알림을 불러오지 못했습니다.');
           setItems([]);
@@ -127,8 +136,19 @@ export default function BossNotificationsPage() {
   );
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     void load(page, category);
   }, [load, page, category]);
+
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.notifications,
+    { category, page, keyword },
+    { items, hasMore },
+    loaded
+  );
 
   const onChangeCategory = (cat: BossNotificationCategory) => {
     if (cat === category) return;

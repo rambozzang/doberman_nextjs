@@ -8,11 +8,12 @@
 // 실제 발행은 홈택스에서 한다. 이 화면은 "누구에게 언제 얼마를 끊었는지"와 "이번 분기 부가세가 얼마 나올지"를 답한다.
 // 화면 제목 · "발행 등록" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ExternalLink, RefreshCw } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import {
   DOC_TYPE_LABEL,
   STATUS_LABEL,
@@ -40,6 +41,8 @@ import {
 import ListDateCell from '@/components/boss/ListDateCell';
 
 type Tab = 'all' | TaxInvoiceStatus;
+type Filters = { year: number; quarter: number; tab: Tab };
+type Data = { period: TaxInvoicePeriodSummary | null; vat: VatSummary | null };
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: '전체' },
@@ -80,15 +83,20 @@ function TaxInvoiceList() {
   const search = useSearchParams();
   const initialTab = search.get('status');
   const now = useMemo(() => new Date(), []);
-  const [year, setYear] = useState(now.getFullYear());
-  const [quarter, setQuarter] = useState<number>(currentQuarter(now));
-  const [tab, setTab] = useState<Tab>(
-    initialTab === 'REQUESTED' || initialTab === 'ISSUED' || initialTab === 'CANCELED' ? initialTab : 'all'
-  );
-  const [period, setPeriod] = useState<TaxInvoicePeriodSummary | null>(null);
-  const [vat, setVat] = useState<VatSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  // 상세를 다녀왔으면 보던 연도 · 분기 · 상태와 데이터를 그대로 되살린다 (등록 · 발행했으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.taxInvoice), []);
+  const [year, setYear] = useState(restored?.filters.year ?? now.getFullYear());
+  const [quarter, setQuarter] = useState<number>(restored?.filters.quarter ?? currentQuarter(now));
+  const [tab, setTab] = useState<Tab>(() => {
+    if (initialTab === 'REQUESTED' || initialTab === 'ISSUED' || initialTab === 'CANCELED') return initialTab;
+    return restored?.filters.tab ?? 'all';
+  });
+  const [period, setPeriod] = useState<TaxInvoicePeriodSummary | null>(restored?.data.period ?? null);
+  const [vat, setVat] = useState<VatSummary | null>(restored?.data.vat ?? null);
+  const [loading, setLoading] = useState(!restored);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(restored != null);
+  const skipFirstLoad = useRef(restored != null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,6 +108,7 @@ function TaxInvoiceList() {
       ]);
       if (p.success !== false && p.data) {
         setPeriod(p.data);
+        setLoaded(true);
       } else {
         setPeriod(null);
         setError(p.message || p.error || '세금계산서 목록을 불러오지 못했습니다.');
@@ -115,8 +124,14 @@ function TaxInvoiceList() {
   }, [year, quarter]);
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     void load();
   }, [load]);
+
+  useSaveListSnapshot<Filters, Data>(LIST_KEYS.taxInvoice, { year, quarter, tab }, { period, vat }, loaded);
 
   const invoices = useMemo(() => {
     const list = period?.invoices ?? [];

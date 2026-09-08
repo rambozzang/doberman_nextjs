@@ -29,6 +29,12 @@ export const LIST_KEYS = {
   as: 'boss:as',
   signature: 'boss:signature',
   portfolio: 'boss:portfolio',
+  taxInvoice: 'boss:tax-invoice',
+  notifications: 'boss:notifications',
+  receipt: 'boss:receipt',
+  communityMy: 'boss:community:my',
+  checklist: 'boss:checklist',
+  estimateList: 'boss:estimate',
 } as const;
 
 /**

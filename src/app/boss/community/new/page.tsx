@@ -24,7 +24,7 @@ function CommunityNewInner() {
   const handleSubmit = async (payload: BbsCreateRequest) => {
     const res = await bossCommunityApi.create(payload);
     if (res.success !== false) {
-      markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob);
+      markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob, LIST_KEYS.communityMy);
       const back = defaultCategory === 'JOB' ? '/boss/community/jobs' : '/boss/community';
       router.push(back);
       return { success: true };

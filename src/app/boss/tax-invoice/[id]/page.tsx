@@ -14,6 +14,7 @@ import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Copy, ExternalLink, FileText, Pencil, Trash2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { toKoreanAmountLabel } from '@/lib/boss/koreanAmount';
 import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import {
@@ -108,6 +109,7 @@ export default function BossTaxInvoiceDetailPage() {
         toast.success(
           status === 'ISSUED' ? '발행 완료로 표시했습니다. 분기 부가세 예상에 반영됩니다.' : '상태를 바꿨습니다.'
         );
+        markListDirty(LIST_KEYS.taxInvoice);
       } else {
         toast.error(res.message || res.error || '상태를 바꾸지 못했습니다.');
       }
@@ -125,6 +127,7 @@ export default function BossTaxInvoiceDetailPage() {
       const res = await bossTaxInvoiceApi.remove(data.id);
       if (res.success !== false) {
         toast.success('삭제했습니다.');
+        markListDirty(LIST_KEYS.taxInvoice);
         setConfirmDelete(false);
         router.replace('/boss/tax-invoice');
       } else {

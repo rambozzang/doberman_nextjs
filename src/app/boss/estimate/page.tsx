@@ -8,12 +8,13 @@
 // 참고: [id] 라우트 파라미터는 customerId 이다 (print/receipt 페이지 동일).
 // 화면 제목 · 부제는 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { formatPhone } from '@/lib/boss/format';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw } from 'lucide-react';
 import { bossEstimatesApi } from '@/lib/api/boss/estimates';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import EstimateItemsPanel from '@/components/boss/estimate/EstimateItemsPanel';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import type { BossEstimate, BossEstimateCreateRequest } from '@/types/boss-estimate';
@@ -57,16 +58,26 @@ export default function BossEstimateListPage() {
   );
 }
 
+type Filters = { customerId: string; keyword: string; page: number };
+type Data = { estimates: BossEstimate[] };
+
 function EstimateList() {
   const router = useRouter();
   const search = useSearchParams();
+  const initialCustomerId = search.get('customerId') ?? search.get('orderId') ?? '';
+  // 인쇄 · 영수증을 보고 돌아왔으면 그대로 되살린다 — 단, 다른 고객으로 들어왔으면 무시한다
+  const restored = useMemo(() => {
+    const s = readListSnapshot<Filters, Data>(LIST_KEYS.estimateList);
+    return s && s.filters.customerId === initialCustomerId ? s : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 고객 선택 — 앱처럼 목록에서 고른다. 고객 목록을 못 읽으면 번호 직접 입력으로 대신한다.
   const [customers, setCustomers] = useState<BossCustomerData[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [customerIdInput, setCustomerIdInput] = useState('');
   // ?customerId= (새 링크) 또는 ?orderId= (고객 상세의 예전 링크) 로 들어오면 그 고객이 바로 선택된다
-  const [customerId, setCustomerId] = useState(search.get('customerId') ?? search.get('orderId') ?? '');
+  const [customerId, setCustomerId] = useState(initialCustomerId);
 
   useEffect(() => {
     let alive = true;
@@ -85,13 +96,15 @@ function EstimateList() {
     };
   }, []);
 
-  const [estimates, setEstimates] = useState<BossEstimate[]>([]);
+  const [estimates, setEstimates] = useState<BossEstimate[]>(restored?.data.estimates ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
+  const [page, setPage] = useState(restored?.filters.page ?? 1);
+  const [loaded, setLoaded] = useState(restored != null);
+  const skipFirstLoad = useRef(restored != null);
 
   // 고객별 견적서 목록 조회
   const load = useCallback(async (cid: string) => {
@@ -102,6 +115,7 @@ function EstimateList() {
       const res = await bossEstimatesApi.listByCustomer(cid);
       if (res.success !== false && res.data) {
         setEstimates(Array.isArray(res.data) ? res.data : []);
+        setLoaded(true);
       } else if (res.success === false) {
         setError(res.message || '견적서 목록을 불러오지 못했습니다.');
         setEstimates([]);
@@ -117,13 +131,29 @@ function EstimateList() {
   }, []);
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     if (customerId) void load(customerId);
   }, [customerId, load]);
 
-  // 검색/고객 변경 시 첫 페이지로
+  // 검색/고객 변경 시 첫 페이지로 — 단, 되살린 직후에는 보던 쪽을 지킨다
+  const keepRestoredPage = useRef(restored != null);
   useEffect(() => {
+    if (keepRestoredPage.current) {
+      keepRestoredPage.current = false;
+      return;
+    }
     setPage(1);
   }, [keyword, customerId]);
+
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.estimateList,
+    { customerId, keyword, page },
+    { estimates },
+    loaded
+  );
 
   // 고객 ID 적용
   const onApplyCustomerId = (e: React.FormEvent) => {

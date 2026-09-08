@@ -32,6 +32,7 @@ import {
   bossNotificationsApi,
   bossNotificationsReadStore,
 } from '@/lib/api/boss/notifications';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import type { BossNotificationItem } from '@/types/boss-notifications';
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
@@ -134,6 +135,7 @@ export default function BossNotificationDetailPage() {
       const res = await bossNotificationsApi.remove(boardId);
       if (res.success !== false) {
         toast.success('알림이 삭제되었습니다.');
+        markListDirty(LIST_KEYS.notifications);
         router.push('/boss/notifications');
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');
