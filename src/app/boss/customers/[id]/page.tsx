@@ -29,7 +29,7 @@ import {
   ConfirmDialog,
   DetailActions,
 } from '@/components/boss/ui';
-import { FileSignature, ListChecks, Hammer, Wrench, Trash2, Pencil } from 'lucide-react';
+import { FileSignature, ListChecks, Hammer, Wrench, Trash2, Pencil, MapPin } from 'lucide-react';
 
 
 function formatMoney(n?: number) {
@@ -245,7 +245,21 @@ export default function BossOrderDetailPage() {
             </dd>
 
             <dt className="text-boss-text-secondary">주소</dt>
-            <dd className="truncate font-semibold text-boss-text sm:col-span-3">{fullAddr || '—'}</dd>
+            <dd className="truncate font-semibold text-boss-text sm:col-span-3">
+              {fullAddr ? (
+                <a
+                  href={`https://map.naver.com/p/search/${encodeURIComponent(fullAddr)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-boss-primary hover:underline"
+                >
+                  <MapPin size={13} strokeWidth={2} className="shrink-0" />
+                  {fullAddr}
+                </a>
+              ) : (
+                '—'
+              )}
+            </dd>
 
             <dt className="text-boss-text-secondary">우편번호</dt>
             <dd className="font-boss-head font-semibold tabular-nums text-boss-text">{item.post || '—'}</dd>
