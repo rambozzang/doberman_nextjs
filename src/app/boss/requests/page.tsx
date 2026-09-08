@@ -54,11 +54,13 @@ type Data = {
 
 // 탭 — "웹견적 요청"과 "나의 견적"을 한 화면에서 본다(2026-09-08).
 // 같은 요청이 두 메뉴로 갈라져 있어 "내가 답변했는지" 를 보려면 메뉴를 오가야 했다.
+// '전체' 를 맨 앞에 둔다 — 사장님이 가장 먼저 훑어보는 게 전체 흐름이다.
+// '새 요청' 탭은 없앴다 — 배지 건수(상태=검토중 기준)와 실제 목록 건수(상태 무관 미답변 전체)가
+// 서로 달라 혼란스러웠고, '전체' 에서도 미답변 여부가 배지로 바로 보여 굳이 따로 둘 필요가 없었다.
 const TABS: { key: BossRequestTab; label: string; hint: string }[] = [
-  { key: 'new', label: '새 요청', hint: '아직 답변하지 않은 요청' },
+  { key: 'all', label: '전체', hint: '들어온 모든 요청' },
   { key: 'answered', label: '내가 답변함', hint: '내가 견적을 보낸 요청' },
   { key: 'adopted', label: '채택됨', hint: '고객이 내 견적을 고른 요청' },
-  { key: 'all', label: '전체', hint: '들어온 모든 요청' },
 ];
 
 /** 내 답변 상태 — 목록에서 이것만 보면 다음 할 일이 정해진다 */
@@ -104,10 +106,13 @@ function RequestList() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // ?tab=answered 로 들어오면 그 탭으로 — 예전 "나의 견적" 링크가 여기로 온다
+  // ?tab=new 처럼 이제 없는 탭으로 들어오면(오래된 링크·즐겨찾기·남아 있던 캐시) '전체' 로 보여 준다
   const [tab, setTab] = useState<BossRequestTab>(() => {
     const t = search.get('tab');
-    if (t === 'answered' || t === 'adopted' || t === 'all' || t === 'new') return t;
-    return restored?.filters.tab ?? 'new';
+    if (t === 'answered' || t === 'adopted' || t === 'all') return t;
+    const restoredTab = restored?.filters.tab;
+    if (restoredTab === 'answered' || restoredTab === 'adopted' || restoredTab === 'all') return restoredTab;
+    return 'all';
   });
   const [summary, setSummary] = useState<BossUnifiedRequestSummary>(restored?.data.summary ?? {});
   const [loaded, setLoaded] = useState(restored != null);
@@ -182,23 +187,41 @@ function RequestList() {
     }
   };
 
+  // 탭 · 지역범위 · 검색어(필터)와 페이지를 한 effect 에서 함께 다룬다.
+  //
+  // 예전엔 "필터가 바뀌면 1쪽으로" 를 별도 effect 로 뒀었다. 탭을 누르면 두 effect 가
+  // 거의 동시에 fetch 를 쐈다 — 하나는 (예전 페이지, 새 탭), 하나는 (1쪽, 새 탭). 두 요청이
+  // 응답 순서가 뒤바뀌면(예전 페이지 쪽이 늦게 도착) 화면엔 "1쪽" 이라고 표시된 채 다른 쪽
+  // 데이터가 남아 접수 순서가 뒤죽박죽으로 보였다.
+  //
+  // 필터가 바뀐 프레임에서는 절대 fetch 하지 않고 setPage(1) 만 하고 되돌아간다 — 페이지가
+  // 바뀌면 이 effect 가 다시 돌고, 그때는 filtersChanged 가 false 이므로 정확히 한 번만 부른다.
+  const prevFilters = useRef({ tab, onlyMyRegion, keyword });
   useEffect(() => {
     if (skipFirstLoad.current) {
       skipFirstLoad.current = false;
+      prevFilters.current = { tab, onlyMyRegion, keyword };
       return;
+    }
+
+    const filtersChanged =
+      prevFilters.current.tab !== tab ||
+      prevFilters.current.onlyMyRegion !== onlyMyRegion ||
+      prevFilters.current.keyword !== keyword;
+    prevFilters.current = { tab, onlyMyRegion, keyword };
+
+    if (filtersChanged) {
+      // 탭 · 검색 조건을 바꾼 순간, 이전 탭 목록이 새 데이터가 올 때까지 화면에 남아 있으면
+      // "접수 순서가 이상하게 보인다" — 다른 탭 데이터가 잠깐 얹혀 있는 것뿐인데 뒤섞인
+      // 것처럼 읽힌다. 곧바로 비워서 로딩 표시로 넘긴다.
+      setItems([]);
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
     }
     void load(page, tab, onlyMyRegion, keyword);
   }, [load, page, tab, onlyMyRegion, keyword]);
-
-  // 조건이 바뀌면 1쪽부터 — 단, 되살린 직후에는 보던 쪽을 지킨다
-  const keepRestoredPage = useRef(restored != null);
-  useEffect(() => {
-    if (keepRestoredPage.current) {
-      keepRestoredPage.current = false;
-      return;
-    }
-    setPage(1);
-  }, [tab, keyword, onlyMyRegion]);
 
   // 나갈 때를 위해 지금 조회조건 · 목록을 남겨 둔다
   useSaveListSnapshot<Filters, Data>(
