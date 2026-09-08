@@ -1767,7 +1767,11 @@ export default function QuoteRequestPage() {
                               시/도 선택 *
                             </label>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2">
-                              {regionData.map((region) => (
+                              {/* '전국'은 도배사장님(견적 수신 지역) 쪽에서만 쓰는 코드값이라
+                                  고객 견적 요청 화면에서는 선택지로 노출하지 않는다.
+                                  NATIONWIDE_REGION_ID 를 쓰는 나머지 로직(선택 처리·검증 등)은
+                                  그대로 둔다 — 다시 노출할 때 이 필터만 지우면 된다. */}
+                              {regionData.filter((region) => region.id !== NATIONWIDE_REGION_ID).map((region) => (
                                 <button
                                   key={region.id}
                                   type="button"
