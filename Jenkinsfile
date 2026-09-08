@@ -3,11 +3,7 @@ pipeline {
 
     environment {
         DEPLOY_DIR              = '/vdata/www/www.doberman.kr'
-        PM2_APP_NAME            = 'doberman'
-        // 배포 서버는 Oracle Linux 라 'ubuntu' 계정이 없다. pm2 데몬은 opc 로 돌고 있다.
-        // (확인: PM2 v6.0.14 God Daemon (/home/opc/.pm2), 실행 계정 opc)
         DEPLOY_USER             = 'opc'
-        DEPLOY_PM2_HOME         = '/home/opc/.pm2'
         NEXT_TELEMETRY_DISABLED = '1'
     }
 
@@ -59,28 +55,29 @@ pipeline {
                         sudo install -d -o ${DEPLOY_USER} -g ${DEPLOY_USER} ${DEPLOY_DIR}/logs
                     """
 
-                    // ── 2. PM2 재시작 ──────────────────────────────────────────
-                    // 운영 PM2 계정으로 reload/start하고 online 상태를 확인합니다.
+                    // ── 2. systemd가 관리하는 PM2 runtime 재시작 ───────────────
+                    // pm2-opc.service는 PID 파일을 사용하는 daemon 방식이 아니라
+                    // pm2-runtime foreground 방식으로 두 앱을 함께 관리한다.
+                    // Jenkins에서 pm2 CLI를 직접 호출하면 별도 daemon이 생겨
+                    // 포트 충돌과 이중 기동이 발생할 수 있으므로 systemd만 사용한다.
                     sh """
                         set -e
 
-                        if sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} pm2 describe ${PM2_APP_NAME} 2>/dev/null | grep -q 'status.*online'; then
-                            sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} JENKINS_NODE_COOKIE=dontKillMe pm2 reload ${PM2_APP_NAME} --update-env
-                        else
-                            sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} pm2 delete ${PM2_APP_NAME} 2>/dev/null || true
-                            sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} JENKINS_NODE_COOKIE=dontKillMe pm2 start ${DEPLOY_DIR}/ecosystem.config.js --update-env
-                        fi
+                        sudo systemctl restart pm2-opc.service
 
-                        sleep 5
-
-                        if ! sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} pm2 describe ${PM2_APP_NAME} 2>/dev/null | grep -q 'status.*online'; then
-                            echo 'PM2 앱이 online 상태가 아닙니다.'
-                            sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} pm2 logs ${PM2_APP_NAME} --lines 50 --nostream || true
-                            exit 1
-                        fi
-
-                        curl --fail --silent --show-error http://127.0.0.1:3000/api/health > /dev/null
-                        sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} pm2 save
+                        for retry in 1 2 3 4 5 6 7 8 9 10; do
+                            if sudo systemctl is-active --quiet pm2-opc.service \
+                                && curl --fail --silent --show-error http://127.0.0.1:3000/api/health > /dev/null; then
+                                break
+                            fi
+                            if [ "\$retry" = "10" ]; then
+                                echo 'PM2 runtime 또는 Doberman health check가 정상화되지 않았습니다.'
+                                sudo systemctl status pm2-opc.service --no-pager -l || true
+                                sudo journalctl -u pm2-opc.service -n 80 --no-pager || true
+                                exit 1
+                            fi
+                            sleep 2
+                        done
                     """
                 }
             }
@@ -98,7 +95,7 @@ pipeline {
 
         failure {
             echo '❌ 배포 실패 — 로그를 확인하세요'
-            sh "sudo -iu ${DEPLOY_USER} env PM2_HOME=${DEPLOY_PM2_HOME} pm2 logs ${PM2_APP_NAME} --lines 30 --nostream || true"
+            sh 'sudo systemctl status pm2-opc.service --no-pager -l || true; sudo journalctl -u pm2-opc.service -n 50 --no-pager || true'
         }
     }
 }
