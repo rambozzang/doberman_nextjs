@@ -16,7 +16,7 @@ import { PrintActions } from '@/components/boss/print/PrintActions';
 import PdfPreview from '@/components/boss/print/PdfPreview';
 import DocStylePicker from '@/components/boss/print/DocStylePicker';
 import { ESTIMATE_STYLES } from '@/components/boss/print/docTypes';
-import { buildDocMeta } from '@/lib/boss/docMeta';
+import { buildDocMeta, dateToInputValue, inputValueToDate } from '@/lib/boss/docMeta';
 import { toKoreanAmountApp } from '@/lib/boss/koreanAmount';
 import { loadDocStyle, saveDocStyle } from '@/lib/boss/docStyle';
 import type { BossEstimateItem, BossEstimateTotals } from '@/types/boss-estimate';
@@ -57,6 +57,8 @@ export default function BossEstimatePrintPage() {
   const [company, setCompany] = useState<BossCompanyData | null>(null);
   // 앱과 같은 5종 양식 — 고른 값을 기억한다
   const [styleKey, setStyleKey] = useState<string>(ESTIMATE_STYLES[0].key);
+  // 견적일자 — 기본은 오늘. 나중에 준 견적서를 정리하거나 미리 만들어 둘 때 날짜를 바꿔야 해서 고를 수 있게 한다.
+  const [estimateDate, setEstimateDate] = useState<Date>(() => new Date());
   const paperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,14 +125,17 @@ export default function BossEstimatePrintPage() {
 
   const totals = useMemo(() => computeTotals(items), [items]);
 
-  const today = new Date().toLocaleDateString('ko-KR', {
+  // 화면 안내 · 공유 문자에 쓰는 표기 — 실제 견적서에 찍히는 견적일자와 같게 맞춘다
+  const today = estimateDate.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
   const style = ESTIMATE_STYLES.find((s) => s.key === styleKey) ?? ESTIMATE_STYLES[0];
-  const docMeta = useMemo(() => buildDocMeta(), []);
+  // 문서번호(docNumber)는 실제 생성 시각을 그대로 쓰고, 견적일자 · 유효기간 · 납기일만
+  // 고른 날짜를 기준으로 계산한다(buildDocMeta 두 번째 인자).
+  const docMeta = useMemo(() => buildDocMeta(new Date(), estimateDate), [estimateDate]);
   const docData = useMemo(
     () => ({
       company,
@@ -259,6 +264,21 @@ export default function BossEstimatePrintPage() {
       </DetailActions>
 
       <DocStylePicker styles={ESTIMATE_STYLES} value={styleKey} onChange={changeStyle} label="견적서 양식" />
+
+      {/* 견적일자 — 기본은 오늘이지만, 나중에 정리하거나 미리 준비해 둔 견적서는 날짜를 바꿔야 한다.
+          유효기간 · 납기일도 이 날짜를 기준으로 다시 계산된다(문서번호는 그대로 실제 생성 시각). */}
+      <div className="no-print flex flex-wrap items-center gap-2">
+        <span className="boss-mono-label">견적일자</span>
+        <input
+          type="date"
+          value={dateToInputValue(estimateDate)}
+          onChange={(e) => {
+            if (!e.target.value) return;
+            setEstimateDate(inputValueToDate(e.target.value));
+          }}
+          className="boss-input h-8 w-[152px] text-[13px]"
+        />
+      </div>
 
       {error && (
         <div className="no-print">

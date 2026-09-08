@@ -15,6 +15,9 @@ import { companyAddress } from '../docTypes';
 import { formatBizNoLoose } from '@/lib/boss/docMeta';
 
 export const LINE = '#111111';
+// 표 · 상자 테두리 색 — 글자(LINE)보다 한 단계 옅게 둔다. 테두리까지 거의 검정이면
+// 서류 전체가 너무 찐하게 보인다는 피드백이 있었다.
+export const BORDER = '#555555';
 export const THIN = 0.5;
 export const THICK = 1.4;
 /** 격자 한 줄 높이 — 표 · 라벨 칸이 모두 이 높이를 쓴다 */
@@ -108,7 +111,7 @@ export function Cell({
         minHeight: h,
         borderRightWidth: last ? 0 : THIN,
         borderBottomWidth: bottom ? 0 : THIN,
-        borderColor: LINE,
+        borderColor: BORDER,
         backgroundColor: bg,
         justifyContent: 'center',
         paddingHorizontal: pad,
@@ -141,7 +144,7 @@ export function Label({ children, w, bg, last, bottom, h, spacing = 1, bold = fa
 
 /** 굵은 외곽선 상자 — 안에 Row/Cell 을 넣는다 */
 export function Box({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={{ borderWidth: THICK, borderColor: LINE, ...style }}>{children}</View>;
+  return <View style={{ borderWidth: THICK, borderColor: BORDER, ...style }}>{children}</View>;
 }
 
 export function Row({ children, wrap = false }: { children: ReactNode; wrap?: boolean }) {
@@ -209,13 +212,13 @@ export function TitleBlock({
           </View>
           {metaRight()}
         </View>
-        <View style={{ height: THIN, backgroundColor: LINE, marginTop: 8 }} />
+        <View style={{ height: THIN, backgroundColor: BORDER, marginTop: 8 }} />
       </View>
     );
   }
 
   // 0 · 3 — 가운데 제목 + 이중 밑줄
-  const rule = styleKey === '3' ? p.primary : LINE;
+  const rule = styleKey === '3' ? p.primary : BORDER;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
       <View style={{ width: 150, flexDirection: 'row', alignItems: 'center', paddingTop: 6 }}>
@@ -273,13 +276,13 @@ export function SupplierGrid({ data, label }: { data: DocData; label: string }) 
     </Row>,
   ];
   return (
-    <View style={{ flexDirection: 'row', borderWidth: THICK, borderColor: LINE, position: 'relative' }}>
+    <View style={{ flexDirection: 'row', borderWidth: THICK, borderColor: BORDER, position: 'relative' }}>
       <View
         style={{
           width: 18,
           backgroundColor: label,
           borderRightWidth: THIN,
-          borderColor: LINE,
+          borderColor: BORDER,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -347,7 +350,7 @@ export function AmountBox({
           width: 86,
           backgroundColor: label,
           borderRightWidth: THIN,
-          borderColor: LINE,
+          borderColor: BORDER,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -366,7 +369,7 @@ export function AmountBox({
           style={{
             width: 60,
             borderLeftWidth: THIN,
-            borderColor: LINE,
+            borderColor: BORDER,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: label,

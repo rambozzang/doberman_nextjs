@@ -24,7 +24,7 @@ import {
   Cell,
   Label,
   Stamp,
-  LINE,
+  BORDER,
   THIN,
   ROW_H,
   type Column,
@@ -171,7 +171,7 @@ export default function ReceiptPdf({ data, p, styleKey }: { data: DocData; p: Do
             flexDirection: 'row',
             justifyContent: 'space-between',
             borderTopWidth: THIN,
-            borderColor: LINE,
+            borderColor: BORDER,
             paddingTop: 3,
           }}
         >

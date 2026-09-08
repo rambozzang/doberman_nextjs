@@ -22,7 +22,7 @@ import {
   Row,
   Cell,
   Label,
-  LINE,
+  BORDER,
   THIN,
   ROW_H,
   type Column,
@@ -171,7 +171,7 @@ export default function EstimatePdf({ data, p, styleKey }: { data: DocData; p: D
             flexDirection: 'row',
             justifyContent: 'space-between',
             borderTopWidth: THIN,
-            borderColor: LINE,
+            borderColor: BORDER,
             paddingTop: 3,
           }}
         >
