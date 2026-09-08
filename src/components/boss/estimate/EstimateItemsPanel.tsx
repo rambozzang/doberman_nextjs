@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Trash2, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { bossEstimateApi } from '@/lib/api/boss/estimate';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { toKoreanAmountLabel } from '@/lib/boss/koreanAmount';
 import type { BossEstimateItem } from '@/types/boss-estimate';
 import {
@@ -273,6 +274,7 @@ export default function EstimateItemsPanel({
         if (res.success !== false) {
           const savedId = row.id ?? (res.data as BossEstimateItem | undefined)?.id;
           patch(key, { id: savedId, dirty: false, saving: false, justSaved: true });
+          markListDirty(LIST_KEYS.customers); // 고객 목록의 금액이 바뀐다
           window.setTimeout(() => patch(key, { justSaved: false }), 1600);
           // 서버가 새 id 를 안 주면 목록을 다시 읽어 맞춘다(수정 · 삭제가 id 를 쓴다)
           if (!savedId) void load();
@@ -304,6 +306,7 @@ export default function EstimateItemsPanel({
         setRows((rs) => rs.filter((r) => r.key !== target.key));
         setDeleteTarget(null);
         toast.success('품목을 삭제했습니다.');
+        markListDirty(LIST_KEYS.customers);
       } else {
         toast.error(res.message || res.error || '삭제하지 못했습니다.');
       }

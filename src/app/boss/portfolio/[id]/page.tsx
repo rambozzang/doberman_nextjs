@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossPortfolioApi } from '@/lib/api/boss/portfolio';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossPortfolioItem, PortfolioExternalLink } from '@/types/boss-portfolio';
 import {
@@ -132,6 +133,7 @@ export default function BossPortfolioDetailPage() {
       if (res.success) {
         setItem({ ...item, isPublic: !isPublic });
         toast.success(!isPublic ? '공개로 전환되었습니다' : '비공개로 전환되었습니다');
+        markListDirty(LIST_KEYS.portfolio);
       } else {
         toast.error(res.message || '상태 변경에 실패했습니다.');
       }
@@ -156,6 +158,7 @@ export default function BossPortfolioDetailPage() {
       const res = await bossPortfolioApi.remove(item.id, custId);
       if (res.success) {
         toast.success('포트폴리오가 삭제되었습니다');
+        markListDirty(LIST_KEYS.portfolio);
         router.push('/boss/portfolio');
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');

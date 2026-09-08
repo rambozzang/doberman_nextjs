@@ -6,7 +6,7 @@
 // - 목록은 표, 숫자 · 날짜 · 금액은 Barlow Condensed 우측 정렬
 // - 마지막 행은 점선 CTA 로 등록 화면 진입, 로딩은 행 높이를 유지한 스켈레톤
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -29,6 +29,7 @@ import { useBossSearch } from '@/components/boss/layout/BossSearchContext';
 import { CUSTOMER_LIST_TABS, customerStatus } from '@/lib/boss/customerStatus';
 import { formatAppDateTime, maskPhoneForList } from '@/lib/boss/format';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import type { BossOrderItem, OrderSortType } from '@/types/boss';
 import { RefreshCw, Phone, Plus } from 'lucide-react';
 
@@ -45,23 +46,35 @@ function formatMoney(n?: number) {
   return '₩' + n.toLocaleString('ko-KR');
 }
 
+type Filters = { page: number; sortType: OrderSortType; statusCd: string };
+type Data = { items: BossOrderItem[]; totalPages: number; totalCount: number };
+
 export default function BossOrderListPage() {
   const router = useRouter();
-  const [items, setItems] = useState<BossOrderItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  // 상세를 다녀왔으면 보던 탭 · 정렬 · 쪽과 목록을 그대로 되살린다 (고친 게 있으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.customers), []);
+  const [items, setItems] = useState<BossOrderItem[]>(restored?.data.items ?? []);
+  const [page, setPage] = useState(restored?.filters.page ?? 1);
+  const [totalPages, setTotalPages] = useState(restored?.data.totalPages ?? 1);
+  const [totalCount, setTotalCount] = useState(restored?.data.totalCount ?? 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortType, setSortType] = useState<OrderSortType>('CREATED_DT');
+  const [sortType, setSortType] = useState<OrderSortType>(restored?.filters.sortType ?? 'CREATED_DT');
   // 앱 고객 리스트의 탭: 전체 '' · 진행중 00 · 수금중 01 · 수금완료 10 — 서버가 거른다
-  const [statusCd, setStatusCd] = useState<string>('');
+  const [statusCd, setStatusCd] = useState<string>(restored?.filters.statusCd ?? '');
   const [reloadKey, setReloadKey] = useState(0);
+  const [loaded, setLoaded] = useState(restored != null);
+  // 되살린 첫 렌더에서는 다시 부르지 않는다 — 탭 · 쪽을 바꾸는 순간부터 평소대로 부른다
+  const skipFirstLoad = useRef(restored != null);
 
   // 상단바 검색(`/` 로 포커스)을 이 화면에 연결한다
   const { query: keyword } = useBossSearch('고객명 · 전화 · 주소');
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -73,6 +86,7 @@ export default function BossOrderListPage() {
           setItems(res.data.content ?? []);
           setTotalPages(res.data.totalPages ?? 1);
           setTotalCount(res.data.totalCount ?? (res.data.content?.length ?? 0));
+          setLoaded(true);
         } else {
           setError(res.message || '고객 목록을 불러오지 못했습니다.');
         }
@@ -86,6 +100,14 @@ export default function BossOrderListPage() {
       cancelled = true;
     };
   }, [page, sortType, statusCd, reloadKey]);
+
+  // 나갈 때를 위해 지금 조회조건 · 목록을 남겨 둔다
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.customers,
+    { page, sortType, statusCd },
+    { items, totalPages, totalCount },
+    loaded
+  );
 
   const filtered = useMemo(() => {
     if (!keyword.trim()) return items;

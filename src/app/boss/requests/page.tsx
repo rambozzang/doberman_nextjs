@@ -4,9 +4,10 @@
 // 화면 제목 · 부제 · "내 답변" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
 // 필터 한 줄: 상태 탭(ListTabs) + 헤더 검색 + 우측 "전체 n건". 목록은 표, 행 CTA 는 답변 화면으로 바로 진입.
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import type {
   BossRequestTab,
   BossUnifiedRequestItem,
@@ -42,6 +43,14 @@ import {
 } from '@/lib/boss/requestFormat';
 
 type BadgeTone = 'default' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
+
+type Filters = { page: number; tab: BossRequestTab; onlyMyRegion: boolean };
+type Data = {
+  items: BossUnifiedRequestItem[];
+  totalPages: number;
+  totalCount: number;
+  summary: BossUnifiedRequestSummary;
+};
 
 // 탭 — "웹견적 요청"과 "나의 견적"을 한 화면에서 본다(2026-09-08).
 // 같은 요청이 두 메뉴로 갈라져 있어 "내가 답변했는지" 를 보려면 메뉴를 오가야 했다.
@@ -86,18 +95,24 @@ export default function BossRequestListPage() {
 function RequestList() {
   const router = useRouter();
   const search = useSearchParams();
-  const [items, setItems] = useState<BossUnifiedRequestItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  // 답변 화면을 다녀왔으면 보던 탭 · 쪽 · 목록을 그대로 되살린다 (답변을 냈으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.requests), []);
+  const [items, setItems] = useState<BossUnifiedRequestItem[]>(restored?.data.items ?? []);
+  const [page, setPage] = useState(restored?.filters.page ?? 1);
+  const [totalPages, setTotalPages] = useState(restored?.data.totalPages ?? 1);
+  const [totalCount, setTotalCount] = useState(restored?.data.totalCount ?? 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // ?tab=answered 로 들어오면 그 탭으로 — 예전 "나의 견적" 링크가 여기로 온다
   const [tab, setTab] = useState<BossRequestTab>(() => {
     const t = search.get('tab');
-    return t === 'answered' || t === 'adopted' || t === 'all' ? t : 'new';
+    if (t === 'answered' || t === 'adopted' || t === 'all' || t === 'new') return t;
+    return restored?.filters.tab ?? 'new';
   });
-  const [summary, setSummary] = useState<BossUnifiedRequestSummary>({});
+  const [summary, setSummary] = useState<BossUnifiedRequestSummary>(restored?.data.summary ?? {});
+  const [loaded, setLoaded] = useState(restored != null);
+  // 되살린 첫 렌더에서는 다시 부르지 않는다
+  const skipFirstLoad = useRef(restored != null);
 
   // 상단바 검색(`/` 로 포커스)을 이 화면에 연결한다
   const { query: keyword } = useBossSearch('지역 · 건물 · 고객');
@@ -126,6 +141,7 @@ function RequestList() {
           setError(listRes.message || '목록을 불러오지 못했습니다.');
         }
         if (sumRes.success !== false && sumRes.data) setSummary(sumRes.data);
+        if (listRes.success !== false && listRes.data) setLoaded(true);
       } catch {
         setError('네트워크 오류로 목록을 불러오지 못했습니다.');
       } finally {
@@ -141,7 +157,7 @@ function RequestList() {
   const myRegions = company?.region ?? '';
   const [regionOpen, setRegionOpen] = useState(false);
   const [regionSaving, setRegionSaving] = useState(false);
-  const [onlyMyRegion, setOnlyMyRegion] = useState(true);
+  const [onlyMyRegion, setOnlyMyRegion] = useState(restored?.filters.onlyMyRegion ?? true);
 
   const saveRegions = async (regions: string) => {
     const companyId = company?.id ?? BossAuthManager.getUserInfo()?.companyId;
@@ -167,12 +183,30 @@ function RequestList() {
   };
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     void load(page, tab, onlyMyRegion, keyword);
   }, [load, page, tab, onlyMyRegion, keyword]);
 
+  // 조건이 바뀌면 1쪽부터 — 단, 되살린 직후에는 보던 쪽을 지킨다
+  const keepRestoredPage = useRef(restored != null);
   useEffect(() => {
+    if (keepRestoredPage.current) {
+      keepRestoredPage.current = false;
+      return;
+    }
     setPage(1);
   }, [tab, keyword, onlyMyRegion]);
+
+  // 나갈 때를 위해 지금 조회조건 · 목록을 남겨 둔다
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.requests,
+    { page, tab, onlyMyRegion },
+    { items, totalPages, totalCount, summary },
+    loaded
+  );
 
   // 거르기 · 세기는 서버가 한다 — 페이지를 넘겨도 어긋나지 않는다
   const filtered = items;

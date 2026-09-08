@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { PenLine, Plus, RefreshCw, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossSignatureItem } from '@/types/boss-signature';
 import {
@@ -63,13 +64,19 @@ function statusBadge(item: BossSignatureItem): { label: string; tone: StatusTone
   return { label: '미완료', tone: 'warn' };
 }
 
+type Filters = { keyword: string; statusTab: StatusFilter };
+type Data = { items: BossSignatureItem[] };
+
 export default function BossSignatureListPage() {
   const router = useRouter();
-  const [items, setItems] = useState<BossSignatureItem[]>([]);
+  // 상세를 다녀왔으면 보던 조회조건과 목록을 그대로 되살린다 (고친 게 있으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.signature), []);
+  const [items, setItems] = useState<BossSignatureItem[]>(restored?.data.items ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyword, setKeyword] = useState('');
-  const [statusTab, setStatusTab] = useState<StatusFilter>('all');
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
+  const [statusTab, setStatusTab] = useState<StatusFilter>(restored?.filters.statusTab ?? 'all');
+  const [loaded, setLoaded] = useState(restored != null);
   const [pendingDelete, setPendingDelete] = useState<BossSignatureItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -91,8 +98,10 @@ export default function BossSignatureListPage() {
           return bd - ad;
         });
         setItems(sorted);
+        setLoaded(true);
       } else if (res.success && res.data == null) {
         setItems([]);
+        setLoaded(true);
       } else {
         setError(res.message || '서명 목록을 불러오지 못했습니다.');
       }
@@ -104,8 +113,17 @@ export default function BossSignatureListPage() {
   };
 
   useEffect(() => {
+    if (restored) return; // 되살렸으면 다시 부르지 않는다
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.signature,
+    { keyword, statusTab },
+    { items },
+    loaded
+  );
 
   const counts = useMemo(() => {
     const done = items.filter(isSigned).length;

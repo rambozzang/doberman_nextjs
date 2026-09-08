@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { customerStatus } from '@/lib/boss/customerStatus';
 import { formatAppDateTime, formatPhone } from '@/lib/boss/format';
 import EstimateItemsPanel from '@/components/boss/estimate/EstimateItemsPanel';
@@ -75,6 +76,7 @@ export default function BossOrderDetailPage() {
       const res = await bossCustomersApi.updateStatus(item.id, '10');
       if (res.success !== false) {
         toast.success('수금완료로 표시했습니다.');
+        markListDirty(LIST_KEYS.customers);
         setConfirmPaid(false);
         setItem({ ...item, statusCd: '10' });
       } else {
@@ -97,6 +99,7 @@ export default function BossOrderDetailPage() {
       const res = await bossCustomersApi.remove(item.id);
       if (res.success !== false) {
         toast.success('고객을 삭제했습니다.');
+        markListDirty(LIST_KEYS.customers);
         setConfirmDelete(false);
         router.replace('/boss/customers');
       } else {

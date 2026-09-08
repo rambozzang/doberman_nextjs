@@ -4,7 +4,8 @@
 //   필터 줄(상태 Seg + 검색 + 정렬 + 우측 전체 n건) → 표(DataTable). 화면 제목 · "새 접수" 버튼은 셸 헤더가 그린다.
 //   상태 탭은 API 재조회(기존 로직), 검색 · 정렬은 클라이언트. 첫 조회 실패와 0건을 구분해 말한다. 삭제는 ConfirmDialog.
 // Flutter: as_request_list_page.dart 포팅
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import { formatPhone } from '@/lib/boss/format';
 import { useRouter } from 'next/navigation';
 import { Plus, RefreshCw, Inbox } from 'lucide-react';
@@ -68,14 +69,21 @@ function statusTone(status: string): StatusTone {
   }
 }
 
+type Filters = { statusFilter: StatusFilter; sortType: SortType; query: string };
+type Data = { items: AsRequestItem[] };
+
 export default function BossAsListPage() {
   const router = useRouter();
-  const [items, setItems] = useState<AsRequestItem[]>([]);
+  // 상세를 다녀왔으면 보던 조회조건과 목록을 그대로 되살린다 (고친 게 있으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.as), []);
+  const [items, setItems] = useState<AsRequestItem[]>(restored?.data.items ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
-  const [sortType, setSortType] = useState<SortType>('CREATED_DT');
-  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(restored?.filters.statusFilter ?? '');
+  const [sortType, setSortType] = useState<SortType>(restored?.filters.sortType ?? 'CREATED_DT');
+  const [query, setQuery] = useState(restored?.filters.query ?? '');
+  const [loaded, setLoaded] = useState(restored != null);
+  const skipFirstLoad = useRef(restored != null);
   const [pendingDelete, setPendingDelete] = useState<AsRequestItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -117,6 +125,7 @@ export default function BossAsListPage() {
       const res = await bossAsApi.list(custId, statusFilter || undefined);
       if (res.success !== false && res.data) {
         setItems(Array.isArray(res.data) ? res.data : []);
+        setLoaded(true);
       } else {
         setError(res.message || 'AS 요청 목록을 불러오지 못했습니다.');
       }
@@ -129,8 +138,19 @@ export default function BossAsListPage() {
 
   // 최초 로드 + 상태 필터 변경 시 재조회
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     load();
   }, [load, statusFilter]);
+
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.as,
+    { statusFilter, sortType, query },
+    { items },
+    loaded
+  );
 
   const statusCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = {

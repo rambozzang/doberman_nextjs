@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Eraser, Undo2 } from 'lucide-react';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { bossUploadApi, canvasToFile } from '@/lib/api/boss/upload';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { Panel, Field, TextareaField, Button, ButtonLink } from '@/components/boss/ui';
@@ -208,6 +209,7 @@ export default function BossSignatureCapturePage() {
 
       if (res.success) {
         toast.success('서명이 저장되었습니다.');
+      markListDirty(LIST_KEYS.signature);
         router.push('/boss/signature');
       } else {
         toast.error(res.message || '서명 저장에 실패했습니다.');

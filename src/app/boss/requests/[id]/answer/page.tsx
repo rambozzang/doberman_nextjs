@@ -21,6 +21,7 @@ import type { BossRequestDetail } from '@/types/boss';
 import { looksLikePlainText, sanitizeHtml } from '@/lib/sanitizeHtml';
 import { formatPreferredDate, requestSummary, stripBrackets } from '@/lib/boss/requestFormat';
 import { BossAuthManager } from '@/lib/bossAuth';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { amountInKorean } from '@/lib/boss/docMeta';
 
 /** 자주 쓰는 금액 — 누르면 더해진다 */
@@ -146,6 +147,7 @@ export default function BossAnswerPage() {
       });
       if (res.success) {
         toast.success('견적 답변이 제출되었습니다.');
+        markListDirty(LIST_KEYS.requests);
         router.replace(`/boss/requests/${requestId}`);
       } else {
         toast.error(res.message || '제출에 실패했습니다.');

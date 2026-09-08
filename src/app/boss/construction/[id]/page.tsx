@@ -9,6 +9,7 @@ import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Pencil, Trash2, ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { bossConstructionApi, normalizeConstructionRecord } from '@/lib/api/boss/construction';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { ConstructionRecord } from '@/types/boss-construction';
 import {
@@ -129,6 +130,7 @@ export default function BossConstructionDetailPage() {
       const res = await bossConstructionApi.remove(item.id, custId);
       if (res.success !== false) {
         toast.success('시공 기록이 삭제되었습니다.');
+        markListDirty(LIST_KEYS.construction);
         router.push('/boss/construction');
       } else {
         toast.error(res.message || '삭제에 실패했습니다.');

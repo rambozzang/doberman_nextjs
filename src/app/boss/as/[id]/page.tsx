@@ -9,6 +9,7 @@ import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Pencil, Trash2, CheckCircle2, Image as ImageIcon, Wrench } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import type { AsRequestItem } from '@/types/boss-as';
 import {
   Panel,
@@ -113,6 +114,7 @@ export default function BossAsDetailPage() {
       const res = await bossAsApi.changeStatus(item.id, custId, newStatus);
       if (res.success !== false) {
         toast.success(`상태가 "${newStatus}"(으)로 변경되었습니다`);
+        markListDirty(LIST_KEYS.as);
         await load();
       } else {
         toast.error(res.message || '상태 변경에 실패했습니다');
@@ -137,6 +139,7 @@ export default function BossAsDetailPage() {
       const res = await bossAsApi.remove(item.id, custId);
       if (res.success !== false) {
         toast.success('AS 요청이 삭제되었습니다');
+        markListDirty(LIST_KEYS.as);
         router.push('/boss/as');
       } else {
         toast.error(res.message || '삭제에 실패했습니다');

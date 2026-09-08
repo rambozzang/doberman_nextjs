@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossPortfolioApi } from '@/lib/api/boss/portfolio';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossPortfolioItem } from '@/types/boss-portfolio';
 import { Image as ImageIcon, RefreshCw, Plus, Link as LinkIcon } from 'lucide-react';
@@ -81,16 +82,22 @@ type SortType = 'CREATED_DT' | 'WORK_DATE';
 type TabType = 'all' | 'public' | 'private';
 type ViewType = 'grid' | 'list';
 
+type Filters = { sort: SortType; tab: TabType; view: ViewType };
+type Data = { items: BossPortfolioItem[] };
+
 export default function BossPortfolioListPage() {
   const router = useRouter();
-  const [items, setItems] = useState<BossPortfolioItem[]>([]);
+  // 상세를 다녀왔으면 보던 조회조건과 목록을 그대로 되살린다 (고친 게 있으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.portfolio), []);
+  const [items, setItems] = useState<BossPortfolioItem[]>(restored?.data.items ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 상단바 검색(`/` 로 포커스)을 이 화면에 연결한다
   const { query: keyword } = useBossSearch('제목 · 지역 · 유형');
-  const [sort, setSort] = useState<SortType>('CREATED_DT');
-  const [tab, setTab] = useState<TabType>('all');
-  const [view, setView] = useState<ViewType>('grid');
+  const [sort, setSort] = useState<SortType>(restored?.filters.sort ?? 'CREATED_DT');
+  const [tab, setTab] = useState<TabType>(restored?.filters.tab ?? 'all');
+  const [view, setView] = useState<ViewType>(restored?.filters.view ?? 'grid');
+  const [loaded, setLoaded] = useState(restored != null);
   const [pendingDelete, setPendingDelete] = useState<BossPortfolioItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -133,6 +140,7 @@ export default function BossPortfolioListPage() {
       const res = await bossPortfolioApi.list(custId);
       if (res.success && res.data) {
         setItems(Array.isArray(res.data) ? res.data : []);
+        setLoaded(true);
       } else {
         setError(res.message || '포트폴리오를 불러오지 못했습니다.');
       }
@@ -144,8 +152,12 @@ export default function BossPortfolioListPage() {
   };
 
   useEffect(() => {
+    if (restored) return; // 되살렸으면 다시 부르지 않는다
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useSaveListSnapshot<Filters, Data>(LIST_KEYS.portfolio, { sort, tab, view }, { items }, loaded);
 
   const sortedFiltered = useMemo(() => {
     let list = [...items];

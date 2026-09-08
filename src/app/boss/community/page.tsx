@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { bossCommunityApi } from '@/lib/api/boss/community';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
 import {
   SearchInput,
@@ -58,6 +59,9 @@ function categoryMeta(item: BbsData): { label: string; tone: StatusTone } {
   return { label, tone };
 }
 
+type Filters = { page: number; category: CategoryCode; keyword: string };
+type Data = { items: BbsData[]; totalCount: number; totalPages: number };
+
 function authorName(item: BbsData): string {
   if (item.anonyYn === 'Y') return '익명';
   return item.nickNm ?? item.userNm ?? '사용자';
@@ -65,15 +69,21 @@ function authorName(item: BbsData): string {
 
 export default function BossCommunityListPage() {
   const router = useRouter();
-  const [items, setItems] = useState<BbsData[]>([]);
-  const [page, setPage] = useState(1);
-  const [category, setCategory] = useState<CategoryCode>('ALL');
-  const [keyword, setKeyword] = useState('');
+  // 글을 보고 돌아왔으면 보던 게시판 · 검색어 · 쪽과 목록을 그대로 되살린다
+  // (글을 쓰거나 고치거나 지웠으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.community), []);
+  const [items, setItems] = useState<BbsData[]>(restored?.data.items ?? []);
+  const [page, setPage] = useState(restored?.filters.page ?? 1);
+  const [category, setCategory] = useState<CategoryCode>(restored?.filters.category ?? 'ALL');
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(restored?.data.totalCount ?? 0);
+  const [totalPages, setTotalPages] = useState(restored?.data.totalPages ?? 1);
+  const [loaded, setLoaded] = useState(restored != null);
   const loadingRef = useRef(false);
+  // 되살린 첫 렌더에서는 다시 부르지 않는다
+  const skipFirstLoad = useRef(restored != null);
 
   const dedupe = (list: BbsData[]): BbsData[] =>
     Array.from(new Map(list.map((i) => [i.boardId, i])).values());
@@ -103,6 +113,7 @@ export default function BossCommunityListPage() {
           setItems(list);
           setTotalCount(p.totalCount);
           setTotalPages(p.totalPages);
+          setLoaded(true);
         } else {
           setError(res.message || '게시글을 불러오지 못했습니다.');
         }
@@ -117,8 +128,20 @@ export default function BossCommunityListPage() {
   );
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     void load(page);
   }, [load, page]);
+
+  // 나갈 때를 위해 지금 조회조건 · 목록을 남겨 둔다
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.community,
+    { page, category, keyword },
+    { items, totalCount, totalPages },
+    loaded
+  );
 
   const filtered = useMemo(() => {
     if (!keyword.trim()) return items;

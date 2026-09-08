@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useBossAuth } from '@/hooks/useBossAuth';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import {
   Button,
   Panel,
@@ -136,6 +137,7 @@ function CustomerForm() {
         : await bossCustomersApi.create(payload);
       if (res.success) {
         toast.success(editId ? '고객 정보를 수정했습니다.' : '고객이 등록되었습니다.');
+        markListDirty(LIST_KEYS.customers); // 목록으로 돌아가면 새로 불러야 한다
         router.push(editId ? `/boss/customers/${editId}` : '/boss/customers');
       } else {
         toast.error(res.message || (editId ? '고객 수정에 실패했습니다.' : '고객 등록에 실패했습니다.'));

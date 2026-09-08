@@ -8,10 +8,11 @@
 // → 표(제목 · 작성자 · 댓글 · 조회 · 날짜) → 페이지네이션
 // 검색은 API 검색(searchWord)이다.
 
-import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { bossCommunityApi } from '@/lib/api/boss/community';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import type { BbsData, BbsListResponse } from '@/types/boss-community';
 import {
   SearchInput,
@@ -64,6 +65,9 @@ function categoryTone(code?: string): StatusTone {
   return code === 'JOB' ? 'warn' : code === 'ANON' ? 'neutral' : 'info';
 }
 
+type Filters = { page: number; keyword: string; category: CategoryCode };
+type Data = { items: BbsData[]; totalCount: number; totalPages: number };
+
 function authorName(item: BbsData): string {
   if (item.anonyYn === 'Y') return '익명';
   return item.nickNm ?? item.userNm ?? '사용자';
@@ -78,16 +82,26 @@ export function CommunityList({
   actions?: ReactNode;
 }) {
   const router = useRouter();
-  const [items, setItems] = useState<BbsData[]>([]);
-  const [page, setPage] = useState(1);
-  const [keyword, setKeyword] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [category, setCategory] = useState<CategoryCode>(fixedCategory ?? 'ALL');
+  // 게시판(전체)과 구인/구직 메뉴는 각각 따로 기억한다
+  const cacheKey = fixedCategory === 'JOB' ? LIST_KEYS.communityJob : LIST_KEYS.community;
+  // 글을 보고 돌아왔으면 보던 게시판 · 검색어 · 쪽과 목록을 그대로 되살린다
+  // (글을 쓰거나 고치거나 지웠으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(cacheKey), [cacheKey]);
+  const [items, setItems] = useState<BbsData[]>(restored?.data.items ?? []);
+  const [page, setPage] = useState(restored?.filters.page ?? 1);
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
+  const [searchInput, setSearchInput] = useState(restored?.filters.keyword ?? '');
+  const [category, setCategory] = useState<CategoryCode>(
+    restored?.filters.category ?? fixedCategory ?? 'ALL'
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(restored?.data.totalCount ?? 0);
+  const [totalPages, setTotalPages] = useState(restored?.data.totalPages ?? 1);
+  const [loaded, setLoaded] = useState(restored != null);
   const loadingRef = useRef(false);
+  // 되살린 첫 렌더에서는 다시 부르지 않는다
+  const skipFirstLoad = useRef(restored != null);
 
   const dedupe = (list: BbsData[]): BbsData[] =>
     Array.from(new Map(list.map((i) => [i.boardId, i])).values());
@@ -113,6 +127,7 @@ export function CommunityList({
           setItems(list);
           setTotalCount(paging.totalCount);
           setTotalPages(paging.totalPages);
+          setLoaded(true);
         } else {
           setError(res.message || '게시글을 불러오지 못했습니다.');
         }
@@ -127,8 +142,20 @@ export function CommunityList({
   );
 
   useEffect(() => {
+    if (skipFirstLoad.current) {
+      skipFirstLoad.current = false;
+      return;
+    }
     load(page, keyword);
   }, [load, page, keyword]);
+
+  // 나갈 때를 위해 지금 조회조건 · 목록을 남겨 둔다
+  useSaveListSnapshot<Filters, Data>(
+    cacheKey,
+    { page, keyword, category },
+    { items, totalCount, totalPages },
+    loaded
+  );
 
   const onSearch = () => {
     setPage(1);

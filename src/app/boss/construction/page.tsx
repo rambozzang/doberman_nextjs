@@ -23,6 +23,7 @@ import {
 } from '@/components/boss/ui';
 import ListDateCell from '@/components/boss/ListDateCell';
 import { bossConstructionApi, normalizeConstructionRecord } from '@/lib/api/boss/construction';
+import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { ConstructionRecord } from '@/types/boss-construction';
 import toast from 'react-hot-toast';
@@ -52,14 +53,20 @@ function totalImageCount(item: ConstructionRecord): number {
   return item.beforeImages.length + item.duringImages.length + item.afterImages.length;
 }
 
+type Filters = { sort: SortType; statusTab: StatusFilter; keyword: string };
+type Data = { items: ConstructionRecord[] };
+
 export default function BossConstructionListPage() {
   const router = useRouter();
-  const [items, setItems] = useState<ConstructionRecord[]>([]);
+  // 상세를 다녀왔으면 보던 조회조건과 목록을 그대로 되살린다 (고친 게 있으면 null 이라 다시 부른다)
+  const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.construction), []);
+  const [items, setItems] = useState<ConstructionRecord[]>(restored?.data.items ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortType>('CREATED_DT');
-  const [statusTab, setStatusTab] = useState<StatusFilter>('all');
-  const [keyword, setKeyword] = useState('');
+  const [sort, setSort] = useState<SortType>(restored?.filters.sort ?? 'CREATED_DT');
+  const [statusTab, setStatusTab] = useState<StatusFilter>(restored?.filters.statusTab ?? 'all');
+  const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
+  const [loaded, setLoaded] = useState(restored != null);
   const [pendingDelete, setPendingDelete] = useState<ConstructionRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -102,6 +109,7 @@ export default function BossConstructionListPage() {
       const res = await bossConstructionApi.list(custId);
       if (res.success && res.data) {
         setItems((res.data as unknown[]).map((r) => normalizeConstructionRecord(r)));
+        setLoaded(true);
       } else {
         setError(res.message || '시공 기록을 불러오지 못했습니다.');
       }
@@ -113,8 +121,17 @@ export default function BossConstructionListPage() {
   };
 
   useEffect(() => {
+    if (restored) return; // 되살렸으면 다시 부르지 않는다
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useSaveListSnapshot<Filters, Data>(
+    LIST_KEYS.construction,
+    { sort, statusTab, keyword },
+    { items },
+    loaded
+  );
 
   const filtered = useMemo(() => {
     let list = [...items];

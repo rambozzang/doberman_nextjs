@@ -8,6 +8,7 @@ import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import CommunityPostForm from '@/components/boss/community/CommunityPostForm';
 import type { BbsCreateRequest } from '@/types/boss-community';
 import type { CategoryCode } from '@/components/boss/community/CommunityList';
@@ -23,6 +24,7 @@ function CommunityNewInner() {
   const handleSubmit = async (payload: BbsCreateRequest) => {
     const res = await bossCommunityApi.create(payload);
     if (res.success !== false) {
+      markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob);
       const back = defaultCategory === 'JOB' ? '/boss/community/jobs' : '/boss/community';
       router.push(back);
       return { success: true };

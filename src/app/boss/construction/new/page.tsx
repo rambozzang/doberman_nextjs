@@ -15,6 +15,7 @@ import {
   normalizeConstructionRecord,
 } from '@/lib/api/boss/construction';
 import { BossAuthManager } from '@/lib/bossAuth';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import type { ConstructionImageType } from '@/types/boss-construction';
 import {
   Panel,
@@ -216,6 +217,7 @@ function ConstructionFormInner() {
         });
         if (res.success !== false) {
           toast.success('시공 기록이 수정되었습니다.');
+          markListDirty(LIST_KEYS.construction);
           router.push(`/boss/construction/${editId}`);
         } else {
           toast.error(res.message || '저장에 실패했습니다.');
@@ -224,6 +226,7 @@ function ConstructionFormInner() {
         const res = await bossConstructionApi.create(basePayload);
         if (res.success !== false) {
           toast.success('시공 기록이 등록되었습니다.');
+          markListDirty(LIST_KEYS.construction);
           router.push('/boss/construction');
         } else {
           toast.error(res.message || '저장에 실패했습니다.');

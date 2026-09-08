@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import CommunityPostForm from '@/components/boss/community/CommunityPostForm';
 import type { BbsData, BbsUpdateRequest } from '@/types/boss-community';
 import { AlertBanner, ButtonLink, Skeleton } from '@/components/boss/ui';
@@ -49,6 +50,7 @@ export default function BossCommunityEditPage() {
     if (!boardId) return { success: false, message: '게시글 ID가 없습니다.' };
     const res = await bossCommunityApi.update({ ...payload, boardId });
     if (res.success !== false) {
+      markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob);
       router.push(`/boss/community/${boardId}`);
       return { success: true };
     }

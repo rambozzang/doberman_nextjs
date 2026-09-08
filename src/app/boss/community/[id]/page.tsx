@@ -15,6 +15,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Heart, Pencil, Trash2, Flag, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bossCommunityApi } from '@/lib/api/boss/community';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { bossCommentApi } from '@/lib/api/boss/comment';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
 import { BossAuthManager } from '@/lib/bossAuth';
@@ -171,6 +172,7 @@ export default function BossCommunityDetailPage() {
       const res = await bossCommunityApi.remove(boardId);
       if (res.success !== false) {
         toast.success('삭제되었습니다.');
+        markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob);
         router.push('/boss/community');
       } else {
         toast.error(res.message || '삭제 실패');
@@ -206,6 +208,7 @@ export default function BossCommunityDetailPage() {
       });
       if (res.success !== false) {
         setCommentInput('');
+        markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob); // 목록의 댓글 수가 바뀐다
         await loadComments();
       } else {
         toast.error(res.message || '댓글 등록 실패');
@@ -224,6 +227,7 @@ export default function BossCommunityDetailPage() {
     try {
       const res = await bossCommentApi.remove(cBoardId);
       if (res.success !== false) {
+        markListDirty(LIST_KEYS.community, LIST_KEYS.communityJob);
         await loadComments();
       } else {
         toast.error(res.message || '삭제 실패');

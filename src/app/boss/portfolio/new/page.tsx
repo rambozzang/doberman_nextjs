@@ -11,6 +11,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { bossPortfolioApi } from '@/lib/api/boss/portfolio';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type {
   BossPortfolioCreateRequest,
@@ -190,6 +191,7 @@ export default function BossPortfolioNewPage() {
       const res = await bossPortfolioApi.create(payload);
       if (res.success) {
         toast.success('포트폴리오가 등록되었습니다');
+      markListDirty(LIST_KEYS.portfolio);
         router.push('/boss/portfolio');
       } else {
         toast.error(res.message || '등록에 실패했습니다.');

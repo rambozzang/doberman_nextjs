@@ -32,14 +32,18 @@ const BossSearchCtx = createContext<Ctx | null>(null);
 
 export function BossSearchProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [query, setQuery] = useState('');
+  // 검색어는 화면마다 따로 기억한다 — 목록에서 상세로 갔다 돌아와도 찾던 말이 그대로 있어야 한다.
+  const [queries, setQueries] = useState<Record<string, string>>({});
+  const query = queries[pathname] ?? '';
   const [placeholder, setPlaceholder] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // 화면을 옮기면 검색어를 비운다
-  useEffect(() => {
-    setQuery('');
-  }, [pathname]);
+  const setQuery = useCallback(
+    (q: string) => {
+      setQueries((prev) => (prev[pathname] === q ? prev : { ...prev, [pathname]: q }));
+    },
+    [pathname]
+  );
 
   // `/` 로 검색 포커스 — 입력 중일 때는 가로채지 않는다
   useEffect(() => {
@@ -59,7 +63,7 @@ export function BossSearchProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ query, setQuery, placeholder, setPlaceholder, inputRef }),
-    [query, placeholder]
+    [query, setQuery, placeholder]
   );
 
   return <BossSearchCtx.Provider value={value}>{children}</BossSearchCtx.Provider>;

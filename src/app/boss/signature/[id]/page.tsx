@@ -10,6 +10,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Trash2, PenLine, ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { bossSignatureApi } from '@/lib/api/boss/signature';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { BossAuthManager } from '@/lib/bossAuth';
 import type { BossSignatureItem } from '@/types/boss-signature';
 import {
@@ -100,6 +101,7 @@ export default function BossSignatureDetailPage() {
       const res = await bossSignatureApi.remove(item.id, custId);
       if (res.success) {
         toast.success('삭제되었습니다.');
+        markListDirty(LIST_KEYS.signature);
         router.push('/boss/signature');
       } else {
         toast.error(res.message || '오류가 발생했습니다.');

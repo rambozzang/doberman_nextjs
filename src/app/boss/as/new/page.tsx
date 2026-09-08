@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Plus, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { bossAsApi, getBossCustId } from '@/lib/api/boss/as';
+import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import type { AsPriority, AsRequestImage, AsRequestItem } from '@/types/boss-as';
 import {
   Panel,
@@ -206,6 +207,7 @@ function BossAsAddForm() {
         });
         if (res.success !== false) {
           toast.success('AS 요청이 수정되었습니다');
+        markListDirty(LIST_KEYS.as);
           router.push(`/boss/as/${editId}`);
         } else {
           toast.error(res.message || '저장에 실패했습니다');
@@ -225,6 +227,7 @@ function BossAsAddForm() {
         });
         if (res.success !== false) {
           toast.success('AS 요청이 등록되었습니다');
+        markListDirty(LIST_KEYS.as);
           router.push('/boss/as');
         } else {
           toast.error(res.message || '저장에 실패했습니다');
