@@ -203,9 +203,8 @@ export default function BossLoginPage() {
                 rel="noopener noreferrer"
                 aria-label="App Store에서 도배르만 다운로드"
               >
-                {/* 애플 배지(SVG)와 구글 배지(PNG)는 원본 비율이 서로 달라 h-10 w-auto 만으로는
-                    가로폭이 어긋난다. 두 배지를 같은 상자 크기(w-[136px] h-10)에 object-contain
-                    으로 맞춰 시각적으로 같은 크기로 보이게 한다. */}
+                {/* 두 배지를 같은 상자 크기(w-[136px] h-10)에 object-contain 으로 맞춰
+                    시각적으로 같은 크기로 보이게 한다. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ko-kr?size=250x83"
@@ -219,9 +218,12 @@ export default function BossLoginPage() {
                 rel="noopener noreferrer"
                 aria-label="Google Play에서 도배르만 다운로드"
               >
+                {/* 구글이 배포하는 원본 PNG(ko_badge_web_generic.png, 646×250)는 위아래에
+                    투명 여백이 29px씩 있어(실제 배지 192px) 애플 배지와 나란히 두면 작아 보인다.
+                    /public/google-play-badge-ko.png 는 그 여백을 잘라낸(646×192) 버전이다. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://play.google.com/intl/ko/badges/static/images/badges/ko_badge_web_generic.png"
+                  src="/google-play-badge-ko.png"
                   alt="Google Play에서 다운로드"
                   className="h-10 w-[136px] object-contain"
                 />
