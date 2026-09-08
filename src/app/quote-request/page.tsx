@@ -1213,9 +1213,10 @@ export default function QuoteRequestPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* 빠른 링크 섹션 - 모바일에서는 숨김 */}
-      <section className="hidden md:block w-full bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 pt-20 pb-4">
+      {/* pt-20 은 고정 헤더(lg:h-20) 높이만큼 여백을 줘야 해서 그대로 둔다 — 그 외 세로 여백만 줄인다 */}
+      <section className="hidden md:block w-full bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 pt-20 pb-1">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-4">
+          <div className="text-center mb-1">
             <h2 className="text-base md:text-xl font-bold text-white mb-1">
               <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
                 견적 요청 서비스
@@ -1328,7 +1329,7 @@ export default function QuoteRequestPage() {
 
       {/* 메인 콘텐츠 영역 */}
       <main className="quote-main-content flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800 pt-4 md:pt-0">
-        <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+        <div className="container mx-auto px-4 py-8 md:py-5 max-w-6xl">
           {calculatorEstimate !== null && (
             <div className="mb-5 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 md:p-5">
               <div className="flex items-start gap-3">
@@ -1347,8 +1348,8 @@ export default function QuoteRequestPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             {/* 왼쪽 사이드바 - 데스크톱에서만 표시 */}
             <div className="hidden lg:block lg:col-span-1">
-              <div className="sticky top-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                <div className="mb-6">
+              <div className="sticky top-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
+                <div className="mb-4">
                   <div className="flex items-center mb-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
                       <Sparkles className="w-4 h-4 text-white" />
@@ -1364,7 +1365,7 @@ export default function QuoteRequestPage() {
                   </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-medium text-white">진행률</span>
                     <span className="text-xs font-bold text-blue-400">
@@ -1379,7 +1380,7 @@ export default function QuoteRequestPage() {
                   </div>
                 </div>
 
-                <nav className="space-y-2">
+                <nav className="space-y-1.5">
                   {steps.map((step, index) => {
                     // 로그인된 경우 고객정보 단계(6번) 스킵
                     if (isLoggedIn && index === 6) return null;
@@ -1392,7 +1393,7 @@ export default function QuoteRequestPage() {
                     return (
                       <div
                         key={step.id}
-                        className={`relative flex items-center p-3 rounded-xl transition-all duration-300 ${isActive
+                        className={`relative flex items-center p-2.5 rounded-xl transition-all duration-300 ${isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 shadow-lg'
                           : isCompleted
                             ? 'bg-green-500/10 border border-green-400/30'
@@ -1446,10 +1447,10 @@ export default function QuoteRequestPage() {
 
             {/* 메인 콘텐츠 */}
             <div className="lg:col-span-2 col-span-full">
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-2xl mb-20 lg:mb-0">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl mb-20 lg:mb-0">
                 <form onSubmit={handleSubmit}>
-                  <div className="mb-4 sm:mb-6 md:mb-8 lg:mb-10">
-                    <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6">
+                  <div className="mb-4 sm:mb-5 md:mb-6">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center flex-1">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 mr-3">
                           {(() => {
@@ -1473,7 +1474,7 @@ export default function QuoteRequestPage() {
                     <p className="text-xs text-slate-400 mb-4 sm:hidden">{steps[currentStep].description}</p>
                   </div>
 
-                  <div className="mb-6 md:mb-8">
+                  <div className="mb-6 md:mb-6">
                     {/* 1단계: 건물 유형 */}
                     {currentStep === 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
@@ -2135,17 +2136,17 @@ export default function QuoteRequestPage() {
           </div>
 
           {/* 데스크톱용 버튼 - 기존 위치 유지 */}
-          <div className="hidden lg:block container mx-auto px-4 mt-6">
+          <div className="hidden lg:block container mx-auto px-4 mt-3">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
               <div className="lg:col-span-1"></div>
               <div className="lg:col-span-2">
-                <div className="border-t border-white/10 pt-6">
+                <div className="border-t border-white/10 pt-4">
                   <div className="flex justify-between items-center gap-3">
                     <button
                       type="button"
                       onClick={prevStep}
                       disabled={currentStep === 0}
-                      className={`group relative px-4 py-4 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${currentStep === 0
+                      className={`group relative px-4 py-3 rounded-xl font-semibold transition-all duration-300 min-h-[48px] w-1/3 ${currentStep === 0
                         ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600'
                         : 'bg-slate-700/50 hover:bg-slate-600/60 text-white border border-slate-600 hover:border-slate-500 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105'
                         }`}
@@ -2160,7 +2161,7 @@ export default function QuoteRequestPage() {
                       type="button"
                       onClick={handleSubmit}
                       disabled={isLoading || isSubmitting || !validateCurrentStep()}
-                      className={`group relative px-4 py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${isLoading || isSubmitting || !validateCurrentStep()
+                      className={`group relative px-4 py-3 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${isLoading || isSubmitting || !validateCurrentStep()
                         ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
                         : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
                           ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105'
