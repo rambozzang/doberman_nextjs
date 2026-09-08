@@ -5,7 +5,7 @@
 //
 // 용어는 **앱과 같은 말**을 쓴다 (사장님이 앱 · 웹을 오가며 헷갈리지 않게):
 //   웹견적   = 도배르만 사이트 방문자가 보낸 견적 요청 (앱 "웹견적" · "나의 견적" · "웹견적서관리")
-//   고객     = 사장님이 직접 등록한 시공 건 (앱 "고객 리스트" — 전체 · 진행중 · 수금중). "주문"이라는 말은 쓰지 않는다.
+//   고객관리  = 사장님이 직접 등록한 시공 건 (앱 "고객 리스트" — 전체 · 진행중 · 수금중). "주문"이라는 말은 쓰지 않는다.
 //   고객 견적서 = 그 고객에게 보내는 견적서 (앱 "내 고객 견적서 보내기")
 //
 // 주의: 부제에는 실데이터가 아닌 목업 숫자를 넣지 않는다.
@@ -78,7 +78,7 @@ export const SECTIONS: NavSection[] = [
   {
     title: "고객 관리 · 내 시공 건",
     items: [
-      { href: "/boss/customers", label: "고객", icon: Contact },
+      { href: "/boss/customers", label: "고객관리", icon: Contact },
       // 고객 견적서 — 메뉴에서 감춤(2026-09-07, 사장님 지시). 고객 상세의 견적 품목에서 여전히 들어갈 수 있다.
       // 되살릴 때는 아래 한 줄만 풀면 된다.
       // { href: "/boss/estimate", label: "고객 견적서", icon: FileSignature },
@@ -242,7 +242,7 @@ const PAGE_META: Record<string, PageMeta> = {
 
   // ── 고객: 사장님이 직접 등록한 시공 건 (앱 "고객 리스트") ──
   "/boss/customers": {
-    title: "고객",
+    title: "고객관리",
     subtitle: "내 고객(시공 건)을 등록하고 진행 · 수금 · 완료까지 관리합니다.",
     secondary: { label: "고객 견적서", href: "/boss/estimate" },
     action: { label: "고객 등록", href: "/boss/customers/new" },
@@ -325,7 +325,8 @@ const PAGE_META: Record<string, PageMeta> = {
   // ── 경영 ──
   "/boss/receipt": {
     title: "영수증 지출관리",
-    subtitle: "자재 · 인건비 등 지출 영수증을 사진으로 모아 관리합니다.",
+    subtitle:
+      "자재비 · 인건비 영수증을 모아 둡니다. 종합소득세 경비와 부가세 매입 자료로 그대로 씁니다.",
   },
   "/boss/sales": {
     title: "매출 분석",

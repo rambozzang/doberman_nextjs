@@ -360,6 +360,25 @@ export default function BossReceiptListPage() {
               </ul>
             )}
           </Panel>
+
+          {/* 모아 두면 어디에 쓰는지 — 사장님이 등록할 이유를 한눈에 */}
+          <Panel kicker="안내" title="모아 두면 이렇게 씁니다">
+            <ul className="flex flex-col gap-1.5 text-[12.5px] leading-relaxed text-boss-text-secondary">
+              <li>
+                · 5월 종합소득세 신고 때 <strong className="font-semibold text-boss-text">경비</strong>로
+                넣습니다. 자재비 · 인건비 · 유류비가 빠지면 그만큼 세금을 더 냅니다.
+              </li>
+              <li>
+                · 부가세 신고 때 <strong className="font-semibold text-boss-text">매입세액</strong> 자료가
+                됩니다. 세무사에게는 월별 · 카테고리별 합계를 그대로 넘기면 됩니다.
+              </li>
+              <li>· 자재비가 실제로 얼마나 나갔는지 보고 다음 견적 단가를 다시 잡습니다.</li>
+              <li>
+                · 등록은 앱에서 합니다. 영수증을 찍으면 상호 · 날짜 · 금액이 자동으로 읽혀 여기에 쌓이고,
+                웹에서는 고치고 지웁니다.
+              </li>
+            </ul>
+          </Panel>
         </div>
       </div>
 
