@@ -29,7 +29,7 @@ export function AuthWordmark() {
           <span className="font-boss-head text-[21px] font-bold leading-none tracking-[0.04em]">도배르만</span>
           <span
             aria-hidden
-            className="inline-block -translate-y-[5px] -rotate-[10deg] rounded-[3px] bg-[#F5B301] px-[5px] py-[2px] font-boss-head text-[9px] font-extrabold leading-none tracking-[0.14em] text-[#1B1B1B] shadow-[0_1px_0_rgba(0,0,0,0.35)]"
+            className="inline-block -translate-y-[2px] -rotate-[8deg] rounded-[3px] bg-[#F5B301] px-[5px] py-[2px] font-boss-head text-[9px] font-extrabold leading-none tracking-[0.14em] text-[#1B1B1B] shadow-[0_1px_0_rgba(0,0,0,0.35)]"
           >
             BETA
           </span>

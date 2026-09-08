@@ -179,10 +179,15 @@ export interface BossRequestListResponse {
 
 export interface BossAnswerSubmitRequest {
   requestId: number;
-  webCustomerId?: number;
+  /** 요청한 웹 고객 ID — 서버가 필수로 받는다(없으면 "고객 ID는 필수 항목입니다") */
+  webCustomerId: string;
+  /** 답변하는 도배사장님 — 서버가 필수로 받는다 */
+  userId: string;
   answerTitle: string;
   answerBody: string;
   cost: number;
+  /** 앱과 같은 값 */
+  status?: string;
 }
 
 export interface BossAnswerSubmitResponse {

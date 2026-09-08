@@ -20,6 +20,11 @@ import type { BossTemplate } from '@/types/boss-templates';
 import type { BossRequestDetail } from '@/types/boss';
 import { looksLikePlainText, sanitizeHtml } from '@/lib/sanitizeHtml';
 import { formatPreferredDate, requestSummary, stripBrackets } from '@/lib/boss/requestFormat';
+import { BossAuthManager } from '@/lib/bossAuth';
+import { amountInKorean } from '@/lib/boss/docMeta';
+
+/** 자주 쓰는 금액 — 누르면 더해진다 */
+const QUICK_AMOUNTS = [50000, 100000, 500000, 1000000];
 
 function stripHtml(html: string): string {
   if (typeof window === 'undefined') return html.replace(/<[^>]*>/g, '');
@@ -101,12 +106,6 @@ export default function BossAnswerPage() {
     setTemplateId((cur) => (cur && !list.some((t) => String(t.id) === cur) ? '' : cur));
   }, []);
 
-  const formattedCost = useMemo(() => {
-    const n = Number(cost.replace(/[^\d]/g, ''));
-    if (!n) return '';
-    return n.toLocaleString('ko-KR') + '원';
-  }, [cost]);
-
   const bodyText = useMemo(() => stripHtml(body), [body]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -121,13 +120,29 @@ export default function BossAnswerPage() {
       return;
     }
 
+    // 서버는 요청 고객 ID 와 내 아이디를 필수로 받는다(앱도 같이 보낸다)
+    const webCustomerId = request?.webCustomerId;
+    const userId = BossAuthManager.getUserInfo()?.userId;
+    // 0 도 앱과 똑같이 그대로 보낸다 — 막으면 제출 자체가 안 된다
+    if (webCustomerId === undefined || webCustomerId === null) {
+      toast.error('요청 정보를 아직 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.');
+      return;
+    }
+    if (!userId) {
+      toast.error('로그인 정보가 없습니다. 다시 로그인해 주세요.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await bossRequestsApi.submit({
         requestId,
+        webCustomerId: String(webCustomerId),
+        userId,
         answerTitle: title.trim(),
         answerBody: body.trim(),
         cost: numericCost,
+        status: '답변완료',
       });
       if (res.success) {
         toast.success('견적 답변이 제출되었습니다.');
@@ -224,19 +239,47 @@ export default function BossAnswerPage() {
               </p>
             </div>
 
-            <Field
-              id="cost"
-              label="견적 금액"
-              required
-              inputMode="numeric"
-              suffix="원"
-              value={cost}
-              onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, ''))}
-              placeholder="0"
-              className="max-w-[280px] [&_input]:text-right [&_input]:font-boss-head [&_input]:text-[16px] [&_input]:font-semibold"
-              hint={formattedCost ? <span className="font-boss-head tabular-nums">{formattedCost}</span> : '부가세 포함 여부를 본문에 적어 주세요.'}
-              maxLength={12}
-            />
+            <div>
+              <Field
+                id="cost"
+                label="견적 금액"
+                required
+                inputMode="numeric"
+                suffix="원"
+                // 적는 대로 콤마가 붙는다 — 0 이 몇 개인지 세지 않게
+                value={cost ? Number(cost).toLocaleString('ko-KR') : ''}
+                onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, '').slice(0, 12))}
+                placeholder="0"
+                className="max-w-[280px] [&_input]:text-right [&_input]:font-boss-head [&_input]:text-[18px] [&_input]:font-semibold"
+                hideCounter
+                hint={
+                  cost ? (
+                    <span className="font-boss-head">{amountInKorean(Number(cost))}</span>
+                  ) : (
+                    '부가세 포함 여부를 본문에 적어 주세요.'
+                  )
+                }
+              />
+              {/* 자주 쓰는 금액 — 누르면 더한다. 0 을 여러 번 치지 않아도 된다 */}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {QUICK_AMOUNTS.map((v) => (
+                  <Button
+                    key={v}
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setCost(String(Math.min(Number(cost || 0) + v, 999999999999)))}
+                  >
+                    +{(v / 10000).toLocaleString('ko-KR')}만
+                  </Button>
+                ))}
+                {cost ? (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setCost('')}>
+                    지우기
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           </div>
         </Panel>
 

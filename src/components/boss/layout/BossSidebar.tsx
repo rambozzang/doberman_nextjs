@@ -129,7 +129,7 @@ export default function BossSidebar() {
             aria-label="사장님 메뉴"
             className={`${RAIL} absolute inset-y-0 left-0 flex w-[280px] max-w-[85vw] flex-col gap-4 overflow-hidden py-[22px]`}
           >
-            <div className="flex items-start justify-between px-5">
+            <div className="flex items-start justify-between pr-5">
               <Wordmark />
               <button
                 type="button"
@@ -202,7 +202,7 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
           {/* 베타 딱지 — 로고 옆에 비스듬히 붙인다 */}
           <span
             aria-hidden
-            className="inline-block -translate-y-[5px] -rotate-[10deg] rounded-[3px] bg-[#F5B301] px-[5px] py-[2px] font-boss-head text-[9px] font-extrabold leading-none tracking-[0.14em] text-[#1B1B1B] shadow-[0_1px_0_rgba(0,0,0,0.35)]"
+            className="inline-block -translate-y-[2px] -rotate-[8deg] rounded-[3px] bg-[#F5B301] px-[5px] py-[2px] font-boss-head text-[9px] font-extrabold leading-none tracking-[0.14em] text-[#1B1B1B] shadow-[0_1px_0_rgba(0,0,0,0.35)]"
           >
             BETA
           </span>
@@ -234,12 +234,14 @@ function useVisibleSections(): NavSection[] {
 
 function RailLink({ item, active, touch = false }: { item: NavItem; active: boolean; touch?: boolean }) {
   const Icon = item.icon;
+  // 활성 표시선은 before 로 겹쳐 그린다 — 자리를 차지하지 않아야 워드마크 · 구역 제목과 글자 시작점이 같다
   const cls = [
-    'flex w-full items-center gap-2.5 whitespace-nowrap border-l-[3px] px-5 text-[13.5px] transition-colors',
+    'relative flex w-full items-center gap-2.5 whitespace-nowrap px-5 text-[13.5px] transition-colors',
+    'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-[""]',
     touch ? 'min-h-[44px] py-2.5' : 'py-[6px]',
     active
-      ? 'border-boss-rail-active bg-white/[0.14] !text-boss-rail-text'
-      : 'border-transparent !text-boss-rail-text/75 hover:bg-white/10 hover:!text-boss-rail-text',
+      ? 'bg-white/[0.14] !text-boss-rail-text before:bg-boss-rail-active'
+      : '!text-boss-rail-text/75 hover:bg-white/10 hover:!text-boss-rail-text',
   ].join(' ');
   if (item.external) {
     return (
@@ -251,17 +253,7 @@ function RailLink({ item, active, touch = false }: { item: NavItem; active: bool
     );
   }
   return (
-    <Link
-      href={item.href}
-      aria-current={active ? 'page' : undefined}
-      className={[
-        'flex w-full items-center gap-2.5 whitespace-nowrap border-l-[3px] px-5 text-[13.5px] transition-colors',
-        touch ? 'min-h-[44px] py-2.5' : 'py-[6px]',
-        active
-          ? 'border-boss-rail-active bg-white/[0.14] !text-boss-rail-text'
-          : 'border-transparent !text-boss-rail-text/75 hover:bg-white/10 hover:!text-boss-rail-text',
-      ].join(' ')}
-    >
+    <Link href={item.href} aria-current={active ? 'page' : undefined} className={cls}>
       <Icon size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />
       <span className="flex-1">{item.label}</span>
       {item.badge && (
