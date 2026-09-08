@@ -9,7 +9,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { bossOrdersApi } from '@/lib/api/boss/orders';
 import { bossCustomersApi } from '@/lib/api/boss/customers';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
-import { customerStatus } from '@/lib/boss/customerStatus';
+import { customerStatus, isPast } from '@/lib/boss/customerStatus';
 import { formatAppDateTime, formatPhone } from '@/lib/boss/format';
 import EstimateItemsPanel from '@/components/boss/estimate/EstimateItemsPanel';
 import toast from 'react-hot-toast';
@@ -57,6 +57,47 @@ function formatWorkPeriod(start?: string | null, end?: string | null) {
   return formatDate(start);
 }
 
+type StatusAction = {
+  targetCd: string;
+  label: string;
+  title: string;
+  successMsg: string;
+  tone?: 'danger' | 'primary';
+};
+
+// 앱 estimate_page.dart 의 버튼 노출 조건과 1:1
+function getStatusActions(item: BossOrderItem): StatusAction[] {
+  if (item.statusCd === '00') {
+    const actions: StatusAction[] = [
+      { targetCd: '20', label: '보류', title: '보류 처리하시겠습니까?', successMsg: '보류로 표시했습니다.' },
+      {
+        targetCd: '30',
+        label: '취소',
+        title: '취소 처리하시겠습니까?',
+        successMsg: '취소로 표시했습니다.',
+        tone: 'danger',
+      },
+    ];
+    // 시공일이 지나야만 수금완료 처리를 할 수 있다(앱과 동일)
+    if (isPast(item.workDate)) {
+      actions.push({
+        targetCd: '10',
+        label: '수금완료 처리',
+        title: '수금완료 처리하시겠습니까?',
+        successMsg: '수금완료로 표시했습니다.',
+        tone: 'primary',
+      });
+    }
+    return actions;
+  }
+  // 진행중이 아니면(보류·취소·수금완료) 다시 진행중으로 되돌리는 버튼 하나만 — 문구만 상태별로 다르다
+  const resumeLabel =
+    item.statusCd === '20' ? '보류취소' : item.statusCd === '30' ? '취소철회' : item.statusCd === '10' ? '수금취소' : '진행중';
+  return [
+    { targetCd: '00', label: resumeLabel, title: '진행중으로 처리하시겠습니까?', successMsg: '진행중으로 표시했습니다.' },
+  ];
+}
+
 export default function BossOrderDetailPage() {
   const router = useRouter();
   // Next 16 에서 페이지의 params 는 Promise 라 직접 읽으면 undefined 가 된다 — useParams 를 쓴다
@@ -66,26 +107,28 @@ export default function BossOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 수금완료 처리 — 앱 "수금완료 처리하시겠습니까?" 와 같은 흐름. 완료되면 앱에서도 수정이 잠긴다.
-  const [confirmPaid, setConfirmPaid] = useState(false);
-  const [markingPaid, setMarkingPaid] = useState(false);
-  const handleMarkPaid = async () => {
-    if (!item?.id || markingPaid) return;
-    setMarkingPaid(true);
+  // 상태 변경 — 앱 estimate_page.dart 의 updateStatus 와 같은 확인창 흐름 · 같은 상태 전이만 허용한다.
+  //   00 진행중 → 20 보류 · 30 취소 · (시공일이 지났으면) 10 수금완료
+  //   10/20/30 → 00 진행중(보류취소 · 취소철회 · 수금취소, 버튼 문구만 다르고 동작은 같다)
+  const [pendingStatus, setPendingStatus] = useState<StatusAction | null>(null);
+  const [changingStatus, setChangingStatus] = useState(false);
+  const handleChangeStatus = async () => {
+    if (!item?.id || !pendingStatus || changingStatus) return;
+    setChangingStatus(true);
     try {
-      const res = await bossCustomersApi.updateStatus(item.id, '10');
+      const res = await bossCustomersApi.updateStatus(item.id, pendingStatus.targetCd);
       if (res.success !== false) {
-        toast.success('수금완료로 표시했습니다.');
+        toast.success(pendingStatus.successMsg);
         markListDirty(LIST_KEYS.customers);
-        setConfirmPaid(false);
-        setItem({ ...item, statusCd: '10' });
+        setItem({ ...item, statusCd: pendingStatus.targetCd });
+        setPendingStatus(null);
       } else {
         toast.error(res.message || res.error || '상태를 바꾸지 못했습니다.');
       }
     } catch {
       toast.error('네트워크 오류로 상태를 바꾸지 못했습니다.');
     } finally {
-      setMarkingPaid(false);
+      setChangingStatus(false);
     }
   };
 
@@ -187,6 +230,9 @@ export default function BossOrderDetailPage() {
   const photoParams = new URLSearchParams({ customerId: String(item.id) });
   if (item.name) photoParams.set('custNm', item.name);
   const photoHref = `/boss/photo?${photoParams.toString()}`;
+  const statusActions = getStatusActions(item);
+  // 수금완료 상태면 앱과 같이 수정을 막는다(estimate_page.dart "수금완료시 수정 불가합니다.")
+  const editLocked = item.statusCd === '10';
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -202,14 +248,31 @@ export default function BossOrderDetailPage() {
             </>
           }
         >
-          {item.statusCd !== '10' && item.statusCd !== '30' && (
-            <Button variant="primary" size="sm" onClick={() => setConfirmPaid(true)}>
-              수금완료 처리
+          {statusActions.map((action) => (
+            <Button
+              key={action.targetCd}
+              variant={action.tone === 'primary' ? 'primary' : 'secondary'}
+              size="sm"
+              className={action.tone === 'danger' ? '!text-boss-error' : undefined}
+              onClick={() => setPendingStatus(action)}
+            >
+              {action.label}
             </Button>
+          ))}
+          {editLocked ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Pencil}
+              onClick={() => toast.error('수금완료 상태에서는 수정할 수 없습니다.')}
+            >
+              수정
+            </Button>
+          ) : (
+            <ButtonLink href={`/boss/customers/new?id=${item.id}`} variant="secondary" size="sm" icon={Pencil}>
+              수정
+            </ButtonLink>
           )}
-          <ButtonLink href={`/boss/customers/new?id=${item.id}`} variant="secondary" size="sm" icon={Pencil}>
-            수정
-          </ButtonLink>
           <ButtonLink href={`/boss/estimate?customerId=${item.id}`} variant="secondary" size="sm">
             견적서 · 영수증
           </ButtonLink>
@@ -355,14 +418,18 @@ export default function BossOrderDetailPage() {
       </div>
 
       <ConfirmDialog
-        open={confirmPaid}
-        title="수금완료 처리하시겠습니까?"
-        description="수금완료로 바꾸면 매출 분석에 잡히고, 앱에서는 견적 내용을 더 수정할 수 없습니다."
-        confirmLabel="수금완료"
-        tone="primary"
-        loading={markingPaid}
-        onCancel={() => setConfirmPaid(false)}
-        onConfirm={() => void handleMarkPaid()}
+        open={pendingStatus !== null}
+        title={pendingStatus?.title ?? ''}
+        description={
+          pendingStatus?.targetCd === '10'
+            ? '수금완료로 바꾸면 매출 분석에 잡히고, 이후에는 수정할 수 없습니다.'
+            : undefined
+        }
+        confirmLabel={pendingStatus?.label}
+        tone={pendingStatus?.tone === 'danger' ? 'danger' : 'primary'}
+        loading={changingStatus}
+        onCancel={() => setPendingStatus(null)}
+        onConfirm={() => void handleChangeStatus()}
       />
       <ConfirmDialog
         open={confirmDelete}

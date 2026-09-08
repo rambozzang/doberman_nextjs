@@ -28,7 +28,7 @@ export const CUSTOMER_LIST_TABS: { key: '' | CustomerStatusCode; label: string }
 ];
 
 /** yyyyMMddHHmm 또는 yyyy-MM-dd 가 오늘보다 이전인가 */
-function isPast(workDate?: string | null): boolean {
+export function isPast(workDate?: string | null): boolean {
   if (!workDate) return false;
   const d = workDate.replace(/\D/g, '');
   if (d.length < 8) return false;
