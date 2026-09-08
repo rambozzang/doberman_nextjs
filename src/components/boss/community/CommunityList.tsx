@@ -282,7 +282,7 @@ export function CommunityList({
               <th>제목</th>
               <th>작성자</th>
               <th className="num">댓글</th>
-              <th className="num">좋아요</th>
+              {!isJob && <th className="num">좋아요</th>}
               <th className="num">조회</th>
             </tr>
           </thead>
@@ -310,7 +310,7 @@ export function CommunityList({
                   </td>
                   <td className="text-boss-text-secondary">{authorName(item)}</td>
                   <td className="num text-boss-text-secondary">{item.replyCnt ?? 0}</td>
-                  <td className="num text-boss-text-secondary">{item.likeCnt ?? 0}</td>
+                  {!isJob && <td className="num text-boss-text-secondary">{item.likeCnt ?? 0}</td>}
                   <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
                 </tr>
               );
