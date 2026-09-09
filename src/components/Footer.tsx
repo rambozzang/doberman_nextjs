@@ -399,6 +399,16 @@ const Footer: React.FC<FooterProps> = ({
                 쿠키 정책
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-gradient-to-r from-blue-400 to-purple-400 group-hover:w-full transition-all duration-300"></span>
               </Link>
+              {/* 도배사장님 전용 로그인 안내 — 고객 화면에는 눈에 띄지 않게 다른 법적 링크와 같은 톤으로 둔다 */}
+              <a
+                href="https://boss.doberman.kr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm sm:text-base lg:text-sm text-slate-400 hover:text-blue-400 transition-colors relative group"
+              >
+                도배사장님이신가요?
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-gradient-to-r from-blue-400 to-purple-400 group-hover:w-full transition-all duration-300"></span>
+              </a>
             </div>
           </div>
         </motion.div>
