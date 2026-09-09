@@ -184,6 +184,7 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       href="/boss"
+      prefetch={false}
       className={`flex items-center gap-2.5 !text-boss-rail-text ${compact ? '' : 'px-5'}`}
       aria-label="도배르만 사장님 센터 (베타)"
     >
@@ -253,7 +254,7 @@ function RailLink({ item, active, touch = false }: { item: NavItem; active: bool
     );
   }
   return (
-    <Link href={item.href} aria-current={active ? 'page' : undefined} className={cls}>
+    <Link href={item.href} prefetch={false} aria-current={active ? 'page' : undefined} className={cls}>
       <Icon size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />
       <span className="flex-1">{item.label}</span>
       {item.badge && (
@@ -296,6 +297,7 @@ function PlanCard({
   return (
     <Link
       href="/boss/billing"
+      prefetch={false}
       className={`flex flex-col gap-1 border border-boss-rail-text/25 px-3.5 py-3 !text-boss-rail-text transition-colors hover:bg-white/10 ${className}`}
     >
       <span className="text-[10px] uppercase tracking-[0.09em] text-boss-rail-text/55">구독 플랜</span>
@@ -317,6 +319,7 @@ function PlanChip({ sub }: { sub: BossSubscriptionStatusResponse | null }) {
   return (
     <Link
       href="/boss/billing"
+      prefetch={false}
       className="border border-boss-rail-text/25 px-2 py-1 font-boss-head text-[12px] !text-boss-rail-text tabular-nums"
     >
       {v.value}
@@ -326,7 +329,7 @@ function PlanChip({ sub }: { sub: BossSubscriptionStatusResponse | null }) {
 
 function AccountRow({ name, initial }: { name: string; initial: string }) {
   return (
-    <Link href="/boss/me" className="flex min-w-0 items-center gap-2.5 !text-boss-rail-text">
+    <Link href="/boss/me" prefetch={false} className="flex min-w-0 items-center gap-2.5 !text-boss-rail-text">
       <span
         aria-hidden
         className="grid h-[34px] w-[34px] shrink-0 place-items-center bg-white/15 font-boss-head text-[14px] font-bold"
