@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { encodePath } from "@/lib/seo/dobaeLanding";
 import { 
   BuildingIcon,
   CheckCircleIcon,
@@ -16,6 +17,13 @@ import {
   ThumbsUpIcon
 } from "lucide-react";
 
+// Next.js 16.3.x 가 한글 라우트 경로(정적 페이지)를 빌드 타임에 미리 그릴 때
+// InvalidCharacterError 로 빌드가 죽는 버그가 있어(원인은 Next.js 내부, 이 페이지
+// 콘텐츠와 무관 — 같은 증상이 한글 경로 페이지 전반에서 재현됨) 이 페이지만
+// 정적 생성 대신 매 요청마다 그리는 동적 렌더링으로 우회한다.
+// 콘텐츠가 고정이라 화면은 똑같고, Next.js 가 고치면 이 줄만 지우면 된다.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "도배 업체 찾기 | 검증된 전문 도배 업체 추천 - 도배르만",
   description: "신뢰할 수 있는 도배 업체를 찾고 계신가요? 검증된 전문 도배 업체들을 엄선하여 추천드립니다. 무료 견적 비교까지!",
@@ -27,7 +35,7 @@ export const metadata: Metadata = {
     locale: "ko_KR",
   },
   alternates: {
-    canonical: "https://www.doberman.kr/도배-업체"
+    canonical: `https://www.doberman.kr${encodePath('/도배-업체')}`
   }
 };
 

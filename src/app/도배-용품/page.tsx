@@ -9,9 +9,15 @@ import Link from 'next/link';
 import { ShoppingBagIcon, ArrowRightIcon, CalculatorIcon, FileTextIcon } from 'lucide-react';
 import { fetchStoreCatalog } from '@/lib/api/store';
 import { COUPANG_PARTNERS_NOTICE } from '@/types/store';
+import { encodePath } from '@/lib/seo/dobaeLanding';
 import StoreCatalogView from './StoreCatalogView';
 
-export const revalidate = 600;
+// Next.js 16.3.x 가 한글 라우트 경로(정적/ISR 페이지)를 빌드 타임에 미리 그릴 때
+// InvalidCharacterError 로 빌드가 죽는 버그가 있어(원인은 Next.js 내부, 이 페이지
+// 콘텐츠와 무관 — 같은 증상이 한글 경로 페이지 전반에서 재현됨) ISR(10분 캐시) 대신
+// 매 요청마다 그리는 동적 렌더링으로 우회한다. 카탈로그가 항상 최신으로 보이는 효과는
+// 있지만 캐시 이점은 없다 — Next.js 가 고치면 revalidate = 600 으로 되돌리면 된다.
+export const dynamic = 'force-dynamic';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.doberman.kr';
 
@@ -25,9 +31,9 @@ export const metadata: Metadata = {
     description: '셀프 도배와 현장 시공에 필요한 도배 용품을 한눈에.',
     type: 'website',
     locale: 'ko_KR',
-    url: `${BASE_URL}/도배-용품`,
+    url: `${BASE_URL}${encodePath('/도배-용품')}`,
   },
-  alternates: { canonical: `${BASE_URL}/도배-용품` },
+  alternates: { canonical: `${BASE_URL}${encodePath('/도배-용품')}` },
 };
 
 export default async function StorePage() {
