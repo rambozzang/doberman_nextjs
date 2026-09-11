@@ -91,7 +91,7 @@ export default function LiveQuotePanel({
           }`}
         >
           {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" />신청 중...</>
-            : isComplete ? <><CheckCircle2 className="w-5 h-5" />이 견적으로 신청하기</>
+            : isComplete ? <><CheckCircle2 className="w-5 h-5" />이 조건의 비교견적 요청하기</>
             : '대화를 더 진행해주세요'}
         </button>
       </div>
