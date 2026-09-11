@@ -43,6 +43,10 @@ bossPrivateApi.interceptors.request.use(
     if (deviceId) {
       config.headers['Device-ID'] = deviceId;
     }
+    // 이 요청이 앱이 아니라 웹이라는 표시. 백엔드(JwtAuthenticationFilter)는 이 헤더를 보고
+    // 앱 단일 기기 검사를 건너뛴다 — /customers · /calendar 처럼 앱과 같은 경로를 부를 때도
+    // "다른 기기에서 로그인 되었습니다" 로 막히지 않게 하려는 것이다.
+    config.headers['Client-Type'] = 'WEB';
     if (process.env.NODE_ENV !== 'production') {
       console.debug('[bossApi req]', config.method?.toUpperCase(), config.url, {
         hasToken: !!token,
