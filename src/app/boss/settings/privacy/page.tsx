@@ -54,7 +54,7 @@ export default function BossPrivacyPage() {
     <article className="boss-card p-5 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-boss-border pb-3">
         <p className="boss-kicker">시행일 2024년 1월 1일</p>
-        <p className="text-[12px] text-boss-text-muted">코드랩타이거 · 도베르만 사장님</p>
+        <p className="text-[12px] text-boss-text-muted">코드랩타이거 · 도배르만 사장님</p>
       </div>
       <div className="mt-4 flex flex-col gap-5">
         {PRIVACY_SECTIONS.map((sec) => (

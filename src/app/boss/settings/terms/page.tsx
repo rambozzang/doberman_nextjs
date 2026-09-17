@@ -9,7 +9,7 @@
 const TERMS_SECTIONS: { title: string; body: string }[] = [
   {
     title: '제1조 (목적)',
-    body: '이 약관은 코드랩타이거(이하 "회사")가 제공하는 도베르만(Doberman) 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원과의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.',
+    body: '이 약관은 코드랩타이거(이하 "회사")가 제공하는 도배르만(Doberman) 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원과의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.',
   },
   {
     title: '제2조 (정의)',
@@ -54,7 +54,7 @@ export default function BossTermsPage() {
     <article className="boss-card p-5 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-boss-border pb-3">
         <p className="boss-kicker">시행일 2024년 1월 1일</p>
-        <p className="text-[12px] text-boss-text-muted">코드랩타이거 · 도베르만 사장님</p>
+        <p className="text-[12px] text-boss-text-muted">코드랩타이거 · 도배르만 사장님</p>
       </div>
       <div className="mt-4 flex flex-col gap-5">
         {TERMS_SECTIONS.map((sec) => (

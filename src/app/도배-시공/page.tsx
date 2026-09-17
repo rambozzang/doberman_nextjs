@@ -125,7 +125,7 @@ export default function DobaeSigongPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              왜 <span className="text-blue-400">도베르만</span>을 선택해야 할까요?
+              왜 <span className="text-blue-400">도배르만</span>을 선택해야 할까요?
             </h2>
             <p className="text-slate-300 text-lg">전문성과 신뢰성을 바탕으로 최고의 도배 시공 서비스를 제공합니다</p>
           </div>
@@ -242,7 +242,7 @@ export default function DobaeSigongPage() {
             "description": "전국 도배 시공 전문업체. 경험 풍부한 기사들의 완벽한 도배 시공 서비스",
             "provider": {
               "@type": "Organization",
-              "name": "도베르만",
+              "name": "도배르만",
               "url": "https://www.doberman.kr"
             },
             "areaServed": {

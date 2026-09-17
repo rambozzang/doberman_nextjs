@@ -290,11 +290,13 @@ function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: stri
   const scope = scenario.pyeong ? `${scenario.pyeong}평 ` : '';
   const caveat =
     '2026년 전국 평균 단가에 지역 보정을 적용한 참고값이며, 기존 벽지 철거·벽면 보수·가구 이동은 별도로 반영됩니다.';
-  // 답변이 통째로 인용될 때 브랜드와 다음 행동이 같이 따라가도록 마지막에 붙인다.
+  // 이 직답은 본문에만 그리고 FAQPage 구조화 데이터에는 넣지 않는다.
+  // 그래서 권유를 분명하게 써도 된다(스키마는 홍보 목적 사용이 막혀 있다).
   // local 이 '전국'(지역 없는 페이지)일 때 "전국 업체들의" 는 어색하므로 지역이 있을 때만 붙인다.
-  const close = scenario.region
-    ? `같은 조건이라도 업체마다 견적이 갈리므로, 계약 전에 도배르만에서 ${local} 업체들의 무료 비교견적을 받아 실제 금액을 확인하세요.`
-    : '같은 조건이라도 업체마다 견적이 갈리므로, 계약 전에 도배르만에서 우리 지역 업체들의 무료 비교견적을 받아 실제 금액을 확인하세요.';
+  const where = scenario.region ? `${local} ` : '';
+  const close =
+    `같은 평형·같은 벽지라도 업체마다 견적이 수십만 원씩 갈립니다. 한 곳만 보고 계약하면 손해 보기 쉬우니, ` +
+    `도배르만에서 ${where}업체들의 무료 비교견적을 꼭 받아 최소 2~3곳을 나란히 비교한 뒤 결정하세요. 견적 비교는 무료입니다.`;
 
   const question = `${local} ${scope}도배 비용은 얼마인가요?`;
 
@@ -342,7 +344,7 @@ function buildFaqItems(
 
   items.push({
     question: `${local}에 등록된 도배 업체는 몇 곳인가요?`,
-    answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다. 도배르만에서 한 번 요청하면 이 업체들의 견적을 무료로 한꺼번에 비교할 수 있습니다.`,
+    answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다.`,
   });
 
   items.push({
@@ -356,7 +358,7 @@ function buildFaqItems(
   items.push({
     question: '계산기에서 나온 금액으로 바로 계약해도 되나요?',
     answer:
-      '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요. 도배르만 무료 비교견적으로 여러 업체의 조건을 나란히 놓고 비교한 뒤 결정하는 것을 권합니다.',
+      '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.',
   });
 
   return items;
@@ -393,9 +395,11 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
   const directAnswer = buildPriceQa(scenario, rows, local);
   // 아코디언에 그릴 문답. 가격 문답은 위 직답이 맡으므로 여기엔 없다.
   const faqItems = buildFaqItems(scenario, rows, local, sidoLabel, signals);
-  // FAQPage 에는 둘을 합쳐 낸다 — 직답도 화면에 실제로 그려지는 문답이라
-  // 구조화 데이터와 화면이 여전히 1:1 로 맞는다.
-  const faqLd = directAnswer ? [directAnswer, ...faqItems] : faqItems;
+  // FAQPage 구조화 데이터에는 아코디언 문답만 낸다.
+  // 직답 블록은 권유 문구가 세서 스키마에 넣지 않는다 — FAQPage 는 홍보 목적
+  // 사용이 막혀 있어, 넣으면 리치 결과가 빠지거나 수동 조치를 받을 수 있다.
+  // 직답은 질문형 H2 + 본문이라 스키마 없이도 답변 엔진이 그대로 읽어 간다.
+  const faqLd = faqItems;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -509,8 +513,9 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
                 <li><strong className="text-white">거주 여부:</strong> 가구 이동과 보양이 필요한 거주 중 시공은 공실보다 작업 시간이 늘어날 수 있습니다.</li>
               </ul>
               <p className="mt-5 text-sm leading-7 text-slate-300">
-                이 조건들은 현장을 봐야 확정되기 때문에, 표의 기준가만 보고 정하기보다
-                도배르만에서 {scenario.region ? `${local} ` : ''}업체들의 무료 비교견적을 받아 실제 금액으로 비교하시는 편이 안전합니다.
+                이 조건들은 현장을 봐야 확정됩니다. 표의 기준가만 믿고 한 곳에서 계약하면
+                같은 공사를 더 비싸게 하기 쉬우니, 도배르만에서 {scenario.region ? `${local} ` : ''}업체들의
+                무료 비교견적을 꼭 받아 실제 금액으로 비교한 뒤 결정하세요.
               </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">

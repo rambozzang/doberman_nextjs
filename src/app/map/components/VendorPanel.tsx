@@ -85,7 +85,7 @@ export default function VendorPanel({
               <h2 className="text-lg font-bold text-white">{detail.name}</h2>
               {(detail.memberYn === "Y" || detail.adTier > 0) && (
                 <span className="mt-1 flex shrink-0 items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                  <Star className="h-3 w-3" /> 도베르만 회원사
+                  <Star className="h-3 w-3" /> 도배르만 회원사
                 </span>
               )}
             </div>

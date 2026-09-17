@@ -22,7 +22,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "도배 방법 | 도배 시공 과정 완벽 가이드 - 도베르만",
+  title: "도배 방법 | 도배 시공 과정 완벽 가이드 - 도배르만",
   description: "도배 방법이 궁금하신가요? 벽지 제거부터 마무리까지 전체 도배 과정을 단계별로 상세히 안내해드립니다.",
   keywords: "도배방법, 도배과정, 도배순서, 벽지시공방법, 도배기법, 셀프도배, 도배DIY, 벽지교체방법, 도배팁",
   openGraph: {

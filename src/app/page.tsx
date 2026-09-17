@@ -630,7 +630,7 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* 메인 컨텐츠 - 왜 도베르만을 선택해야 할까요 */}
+        {/* 메인 컨텐츠 - 왜 도배르만을 선택해야 할까요 */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

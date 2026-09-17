@@ -351,7 +351,7 @@ export default function DobaeGyeonjeokPage() {
             "description": "전문 기사가 직접 방문하여 정확한 도배 견적을 무료로 산출해드립니다",
             "provider": {
               "@type": "Organization",
-              "name": "도베르만",
+              "name": "도배르만",
               "url": "https://www.doberman.kr"
             },
             "areaServed": {

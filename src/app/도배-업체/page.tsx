@@ -308,12 +308,12 @@ export default function DobaeEopchePage() {
         </div>
       </section>
 
-      {/* 도베르만 업체 매칭의 장점 */}
+      {/* 도배르만 업체 매칭의 장점 */}
       <section className="py-20 bg-slate-900/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              왜 <span className="text-blue-400">도베르만</span>을 선택해야 할까요?
+              왜 <span className="text-blue-400">도배르만</span>을 선택해야 할까요?
             </h2>
           </div>
           
@@ -416,7 +416,7 @@ export default function DobaeEopchePage() {
             "description": "검증된 전문 도배 업체들을 엄선하여 추천하는 서비스",
             "provider": {
               "@type": "Organization",
-              "name": "도베르만",
+              "name": "도배르만",
               "url": "https://www.doberman.kr"
             },
             "areaServed": {

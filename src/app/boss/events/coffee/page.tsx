@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import { Panel, DescRow, Button, StatusPill } from '@/components/boss/ui';
 
 const HOW_TO = [
-  '이벤트 기간 내 도베르만 앱에 로그인합니다.',
+  '이벤트 기간 내 도배르만 앱에 로그인합니다.',
   '메인 화면의 이벤트 배너 또는 [이벤트] 메뉴에 접속합니다.',
   '하단의 "이벤트 참여하기" 버튼을 눌러 참여를 완료합니다.',
   '당첨자에게는 등록된 휴대폰 번호로 커피 쿠폰을 발송해 드립니다.',

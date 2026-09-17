@@ -685,7 +685,7 @@ export default function AparteuDobae() {
             "description": "아파트 특성에 맞는 전문 도배 시공 서비스",
             "provider": {
               "@type": "Organization",
-              "name": "도베르만",
+              "name": "도배르만",
               "url": "https://www.doberman.kr"
             },
             "areaServed": {
