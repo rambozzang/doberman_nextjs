@@ -266,8 +266,17 @@ export interface FaqItem {
  * AEO 의 핵심은 "질문 문장 + 수치가 들어간 완결 문장" 이다. 답변만 발췌되어
  * 앞뒤 맥락이 잘려도 뜻이 통하도록 지역명·평형·벽지 종류를 문장 안에 다 적는다.
  * 금액은 화면 가격표와 같은 rows 에서만 뽑는다 — 다르면 구조화 데이터 위반이다.
+ *
+ * `cta` 로 권유 문장 수위를 나눈다. FAQPage 구조화 데이터는 홍보 목적 사용이
+ * Google 가이드라인상 막혀 있어, 스키마에 들어가는 쪽(soft)은 사실 서술로 쓰고
+ * 스키마에 안 들어가는 본문 직답(strong)에서만 분명하게 권유한다.
  */
-function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: string): FaqItem | null {
+function buildPriceQa(
+  scenario: LandingScenario,
+  rows: PricePoint[],
+  local: string,
+  cta: 'soft' | 'strong' = 'soft',
+): FaqItem | null {
   if (rows.length === 0) return null;
 
   const cheapest = rows.reduce((a, b) => (a.adjustedPrice <= b.adjustedPrice ? a : b));
@@ -277,6 +286,11 @@ function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: stri
   const scope = scenario.pyeong ? `${scenario.pyeong}평 ` : '';
   const caveat =
     '2026년 전국 평균 단가에 지역 보정을 적용한 참고값이며, 기존 벽지 철거·벽면 보수·가구 이동은 별도로 반영됩니다.';
+  // 답변이 통째로 인용될 때 브랜드와 다음 행동이 같이 따라가도록 마지막에 붙인다.
+  const close =
+    cta === 'strong'
+      ? `같은 조건이라도 업체마다 견적이 크게 갈리므로, 계약 전에 도배르만에서 ${local} 업체들의 무료 비교견적을 꼭 받아 실제 금액을 확인하세요.`
+      : `실제 금액은 업체마다 달라지므로 도배르만에서 ${local} 업체들의 무료 비교견적을 받아 확인하는 것이 정확합니다.`;
 
   const question = `${local} ${scope}도배 비용은 얼마인가요?`;
 
@@ -284,13 +298,13 @@ function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: stri
   if (cheapest === priciest) {
     return {
       question,
-      answer: `${local} ${scope}${cheapest.label} 도배 비용은 ${formatPriceRange(cheapest.range)}이고 기준가는 ${formatWon(cheapest.adjustedPrice)}입니다. ${caveat}`,
+      answer: `${local} ${scope}${cheapest.label} 도배 비용은 ${formatPriceRange(cheapest.range)}이고 기준가는 ${formatWon(cheapest.adjustedPrice)}입니다. ${caveat} ${close}`,
     };
   }
 
   return {
     question,
-    answer: `${local} ${scope}도배 비용은 ${spec(cheapest)} 기준 ${formatPriceRange(cheapest.range)}, ${spec(priciest)} 기준 ${formatPriceRange(priciest.range)}입니다. ${caveat}`,
+    answer: `${local} ${scope}도배 비용은 ${spec(cheapest)} 기준 ${formatPriceRange(cheapest.range)}, ${spec(priciest)} 기준 ${formatPriceRange(priciest.range)}입니다. ${caveat} ${close}`,
   };
 }
 
@@ -324,7 +338,7 @@ function buildFaqItems(
 
   items.push({
     question: `${local}에 등록된 도배 업체는 몇 곳인가요?`,
-    answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다.`,
+    answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다. 도배르만에서 한 번 요청하면 이 업체들의 견적을 무료로 한꺼번에 비교할 수 있습니다.`,
   });
 
   items.push({
@@ -338,7 +352,7 @@ function buildFaqItems(
   items.push({
     question: '계산기에서 나온 금액으로 바로 계약해도 되나요?',
     answer:
-      '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.',
+      '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요. 도배르만 무료 비교견적으로 여러 업체의 조건을 나란히 놓고 비교한 뒤 결정하는 것을 권합니다.',
   });
 
   return items;
@@ -369,8 +383,9 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
   const contentUpdated = '2026년 전국 평균 기준';
   // 화면 FAQ 와 FAQPage 구조화 데이터가 같은 배열을 쓴다.
   const faqItems = buildFaqItems(scenario, rows, local, sidoLabel, signals);
-  // 답변 엔진이 통째로 인용할 직답. 목록 첫 항목이 가격 문답이다.
-  const directAnswer = buildPriceQa(scenario, rows, local);
+  // 답변 엔진이 통째로 인용할 직답. FAQPage 스키마에 들어가지 않는 본문이라
+  // 비교견적 권유를 분명하게(strong) 넣는다.
+  const directAnswer = buildPriceQa(scenario, rows, local, 'strong');
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -483,6 +498,10 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
                 <li><strong className="text-white">주거 형태:</strong> 빌라·단독주택은 층고와 자재 이동 조건에 따라 아파트와 달라질 수 있습니다.</li>
                 <li><strong className="text-white">거주 여부:</strong> 가구 이동과 보양이 필요한 거주 중 시공은 공실보다 작업 시간이 늘어날 수 있습니다.</li>
               </ul>
+              <p className="mt-5 text-sm leading-7 text-slate-300">
+                이 조건들은 현장을 봐야 확정되기 때문에, 표의 기준가만 보고 정하기보다
+                도배르만에서 {local} 업체들의 무료 비교견적을 받아 실제 금액으로 비교하시는 편이 안전합니다.
+              </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
               <h2 className="text-xl font-bold text-white">함께 많이 찾는 조건</h2>
