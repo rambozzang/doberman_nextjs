@@ -59,7 +59,7 @@ function PriceTable({ rows, selectedWallpaper }: { rows: PricePoint[]; selectedW
   );
 }
 
-function JsonLd({ scenario, title, description, canonical, signals, rows }: {
+function JsonLd({ scenario, title, description, canonical, signals, rows, faqItems }: {
   scenario: LandingScenario;
   title: string;
   description: string;
@@ -67,34 +67,10 @@ function JsonLd({ scenario, title, description, canonical, signals, rows }: {
   signals?: RegionalSignals;
   /** 화면 가격표와 같은 행. 구조화 데이터의 금액도 여기서만 만든다. */
   rows: PricePoint[];
+  /** 화면에 실제로 그려지는 문답과 같은 배열(buildFaqItems 단일 소스). */
+  faqItems: FaqItem[];
 }) {
-  // 구조화 데이터의 FAQ 는 화면에 실제로 보이는 문답과 같아야 한다.
-  // 다르면 Google 이 구조화 데이터 위반으로 처리한다.
   const areaName = scenario.region ? getFullRegionLabel(scenario.region) : '전국';
-  const sidoLabel = scenario.region ? getRegionUrlLabel(scenario.region.region.id) : '지역';
-  const vendorAnswer =
-    signals?.vendorCount != null && signals.vendorCount > 0
-      ? `현재 ${areaName}에 등록된 도배 업체는 ${signals.vendorCount.toLocaleString('ko-KR')}곳입니다.`
-      : `${areaName}은 아직 등록 업체 집계가 없습니다. 견적을 요청하시면 인접 지역 업체까지 함께 연결해 드립니다.`;
-  const requestAnswer =
-    signals?.requestCount != null && signals.requestCount > 0
-      ? ` 누적 견적 요청은 ${signals.requestCount.toLocaleString('ko-KR')}건입니다.`
-      : '';
-
-  const questions = [
-    {
-      question: `${areaName}에 등록된 도배 업체는 몇 곳인가요?`,
-      answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다.`,
-    },
-    {
-      question: `${areaName} 도배 비용은 어떤 기준으로 계산되나요?`,
-      answer: `2026 전국 평균표에 ${sidoLabel} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.`,
-    },
-    {
-      question: '계산기에서 나온 금액으로 바로 계약해도 되나요?',
-      answer: '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.',
-    },
-  ];
 
   const breadcrumbItems = [
     { name: '도배르만', url: BASE_URL },
@@ -175,7 +151,7 @@ function JsonLd({ scenario, title, description, canonical, signals, rows }: {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: questions.map((item) => ({
+            mainEntity: faqItems.map((item) => ({
               '@type': 'Question',
               name: item.question,
               acceptedAnswer: { '@type': 'Answer', text: item.answer },
@@ -279,6 +255,95 @@ function getMainRows(scenario: LandingScenario): PricePoint[] {
   return getPriceTable([24, 32, 34], regionId, building);
 }
 
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+/**
+ * 답변 엔진(AI 검색)이 그대로 인용할 수 있는 가격 직답.
+ *
+ * AEO 의 핵심은 "질문 문장 + 수치가 들어간 완결 문장" 이다. 답변만 발췌되어
+ * 앞뒤 맥락이 잘려도 뜻이 통하도록 지역명·평형·벽지 종류를 문장 안에 다 적는다.
+ * 금액은 화면 가격표와 같은 rows 에서만 뽑는다 — 다르면 구조화 데이터 위반이다.
+ */
+function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: string): FaqItem | null {
+  if (rows.length === 0) return null;
+
+  const cheapest = rows.reduce((a, b) => (a.adjustedPrice <= b.adjustedPrice ? a : b));
+  const priciest = rows.reduce((a, b) => (a.adjustedPrice >= b.adjustedPrice ? a : b));
+  // 평형이 고정된 페이지면 평형은 질문에 이미 있으니 벽지만, 아니면 평형까지 붙인다.
+  const spec = (row: PricePoint) => (scenario.pyeong ? row.label : `${row.pyeong}평 ${row.label}`);
+  const scope = scenario.pyeong ? `${scenario.pyeong}평 ` : '';
+  const caveat =
+    '2026년 전국 평균 단가에 지역 보정을 적용한 참고값이며, 기존 벽지 철거·벽면 보수·가구 이동은 별도로 반영됩니다.';
+
+  const question = `${local} ${scope}도배 비용은 얼마인가요?`;
+
+  // 벽지가 지정된 페이지는 행이 하나뿐이라 범위 하나로 답한다.
+  if (cheapest === priciest) {
+    return {
+      question,
+      answer: `${local} ${scope}${cheapest.label} 도배 비용은 ${formatPriceRange(cheapest.range)}이고 기준가는 ${formatWon(cheapest.adjustedPrice)}입니다. ${caveat}`,
+    };
+  }
+
+  return {
+    question,
+    answer: `${local} ${scope}도배 비용은 ${spec(cheapest)} 기준 ${formatPriceRange(cheapest.range)}, ${spec(priciest)} 기준 ${formatPriceRange(priciest.range)}입니다. ${caveat}`,
+  };
+}
+
+/**
+ * 화면 FAQ 와 FAQPage 구조화 데이터가 같이 쓰는 단일 소스.
+ *
+ * 예전엔 같은 문답을 JSX 와 JsonLd 에 따로 적어 두 곳이 어긋날 수 있었다.
+ * 둘이 다르면 Google 이 구조화 데이터 위반으로 처리하므로 여기서만 만든다.
+ */
+function buildFaqItems(
+  scenario: LandingScenario,
+  rows: PricePoint[],
+  local: string,
+  sidoLabel: string | null,
+  signals?: RegionalSignals,
+): FaqItem[] {
+  const items: FaqItem[] = [];
+
+  // 가장 많이 묻는 질문이 맨 앞. 답변 엔진은 앞쪽 문답을 우선 인용한다.
+  const priceQa = buildPriceQa(scenario, rows, local);
+  if (priceQa) items.push(priceQa);
+
+  const vendorAnswer =
+    signals?.vendorCount != null && signals.vendorCount > 0
+      ? `현재 ${local}에 등록된 도배 업체는 ${signals.vendorCount.toLocaleString('ko-KR')}곳입니다.`
+      : `${local}은 아직 등록 업체 집계가 없습니다. 견적을 요청하시면 인접 지역 업체까지 함께 연결해 드립니다.`;
+  const requestAnswer =
+    signals?.requestCount != null && signals.requestCount > 0
+      ? ` 누적 견적 요청은 ${signals.requestCount.toLocaleString('ko-KR')}건입니다.`
+      : '';
+
+  items.push({
+    question: `${local}에 등록된 도배 업체는 몇 곳인가요?`,
+    answer: `${vendorAnswer}${requestAnswer} 업체 수는 등록 현황에 따라 계속 바뀝니다.`,
+  });
+
+  items.push({
+    question: `${local} 도배 비용은 어떤 기준으로 계산되나요?`,
+    answer: `2026 전국 평균표에 ${sidoLabel ?? '지역'} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.`,
+  });
+
+  // "왜 달라지나요" 는 본문 섹션(질문형 H2 + 4개 항목)이 맡는다.
+  // 같은 질문을 FAQ 에 또 넣으면 한 페이지 안에서 서로 희석된다.
+
+  items.push({
+    question: '계산기에서 나온 금액으로 바로 계약해도 되나요?',
+    answer:
+      '계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.',
+  });
+
+  return items;
+}
+
 function getLocalLinks(scenario: LandingScenario) {
   if (!scenario.region) return [];
   return INDEXABLE_PYEONGS.map((pyeong) => ({
@@ -302,6 +367,10 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
   const selectedWallpaper = scenario.wallpaper;
   const quickLinks = getLocalLinks(scenario);
   const contentUpdated = '2026년 전국 평균 기준';
+  // 화면 FAQ 와 FAQPage 구조화 데이터가 같은 배열을 쓴다.
+  const faqItems = buildFaqItems(scenario, rows, local, sidoLabel, signals);
+  // 답변 엔진이 통째로 인용할 직답. 목록 첫 항목이 가격 문답이다.
+  const directAnswer = buildPriceQa(scenario, rows, local);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -312,6 +381,7 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
         canonical={canonical}
         signals={signals}
         rows={rows}
+        faqItems={faqItems}
       />
 
       <main className="pb-20 pt-20 lg:pt-24">
@@ -340,6 +410,17 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
               {title.replace(' - 도배르만', '')}
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">{description}</p>
+
+            {/* 직답 블록 — 질문 그대로의 제목 + 수치가 든 완결 문장.
+                답변 엔진은 이 위치의 짧은 직답을 가장 잘 인용하고, 사용자도
+                스크롤 없이 금액을 먼저 본다. 아래 가격표·FAQ 와 같은 수치다. */}
+            {directAnswer && (
+              <section className="mt-8 max-w-3xl rounded-xl border border-slate-700 bg-slate-900/70 p-5 sm:p-6">
+                <h2 className="text-lg font-bold text-white sm:text-xl">{directAnswer.question}</h2>
+                <p className="mt-3 text-base leading-8 text-slate-200">{directAnswer.answer}</p>
+              </section>
+            )}
+
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/quote-request" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-blue-600 px-6 font-semibold text-white transition hover:bg-blue-500">
                 무료 비교견적 신청
@@ -380,7 +461,8 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
             <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <div>
                 <p className="text-sm font-semibold text-blue-300">가격표</p>
-                <h2 className="mt-1 text-2xl font-bold text-white">{local} 도배 비용 기준표</h2>
+                {/* 검색 질의와 그대로 맞물리도록 제목을 질문형으로 둔다(AEO). */}
+                <h2 className="mt-1 text-2xl font-bold text-white">{local} 도배는 평형·벽지별로 얼마인가요?</h2>
               </div>
               <p className="text-sm text-slate-400">전체 도배·기본 옵션 제외 기준</p>
             </div>
@@ -390,7 +472,11 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
 
           <section className="mt-14 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-              <h2 className="text-xl font-bold text-white">가격이 달라지는 항목</h2>
+              <h2 className="text-xl font-bold text-white">{local} 도배 비용은 왜 달라지나요?</h2>
+              {/* 발췌되어도 뜻이 통하도록 첫 문장에 지역명과 결론을 넣는다. */}
+              <p className="mt-3 text-sm leading-7 text-slate-400">
+                같은 {local} 안에서도 아래 네 가지에 따라 총액이 갈립니다. 자재비보다 현장 조건이 금액을 더 크게 움직이는 경우가 많습니다.
+              </p>
               <ul className="mt-5 space-y-4 text-sm leading-6 text-slate-300">
                 <li><strong className="text-white">벽지 종류:</strong> 합지보다 실크·천연·수입벽지 순으로 자재비가 높아집니다.</li>
                 <li><strong className="text-white">현장 상태:</strong> 기존 벽지 철거, 벽면 보수, 곰팡이 제거가 있으면 추가 작업비가 붙습니다.</li>
@@ -457,30 +543,18 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
 
           <section className="mt-14">
             <h2 className="text-2xl font-bold text-white">{local} 도배 자주 묻는 질문</h2>
+            {/* FAQPage 구조화 데이터와 같은 배열(buildFaqItems)을 그대로 그린다.
+                예전엔 같은 문답을 JSX 와 JsonLd 에 따로 적어 어긋날 수 있었다.
+                발췌 확률을 높이려고 첫 문답은 펼친 채로 둔다. */}
             <div className="mt-5 divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/60">
-              {/* 첫 문답은 해당 지역의 실제 집계를 인용해 지역마다 내용이 달라진다. */}
-              <details className="group p-5">
-                <summary className="cursor-pointer list-none pr-6 font-semibold text-white">{local}에 등록된 도배 업체는 몇 곳인가요?</summary>
-                <p className="mt-3 text-sm leading-7 text-slate-400">
-                  {signals?.vendorCount != null && signals.vendorCount > 0
-                    ? `현재 ${local}에 등록된 도배 업체는 ${signals.vendorCount.toLocaleString('ko-KR')}곳입니다.`
-                    : `${local}은 아직 등록 업체 집계가 없습니다. 견적을 요청하시면 인접 지역 업체까지 함께 연결해 드립니다.`}
-                  {signals?.requestCount != null && signals.requestCount > 0
-                    ? ` 누적 견적 요청은 ${signals.requestCount.toLocaleString('ko-KR')}건입니다.`
-                    : ''}
-                  {' '}업체 수는 등록 현황에 따라 계속 바뀝니다.
-                </p>
-              </details>
-              <details className="group p-5">
-                <summary className="cursor-pointer list-none pr-6 font-semibold text-white">{local} 도배 비용은 어떤 기준으로 계산되나요?</summary>
-                <p className="mt-3 text-sm leading-7 text-slate-400">
-                  2026 전국 평균표에 {sidoLabel ?? '지역'} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.
-                </p>
-              </details>
-              <details className="group p-5">
-                <summary className="cursor-pointer list-none pr-6 font-semibold text-white">계산기에서 나온 금액으로 바로 계약해도 되나요?</summary>
-                <p className="mt-3 text-sm leading-7 text-slate-400">계산기는 빠른 비교용입니다. 벽면 상태와 가구 이동 여부에 따라 변동될 수 있으므로, 계약 전에는 자재 등급·시공 범위·철거와 보수 포함 여부를 업체와 확인하세요.</p>
-              </details>
+              {faqItems.map((item, index) => (
+                <details key={item.question} className="group p-5" open={index === 0}>
+                  <summary className="cursor-pointer list-none pr-6 font-semibold text-white">
+                    {item.question}
+                  </summary>
+                  <p className="mt-3 text-sm leading-7 text-slate-400">{item.answer}</p>
+                </details>
+              ))}
             </div>
           </section>
 
