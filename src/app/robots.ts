@@ -10,7 +10,9 @@ import { MetadataRoute } from 'next'
  *  - crawlDelay 제거 — Google 이 무시한다.
  *  - host 제거 — 비표준이며 Google 이 무시한다. 도메인 정규화는
  *    middleware 의 301 과 canonical 로 처리한다.
- *  - 봇별로 똑같이 반복되던 그룹을 하나로 합쳤다.
+ *  - 봇별로 똑같이 반복되던 그룹을 하나로 합쳤다. (그 뒤 AEO 목적으로 답변 엔진
+ *    크롤러 그룹을 하나 다시 두었다 — 아래 AI_CRAWLERS 주석 참고. 검색엔진마다
+ *    그룹을 따로 두던 예전 구조로 돌아간 것은 아니다.)
  */
 /** 검색·AI 크롤러 공통으로 막는 경로. 한 곳에서 관리해 그룹별로 어긋나지 않게 한다. */
 const DISALLOW = [

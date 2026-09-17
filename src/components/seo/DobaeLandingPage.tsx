@@ -28,10 +28,15 @@ interface DobaeLandingPageProps {
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.doberman.kr';
 
-function PriceTable({ rows, selectedWallpaper }: { rows: PricePoint[]; selectedWallpaper?: string }) {
-  const visibleRows = selectedWallpaper
-    ? rows.filter((row) => row.wallpaper === selectedWallpaper)
-    : rows;
+/**
+ * 걸러진 결과를 그대로 받는다.
+ *
+ * 예전엔 이 안에서 selectedWallpaper 로 한 번 더 걸렀는데, 구조화 데이터와
+ * 직답은 걸러지기 전 배열을 보고 있어서 둘이 갈라질 수 있었다. 필터는
+ * 호출부에서 한 번만 적용하고, 표·스키마·직답이 같은 배열을 본다.
+ */
+function PriceTable({ rows }: { rows: PricePoint[] }) {
+  const visibleRows = rows;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-700/80">
@@ -91,16 +96,19 @@ function JsonLd({ scenario, title, description, canonical, signals, rows, faqIte
           priceCurrency: 'KRW',
           lowPrice: Math.min(...prices),
           highPrice: Math.max(...prices),
-          // 업체 수는 실데이터가 있을 때만 — 없는 값을 지어내지 않는다.
-          ...(signals?.vendorCount && signals.vendorCount > 0
-            ? { offerCount: signals.vendorCount }
-            : {}),
+          // offerCount 는 넣지 않는다. 이 범위는 계산기 추정값 몇 줄을 묶은 것이지
+          // 업체들이 낸 견적 N건을 묶은 게 아니다. 여기에 등록 업체 수를 적으면
+          // 페이지에 없는 개수를 주장하는 셈이 된다.
         }
       : null;
 
+  // WebPage.about 이 가리킬 수 있게 @id 를 준다. 없으면 한 URL 에 이름이 다른
+  // Service 가 둘(견적 비교 / 시공) 떠 있는 것으로 읽혀 offers 가 어디 붙는지 모호해진다.
+  const serviceId = `${canonical}#service`;
   const serviceLd = {
     '@context': 'https://schema.org',
     '@type': 'Service',
+    '@id': serviceId,
     name: `${areaName} 도배 시공`,
     serviceType: '도배',
     description,
@@ -122,7 +130,8 @@ function JsonLd({ scenario, title, description, canonical, signals, rows, faqIte
             description,
             url: canonical,
             inLanguage: 'ko-KR',
-            about: { '@type': 'Service', name: `${areaName} 도배 견적 비교` },
+            // 위 Service 를 가리킨다 — 같은 페이지에 Service 를 또 만들지 않는다.
+            about: { '@id': serviceId },
           }),
         }}
       />
@@ -271,12 +280,7 @@ export interface FaqItem {
  * Google 가이드라인상 막혀 있어, 스키마에 들어가는 쪽(soft)은 사실 서술로 쓰고
  * 스키마에 안 들어가는 본문 직답(strong)에서만 분명하게 권유한다.
  */
-function buildPriceQa(
-  scenario: LandingScenario,
-  rows: PricePoint[],
-  local: string,
-  cta: 'soft' | 'strong' = 'soft',
-): FaqItem | null {
+function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: string): FaqItem | null {
   if (rows.length === 0) return null;
 
   const cheapest = rows.reduce((a, b) => (a.adjustedPrice <= b.adjustedPrice ? a : b));
@@ -287,15 +291,16 @@ function buildPriceQa(
   const caveat =
     '2026년 전국 평균 단가에 지역 보정을 적용한 참고값이며, 기존 벽지 철거·벽면 보수·가구 이동은 별도로 반영됩니다.';
   // 답변이 통째로 인용될 때 브랜드와 다음 행동이 같이 따라가도록 마지막에 붙인다.
-  const close =
-    cta === 'strong'
-      ? `같은 조건이라도 업체마다 견적이 크게 갈리므로, 계약 전에 도배르만에서 ${local} 업체들의 무료 비교견적을 꼭 받아 실제 금액을 확인하세요.`
-      : `실제 금액은 업체마다 달라지므로 도배르만에서 ${local} 업체들의 무료 비교견적을 받아 확인하는 것이 정확합니다.`;
+  // local 이 '전국'(지역 없는 페이지)일 때 "전국 업체들의" 는 어색하므로 지역이 있을 때만 붙인다.
+  const close = scenario.region
+    ? `같은 조건이라도 업체마다 견적이 갈리므로, 계약 전에 도배르만에서 ${local} 업체들의 무료 비교견적을 받아 실제 금액을 확인하세요.`
+    : '같은 조건이라도 업체마다 견적이 갈리므로, 계약 전에 도배르만에서 우리 지역 업체들의 무료 비교견적을 받아 실제 금액을 확인하세요.';
 
   const question = `${local} ${scope}도배 비용은 얼마인가요?`;
 
-  // 벽지가 지정된 페이지는 행이 하나뿐이라 범위 하나로 답한다.
-  if (cheapest === priciest) {
+  // rows 가 한 줄인 페이지(평형·벽지가 모두 정해진 경우)는 범위 하나로 답한다.
+  // 지금 라우트에는 그런 조합이 없지만, 생기면 이 분기가 받는다.
+  if (rows.length === 1) {
     return {
       question,
       answer: `${local} ${scope}${cheapest.label} 도배 비용은 ${formatPriceRange(cheapest.range)}이고 기준가는 ${formatWon(cheapest.adjustedPrice)}입니다. ${caveat} ${close}`,
@@ -321,11 +326,10 @@ function buildFaqItems(
   sidoLabel: string | null,
   signals?: RegionalSignals,
 ): FaqItem[] {
+  // 가격 문답은 여기 넣지 않는다 — 본문 상단 직답 블록이 같은 질문을 이미
+  // 다루고 있어, 여기 또 넣으면 한 화면에 같은 질문이 두 번(답도 서로 다르게)
+  // 나온다. 구조화 데이터에는 호출부에서 직답을 앞에 붙여 함께 낸다.
   const items: FaqItem[] = [];
-
-  // 가장 많이 묻는 질문이 맨 앞. 답변 엔진은 앞쪽 문답을 우선 인용한다.
-  const priceQa = buildPriceQa(scenario, rows, local);
-  if (priceQa) items.push(priceQa);
 
   const vendorAnswer =
     signals?.vendorCount != null && signals.vendorCount > 0
@@ -374,18 +378,24 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
   const local = scenario.region ? getFullRegionLabel(scenario.region) : '전국';
   const siblings = scenario.region ? getSiblingDistricts(scenario.region) : [];
   const sidoLabel = scenario.region ? getRegionUrlLabel(scenario.region.region.id) : null;
-  const rows = getMainRows(scenario);
+  // 벽지 필터를 여기서 한 번만 적용한다. 아래로 내려가는 rows 하나를
+  // 가격표·구조화 데이터·직답이 함께 보므로 서로 어긋날 수가 없다.
+  const allRows = getMainRows(scenario);
+  const rows = scenario.wallpaper
+    ? allRows.filter((row) => row.wallpaper === scenario.wallpaper)
+    : allRows;
   const mainPrice = scenario.pyeong
     ? getPricePoint(scenario.pyeong, scenario.wallpaper ?? 'silk', scenario.region?.region.id, scenario.building)
     : null;
-  const selectedWallpaper = scenario.wallpaper;
   const quickLinks = getLocalLinks(scenario);
   const contentUpdated = '2026년 전국 평균 기준';
-  // 화면 FAQ 와 FAQPage 구조화 데이터가 같은 배열을 쓴다.
+  // 본문 상단 직답 블록(질문형 H2 + 수치가 든 완결 문장). 답변 엔진이 가장 잘 인용한다.
+  const directAnswer = buildPriceQa(scenario, rows, local);
+  // 아코디언에 그릴 문답. 가격 문답은 위 직답이 맡으므로 여기엔 없다.
   const faqItems = buildFaqItems(scenario, rows, local, sidoLabel, signals);
-  // 답변 엔진이 통째로 인용할 직답. FAQPage 스키마에 들어가지 않는 본문이라
-  // 비교견적 권유를 분명하게(strong) 넣는다.
-  const directAnswer = buildPriceQa(scenario, rows, local, 'strong');
+  // FAQPage 에는 둘을 합쳐 낸다 — 직답도 화면에 실제로 그려지는 문답이라
+  // 구조화 데이터와 화면이 여전히 1:1 로 맞는다.
+  const faqLd = directAnswer ? [directAnswer, ...faqItems] : faqItems;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -396,7 +406,7 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
         canonical={canonical}
         signals={signals}
         rows={rows}
-        faqItems={faqItems}
+        faqItems={faqLd}
       />
 
       <main className="pb-20 pt-20 lg:pt-24">
@@ -481,7 +491,7 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
               </div>
               <p className="text-sm text-slate-400">전체 도배·기본 옵션 제외 기준</p>
             </div>
-            <PriceTable rows={rows} selectedWallpaper={selectedWallpaper} />
+            <PriceTable rows={rows} />
             <p className="mt-3 text-sm leading-6 text-slate-500">기준가는 도배르만 계산기의 2026 전국 평균표에 지역·주거형태 보정값을 적용한 참고값입니다. 실제 계약 전에는 작업 범위와 포함 항목을 업체 견적서로 확인하세요.</p>
           </section>
 
@@ -490,7 +500,7 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
               <h2 className="text-xl font-bold text-white">{local} 도배 비용은 왜 달라지나요?</h2>
               {/* 발췌되어도 뜻이 통하도록 첫 문장에 지역명과 결론을 넣는다. */}
               <p className="mt-3 text-sm leading-7 text-slate-400">
-                같은 {local} 안에서도 아래 네 가지에 따라 총액이 갈립니다. 자재비보다 현장 조건이 금액을 더 크게 움직이는 경우가 많습니다.
+                {scenario.region ? `같은 ${local} 안에서도` : '같은 평형이라도'} 아래 네 가지에 따라 총액이 갈립니다. 자재비보다 현장 조건이 금액을 더 크게 움직이는 경우가 많습니다.
               </p>
               <ul className="mt-5 space-y-4 text-sm leading-6 text-slate-300">
                 <li><strong className="text-white">벽지 종류:</strong> 합지보다 실크·천연·수입벽지 순으로 자재비가 높아집니다.</li>
@@ -500,7 +510,7 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
               </ul>
               <p className="mt-5 text-sm leading-7 text-slate-300">
                 이 조건들은 현장을 봐야 확정되기 때문에, 표의 기준가만 보고 정하기보다
-                도배르만에서 {local} 업체들의 무료 비교견적을 받아 실제 금액으로 비교하시는 편이 안전합니다.
+                도배르만에서 {scenario.region ? `${local} ` : ''}업체들의 무료 비교견적을 받아 실제 금액으로 비교하시는 편이 안전합니다.
               </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">

@@ -41,7 +41,6 @@ const CONTENT = `# 도배르만 (Doberman)
 - [무료 비교견적 요청](${BASE_URL}/quote-request): 평형·지역·벽지 조건을 넣으면 여러 업체에게 견적을 받는 메인 기능입니다.
 - [도배 비용 계산기](${BASE_URL}/quote-calculator): 조건별 예상 비용을 즉시 계산합니다.
 - [AI 견적 받기](${BASE_URL}/quote-request-ai): 사진·설명을 바탕으로 견적 조건을 자동으로 잡아 줍니다.
-- [실제 견적 요청 사례](${BASE_URL}/quote-request/list): 실제 접수된 견적 요청과 조건을 공개합니다.
 - [지역별 도배 정보](${BASE_URL}/regional-guide): 시도·시군구별 도배 비용 페이지의 진입점입니다.
 
 ## 비용·시공 정보
@@ -68,6 +67,9 @@ const CONTENT = `# 도배르만 (Doberman)
 
 - \`/boss/\` 이하는 도배 업체(사장님) 전용 업무 화면이라 색인·인용 대상이 아닙니다.
 - \`/api/\` 이하는 내부 API 입니다.
+- \`/quote-request/list\`, \`/board\` 는 브라우저에서 목록을 불러오는 화면이라
+  자바스크립트를 실행하지 않는 크롤러에는 빈 페이지로 보입니다. 인용 근거로 쓰기에
+  적합하지 않으니 위 "비용·시공 정보" 페이지들을 참고하세요.
 `
 
 export function GET() {
