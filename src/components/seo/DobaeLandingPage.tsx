@@ -59,12 +59,14 @@ function PriceTable({ rows, selectedWallpaper }: { rows: PricePoint[]; selectedW
   );
 }
 
-function JsonLd({ scenario, title, description, canonical, signals }: {
+function JsonLd({ scenario, title, description, canonical, signals, rows }: {
   scenario: LandingScenario;
   title: string;
   description: string;
   canonical: string;
   signals?: RegionalSignals;
+  /** 화면 가격표와 같은 행. 구조화 데이터의 금액도 여기서만 만든다. */
+  rows: PricePoint[];
 }) {
   // 구조화 데이터의 FAQ 는 화면에 실제로 보이는 문답과 같아야 한다.
   // 다르면 Google 이 구조화 데이터 위반으로 처리한다.
@@ -100,6 +102,38 @@ function JsonLd({ scenario, title, description, canonical, signals }: {
     { name: title, url: canonical },
   ];
 
+  // 답변 엔진(AI 검색)이 "○○구 30평 도배 얼마?" 에 인용할 수 있도록 금액을 기계가 읽는 형태로 낸다.
+  // 화면 가격표와 같은 rows 에서만 뽑아 쓴다 — 다르면 구조화 데이터 위반이다.
+  //
+  // 개별 Offer(확정가) 대신 AggregateOffer(범위)를 쓰는 이유: 이 금액은 계산기 추정 범위지
+  // 그 자리에서 결제되는 확정가가 아니다. 확정가로 표기하면 정책 위반 소지가 있다.
+  const prices = rows.flatMap((row) => row.range);
+  const priceOffer =
+    prices.length > 0
+      ? {
+          '@type': 'AggregateOffer',
+          priceCurrency: 'KRW',
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          // 업체 수는 실데이터가 있을 때만 — 없는 값을 지어내지 않는다.
+          ...(signals?.vendorCount && signals.vendorCount > 0
+            ? { offerCount: signals.vendorCount }
+            : {}),
+        }
+      : null;
+
+  const serviceLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: `${areaName} 도배 시공`,
+    serviceType: '도배',
+    description,
+    url: canonical,
+    provider: { '@type': 'Organization', name: '도배르만', url: BASE_URL },
+    areaServed: { '@type': 'Place', name: areaName },
+    ...(priceOffer ? { offers: priceOffer } : {}),
+  };
+
   return (
     <>
       <script
@@ -115,6 +149,10 @@ function JsonLd({ scenario, title, description, canonical, signals }: {
             about: { '@type': 'Service', name: `${areaName} 도배 견적 비교` },
           }),
         }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }}
       />
       <script
         type="application/ld+json"
@@ -267,7 +305,14 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <JsonLd scenario={scenario} title={title} description={description} canonical={canonical} signals={signals} />
+      <JsonLd
+        scenario={scenario}
+        title={title}
+        description={description}
+        canonical={canonical}
+        signals={signals}
+        rows={rows}
+      />
 
       <main className="pb-20 pt-20 lg:pt-24">
         <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
