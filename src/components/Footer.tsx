@@ -362,6 +362,66 @@ const Footer: React.FC<FooterProps> = ({
         {/* 전체 링크 허브 — sitemap 에만 있고 내부 링크가 없던 페이지들을 연결한다. */}
         <SeoLinkHub />
 
+        {/* 도배르만 앱 안내 — 이 Footer 는 고객 화면에만 붙는다(SiteChrome 에서 /boss 제외).
+            그래서 "사장님 전용" 과 "고객은 설치 안 해도 된다"를 먼저 읽히게 쓴다.
+            고객이 잘못 설치하면 로그인도 안 되고 스토어에 낮은 평점만 남는다. */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
+          className="py-3 border-t border-slate-700/50"
+        >
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-6 text-center lg:text-left">
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-center lg:justify-start gap-2">
+                <h3 className="text-sm font-semibold text-white">도배르만 앱</h3>
+                <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-500/15 text-blue-300 border border-blue-400/30">
+                  도배 사장님 전용
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-snug">
+                견적서 작성·고객관리·시공 일정을 한 번에. 가입과 로그인은 도배 시공을 하시는 사장님만 가능합니다.
+              </p>
+              <p className="text-xs text-slate-500 leading-snug">
+                도배를 맡기실 고객님은 앱을 설치하지 않으셔도 됩니다 — 견적 비교는 이 사이트에서 그대로 하시면 돼요.
+              </p>
+            </div>
+
+            {/* 배지 크기 맞춤은 /boss/login 과 동일한 방식 — 같은 상자에 object-contain */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <a
+                href="https://apps.apple.com/app/6740186789"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="App Store에서 도배르만 앱 다운로드 (도배 사장님 전용)"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ko-kr?size=250x83"
+                  alt="App Store에서 다운로드"
+                  className="h-9 w-[122px] object-contain"
+                />
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=com.codelabtiger.doberman&hl=ko"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Google Play에서 도배르만 앱 다운로드 (도배 사장님 전용)"
+              >
+                {/* 구글 원본 배지는 위아래 투명 여백 때문에 애플 배지보다 작아 보여
+                    여백을 잘라낸 /public/google-play-badge-ko.png 를 쓴다. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/google-play-badge-ko.png"
+                  alt="Google Play에서 다운로드"
+                  className="h-9 w-[122px] object-contain"
+                />
+              </a>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Bottom Bar */}
         <motion.div
           initial={{ opacity: 0 }}
