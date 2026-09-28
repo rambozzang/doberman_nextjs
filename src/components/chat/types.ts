@@ -16,6 +16,10 @@ export interface ChatMessage {
 // 채팅 시스템 전용 타입들 (개발가이드 기반)
 export interface ChatRoom {
   roomId: number;
+  /** 견적 요청 번호 — 견적 화면이 답변(업체)별로 방을 찾을 때 쓴다 */
+  requestId?: number | null;
+  /** 상대방 번호 — 웹 고객에게는 업체(앱 사용자) 아이디 */
+  partnerId?: string | null;
   partnerName: string;
   lastMessage: string | null;
   lastMessageTime: string | null;

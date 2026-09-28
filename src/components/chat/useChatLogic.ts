@@ -25,7 +25,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
   useEffect(() => {
     refreshChatAuth();
   }, [refreshChatAuth]);
-  const { createChatRoom, findChatRoomByRequestId, updateLastMessage, updateUnreadCount } = useChatRooms();
+  const { createChatRoom, updateLastMessage, updateUnreadCount } = useChatRooms();
   const {
     messages,
     isLoading,
@@ -240,25 +240,15 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
 
       console.log('채팅방 처리 시작:', { requestId, expertId });
 
-      // 1. 먼저 기존 채팅방이 있는지 확인
-      const existingRoomId = await findChatRoomByRequestId(requestId, expertId.toString());
-
-      if (existingRoomId) {
-        // 기존 채팅방이 있으면 연결
-        setCurrentRoomId(existingRoomId);
-        console.log('기존 채팅방 연결:', existingRoomId);
-      } else {
-        // 기존 채팅방이 없으면 새로 생성
-        console.log('새 채팅방 생성 시도:', { requestId, expertId });
-        const roomId = await createChatRoom(requestId, expertId.toString());
-
-        if (roomId) {
-          setCurrentRoomId(roomId);
-          console.log('새 채팅방 생성 완료:', roomId);
-        } else {
-          throw new Error('채팅방 ID를 받지 못했습니다.');
-        }
+      // 방은 "견적 요청 + 고객 + 업체" 셋으로 찾고, 없으면 만든다(서버 POST /chat/room 이
+      // 찾기와 만들기를 한 번에 한다). 예전처럼 requestId 만으로 먼저 찾으면, 한 요청에
+      // 업체별 방이 여러 개일 때 다른 업체의 방이 열렸다 — 채택 전에도 여러 업체와
+      // 대화할 수 있게 되면서 반드시 업체까지 넣어 찾아야 한다.
+      const roomId = await createChatRoom(requestId, expertId.toString());
+      if (!roomId) {
+        throw new Error('채팅방 ID를 받지 못했습니다.');
       }
+      setCurrentRoomId(roomId);
     } catch (error) {
       console.error('채팅방 처리 오류:', error);
       setIsOpen(false);
@@ -267,7 +257,7 @@ export const useChatLogic = (chatPartner?: CustomerRequestAnswer, requestId?: nu
     }
 
     scrollToBottom();
-  }, [chatAuth.isAuthenticated, chatPartner, requestId, findChatRoomByRequestId, createChatRoom]);
+  }, [chatAuth.isAuthenticated, chatPartner, requestId, createChatRoom]);
 
   // roomId를 직접 알 때 채팅 열기 (FAB 등)
   const openChatByRoomId = useCallback((roomId: number) => {

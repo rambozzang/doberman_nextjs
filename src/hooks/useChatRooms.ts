@@ -7,6 +7,8 @@ import { useChatAuth } from './useChatAuth';
 // (chat-api 백엔드 room_list_websocket.py 의 _create_room_update 응답)
 interface RoomListUpdatePayload {
   roomId: number;
+  requestId?: number | null;
+  partnerId?: string | null;
   partnerName: string;
   lastMessage: string | null;
   lastMessageTime: string | null;
@@ -57,29 +59,6 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
       setIsLoading(false);
     }
     }, [chatAuth.isAuthenticated, chatAuth.token, chatAuth.userId, chatAuth.userType]);
-
-  // requestId로 기존 채팅방 조회
-  const findChatRoomByRequestId = useCallback(async (requestId: number, expertId: string) => {
-    if (!chatAuth.isAuthenticated || !chatAuth.token || !chatAuth.userId) {
-      throw new Error('인증이 필요합니다.');
-    }
-
-    try {
-      chatApi.setAuthHeader(chatAuth.token);
-      const response = await chatApi.findChatRoom(requestId, chatAuth.userId, chatAuth.userType || 'WEB');
-
-      if (response.success) {
-        console.log('채팅방 조회 결과:', response.data);
-        return response.data?.roomId || null;
-      } else {
-        console.log('채팅방 조회 실패:', response.error);
-        return null;
-      }
-    } catch (error) {
-      console.error('채팅방 조회 오류:', error);
-      return null;
-    }
-  }, [chatAuth.isAuthenticated, chatAuth.token, chatAuth.userId, chatAuth.userType]);
 
   // 채팅방 생성
   const createChatRoom = useCallback(async (requestId: number, expertId: string) => {
@@ -154,6 +133,8 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
         return [
           {
             roomId: update.roomId,
+            requestId: update.requestId,
+            partnerId: update.partnerId,
             partnerName: update.partnerName,
             lastMessage: update.lastMessage,
             lastMessageTime: update.lastMessageTime,
@@ -261,7 +242,6 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
     loadChatRooms,
     createChatRoom,
     findChatRoom,
-    findChatRoomByRequestId,
     updateUnreadCount,
     updateLastMessage,
     updatePartnerStatus,

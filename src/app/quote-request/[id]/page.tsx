@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowLeftIcon,
@@ -23,6 +23,8 @@ import { CustomerRequestService } from "@/services/customerRequestService";
 import { CustomerRequest, CustomerRequestAnswer } from "@/types/api";
 import { toast } from "react-hot-toast";
 import { ChatModal, useChatLogic } from "@/components/chat";
+import { useChatRooms } from "@/hooks/useChatRooms";
+import { useAuth } from "@/providers/AuthProvider";
 
 // 상태 매핑 설정 (목록 페이지와 동일한 톤)
 const statusConfig = {
@@ -94,6 +96,20 @@ export default function QuoteRequestDetailPage() {
 
   // ID 파라미터 추출
   const requestId = typeof params.id === 'string' ? parseInt(params.id) : null;
+
+  // 메일의 "견적 확인하기" 버튼은 이 화면에 ?login=true 로 들어온다. 로그아웃 상태면
+  // 헤더가 로그인 창을 띄우고, 로그인이 끝나면 아래에서 다시 불러온다.
+  const { isLoggedIn, isLoading: isAuthLoading } = useAuth();
+
+  // 답변 카드마다 "새 메시지 N" 을 붙이려고 내 채팅방 목록을 실시간으로 받는다.
+  const { chatRooms, refreshChatRooms } = useChatRooms({ realtime: true });
+  const roomByExpert = useMemo(() => {
+    const map = new Map<string, (typeof chatRooms)[number]>();
+    for (const room of chatRooms) {
+      if (room.requestId === requestId && room.partnerId) map.set(String(room.partnerId), room);
+    }
+    return map;
+  }, [chatRooms, requestId]);
 
   // 채팅 로직 사용
   const {
@@ -168,9 +184,16 @@ export default function QuoteRequestDetailPage() {
     }
   }, [requestId, loadAnswers]);
 
+  // 로그인 확인이 끝난 뒤에 불러온다 — 로그아웃 상태로 먼저 부르면 "찾을 수 없음"
+  // 으로 끝나고, 로그인 창에서 로그인해도 화면이 그대로였다.
   useEffect(() => {
+    if (isAuthLoading) return;
+    if (!isLoggedIn) {
+      setIsLoading(false);
+      return;
+    }
     loadCustomerRequest();
-  }, [loadCustomerRequest]);
+  }, [isAuthLoading, isLoggedIn, loadCustomerRequest]);
 
   // 채팅 파트너가 설정되고 채팅을 열어야 할 때 처리
   useEffect(() => {
@@ -188,6 +211,12 @@ export default function QuoteRequestDetailPage() {
   const handleStartChat = (answer: CustomerRequestAnswer) => {
     setCurrentChatPartner(answer);
     setShouldOpenChat(true);
+  };
+
+  // 대화창을 닫으면 방금 읽은 만큼 카드의 "새 메시지" 표시를 지운다
+  const handleCloseChat = () => {
+    closeChat();
+    refreshChatRooms();
   };
 
   // 채택하기 버튼 클릭
@@ -246,6 +275,26 @@ export default function QuoteRequestDetailPage() {
           <div className="h-12 bg-slate-800/40 rounded-lg animate-pulse"></div>
           <div className="h-44 bg-slate-800/40 rounded-lg animate-pulse"></div>
           <div className="h-28 bg-slate-800/40 rounded-lg animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthLoading && !isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-slate-900 pt-16 sm:pt-20">
+        <div className="mx-auto w-full max-w-4xl px-4 py-6">
+          <div className="text-center py-16 border border-dashed border-slate-700 rounded-lg">
+            <MessageSquareIcon className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+            <p className="text-sm text-slate-300 mb-1">로그인하면 받은 견적을 볼 수 있어요</p>
+            <p className="text-xs text-slate-500 mb-5">견적을 요청할 때 입력한 이메일로 로그인해 주세요.</p>
+            <Link
+              href={`/quote-request/${requestId ?? ''}?login=true`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-colors"
+            >
+              로그인하고 견적 보기
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -400,7 +449,7 @@ export default function QuoteRequestDetailPage() {
                 받은 답변 <span className="text-blue-400">{answers.length}</span>
               </h2>
               {isUnderReview && answers.length > 0 && (
-                <span className="text-xs text-slate-500">한 곳을 채택하면 대화가 열립니다</span>
+                <span className="text-xs text-slate-500">궁금한 점은 채택 전에 업체에 먼저 물어보세요</span>
               )}
             </div>
 
@@ -433,6 +482,8 @@ export default function QuoteRequestDetailPage() {
                   const expertName =
                     answer.userName || answer.user?.userName || answer.webCustomer?.customerName || "익명";
                   const contact = answer.companyPhone || answer.userPhone;
+                  const room = answer.userId ? roomByExpert.get(String(answer.userId)) : undefined;
+                  const unread = room?.unreadCount ?? 0;
 
                   return (
                     <li
@@ -458,6 +509,11 @@ export default function QuoteRequestDetailPage() {
                             채택됨
                           </span>
                         )}
+                        {unread > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500 text-[11px] font-semibold text-white">
+                            새 메시지 {unread}
+                          </span>
+                        )}
                         {answer.createdDt && (
                           <span className="ml-auto text-xs text-slate-500">{formatDateTime(answer.createdDt)}</span>
                         )}
@@ -470,6 +526,24 @@ export default function QuoteRequestDetailPage() {
                       <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
                         {answer.answerBody || "서비스 내용이 아직 입력되지 않았습니다."}
                       </p>
+
+                      {/* 이 업체와 나눈 대화가 있으면 마지막 한 줄을 보여 준다 — 누르면 바로 이어서 대화 */}
+                      {room?.lastMessage && (
+                        <button
+                          onClick={() => handleStartChat(answer)}
+                          className={`mt-3 w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                            unread > 0
+                              ? 'bg-rose-500/[0.07] border-rose-500/30 hover:bg-rose-500/10'
+                              : 'bg-slate-900/40 border-slate-700/60 hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <MessageSquareIcon className={`w-3.5 h-3.5 flex-shrink-0 ${unread > 0 ? 'text-rose-300' : 'text-slate-500'}`} />
+                          <span className="flex-1 min-w-0 truncate text-xs text-slate-200">{room.lastMessage}</span>
+                          {room.lastMessageTime && (
+                            <span className="flex-shrink-0 text-[11px] text-slate-500">{room.lastMessageTime}</span>
+                          )}
+                        </button>
+                      )}
 
                       {/* 하단: 금액 · 액션 */}
                       <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800">
@@ -492,13 +566,16 @@ export default function QuoteRequestDetailPage() {
                           </a>
                         )}
 
-                        {isAdopted && (
+                        {/* 채택 전에도 업체에 바로 물어볼 수 있다. 연락처는 채택한 곳만 공개한다. */}
+                        {answer.userId && (
                           <button
                             onClick={() => handleStartChat(answer)}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-medium text-white transition-colors"
+                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-white transition-colors ${
+                              isAdopted ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-700 hover:bg-slate-600 border border-slate-600'
+                            }`}
                           >
                             <MessageSquareIcon className="w-3.5 h-3.5" />
-                            대화하기
+                            {isAdopted || room ? '대화 이어가기' : '업체에 문의하기'}
                           </button>
                         )}
 
@@ -558,7 +635,7 @@ export default function QuoteRequestDetailPage() {
             </div>
 
             <p className="text-sm text-slate-200 mb-1">이 전문가를 채택할까요?</p>
-            <p className="text-xs text-slate-400 mb-5">채택하면 바로 대화창이 열립니다.</p>
+            <p className="text-xs text-slate-400 mb-5">채택하면 업체 연락처가 공개되고 대화창이 열립니다.</p>
 
             <div className="flex gap-2">
               <button
@@ -590,7 +667,7 @@ export default function QuoteRequestDetailPage() {
       {/* 채팅 모달 */}
       <ChatModal
         isOpen={isChatOpen}
-        onClose={closeChat}
+        onClose={handleCloseChat}
         chatPartner={currentChatPartner}
         messages={chatMessages}
         newMessage={newMessage}
