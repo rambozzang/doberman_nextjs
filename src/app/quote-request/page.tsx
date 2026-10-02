@@ -794,8 +794,15 @@ export default function QuoteRequestPage() {
   // 로그인 상태에 따른 총 단계 수 계산 (로그인된 경우 고객정보 단계 제외)
   const totalSteps = isLoggedIn ? steps.length - 1 : steps.length;
 
+  // 신청 버튼이 "제출"로 동작하는 마지막 단계인지.
+  // 로그인 사용자는 고객정보(6)를 건너뛰어 지역선택(5)이 마지막이다. 다만 로그인 사용자도
+  // 6 단계(로그인 정보 확인 화면)에 들어올 수 있으므로 5 이상이면 모두 제출로 본다.
+  // 예전에는 "로그인 + 5" 만 제출로 봐서, 지역을 고르면 자동으로 6 으로 넘어간 뒤
+  // 신청을 눌러도 '다음 단계'(더 갈 곳 없음)가 실행돼 아무 반응이 없었다.
+  const isFinalStep = isLoggedIn ? currentStep >= 5 : currentStep === 6;
+
   // 진행률 계산
-  const progress = ((currentStep + 1) / totalSteps) * 100;
+  const progress = Math.min(((currentStep + 1) / totalSteps) * 100, 100);
 
   // 평수 변환 함수
   const calculateSquareMeters = (pyeong: number | undefined) => {
@@ -914,8 +921,9 @@ export default function QuoteRequestPage() {
     setTimeout(() => {
       setCurrentStep((prev) => {
         const lastIndex = steps.length - 1;
-        // 로그인 사용자는 6단계(고객정보) 스킵
-        if (isLoggedIn && prev + 1 === 6) return prev + 2 > lastIndex ? lastIndex : prev + 2;
+        // 로그인 사용자는 고객정보(6)를 건너뛰므로 지역선택(5)이 마지막 단계다.
+        // 여기서 더 넘기지 않고 멈춰 "무료 비교견적 신청하기" 버튼을 보여 준다.
+        if (isLoggedIn && prev >= 5) return prev;
         return prev + 1 > lastIndex ? lastIndex : prev + 1;
       });
     }, 250);
@@ -1051,7 +1059,7 @@ export default function QuoteRequestPage() {
     }
 
     // 마지막 단계(고객정보 또는 지역선택)에서는 견적 요청 처리
-    if ((isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)) {
+    if (isFinalStep) {
       await handleQuoteRequest();
       return;
     }
@@ -2111,7 +2119,7 @@ export default function QuoteRequestPage() {
                   disabled={isLoading || isSubmitting || !validateCurrentStep()}
                   className={`group relative px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${isLoading || isSubmitting || !validateCurrentStep()
                     ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
-                    : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
+                    : isFinalStep
                       ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 active:scale-95'
                       : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95'
                     }`}
@@ -2122,7 +2130,7 @@ export default function QuoteRequestPage() {
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                         <span>신청 중...</span>
                       </>
-                    ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
+                    ) : isFinalStep ? (
                       <>
                         <CheckIcon className="w-5 h-5 mr-2" />
                         <span>무료 비교견적 신청하기</span>
@@ -2167,7 +2175,7 @@ export default function QuoteRequestPage() {
                       disabled={isLoading || isSubmitting || !validateCurrentStep()}
                       className={`group relative px-4 py-3 rounded-xl font-bold text-base transition-all duration-300 shadow-xl min-h-[48px] w-2/3 ${isLoading || isSubmitting || !validateCurrentStep()
                         ? 'bg-slate-600/50 text-slate-300 cursor-not-allowed border border-slate-600'
-                        : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6)
+                        : isFinalStep
                           ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-green-400/50 hover:border-green-300/50 shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105'
                           : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border border-blue-400/50 hover:border-blue-300/50 shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105'
                         }`}
@@ -2178,7 +2186,7 @@ export default function QuoteRequestPage() {
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                             <span>신청 중...</span>
                           </>
-                        ) : (isLoggedIn && currentStep === 5) || (!isLoggedIn && currentStep === 6) ? (
+                        ) : isFinalStep ? (
                           <>
                             <CheckIcon className="w-5 h-5 mr-3" />
                             <span>무료 비교견적 신청하기</span>
