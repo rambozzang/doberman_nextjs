@@ -3,10 +3,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Github, Twitter, Linkedin, Mail, Phone, MapPin, ChevronDown, User } from "lucide-react";
+import { Mail, Phone, MapPin, ChevronDown, User } from "lucide-react";
 
 import Image from "next/image";
 import SeoLinkHub from "./seo/SeoLinkHub";
+import { SITE_IDENTITY } from "@/lib/seo/siteIdentity";
 
 interface FooterLink {
   title: string;
@@ -61,34 +62,18 @@ const defaultSections: FooterSection[] = [
   },
 ];
 
-const defaultSocialLinks: SocialLink[] = [
-  {
-    name: "GitHub",
-    href: "https://github.com",
-    icon: <Github className="w-5 h-5" />,
-  },
-  {
-    name: "Twitter",
-    href: "https://twitter.com",
-    icon: <Twitter className="w-5 h-5" />,
-  },
-  {
-    name: "LinkedIn",
-    href: "https://linkedin.com",
-    icon: <Linkedin className="w-5 h-5" />,
-  },
-];
+const defaultSocialLinks: SocialLink[] = [];
 
 const Footer: React.FC<FooterProps> = ({
   logo = "도배르만",
-  description = "현대적인 웹 애플리케이션을 위한 최고의 솔루션을 제공합니다. 비즈니스 성장을 위한 강력한 도구와 서비스를 경험해보세요.",
+  description = SITE_IDENTITY.description,
   sections = defaultSections,
   socialLinks = defaultSocialLinks,
   contactInfo = {
-    email: "codelabtiger@gmail.com",
-    phone: "+82 010-2468-7272",
-    owner: "대표이사 전범규",
-    address: "서울특별시 강남구 테헤란로 123",
+    email: SITE_IDENTITY.email,
+    phone: SITE_IDENTITY.phone,
+    owner: `대표 ${SITE_IDENTITY.owner}`,
+    address: SITE_IDENTITY.address,
   },
   showNewsletter = true,
 }) => {

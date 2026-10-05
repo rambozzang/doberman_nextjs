@@ -18,11 +18,11 @@ import {
 
 export const metadata: Metadata = {
   title: "도배 종류 | 벽지 종류별 특징과 선택 가이드 - 도배르만",
-  description: "도배 종류가 궁금하신가요? 일반지, 실크지, 합지 등 다양한 벽지 종류별 특징과 장단점을 상세히 비교해드립니다.",
-  keywords: "도배종류, 벽지종류, 일반지, 실크지, 합지, 벽지선택, 벽지비교, 벽지특징, 인테리어벽지, 고급벽지",
+  description: "도배 종류가 궁금하신가요? 합지, 실크, 천연 소재 벽지 등 다양한 벽지 종류별 특징과 장단점을 상세히 비교해드립니다.",
+  keywords: "도배종류, 벽지종류, 합지, 실크, 천연 소재 벽지, 벽지선택, 벽지비교, 벽지특징, 인테리어벽지, 고급벽지",
   openGraph: {
     title: "도배 종류 | 벽지 종류별 특징과 선택 가이드",
-    description: "일반지, 실크지, 합지 등 다양한 벽지 종류별 특징과 선택 가이드",
+    description: "합지, 실크, 천연 소재 벽지 등 다양한 벽지 종류별 특징과 선택 가이드",
     type: "website",
     locale: "ko_KR",
   },
@@ -33,81 +33,9 @@ export const metadata: Metadata = {
 
 export default function DobaeJongryuPage() {
   const wallpaperTypes = [
-    {
-      type: "일반지 (합성수지계)",
-      description: "가장 일반적이고 경제적인 벽지",
-      priceRange: "평당 8,000-12,000원",
-      durability: "3-5년",
-      features: [
-        "경제적인 가격",
-        "다양한 디자인과 색상",
-        "시공이 쉬움",
-        "교체가 용이함"
-      ],
-      pros: [
-        "저렴한 비용",
-        "풍부한 디자인 선택",
-        "초보자도 시공 가능"
-      ],
-      cons: [
-        "상대적으로 짧은 수명",
-        "고급스러움 부족",
-        "내구성 한계"
-      ],
-      bestFor: "원룸, 임대주택, 경제적 리모델링",
-      icon: HomeIcon,
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      type: "실크지 (부직포계)",
-      description: "부드러운 질감과 고급스러운 마감",
-      priceRange: "평당 12,000-18,000원",
-      durability: "5-8년",
-      features: [
-        "부드러운 질감",
-        "우수한 통기성",
-        "고급스러운 외관",
-        "적당한 두께감"
-      ],
-      pros: [
-        "뛰어난 질감",
-        "좋은 내구성",
-        "고급스러운 느낌"
-      ],
-      cons: [
-        "높은 가격",
-        "시공 난이도 증가",
-        "패턴 매칭 필요"
-      ],
-      bestFor: "거실, 침실, 고급 인테리어",
-      icon: SparklesIcon,
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      type: "합지 (직물계)",
-      description: "최고급 벽지로 뛰어난 품질과 내구성",
-      priceRange: "평당 18,000-25,000원",
-      durability: "8-12년",
-      features: [
-        "최고급 소재",
-        "뛰어난 내구성",
-        "우수한 단열 효과",
-        "프리미엄 디자인"
-      ],
-      pros: [
-        "최고의 품질",
-        "긴 수명",
-        "단열 및 방음 효과"
-      ],
-      cons: [
-        "높은 비용",
-        "전문 시공 필요",
-        "제한적인 디자인"
-      ],
-      bestFor: "고급 주택, 상업공간, 프리미엄 인테리어",
-      icon: StarIcon,
-      color: "from-purple-500 to-violet-500"
-    }
+    { type: '합지 벽지', description: '종이를 겹쳐 만든 벽지로 소폭·광폭 제품이 있습니다.', priceRange: '제품·시공 범위에 따라 견적 확인', durability: '사용 환경에 따라 달라짐', features: ['경제적인 선택', '다양한 색상과 무늬', '소폭·광폭 제품'], pros: ['비용 부담이 비교적 낮음', '임대주택·방 시공에 활용'], cons: ['수분과 오염에 주의', '바탕 상태에 따라 덧방 여부 확인'], bestFor: '원룸, 임대주택, 예산을 고려한 시공', icon: HomeIcon, color: 'from-green-500 to-emerald-500' },
+    { type: '실크 벽지 (PVC 표면층)', description: '종이 바탕 위에 PVC 표면층을 적용한 벽지입니다. 실제 실크 섬유를 뜻하지 않습니다.', priceRange: '제품·시공 범위에 따라 견적 확인', durability: '사용 환경에 따라 달라짐', features: ['다양한 질감', '표면 관리 편의', '제품별 등급 확인'], pros: ['풍부한 색상과 질감', '제품 지침에 따른 표면 청소'], cons: ['합지보다 비용이 높은 편', '철거·초배 등 바탕 작업 확인'], bestFor: '거실, 질감과 관리 편의를 고려한 공간', icon: PaletteIcon, color: 'from-blue-500 to-cyan-500' },
+    { type: '천연 소재 벽지', description: '제품에 따라 한지·식물성 소재 등을 사용합니다. 소재와 인증을 개별 확인하세요.', priceRange: '제품·시공 범위에 따라 견적 확인', durability: '소재·사용 환경에 따라 달라짐', features: ['제품별 소재 확인', '인증 정보 확인', '시공 방법 확인'], pros: ['소재 고유의 질감', '공간에 맞는 선택'], cons: ['제품별 비용 차이', '시공·관리 지침 확인 필요'], bestFor: '소재와 질감을 중시하는 공간', icon: LeafIcon, color: 'from-purple-500 to-violet-500' },
   ];
 
   const functionalTypes = [
@@ -127,8 +55,8 @@ export default function DobaeJongryuPage() {
     },
     {
       type: "친환경 벽지",
-      description: "유해물질 없는 천연 소재",
-      benefits: ["무독성", "아토피 안전", "친환경 인증"],
+      description: "제품별 방출량 기준과 인증을 확인하는 벽지",
+      benefits: ["제품별 인증 확인", "시험 성적서 확인", "소재 확인"],
       icon: LeafIcon,
       color: "from-green-400 to-emerald-400"
     },
@@ -280,7 +208,7 @@ export default function DobaeJongryuPage() {
             </h1>
             
             <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-              일반지, 실크지, 합지 등 다양한 벽지 종류별<br />
+              합지, 실크, 천연 소재 벽지 등 다양한 벽지 종류별<br />
               특징과 장단점을 상세히 비교해드립니다.
             </p>
             
@@ -611,7 +539,7 @@ export default function DobaeJongryuPage() {
             "@context": "https://schema.org",
             "@type": "WebPage",
             "name": "도배 종류 - 벽지 종류별 특징과 선택 가이드",
-            "description": "일반지, 실크지, 합지 등 다양한 벽지 종류별 특징과 장단점 비교",
+            "description": "합지, 실크, 천연 소재 벽지 등 다양한 벽지 종류별 특징과 장단점 비교",
             "mainEntity": {
               "@type": "ItemList",
               "itemListElement": wallpaperTypes.map((type, index) => ({

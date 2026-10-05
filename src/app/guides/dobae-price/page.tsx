@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { encodePath } from "@/lib/seo/dobaeLanding";
+import { REGION_FACTOR } from "@/lib/ai/data/pricingTable";
+import { encodePath, getPricePoint, formatPriceRange } from "@/lib/seo/dobaeLanding";
 import { 
   DollarSignIcon,
   CheckCircleIcon,
@@ -19,12 +20,12 @@ import {
 export const metadata: Metadata = {
   // 노출 991 · CTR 1.6% 였다. 검색어("도배 가격 · 벽지 도배 가격")와 겹치는 말은
   // 앞에 있었지만 숫자가 없어 눈에 걸리지 않았다. 실제 가격대를 제목에 넣는다.
-  title: { absolute: "도배 가격 평당 8천~2만5천원 | 2026 평수별 비용표 - 도배르만" },
-  description: "10평 40만원대, 30평 150만원대 — 2026 전국 평균 기준 도배 가격을 평수·벽지별로 공개합니다. 철거·보수·천장 같은 추가 비용과 지역별 차이까지 표로 확인하세요.",
+  title: { absolute: "도배 가격 | 평형·벽지별 참고 비용표 - 도배르만" },
+  description: "도배르만 참고표에 따른 도배 비용을 평형·벽지별로 확인하세요. 철거·보수·천장 같은 추가 비용과 지역별 차이까지 표로 확인하세요.",
   keywords: "도배가격, 도배비용, 벽지가격, 도배단가, 평당도배비용, 도배시세, 인테리어비용, 리모델링비용",
   openGraph: {
     title: "도배 가격 | 2026 평수·벽지별 도배 비용표 - 도배르만",
-    description: "2026년 전국 평균 기준 평수별·벽지별 도배 비용 공개",
+    description: "도배르만 참고표 기준 평수별·벽지별 도배 비용 공개",
     type: "website",
     locale: "ko_KR",
   },
@@ -44,7 +45,7 @@ export default function DobaeGagyeokPage() {
     {
       icon: StarIcon,
       title: "벽지 등급",
-      description: "일반지 < 실크지 < 합지 순으로 가격이 상승합니다",
+      description: "합지보다 실크의 자재·시공비가 높은 편이며 제품 등급과 작업 조건에 따라 달라집니다",
       impact: "높음"
     },
     {
@@ -62,76 +63,32 @@ export default function DobaeGagyeokPage() {
   ];
 
   const wallpaperTypes = [
-    {
-      type: "일반 벽지",
-      description: "가장 기본적인 벽지로 경제적입니다",
-      priceRange: "평당 8,000-12,000원",
-      features: ["경제적", "다양한 디자인", "기본 품질"],
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      type: "실크 벽지", 
-      description: "부드러운 질감과 고급스러운 마감",
-      priceRange: "평당 12,000-18,000원",
-      features: ["고급 질감", "내구성 우수", "세련된 디자인"],
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      type: "합지 벽지",
-      description: "최고급 벽지로 뛰어난 품질과 내구성",
-      priceRange: "평당 18,000-25,000원",
-      features: ["최고 품질", "뛰어난 내구성", "프리미엄 디자인"],
-      color: "from-purple-500 to-violet-500"
-    }
+    { type: '합지 벽지', description: '종이를 겹쳐 만든 경제적인 벽지', priceRange: formatPriceRange(getPricePoint(24, 'vinyl')!.range), features: ['경제적인 선택', '소폭·광폭 제품', '오염·수분에 주의'], color: 'from-green-500 to-emerald-500' },
+    { type: '실크 벽지', description: '종이 바탕에 PVC 표면층을 적용한 벽지', priceRange: formatPriceRange(getPricePoint(24, 'silk')!.range), features: ['다양한 질감', '표면 관리 편의', '바탕 작업 확인'], color: 'from-blue-500 to-cyan-500' },
+    { type: '천연 벽지', description: '제품별 천연 소재와 시공 조건을 확인하는 벽지', priceRange: formatPriceRange(getPricePoint(24, 'natural')!.range), features: ['소재별 특성', '제품별 인증 확인', '시공 방식 확인'], color: 'from-purple-500 to-violet-500' },
   ];
-
-  const areaBasedPricing = [
-    {
-      area: "10평 이하",
-      totalPrice: "40-80만원",
-      perPyeong: "평당 4-8만원",
-      description: "원룸, 소형 투룸",
-      additionalInfo: "최소 시공비 적용"
-    },
-    {
-      area: "10-20평",
-      totalPrice: "60-120만원",
-      perPyeong: "평당 3-6만원",
-      description: "투룸, 소형 아파트",
-      additionalInfo: "가장 일반적인 평수"
-    },
-    {
-      area: "20-30평",
-      totalPrice: "100-180만원",
-      perPyeong: "평당 3-6만원",
-      description: "3룸, 중형 아파트",
-      additionalInfo: "거실 포함 전체"
-    },
-    {
-      area: "30평 이상",
-      totalPrice: "150만원 이상",
-      perPyeong: "평당 3-5만원",
-      description: "대형 아파트, 주택",
-      additionalInfo: "규모의 경제 효과"
-    }
-  ];
+  const areaBasedPricing = [24, 30, 32, 34, 40].map(pyeong => {
+    const point = getPricePoint(pyeong, 'vinyl')!;
+    return {
+      area: `${pyeong}평`, totalPrice: formatPriceRange(point.range),
+      perPyeong: `${Math.round(point.adjustedPrice / pyeong).toLocaleString('ko-KR')}원/평`,
+      description: '합지 · 분양평수 기준', additionalInfo: '철거·보수·가구 이동 등 별도',
+    };
+  });
 
   const additionalCosts = [
-    { item: "기존 벽지 제거", cost: "평당 3,000-5,000원", required: "기존 벽지가 있는 경우" },
-    { item: "벽면 보수 작업", cost: "평당 5,000-10,000원", required: "벽면 손상이 있는 경우" },
-    { item: "몰딩 설치", cost: "미터당 3,000-8,000원", required: "몰딩 설치 희망 시" },
-    { item: "천장 도배", cost: "평당 15,000-25,000원", required: "천장 도배 포함 시" },
-    { item: "패턴 매칭", cost: "10-20% 추가", required: "복잡한 패턴 벽지" },
-    { item: "당일 완료", cost: "10-15% 추가", required: "당일 완료 요청 시" }
+    { item: '기존 벽지 제거', cost: '시공 범위 확인 후 견적', required: '철거 여부와 폐기물 처리 포함 확인' },
+    { item: '벽면 보수 작업', cost: '상태 확인 후 견적', required: '곰팡이·균열·퍼티 범위 확인' },
+    { item: '몰딩 설치', cost: '자재·길이별 견적', required: '시공 범위와 자재 포함 확인' },
+    { item: '천장 도배', cost: '전체 시공 포함 여부 확인', required: '천장 높이·작업 범위 확인' },
+    { item: '패턴 매칭', cost: '제품별 로스와 작업비 확인', required: '무늬 연결과 추가 자재 확인' },
+    { item: '긴급 시공', cost: '업체 일정 확인 후 견적', required: '작업 시간과 추가 인원 확인' },
   ];
-
   const regionPricing = [
-    { region: "서울", multiplier: "100%", description: "기준 가격" },
-    { region: "경기도", multiplier: "90-100%", description: "서울 대비 약간 저렴" },
-    { region: "부산/대구", multiplier: "85-95%", description: "서울 대비 5-15% 저렴" },
-    { region: "기타 광역시", multiplier: "80-90%", description: "서울 대비 10-20% 저렴" },
-    { region: "지방 도시", multiplier: "75-85%", description: "서울 대비 15-25% 저렴" }
-  ];
+    { region: '서울', key: 'seoul' }, { region: '경기', key: 'gyeonggi' },
+    { region: '인천', key: 'incheon' }, { region: '부산', key: 'busan' },
+    { region: '대구', key: 'daegu' },
+  ].map(({ region, key }) => ({ region, multiplier: `${Math.round(REGION_FACTOR[key] * 100)}%`, description: '도배르만 참고표 보정값 · 실제 지역 평균 아님' }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
@@ -156,7 +113,7 @@ export default function DobaeGagyeokPage() {
             </h1>
             
             <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-              2026년 전국 평균 기준 도배 가격 정보를 투명하게 공개합니다.<br />
+              도배르만 참고표 기준 예상 도배 비용을 평형·벽지별로 안내합니다.<br />
               평수별, 벽지별 상세한 비용을 확인해보세요.
             </p>
             
@@ -234,7 +191,8 @@ export default function DobaeGagyeokPage() {
                 <h3 className="text-2xl font-bold text-white mb-3">{wallpaper.type}</h3>
                 <p className="text-slate-300 mb-4">{wallpaper.description}</p>
                 
-                <div className="text-2xl font-bold text-blue-400 mb-6">{wallpaper.priceRange}</div>
+                <div className="text-2xl font-bold text-blue-400 mb-2">{wallpaper.priceRange}</div>
+                <p className="mb-6 text-xs text-slate-400">24평 전체 시공 · 분양평수 기준 · 기본 옵션 제외</p>
                 
                 <ul className="space-y-2">
                   {wallpaper.features.map((feature, idx) => (
@@ -283,7 +241,7 @@ export default function DobaeGagyeokPage() {
           
           <div className="text-center mt-12">
             <p className="text-slate-400 text-sm mb-6">
-              * 위 가격은 일반 벽지 기준이며, 실제 가격은 현장 상황에 따라 달라질 수 있습니다
+              * 위 가격은 합지 전체 시공 참고값입니다. ±10% 범위는 비교용이며 실제 계약 금액을 보장하지 않습니다
             </p>
             <Link
               href="/quote-request"
@@ -320,7 +278,7 @@ export default function DobaeGagyeokPage() {
         </div>
       </section>
 
-      {/* 지역별 가격 차이 */}
+      {/* 지역별 참고 보정값 */}
       <section className="py-20 bg-slate-900/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">

@@ -4,7 +4,6 @@ import React from "react";
 import { motion } from "framer-motion";
 import { 
   CheckIcon, 
-  StarIcon, 
   ShieldCheckIcon,
   ClockIcon,
   UsersIcon,
@@ -21,14 +20,14 @@ import {
 const serviceFeatures = [
   {
     icon: UsersIcon,
-    title: "300+ 검증된 전문가",
-    description: "엄격한 심사를 통과한 전국의 도배 전문가들",
+    title: "지역별 도배 전문가",
+    description: "요청 지역의 작업 조건을 확인하는 도배 전문가들",
     color: "from-blue-500 to-cyan-500"
   },
   {
     icon: ShieldCheckIcon,
-    title: "품질 보증 시스템",
-    description: "시공 품질과 안전을 보장하는 체계적인 관리",
+    title: "시공 범위 확인",
+    description: "계약 전 자재·작업 범위와 AS 조건을 업체와 확인",
     color: "from-emerald-500 to-green-500"
   },
   {
@@ -63,19 +62,19 @@ const serviceProcess = [
   {
     step: "02", 
     title: "전문가 매칭",
-    description: "AI 알고리즘을 통한 최적 전문가 선별",
+    description: "요청 지역과 작업 조건을 전문가에게 전달",
     icon: SearchIcon,
     details: [
       "지역별 전문가 필터링",
-      "리뷰 점수 기반 선별",
-      "경력 및 전문성 평가",
-      "가용 일정 확인"
+      "요청 내용 전달",
+      "전문가의 작업 조건 확인",
+      "시공 가능 일정 협의"
     ]
   },
   {
     step: "03",
     title: "견적 비교",
-    description: "최대 3명의 전문가 견적 동시 비교",
+    description: "도착한 전문가 견적의 금액과 작업 범위 비교",
     icon: TrendingUpIcon,
     details: [
       "상세 견적서 제공",
@@ -90,36 +89,11 @@ const serviceProcess = [
     description: "안전하고 체계적인 시공 진행",
     icon: HandshakeIcon,
     details: [
-      "온라인 계약 체결",
+      "업체와 계약 조건 확인",
       "시공 일정 조율",
-      "실시간 진행상황 공유",
+      "업체와 진행 상황 확인",
       "품질 점검 및 완료"
     ]
-  }
-];
-
-// 고객 후기
-const customerReviews = [
-  {
-    name: "김○○",
-    location: "서울 강남구",
-    rating: 5,
-    comment: "3명의 전문가 견적을 한번에 비교할 수 있어서 정말 편했어요. 가격도 합리적이고 품질도 만족스럽습니다.",
-    project: "아파트 25평 전체 도배"
-  },
-  {
-    name: "박○○", 
-    location: "부산 해운대구",
-    rating: 5,
-    comment: "전문가분이 정말 친절하고 꼼꼼하게 작업해주셨어요. 추천받은 벽지도 예상보다 훨씬 예쁘네요.",
-    project: "오피스텔 16평 거실/침실"
-  },
-  {
-    name: "이○○",
-    location: "대구 수성구", 
-    rating: 5,
-    comment: "시공 전부터 완료까지 체계적으로 관리해주셔서 안심이 됐습니다. 다음에도 꼭 이용할게요.",
-    project: "단독주택 35평 전체"
   }
 ];
 
@@ -160,7 +134,7 @@ export default function ServiceIntroPage() {
               transition={{ delay: 0.6, duration: 0.6 }}
               className="text-base md:text-lg text-slate-300 mb-6 max-w-2xl mx-auto leading-relaxed"
             >
-              도배르만은 전국 300여명 이상의 검증된 전문가와 고객을 연결하여 합리적이고 투명한 도배 서비스를 제공합니다.
+              도배르만은 전국의 도배 전문가와 고객을 연결하여 합리적이고 투명한 도배 서비스를 제공합니다.
             </motion.p>
           </motion.div>
         </div>
@@ -214,7 +188,7 @@ export default function ServiceIntroPage() {
             <div className="text-center mb-10">
               <h2 className="text-xl md:text-2xl font-bold text-white mb-3">서비스 이용 과정</h2>
               <p className="text-slate-400 text-base max-w-2xl mx-auto">
-                4단계의 간단하고 체계적인 프로세스로 최상의 결과를 보장합니다.
+                4단계의 간단하고 체계적인 프로세스로 견적 요청부터 시공 조건 확인까지 안내합니다.
               </p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
@@ -250,48 +224,7 @@ export default function ServiceIntroPage() {
             </div>
           </motion.section>
 
-          {/* 고객 후기 */}
-          <motion.section
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.4, duration: 0.8 }}
-          >
-            <div className="text-center mb-10">
-              <h2 className="text-xl md:text-2xl font-bold text-white mb-3">고객 만족 후기</h2>
-              <p className="text-slate-400 text-base max-w-2xl mx-auto">
-                실제 이용 고객들이 남긴 생생한 후기를 확인해보세요.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {customerReviews.map((review, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.6 + index * 0.1 }}
-                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
-                >
-                  <div className="flex items-center mb-3">
-                    <div className="flex items-center">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <StarIcon 
-                          key={i} 
-                          className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-slate-600'}`} 
-                          fill="currentColor"
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm font-semibold text-white ml-3">{review.name}</span>
-                    <span className="text-xs text-slate-400 ml-2">({review.location})</span>
-                  </div>
-                  <p className="text-slate-300 text-sm mb-3">&ldquo;{review.comment}&rdquo;</p>
-                  <p className="text-xs text-indigo-400 bg-indigo-500/10 rounded-full px-2 py-1 inline-block">
-                    {review.project}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
+
         </div>
       </main>
 
@@ -307,7 +240,7 @@ export default function ServiceIntroPage() {
               지금 바로 무료 견적을 받아보세요
             </h3>
             <p className="text-slate-300 text-sm mb-6">
-              간단한 정보 입력으로 24시간 내에 최대 3개의 견적을 비교할 수 있습니다.
+              한 번의 요청으로 도착한 견적을 비교하세요. 응답 시간과 견적 수는 지역·시공 조건에 따라 달라집니다.
             </p>
             <motion.a
               href="/quote-request"

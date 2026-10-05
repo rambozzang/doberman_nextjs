@@ -215,7 +215,7 @@ function buildDescription(scenario: LandingScenario, signals?: RegionalSignals):
   }
   const factText = facts.length > 0 ? ` ${local} ${facts.join(', ')} 기준입니다.` : '';
 
-  return `${local} ${pyeong}${building}${wallpaper}도배 비용을 2026 전국 평균 단가에 지역 보정을 적용해 확인하세요.${factText} 평형별 기준가와 예상 범위, 무료 비교견적 신청을 한 페이지에서 볼 수 있습니다.`;
+  return `${local} ${pyeong}${building}${wallpaper}도배 비용을 도배르만 2026 참고 단가에 지역 보정을 적용해 확인하세요.${factText} 평형별 기준가와 예상 범위, 무료 비교견적 신청을 한 페이지에서 볼 수 있습니다.`;
 }
 
 function buildCanonical(scenario: LandingScenario): string {
@@ -289,7 +289,7 @@ function buildPriceQa(scenario: LandingScenario, rows: PricePoint[], local: stri
   const spec = (row: PricePoint) => (scenario.pyeong ? row.label : `${row.pyeong}평 ${row.label}`);
   const scope = scenario.pyeong ? `${scenario.pyeong}평 ` : '';
   const caveat =
-    '2026년 전국 평균 단가에 지역 보정을 적용한 참고값이며, 기존 벽지 철거·벽면 보수·가구 이동은 별도로 반영됩니다.';
+    '도배르만의 2026년 참고 단가에 지역 보정을 적용한 참고값이며, 기존 벽지 철거·벽면 보수·가구 이동은 별도로 반영됩니다.';
   // 이 직답은 본문에만 그리고 FAQPage 구조화 데이터에는 넣지 않는다.
   // 그래서 권유를 분명하게 써도 된다(스키마는 홍보 목적 사용이 막혀 있다).
   // local 이 '전국'(지역 없는 페이지)일 때 "전국 업체들의" 는 어색하므로 지역이 있을 때만 붙인다.
@@ -349,7 +349,7 @@ function buildFaqItems(
 
   items.push({
     question: `${local} 도배 비용은 어떤 기준으로 계산되나요?`,
-    answer: `2026 전국 평균표에 ${sidoLabel ?? '지역'} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.`,
+    answer: `도배르만 2026 참고표에 ${sidoLabel ?? '지역'} 보정계수를 적용한 뒤 평형과 벽지 종류로 계산합니다. 여기에 천장 높이, 철거·보수, 가구 이동 같은 현장 조건이 더해집니다. 이 페이지의 범위는 현장 확인 전 예산을 잡기 위한 참고값입니다.`,
   });
 
   // "왜 달라지나요" 는 본문 섹션(질문형 H2 + 4개 항목)이 맡는다.
@@ -390,7 +390,7 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
     ? getPricePoint(scenario.pyeong, scenario.wallpaper ?? 'silk', scenario.region?.region.id, scenario.building)
     : null;
   const quickLinks = getLocalLinks(scenario);
-  const contentUpdated = '2026년 전국 평균 기준';
+  const contentUpdated = '도배르만 2026 참고 기준';
   // 본문 상단 직답 블록(질문형 H2 + 수치가 든 완결 문장). 답변 엔진이 가장 잘 인용한다.
   const directAnswer = buildPriceQa(scenario, rows, local);
   // 아코디언에 그릴 문답. 가격 문답은 위 직답이 맡으므로 여기엔 없다.
@@ -496,7 +496,8 @@ export default function DobaeLandingPage({ scenario, signals }: DobaeLandingPage
               <p className="text-sm text-slate-400">전체 도배·기본 옵션 제외 기준</p>
             </div>
             <PriceTable rows={rows} />
-            <p className="mt-3 text-sm leading-6 text-slate-500">기준가는 도배르만 계산기의 2026 전국 평균표에 지역·주거형태 보정값을 적용한 참고값입니다. 실제 계약 전에는 작업 범위와 포함 항목을 업체 견적서로 확인하세요.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-500">기준가는 도배르만 계산기의 도배르만 2026 참고표에 지역·주거형태 보정값을 적용한 참고값입니다. 실제 계약 전에는 작업 범위와 포함 항목을 업체 견적서로 확인하세요.</p>
+            <Link href="/pricing-method" className="text-sm text-blue-300 underline">비용 산정 기준과 자료 확인</Link>
           </section>
 
           <section className="mt-14 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

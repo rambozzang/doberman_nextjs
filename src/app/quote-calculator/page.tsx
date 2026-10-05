@@ -138,7 +138,7 @@ export default function QuoteCalculatorPage() {
               도배 견적 계산기 — 평당·평형별 정밀 자동 견적
             </h1>
             <p className="mt-1.5 text-sm opacity-90">
-              아파트·빌라·주택, 평형·방수, 합지·실크 등을 종합 반영한 자동 견적 시스템 (2026 시장 평균 단가 기준)
+              아파트·빌라·주택, 평형·방수, 합지·실크 등을 종합 반영한 자동 견적 시스템 (도배르만 2026 참고 단가 기준)
             </p>
             {/* 첫 단락 내부 링크 */}
             <p className="mt-2 text-xs opacity-75">
@@ -669,7 +669,7 @@ export default function QuoteCalculatorPage() {
               {/* 안내 문구 */}
               <p className="mt-4 text-[10px] leading-relaxed text-slate-500">
                 ※ 본 견적은 표준 단가 기반 예상치이며 실측 후 최종 견적이 확정됩니다.<br />
-                ※ 단가 출처: 숨고·오늘의집·마미견적·방산시장·시공플러스·세라건축 등 2026년 시장 평균값.
+                ※ 단가는 도배르만 견적 계산기의 참고 기준이며 전국 계약 금액을 통계 조사한 평균값이 아닙니다. <Link href="/pricing-method" className="text-blue-300 underline">산정 기준과 자료</Link>
               </p>
             </section>
 

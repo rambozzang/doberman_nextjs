@@ -17,29 +17,30 @@ const TABLE_TARGETS = [
 ] as const;
 
 // 분양평수 → 전용평수 근사 (일반적인 아파트 기준)
-const SUPPLY_MAP: Record<number, string> = {
-  8:  '약 6평',
-  13: '약 10평',
-  18: '약 14평',
-  24: '약 18평',
-  30: '약 24평',
-  32: '약 25평',
-  34: '약 27평',
-  38: '약 30평',
-  42: '약 33평',
-  48: '약 38평',
-  55: '약 44평',
-  60: '약 48평',
+const EXCLUSIVE_PYEONGS: Record<number, number> = {
+  8:  6,
+  13: 10,
+  18: 14,
+  24: 18,
+  30: 24,
+  32: 25,
+  34: 27,
+  38: 30,
+  42: 33,
+  48: 38,
+  55: 44,
+  60: 48,
 };
 
 // 평형별·벽지별 표준 견적 계산
-// 전체도배 / 표준천장 / 로스 10% / 마진 20% / VAT 별도
+// 전체도배 / 표준천장 / 로스 10% / 마진 20% / VAT 포함
 function calcCell(size: number, wpKey: string): number {
   const rate = RATES[wpKey];
   if (!rate) return 0;
-  const dP = size * 3.3 * 1.1; // 전체도배 계수 3.3 × 로스 10%
+  const exclusivePyeong = EXCLUSIVE_PYEONGS[size] ?? size;
+  const dP = exclusivePyeong * 3.3 * 1.1; // 전체도배 계수 3.3 × 로스 10%
   const cost = dP * (rate.mat + rate.lab + SUB_MAT);
-  return Math.round(cost * 1.2 * 1.1 / 10000) * 10000; // 만원 단위 반올림
+  return Math.round(cost * 1.2 * 1.1 / 10000) * 10000; // 마진 20% · VAT 10% 포함 · 만원 단위 반올림
 }
 
 function wonMan(n: number): string {
@@ -54,7 +55,7 @@ export default function StandardEstimateTable() {
         평형별 표준 도배 견적표
       </h2>
       <p className="text-slate-400 text-sm mb-6">
-        전국 평균 시세 기준 (2026년) — 전체 도배 / 표준 천장 / 옵션 없음 / 마진 20% 적용
+        도배르만 2026 참고 단가 기준 — 전체 도배 / 표준 천장 / 옵션 없음 / 마진 20% 적용
       </p>
 
       <div className="overflow-x-auto rounded-xl border border-slate-700">
@@ -91,7 +92,7 @@ export default function StandardEstimateTable() {
                   {size}평
                 </td>
                 <td className="px-4 py-2.5 text-slate-400 border-b border-slate-700/50">
-                  {SUPPLY_MAP[size] ?? '-'}
+                  {EXCLUSIVE_PYEONGS[size] ? `약 ${EXCLUSIVE_PYEONGS[size]}평` : '-'}
                 </td>
                 {TABLE_TARGETS.map((t) => (
                   <td
@@ -110,7 +111,7 @@ export default function StandardEstimateTable() {
       <p className="mt-4 text-xs text-slate-500 leading-relaxed">
         전체 도배 / 표준 천장(2.3~2.5m) / 추가 옵션 없음 기준입니다.
         발코니 확장, 부분 시공, 철거·몰딩·가구이동 등 추가 옵션은 위 견적 계산기에서 직접 입력해 보세요.
-        실제 견적은 현장 실측 후 달라질 수 있으며, VAT(10%)는 별도입니다.
+        실제 견적은 현장 실측 후 달라질 수 있으며, 표의 금액에는 마진 20%와 VAT 10%가 포함되어 있습니다.
       </p>
     </div>
   );

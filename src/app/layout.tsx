@@ -7,6 +7,10 @@ import SiteChrome from "@/components/SiteChrome";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import AdSense from "@/components/AdSense";
+import { SITE_IDENTITY } from "@/lib/seo/siteIdentity";
+
+const gaId = process.env.NEXT_PUBLIC_GA_ID?.trim();
+const validGaId = gaId && /^G-[A-Z0-9]+$/.test(gaId) ? gaId : null;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,10 +25,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr"),
   title: {
-    default: "도배 견적 | 전국 300+ 검증된 도배 전문가 무료 견적",
+    default: "도배 견적 | 전국 도배 전문가 무료 견적",
     template: "%s | 도배르만 - 도배 견적 비교 플랫폼"
   },
-  description: "도배 견적 비교 | 전국 300명+ 검증된 도배 전문가 | 아파트·빌라·오피스텔 도배 견적 | 도배 시공 가격 비교",
+  description: "도배 견적 비교 | 전국 도배 전문가 | 아파트·빌라·오피스텔 도배 견적 | 도배 시공 가격 비교",
   keywords: "도배 견적, 도배 견적 비교, 도배 비교견적, 도배 가격, 도배 비용, 도배 시공, 벽지 교체, 벽지 교체 견적, 아파트 도배, 빌라 도배, 오피스텔 도배, 도배 전문가, 도배 업체, 도배 시세, 합지벽지, 실크벽지, 천연벽지, 수입벽지, 도배 방법, 도배 종류, 저렴한 도배, 도배 공사, 인테리어 도배, 도배르만, 도배 견적 사이트, 무료 도배 견적, 24평 도배 견적, 32평 도배 견적, 도배 평당 가격",
   authors: [{ name: "도배르만" }],
   creator: "도배르만",
@@ -41,8 +45,8 @@ export const metadata: Metadata = {
     apple: "/logo.png",
   },
   openGraph: {
-    title: "도배 견적  | 전국 300+ 검증된 도배 전문가 무료 매칭 | 도배 비교 견적",
-    description: "도배 견적 비교 | 전국 300명+ 검증된 도배 전문가 | 아파트·빌라·오피스텔 도배 견적 | 도배 시공 가격 비교",
+    title: "도배 견적  | 전국 도배 전문가 무료 매칭 | 도배 비교 견적",
+    description: "도배 견적 비교 | 전국 도배 전문가 | 아파트·빌라·오피스텔 도배 견적 | 도배 시공 가격 비교",
     type: "website",
     locale: "ko_KR",
     url: process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr",
@@ -58,7 +62,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "도배 견적 비교 | 전국 300+ 검증된 도배 전문가",
+    title: "도배 견적 비교 | 전국 도배 전문가",
     // "24시간 내 최대 5개 견적" 은 실측과 맞지 않아 뺐다(한 요청에 도착한 견적은 최대 1개).
     description: "도배 견적 비교 | 한 번의 요청으로 여러 전문가 견적 무료 비교 | 아파트·빌라·오피스텔 도배",
     images: ["/og-dobae.jpg"],
@@ -79,12 +83,6 @@ export const metadata: Metadata = {
     ...(process.env.GOOGLE_VERIFICATION_ID && { google: process.env.GOOGLE_VERIFICATION_ID }),
     other: {
       'naver-site-verification': process.env.NAVER_VERIFICATION_ID || '8a8f1fd238cdf6738ea971dfcc060431b50f8fd8',
-    },
-  },
-  alternates: {
-    canonical: process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr",
-    languages: {
-      'ko': process.env.NEXT_PUBLIC_BASE_URL || "https://www.doberman.kr",
     },
   },
   other: {
@@ -123,129 +121,24 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
 
-        <Script
-          id="structured-data-local-business"
+        <script
+          id="organization-schema"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              "name": "도배르만",
-              "alternateName": "도배 견적 비교 플랫폼",
-              "description": "전국 300명 이상의 검증된 도배 전문가들과 함께하는 무료 비교견적 플랫폼. 아파트·빌라·오피스텔 도배 견적, 벽지 교체 시공까지 한 번에!",
-              "url": "https://www.doberman.kr",
-              "logo": "https://www.doberman.kr/logo.png",
-              "image": "https://www.doberman.kr/og-dobae.jpg",
-              "priceRange": "무료",
-              "telephone": "",
-              "email": "",
-              "address": {
-                "@type": "PostalAddress",
-                "addressCountry": "KR",
-                "addressRegion": "서울특별시"
-              },
-              "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": "37.5665",
-                "longitude": "126.9780"
-              },
-              "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": [
-                  "Monday",
-                  "Tuesday",
-                  "Wednesday",
-                  "Thursday",
-                  "Friday",
-                  "Saturday",
-                  "Sunday"
-                ],
-                "opens": "00:00",
-                "closes": "23:59"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "reviewCount": "1250",
-                "bestRating": "5",
-                "worstRating": "1"
-              },
-              "hasOfferCatalog": {
-                "@type": "OfferCatalog",
-                "name": "도배 서비스",
-                "itemListElement": [
-                  {
-                    "@type": "Offer",
-                    "itemOffered": {
-                      "@type": "Service",
-                      "name": "아파트 도배 견적",
-                      "description": "아파트 도배 전문 견적 서비스"
-                    }
-                  },
-                  {
-                    "@type": "Offer",
-                    "itemOffered": {
-                      "@type": "Service",
-                      "name": "벽지 교체 견적",
-                      "description": "벽지 교체 전문 견적 서비스"
-                    }
-                  },
-                  {
-                    "@type": "Offer",
-                    "itemOffered": {
-                      "@type": "Service",
-                      "name": "도배 시공",
-                      "description": "전문 도배 시공 서비스"
-                    }
-                  }
-                ]
-              },
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://www.doberman.kr/quote-request?q={search_term_string}",
-                "query-input": "required name=search_term_string"
-              },
-              "sameAs": [],
-              "areaServed": [
-                {
-                  "@type": "City",
-                  "name": "서울특별시"
-                },
-                {
-                  "@type": "City",
-                  "name": "경기도"
-                },
-                {
-                  "@type": "City",
-                  "name": "인천광역시"
-                },
-                {
-                  "@type": "City",
-                  "name": "부산광역시"
-                },
-                {
-                  "@type": "City",
-                  "name": "대구광역시"
-                },
-                {
-                  "@type": "City",
-                  "name": "대전광역시"
-                },
-                {
-                  "@type": "City",
-                  "name": "광주광역시"
-                },
-                {
-                  "@type": "City",
-                  "name": "울산광역시"
-                },
-                {
-                  "@type": "Country",
-                  "name": "대한민국"
-                }
-              ]
-            })
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            '@id': `${SITE_IDENTITY.url}/#organization`,
+            name: SITE_IDENTITY.name,
+            legalName: SITE_IDENTITY.legalName,
+            description: SITE_IDENTITY.description,
+            url: SITE_IDENTITY.url,
+            logo: `${SITE_IDENTITY.url}/logo.png`,
+            email: SITE_IDENTITY.email,
+            telephone: SITE_IDENTITY.phone,
+            ...(SITE_IDENTITY.address ? { address: {
+              '@type': 'PostalAddress', addressCountry: 'KR', streetAddress: SITE_IDENTITY.address,
+            } } : {}),
+          }).replace(/</g, '\\u003c') }}
         />
       </head>
       <body
@@ -288,18 +181,17 @@ export default function RootLayout({
               }}
             />
 
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'GA_MEASUREMENT_ID'}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'GA_MEASUREMENT_ID'}');
-              `}
-            </Script>
+            {validGaId && (
+              <>
+                <Script src={`https://www.googletagmanager.com/gtag/js?id=${validGaId}`} strategy="afterInteractive" />
+                <Script id="google-analytics" strategy="afterInteractive">
+                  {`window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${validGaId}');`}
+                </Script>
+              </>
+            )}
 
             <Script
               async
@@ -331,81 +223,7 @@ export default function RootLayout({
               `}
             </Script>
 
-            <Script
-              id="faq-schema"
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
-                  "@context": "https://schema.org",
-                  "@type": "FAQPage",
-                  "mainEntity": [
-                    {
-                      "@type": "Question",
-                      "name": "도배 견적은 무료인가요?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "네, 저희 플랫폼을 통한 도배 견적 신청은 완전 무료입니다."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "도배 견적을 받기까지 얼마나 걸리나요?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "도배 견적 신청 후 24시간 이내에 최대 3개의 견적을 받아보실 수 있습니다."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "도배 견적 비교는 어떻게 하나요?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "여러 도배 업체의 견적을 한 번에 비교하여 최적의 가격과 서비스를 선택할 수 있습니다."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "벽지 교체 견적도 받을 수 있나요?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "네, 벽지 교체 견적도 포함하여 도배 관련 모든 견적을 받아보실 수 있습니다."
-                      }
-                    }
-                  ]
-                })
-              }}
-            />
 
-            <Script
-              id="breadcrumb-schema"
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
-                  "@context": "https://schema.org",
-                  "@type": "BreadcrumbList",
-                  "itemListElement": [
-                    {
-                      "@type": "ListItem",
-                      "position": 1,
-                      "name": "도배르만",
-                      "item": "https://www.doberman.kr"
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 2,
-                      "name": "견적신청",
-                      "item": "https://www.doberman.kr/quote-request"
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 3,
-                      "name": "견적 비교",
-                      "item": "https://www.doberman.kr/quote-request/list"
-                    }
-                  ]
-                })
-              }}
-            />
           </GlobalProvider>
         </QueryProvider>
       </body>

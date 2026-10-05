@@ -19,13 +19,6 @@ const webAppSchema = {
   description:
     '평형·벽지·옵션을 입력하면 자재비·인건비·옵션·마진·VAT까지 자동 계산되는 도배 견적 시스템',
   inLanguage: 'ko-KR',
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    reviewCount: '1250',
-    bestRating: '5',
-    worstRating: '1',
-  },
 };
 
 // 2-B. HowTo — 계산기 사용법 4단계
@@ -111,34 +104,6 @@ const breadcrumbSchema = {
   ],
 };
 
-// 2-F. LocalBusiness — 도배르만 소개
-const businessSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
-  name: '도배르만',
-  description:
-    '전국 300명+ 검증된 도배 전문가와 함께하는 무료 도배 견적 비교 플랫폼',
-  url: BASE_URL,
-  logo: `${BASE_URL}/logo.png`,
-  priceRange: '무료',
-  address: {
-    '@type': 'PostalAddress',
-    addressCountry: 'KR',
-    addressRegion: '서울특별시',
-  },
-  areaServed: [
-    '서울특별시',
-    '경기도',
-    '인천광역시',
-    '부산광역시',
-    '대구광역시',
-    '대전광역시',
-    '광주광역시',
-    '울산광역시',
-    '대한민국',
-  ],
-};
-
 export default function QuoteCalculatorJsonLd() {
   return (
     <>
@@ -157,10 +122,6 @@ export default function QuoteCalculatorJsonLd() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema) }}
       />
     </>
   );
