@@ -1,25 +1,31 @@
 'use client';
 
-// 세금계산서 · 현금영수증 발행 관리 — Industry 패턴
+// 세금계산서 · 현금영수증 관리 — Industry 패턴
 //
-// 좌: 연도 · 분기 선택 + 상태 탭 + 표(작성일 · 유형 · 공급받는자 · 사업자번호 · 공급가액 · 세액 · 합계 · 상태 · 승인번호)
-// 우: 분기 요약(발행 완료 합계 · 요청 대기) + 부가세 예상(매출세액 − 매입세액) + 신고 기한 + 홈택스 바로가기
+// 위: 발급 서비스 등록 진입(오픈 전엔 오픈 예정 안내)
+// 필터: 연도 · 분기 → 문서 종류 · 상태(미발급 · 발급 완료 · 확인 필요 · 취소) → 검색(고객 · 사업자번호 · 식별번호 · 승인번호)
+// 좌: 조회 합계 + 표(작성일 · 종류 · 고객 · 사업자번호/식별번호 · 공급가액 · 세액 · 합계 · 상태 · 승인번호)
+// 우: 기간 요약(서버 집계) · 부가세 예상 · 홈택스 바로가기
 //
-// 실제 발행은 홈택스에서 한다. 이 화면은 "누구에게 언제 얼마를 끊었는지"와 "이번 분기 부가세가 얼마 나올지"를 답한다.
-// 화면 제목 · "발행 등록" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
+// 저장만 한 문서(REQUESTED)는 "미발급"이다. 전자 발급 결과를 모르는 문서는 "확인 필요"로 모아 먼저 보이게 한다.
+// 화면 제목 · "새로 작성" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ExternalLink, RefreshCw } from 'lucide-react';
+import { ExternalLink, FilePlus2, RefreshCw } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
+import RegistrationEntry from '@/components/boss/taxinvoice/RegistrationEntry';
+import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { cashDigits, cashFieldsOf, maskCashIdentity } from '@/lib/boss/taxInvoiceCash';
+import { DISPLAY_KEY_LABEL, displayState, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
 import {
+  CASH_USAGE_LABEL,
   DOC_TYPE_LABEL,
-  STATUS_LABEL,
   type TaxInvoice,
+  type TaxInvoiceDocType,
   type TaxInvoicePeriodSummary,
-  type TaxInvoiceStatus,
   type VatSummary,
 } from '@/types/boss-taxinvoice';
 import {
@@ -34,27 +40,27 @@ import {
   MetricBox,
   Panel,
   RowSkeleton,
+  SearchInput,
   Segmented,
   Tag,
-  type StatusTone,
 } from '@/components/boss/ui';
 import ListDateCell from '@/components/boss/ListDateCell';
 
-type Tab = 'all' | TaxInvoiceStatus;
-type Filters = { year: number; quarter: number; tab: Tab };
+type Tab = 'all' | DisplayKey;
+type DocFilter = 'all' | TaxInvoiceDocType;
+type Filters = { year: number; quarter: number; tab: Tab; doc: DocFilter; query: string };
 type Data = { period: TaxInvoicePeriodSummary | null; vat: VatSummary | null };
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'all', label: '전체' },
-  { key: 'REQUESTED', label: '발행 요청' },
-  { key: 'ISSUED', label: '발행 완료' },
-  { key: 'CANCELED', label: '취소' },
-];
-
-const STATUS_TONE: Record<TaxInvoiceStatus, StatusTone> = {
-  REQUESTED: 'warn',
-  ISSUED: 'ok',
-  CANCELED: 'neutral',
+const TAB_ORDER: Tab[] = ['all', 'draft', 'attention', 'issued', 'canceled'];
+/** 예전 링크(?status=REQUESTED 등)도 받는다 */
+const STATUS_PARAM: Record<string, Tab> = {
+  REQUESTED: 'draft',
+  ISSUED: 'issued',
+  CANCELED: 'canceled',
+  draft: 'draft',
+  issued: 'issued',
+  attention: 'attention',
+  canceled: 'canceled',
 };
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('ko-KR');
@@ -70,6 +76,23 @@ function daysLeft(iso: string): number {
   return Math.round((target.getTime() - today.getTime()) / 86_400_000);
 }
 
+/** 검색 — 글자는 고객명 · 상호 · 품목에서, 숫자는 사업자번호 · 식별번호 · 연락처 · 승인번호에서 찾는다 */
+function matches(inv: TaxInvoice, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const digits = cashDigits(q);
+  const text = [inv.buyerName, inv.buyerCeo, inv.itemSummary, inv.approvalNo, inv.providerCancelApprovalNo]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  if (text.includes(q)) return true;
+  if (digits.length >= 3 && digits.length === q.replace(/[\s-]/g, '').length) {
+    const numbers = [inv.buyerBizNo, inv.cashIdentityNum, inv.buyerPhone, inv.approvalNo, inv.providerCancelApprovalNo].map(cashDigits);
+    return numbers.some((n) => n.includes(digits));
+  }
+  return false;
+}
+
 export default function BossTaxInvoicePage() {
   return (
     <Suspense fallback={<RowSkeleton rows={6} />}>
@@ -81,45 +104,46 @@ export default function BossTaxInvoicePage() {
 function TaxInvoiceList() {
   const router = useRouter();
   const search = useSearchParams();
-  const initialTab = search.get('status');
+  const statusParam = search.get('status');
   const now = useMemo(() => new Date(), []);
-  // 상세를 다녀왔으면 보던 연도 · 분기 · 상태와 데이터를 그대로 되살린다 (등록 · 발행했으면 null 이라 다시 부른다)
+  // 상세를 다녀왔으면 보던 조건과 데이터를 그대로 되살린다 (저장 · 발급했으면 null 이라 다시 부른다)
   const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.taxInvoice), []);
   const [year, setYear] = useState(restored?.filters.year ?? now.getFullYear());
   const [quarter, setQuarter] = useState<number>(restored?.filters.quarter ?? currentQuarter(now));
-  const [tab, setTab] = useState<Tab>(() => {
-    if (initialTab === 'REQUESTED' || initialTab === 'ISSUED' || initialTab === 'CANCELED') return initialTab;
-    return restored?.filters.tab ?? 'all';
-  });
+  const [tab, setTab] = useState<Tab>(() => (statusParam && STATUS_PARAM[statusParam]) || restored?.filters.tab || 'all');
+  const [doc, setDoc] = useState<DocFilter>(restored?.filters.doc ?? 'all');
+  const [query, setQuery] = useState(restored?.filters.query ?? '');
   const [period, setPeriod] = useState<TaxInvoicePeriodSummary | null>(restored?.data.period ?? null);
   const [vat, setVat] = useState<VatSummary | null>(restored?.data.vat ?? null);
   const [loading, setLoading] = useState(!restored);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(restored != null);
   const skipFirstLoad = useRef(restored != null);
+  // 기간을 빠르게 바꿀 때 늦게 온 이전 기간 응답이 새 기간을 덮지 않게
+  const seq = useRef(0);
 
   const load = useCallback(async () => {
+    const my = ++seq.current;
     setLoading(true);
     setError(null);
     try {
-      const [p, v] = await Promise.all([
-        bossTaxInvoiceApi.period(year, quarter),
-        bossTaxInvoiceApi.vatSummary(year, quarter),
-      ]);
+      const [p, v] = await Promise.all([bossTaxInvoiceApi.period(year, quarter), bossTaxInvoiceApi.vatSummary(year, quarter)]);
+      if (my !== seq.current) return;
       if (p.success !== false && p.data) {
-        setPeriod(p.data);
+        setPeriod({ ...p.data, invoices: Array.isArray(p.data.invoices) ? p.data.invoices : [] });
         setLoaded(true);
       } else {
         setPeriod(null);
-        setError(p.message || p.error || '세금계산서 목록을 불러오지 못했습니다.');
+        setError(p.message || p.error || '목록을 불러오지 못했습니다.');
       }
       setVat(v.success !== false && v.data ? v.data : null);
     } catch {
+      if (my !== seq.current) return;
       setPeriod(null);
       setVat(null);
-      setError('네트워크 오류로 세금계산서 목록을 불러오지 못했습니다.');
+      setError('네트워크 오류로 목록을 불러오지 못했습니다.');
     } finally {
-      setLoading(false);
+      if (my === seq.current) setLoading(false);
     }
   }, [year, quarter]);
 
@@ -131,31 +155,52 @@ function TaxInvoiceList() {
     void load();
   }, [load]);
 
-  useSaveListSnapshot<Filters, Data>(LIST_KEYS.taxInvoice, { year, quarter, tab }, { period, vat }, loaded);
+  useSaveListSnapshot<Filters, Data>(LIST_KEYS.taxInvoice, { year, quarter, tab, doc, query }, { period, vat }, loaded);
 
-  const invoices = useMemo(() => {
-    const list = period?.invoices ?? [];
-    return tab === 'all' ? list : list.filter((i) => i.status === tab);
-  }, [period, tab]);
+  const all = useMemo(() => period?.invoices ?? [], [period]);
+  // 문서 종류 · 검색까지 거른 목록 — 상태 탭 건수는 여기서 센다
+  const scoped = useMemo(() => all.filter((i) => (doc === 'all' || i.docType === doc) && matches(i, query)), [all, doc, query]);
+  const invoices = useMemo(() => (tab === 'all' ? scoped : scoped.filter((i) => displayState(i).key === tab)), [scoped, tab]);
 
   const counts = useMemo(() => {
-    const list = period?.invoices ?? [];
+    const c: Record<Tab, number> = { all: scoped.length, draft: 0, issued: 0, attention: 0, canceled: 0 };
+    for (const i of scoped) c[displayState(i).key] += 1;
+    return c;
+  }, [scoped]);
+
+  // 지금 보이는 목록의 합계 — 취소 · 시험 발급은 금액에서 뺀다
+  const shown = useMemo(() => {
+    const counted = invoices.filter((i) => {
+      const s = displayState(i);
+      return s.key !== 'canceled' && !s.test;
+    });
     return {
-      all: list.length,
-      REQUESTED: list.filter((i) => i.status === 'REQUESTED').length,
-      ISSUED: list.filter((i) => i.status === 'ISSUED').length,
-      CANCELED: list.filter((i) => i.status === 'CANCELED').length,
+      count: invoices.length,
+      excluded: invoices.length - counted.length,
+      supply: counted.reduce((a, i) => a + i.supplyAmount, 0),
+      vat: counted.reduce((a, i) => a + i.vatAmount, 0),
+      total: counted.reduce((a, i) => a + i.totalAmount, 0),
     };
-  }, [period]);
+  }, [invoices]);
 
   const years = useMemo(() => {
     const y = now.getFullYear();
     return [y, y - 1, y - 2];
   }, [now]);
 
+  const filtered = doc !== 'all' || tab !== 'all' || query.trim() !== '';
+  const resetFilters = () => {
+    setDoc('all');
+    setTab('all');
+    setQuery('');
+  };
+
   return (
     <div className="flex flex-col gap-4">
-      {/* ── 필터 한 줄: 연도 · 분기 · 상태 · 새로고침 ── */}
+      {/* 발급 서비스 등록 진입 — 출시 값 · 목록 조회 성패와 상관없이 늘 보인다(오픈 전이면 오픈 예정 안내 포함) */}
+      <RegistrationEntry />
+
+      {/* ── 기간 · 새로고침 ── */}
       <div className="flex flex-wrap items-center gap-2.5">
         <Segmented
           ariaLabel="연도"
@@ -175,18 +220,49 @@ function TaxInvoiceList() {
             { key: '0', label: '연간' },
           ]}
         />
-        <ListTabs
-          ariaLabel="상태"
-          tabs={TABS.map((t) => ({ key: t.key, label: t.label, count: counts[t.key] }))}
-          active={tab}
-          onChange={setTab}
-        />
         <span className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
-          {loading ? '불러오는 중…' : period ? `${period.from} ~ ${period.to} · ${counts.all}건` : ''}
+          {loading ? '불러오는 중…' : period ? `${period.from} ~ ${period.to} · ${all.length}건` : ''}
         </span>
         <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => void load()} disabled={loading}>
           새로고침
         </Button>
+      </div>
+
+      {/* ── 종류 · 상태 · 검색 ── */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Segmented
+          ariaLabel="문서 종류"
+          value={doc}
+          onChange={setDoc}
+          options={[
+            { key: 'all', label: '전체' },
+            { key: 'TAX', label: '세금계산서' },
+            { key: 'CASH', label: '현금영수증' },
+          ]}
+        />
+        <ListTabs
+          ariaLabel="상태"
+          tabs={TAB_ORDER.map((t) => ({ key: t, label: t === 'all' ? '전체 상태' : DISPLAY_KEY_LABEL[t], count: counts[t] }))}
+          active={tab}
+          onChange={setTab}
+        />
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="고객 · 사업자번호 · 휴대폰 · 승인번호"
+          className="w-full sm:w-72"
+          hint={false}
+        />
+        {filtered && (
+          <Button variant="ghost" size="sm" onClick={resetFilters}>
+            조건 지우기
+          </Button>
+        )}
+        <div className="ml-auto flex gap-2">
+          <ButtonLink href="/boss/tax-invoice/new?docType=CASH" variant="secondary" size="sm" icon={FilePlus2}>
+            현금영수증 작성
+          </ButtonLink>
+        </div>
       </div>
 
       {error && (
@@ -202,9 +278,34 @@ function TaxInvoiceList() {
         </AlertBanner>
       )}
 
+      {counts.attention > 0 && tab !== 'attention' && (
+        <AlertBanner
+          tone="warn"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => setTab('attention')}>
+              확인 필요 보기
+            </Button>
+          }
+        >
+          전자 발급 · 취소 결과를 확인해야 하는 문서가 {counts.attention}건 있습니다. 다시 발급 · 취소하지 말고 상세에서 상태를 먼저 확인하세요.
+        </AlertBanner>
+      )}
+
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* ── 목록 ── */}
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-3">
+          {invoices.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-live="polite">
+              <MetricBox label="조회" value={`${fmt(shown.count)}건`} />
+              <MetricBox label="공급가액" value={`${fmt(shown.supply)}원`} />
+              <MetricBox label="세액" value={`${fmt(shown.vat)}원`} />
+              <MetricBox label="합계" value={`${fmt(shown.total)}원`} />
+            </div>
+          )}
+          {invoices.length > 0 && shown.excluded > 0 && (
+            <p className="-mt-1 text-[12px] text-boss-text-muted">취소 · 시험 발급 {shown.excluded}건은 금액 합계에서 뺐습니다.</p>
+          )}
+
           {loading && !period ? (
             <div className="boss-card-content">
               <RowSkeleton rows={6} />
@@ -212,7 +313,7 @@ function TaxInvoiceList() {
           ) : invoices.length === 0 ? (
             error ? (
               <EmptyState
-                title="세금계산서 목록을 불러오지 못했습니다"
+                title="목록을 불러오지 못했습니다"
                 description="네트워크 상태를 확인한 뒤 다시 시도하세요. 서버가 아직 이 기능을 배포하지 않았다면 잠시 뒤 다시 열어 주세요."
                 action={
                   <Button variant="secondary" size="sm" onClick={() => void load()}>
@@ -220,24 +321,29 @@ function TaxInvoiceList() {
                   </Button>
                 }
               />
-            ) : tab !== 'all' ? (
+            ) : filtered && all.length > 0 ? (
               <EmptyState
-                title={`${STATUS_LABEL[tab]} 상태인 건이 없습니다`}
-                description="다른 상태 탭을 보거나 분기를 바꿔 보세요."
+                title="조건에 맞는 문서가 없습니다"
+                description="문서 종류 · 상태 · 검색어를 바꾸거나 기간을 바꿔 보세요."
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
-                    전체 보기
+                  <Button variant="secondary" size="sm" onClick={resetFilters}>
+                    조건 지우기
                   </Button>
                 }
               />
             ) : (
               <EmptyState
-                title="이 기간에 등록한 세금계산서가 없습니다"
-                description="고객이 세금계산서나 현금영수증을 요청하면 여기에 등록해 두세요. 사업자번호 · 금액을 정리해 두면 홈택스 발행이 빨라지고, 분기 부가세도 미리 보입니다."
+                title="이 기간에 작성한 문서가 없습니다"
+                description="고객이 세금계산서나 현금영수증을 요청하면 여기서 작성해 두세요. 실물 서식으로 미리 보고 PDF · 인쇄로 보낼 수 있고, 분기 부가세도 미리 보입니다."
                 action={
-                  <ButtonLink href="/boss/tax-invoice/new" variant="primary" size="sm">
-                    발행 등록
-                  </ButtonLink>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <ButtonLink href="/boss/tax-invoice/new" variant="primary" size="sm">
+                      세금계산서 작성
+                    </ButtonLink>
+                    <ButtonLink href="/boss/tax-invoice/new?docType=CASH" variant="secondary" size="sm">
+                      현금영수증 작성
+                    </ButtonLink>
+                  </div>
                 }
               />
             )
@@ -246,9 +352,9 @@ function TaxInvoiceList() {
               <thead>
                 <tr>
                   <th>작성일</th>
-                  <th>유형</th>
-                  <th>공급받는자</th>
-                  <th>사업자번호</th>
+                  <th>종류</th>
+                  <th>고객 · 공급받는자</th>
+                  <th>사업자번호 · 식별번호</th>
                   <th className="num">공급가액</th>
                   <th className="num">세액</th>
                   <th className="num">합계</th>
@@ -265,25 +371,26 @@ function TaxInvoiceList() {
           )}
         </div>
 
-        {/* ── 우측: 분기 요약 · 부가세 예상 ── */}
+        {/* ── 우측: 기간 요약 · 부가세 예상 ── */}
         <div className="flex flex-col gap-4">
-          <Panel kicker={period ? `${period.year}년 ${period.quarter ? `${period.quarter}분기` : '연간'}` : '기간'} title="발행 요약">
+          <Panel kicker={period ? `${period.year}년 ${period.quarter ? `${period.quarter}분기` : '연간'}` : '기간'} title="기간 요약">
             {period ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
                   <MetricBox label="발행 완료" value={`${period.issuedCount}건`} />
-                  <MetricBox label="발행 요청" value={`${period.requestedCount}건`} />
+                  <MetricBox label="미발급" value={`${period.requestedCount}건`} />
                 </div>
                 <dl className="mt-3">
                   <DescRow label="발행 공급가액" value={`${fmt(period.issuedSupplyAmount)}원`} />
                   <DescRow label="발행 세액" value={`${fmt(period.issuedVatAmount)}원`} />
-                  <DescRow label="요청 대기 금액" value={`${fmt(period.requestedSupplyAmount + period.requestedVatAmount)}원`} />
+                  <DescRow label="미발급 금액" value={`${fmt(period.requestedSupplyAmount + period.requestedVatAmount)}원`} />
                 </dl>
                 {period.requestedCount > 0 && (
                   <p className="mt-3 text-[12.5px] leading-relaxed text-boss-pill-warn-fg">
-                    요청 {period.requestedCount}건이 아직 홈택스에서 발행되지 않았습니다. 발행 후 승인번호를 남겨 두세요.
+                    미발급 {period.requestedCount}건이 있습니다. 발행한 뒤 승인번호를 기록해야 부가세 예상에 들어갑니다.
                   </p>
                 )}
+                <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">서버 집계입니다. 시험 발급 건은 빠집니다.</p>
               </>
             ) : (
               <p className="text-[13px] text-boss-text-secondary">기간을 고르면 집계가 보입니다.</p>
@@ -292,18 +399,14 @@ function TaxInvoiceList() {
 
           <VatPanel vat={vat} />
 
-          <Panel kicker="홈택스" title="발행은 홈택스에서">
+          <Panel kicker="홈택스" title={ELECTRONIC_TAX_INVOICE_OPEN ? '전자 발급 · 홈택스' : '발행은 지금 홈택스에서'}>
             <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-              전자세금계산서 · 현금영수증은 홈택스에서 발급합니다. 여기서 정리한 사업자번호 · 금액 · 품목을 상세 화면의
-              입력 도우미로 복사해 붙여 넣으세요.
+              {ELECTRONIC_TAX_INVOICE_OPEN
+                ? '발급 서비스 등록을 마쳤다면 상세 화면에서 바로 발급할 수 있습니다. 시험 발급 건은 집계에서 빠집니다.'
+                : '전자 발급은 정식 오픈 후 열립니다. 지금은 홈택스에서 발행하고, 상세 화면의 입력 도우미로 사업자번호 · 금액을 복사해 붙여 넣으세요.'}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <a
-                href="https://www.hometax.go.kr"
-                target="_blank"
-                rel="noreferrer"
-                className="boss-btn boss-btn-sm boss-btn-secondary"
-              >
+              <a href="https://www.hometax.go.kr" target="_blank" rel="noreferrer" className="boss-btn boss-btn-sm boss-btn-secondary">
                 <ExternalLink size={13} strokeWidth={1.75} /> 홈택스 열기
               </a>
               <Link href="/boss/receipt" className="boss-btn boss-btn-sm boss-btn-ghost">
@@ -318,28 +421,48 @@ function TaxInvoiceList() {
 }
 
 function InvoiceRow({ inv, onOpen }: { inv: TaxInvoice; onOpen: () => void }) {
+  const s = displayState(inv);
+  const isCash = inv.docType === 'CASH';
+  const cash = isCash ? cashFieldsOf(inv) : null;
   return (
-    <tr className="cursor-pointer" onClick={onOpen}>
+    <tr
+      className="cursor-pointer"
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onOpen();
+      }}
+      tabIndex={0}
+    >
       <td>
         <ListDateCell at={inv.createdDt ?? inv.issueDate} id={inv.id} />
       </td>
       <td>
-        <Tag tone={inv.docType === 'TAX' ? 'info' : 'neutral'}>{DOC_TYPE_LABEL[inv.docType]}</Tag>
+        <Tag tone={isCash ? 'neutral' : 'info'}>{DOC_TYPE_LABEL[inv.docType]}</Tag>
       </td>
-      <td>
-        <span className="font-semibold text-boss-text">{inv.buyerName || '(상호 없음)'}</span>
-        {inv.itemSummary && (
-          <span className="ml-2 text-[12px] text-boss-text-muted">{inv.itemSummary}</span>
-        )}
+      <td className="wrap">
+        <span className="font-semibold text-boss-text">{inv.buyerName || (isCash ? '(고객명 없음)' : '(상호 없음)')}</span>
+        {inv.itemSummary && <span className="ml-2 text-[12px] text-boss-text-muted">{inv.itemSummary}</span>}
       </td>
       <td className="font-boss-head tabular-nums text-boss-text-secondary">
-        {inv.docType === 'CASH' ? inv.buyerPhone || '-' : inv.buyerBizNo || '-'}
+        {cash ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-[11.5px] text-boss-text-muted">{CASH_USAGE_LABEL[cash.usage]}</span>
+            {maskCashIdentity(cash.identityType, cash.identityNum) || '-'}
+            {cash.inferred && <Tag tone="warn">확인 필요</Tag>}
+          </span>
+        ) : (
+          inv.buyerBizNo || '-'
+        )}
       </td>
       <td className="num text-boss-text-secondary">{fmt(inv.supplyAmount)}</td>
       <td className="num text-boss-text-secondary">{fmt(inv.vatAmount)}</td>
       <td className="num font-semibold text-boss-text">{fmt(inv.totalAmount)}</td>
       <td>
-        <Tag tone={STATUS_TONE[inv.status]}>{STATUS_LABEL[inv.status]}</Tag>
+        <span className="inline-flex flex-wrap items-center gap-1">
+          <Tag tone={s.tone}>{s.label}</Tag>
+          {s.electronic && s.key === 'issued' && !s.test && <Tag tone="info">전자</Tag>}
+          {s.test && <Tag tone="warn">시험</Tag>}
+        </span>
       </td>
       <td className="font-boss-head tabular-nums text-boss-text-muted">{inv.approvalNo || '-'}</td>
     </tr>
@@ -358,17 +481,12 @@ function VatPanel({ vat }: { vat: VatSummary | null }) {
   const refund = vat.estimatedVatAmount < 0;
   const dLeft = daysLeft(vat.filingDeadline);
   const dueSoon = dLeft >= 0 && dLeft <= 14;
-  const ratio =
-    vat.salesVatAmount > 0 ? Math.min(100, (vat.purchaseVatAmount / vat.salesVatAmount) * 100) : 0;
+  const ratio = vat.salesVatAmount > 0 ? Math.min(100, (vat.purchaseVatAmount / vat.salesVatAmount) * 100) : 0;
 
   return (
     <Panel kicker={`부가세 · ${vat.filingLabel}`} title="예상 납부세액">
       <div className="flex items-baseline gap-2">
-        <span
-          className={`font-boss-head text-[36px] font-semibold leading-none tabular-nums ${
-            refund ? 'text-boss-success' : 'text-boss-text'
-          }`}
-        >
+        <span className={`font-boss-head text-[36px] font-semibold leading-none tabular-nums ${refund ? 'text-boss-success' : 'text-boss-text'}`}>
           {fmt(Math.abs(vat.estimatedVatAmount))}
         </span>
         <span className="text-[13px] text-boss-text-secondary">원 {refund ? '환급 예상' : '납부 예상'}</span>
@@ -379,25 +497,19 @@ function VatPanel({ vat }: { vat: VatSummary | null }) {
       </div>
       <dl className="mt-3">
         <DescRow label={`매출세액 (발행 ${vat.salesCount}건)`} value={`${fmt(vat.salesVatAmount)}원`} />
-        <DescRow
-          label={`매입세액 (영수증 ${vat.purchaseWithVatCount}/${vat.purchaseCount}건)`}
-          value={`− ${fmt(vat.purchaseVatAmount)}원`}
-        />
+        <DescRow label={`매입세액 (영수증 ${vat.purchaseWithVatCount}/${vat.purchaseCount}건)`} value={`− ${fmt(vat.purchaseVatAmount)}원`} />
       </dl>
       <div
         className={`mt-3 border px-3 py-2.5 text-[12.5px] leading-relaxed ${
-          dueSoon
-            ? 'border-boss-warning/35 bg-boss-pill-warn text-boss-pill-warn-fg'
-            : 'border-boss-border bg-boss-bg text-boss-text-secondary'
+          dueSoon ? 'border-boss-warning/35 bg-boss-pill-warn text-boss-pill-warn-fg' : 'border-boss-border bg-boss-bg text-boss-text-secondary'
         }`}
       >
-        신고 · 납부 기한{' '}
-        <span className="font-boss-head font-semibold tabular-nums text-boss-text">{vat.filingDeadline}</span>
+        신고 · 납부 기한 <span className="font-boss-head font-semibold tabular-nums text-boss-text">{vat.filingDeadline}</span>
         {dLeft >= 0 ? ` (D-${dLeft})` : ' (지남)'}
       </div>
       <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
-        발행 완료로 표시한 세금계산서와 영수증 관리에 올린 매입 영수증의 세액만 계산합니다. 카드 매출 · 간이과세 여부에 따라
-        실제 신고액과 다를 수 있습니다.
+        발행 완료로 기록한 문서와 영수증 관리에 올린 매입 영수증의 세액만 계산합니다. 카드 매출 · 간이과세 여부에 따라 실제 신고액과 다를 수
+        있습니다.
       </p>
     </Panel>
   );

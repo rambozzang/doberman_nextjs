@@ -312,12 +312,17 @@ const PAGE_META: Record<string, PageMeta> = {
   "/boss/tax-invoice": {
     title: "세금계산서",
     subtitle:
-      "고객별 세금계산서 · 현금영수증 발행을 관리하고 분기 부가세를 가늠합니다.",
-    action: { label: "발행 등록", href: "/boss/tax-invoice/new" },
+      "세금계산서 · 현금영수증을 작성하고 실물 서식으로 확인 · 출력하며 분기 부가세를 가늠합니다.",
+    action: { label: "세금계산서 작성", href: "/boss/tax-invoice/new" },
+  },
+  "/boss/tax-invoice/registration": {
+    title: "발급 서비스 등록",
+    subtitle:
+      "전자세금계산서 발급에 필요한 사업자 권한 확인 · 팝빌 연동 · 공동인증서 등록을 진행합니다.",
   },
   "/boss/tax-invoice/new": {
-    title: "세금계산서 등록",
-    subtitle: "고객 사업자 정보와 금액을 정리해 홈택스 발행을 준비합니다.",
+    title: "세금계산서 · 현금영수증 작성",
+    subtitle: "문서 종류를 고르고 고객 · 품목 · 금액을 적어 저장합니다. 저장은 발급이 아닙니다.",
     // 품목 표(8열)가 있어 wide(860px)로는 좁다 — 폼은 좌측 열이 스스로 max-w 를 잡는다
     width: "full",
   },
