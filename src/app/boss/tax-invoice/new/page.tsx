@@ -28,6 +28,8 @@ import {
   cashFieldsOf,
   cashIdentityError,
   cashVatOf,
+  isValidVat,
+  splitVatInclusive,
   formatCashIdentity,
   guessCashTaxation,
   identityTypeForUsage,
@@ -96,13 +98,23 @@ const newRow = (init?: Partial<Row>): Row => ({
 // 10% 원 단위 반올림 — 0.1 곱셈은 이진 소수 오차가 있어 10으로 나눈다(정수 공급가액의 .5 는 정확히 올림)
 const vatOf = (supply: number, taxFree: boolean) => (taxFree ? 0 : Math.round(supply / 10));
 
-/** 견적 품목 → 서식 행. 견적의 공급가액 · 세액이 있으면 그대로, 없으면 단가×수량으로 계산 */
+/**
+ * 견적 품목 → 서식 행. 견적의 공급가액 · 세액이 있으면 그대로, 없으면 단가×수량으로 계산.
+ * 부가세 포함 견적(수량×단가 = 공급가액+세액)은 합계를 지키며 공급가액 · 세액을 다시 나누고
+ * 단가를 공급가 기준으로 바꾼다(2026-10-16) — 예전엔 "1 × 50,000 = 45,454" 로 찍히고 발급이 막혔다.
+ */
 function fromEstimateItem(it: BossEstimateItem): Row {
   const qty = it.quantity ?? 1;
-  const unitPrice = it.unitPrice ?? 0;
-  const supply = it.supplyAmount ?? qty * unitPrice;
+  let unitPrice = it.unitPrice ?? 0;
+  let supply = it.supplyAmount ?? qty * unitPrice;
   const taxFree = it.isTaxFree === 'Y';
-  const vat = taxFree ? 0 : (it.vatAmount ?? Math.round(supply / 10));
+  let vat = taxFree ? 0 : (it.vatAmount ?? Math.round(supply / 10));
+  const vatInclusive =
+    !taxFree && it.supplyAmount != null && it.vatAmount != null && it.vatAmount > 0 && qty * unitPrice === it.supplyAmount + it.vatAmount;
+  if (vatInclusive) {
+    ({ supply, vat } = splitVatInclusive(qty * unitPrice));
+    unitPrice = qty > 0 ? Math.round(supply / qty) : 0;
+  }
   return newRow({
     name: it.itemName ?? '',
     spec: it.itemSpec ?? '',
@@ -456,7 +468,15 @@ function TaxInvoiceForm() {
   const effectiveRows = useMemo(
     () =>
       isCash
-        ? rows.map((r) => ({ ...r, taxFree: cashTaxation === 'NON_TAXABLE', vatAmount: cashVatOf(r.supplyAmount ?? 0, cashTaxation) }))
+        ? rows.map((r) => ({
+            ...r,
+            taxFree: cashTaxation === 'NON_TAXABLE',
+            // 이미 10% 규칙에 맞는 과세 세액(부가세 포함 견적을 나눈 값 등)은 그대로 둔다 — 받은 돈(합계)이 1원 달라지지 않게
+            vatAmount:
+              cashTaxation === 'TAXABLE' && (r.vatAmount ?? 0) > 0 && isValidVat(r.supplyAmount ?? 0, r.vatAmount ?? 0)
+                ? (r.vatAmount ?? 0)
+                : cashVatOf(r.supplyAmount ?? 0, cashTaxation),
+          }))
         : rows,
     [isCash, rows, cashTaxation],
   );
@@ -712,7 +732,7 @@ function TaxInvoiceForm() {
               </ButtonLink>
             }
           >
-            전자 발급을 시도한 문서는 수정할 수 없습니다. 상세 화면에서 발급 상태를 확인하세요.
+            전자 발급 · 취소를 시도한 문서와 수정세금계산서(취소분)는 수정할 수 없습니다. 상세 화면에서 상태를 확인하세요.
           </AlertBanner>
         )}
         {draftRestored && (
@@ -1229,7 +1249,7 @@ function TaxInvoiceForm() {
         <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3">
           <span className="text-[12.5px] text-boss-text-secondary" aria-live="polite">
             {providerLocked
-              ? '전자 발급을 시도한 문서라 저장할 수 없습니다.'
+              ? '전자 발급 · 취소를 시도한 문서라 저장할 수 없습니다.'
               : saving
                 ? '저장 중입니다…'
                 : showErrors && problems.length > 0

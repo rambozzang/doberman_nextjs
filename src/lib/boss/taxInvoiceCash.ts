@@ -121,12 +121,41 @@ export function cashVatOf(supply: number, taxation: CashTaxationType): number {
   return taxation === 'NON_TAXABLE' ? 0 : Math.round(supply / 10);
 }
 
+/** 세액이 공급가액의 10% 원 단위(버림 또는 반올림)인가 — 서버 validVat 와 같은 규칙 */
+export function isValidVat(supply: number, vat: number): boolean {
+  return vat === Math.floor(supply / 10) || vat === Math.round(supply / 10);
+}
+
+/**
+ * 부가세 포함 금액(합계)을 공급가액 · 세액으로 나눈다(2026-10-16).
+ * 합계는 그대로 두고 세액은 10% 원 단위 규칙에 맞춘다. 반올림에 맞는 값을 먼저, 없으면 버림으로 고른다.
+ * 예: 50,000 → 45,455 + 4,545 (반올림으로는 49,999 나 50,001 만 나온다)
+ */
+export function splitVatInclusive(total: number): { supply: number; vat: number } {
+  const base = Math.round((total * 10) / 11);
+  const offsets = [0, -1, 1, -2, 2];
+  for (const preferRound of [true, false]) {
+    for (const o of offsets) {
+      const supply = base + o;
+      const vat = total - supply;
+      if (supply < 0 || vat < 0) continue;
+      if (vat === (preferRound ? Math.round(supply / 10) : Math.floor(supply / 10))) return { supply, vat };
+    }
+  }
+  return { supply: base, vat: total - base };
+}
+
 /** 품목 세액이 과세 구분과 맞지 않는 첫 품목 번호(1부터). 모두 맞으면 null */
 export function cashVatMismatch(
   items: Pick<TaxInvoice['items'][number], 'supplyAmount' | 'vatAmount'>[],
   taxation: CashTaxationType,
 ): number | null {
-  const i = items.findIndex((it) => (it.vatAmount ?? 0) !== cashVatOf(it.supplyAmount ?? 0, taxation));
+  // 과세는 서버와 같이 버림 · 반올림 둘 다 받는다 — 부가세 포함 견적을 나눈 45,455 + 4,545 같은 값
+  const i = items.findIndex((it) =>
+    taxation === 'NON_TAXABLE'
+      ? (it.vatAmount ?? 0) !== 0
+      : !isValidVat(it.supplyAmount ?? 0, it.vatAmount ?? 0),
+  );
   return i < 0 ? null : i + 1;
 }
 
