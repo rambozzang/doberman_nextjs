@@ -567,9 +567,12 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
     setAttemptPending(fresh == null);
   };
 
-  const onAttempted = async (message: string | null) => {
+  const onAttempted = async (message: string | null, noResponse = false) => {
     setLastIssueError(message);
     setAttemptPending(true);
+    // 응답을 못 받았으면 서버가 아직 처리 중일 수 있다 — 곧바로 다시 읽어 잠금을 풀지 않는다(2026-10-16).
+    // 예전엔 바로 다시 읽어 '미발급'으로 보이면 '발급하지 못했습니다'로 안내해, 같은 내용으로 새 문서를 발급할 수 있었다.
+    if (noResponse) return;
     await recheckAfterAttempt();
   };
 
@@ -613,7 +616,7 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
                 </Button>
               }
             >
-              발급 결과를 확인하지 못했습니다. 중복 발급을 막기 위해 결과를 확인할 때까지 다시 발급할 수 없습니다.
+              {lastIssueError ? `${lastIssueError} ` : ''}발급 결과를 확인하지 못했습니다. 중복 발급을 막기 위해 결과를 확인할 때까지 다시 발급할 수 없습니다.
             </AlertBanner>
           )}
           {!attemptPending && lastIssueError && (
@@ -686,9 +689,9 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
           invoiceId={invoice.id}
           preflight={preflight}
           onClose={() => setPreviewOpen(false)}
-          onAttempted={(msg) => {
+          onAttempted={(msg, noResponse) => {
             setPreviewOpen(false);
-            void onAttempted(msg);
+            void onAttempted(msg, noResponse);
           }}
         />
       )}
@@ -710,7 +713,7 @@ function PreviewDialog({
   preflight: string[];
   onClose: () => void;
   /** 발급 요청을 보냈다(성공 · 실패 무관). 실패 메시지가 있으면 함께 */
-  onAttempted: (errorMessage: string | null) => void;
+  onAttempted: (errorMessage: string | null, noResponse?: boolean) => void;
 }) {
   const [preview, setPreview] = useState<ElectronicPreview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -766,6 +769,7 @@ function PreviewDialog({
     inFlight.current = true;
     setIssuing(true);
     let message: string | null = null;
+    let noResponse = false;
     try {
       const res = await bossTaxInvoiceApi.electronicIssue(invoiceId, preview.previewToken);
       if (res.success !== false && res.data) {
@@ -777,18 +781,23 @@ function PreviewDialog({
         } else {
           toast('발급 결과를 확인하는 중입니다. 잠시 뒤 상태를 다시 확인하세요.', { icon: 'ℹ️' });
         }
+      } else if ('network' in res && res.network) {
+        noResponse = true;
+        message = '응답을 받지 못했습니다. 발급이 진행 중일 수 있으니 1~2분 뒤 「결과 확인」을 눌러 주세요. 같은 내용으로 새 문서를 만들어 발급하지 마세요.';
+        toast.error(message);
       } else {
         message = res.message || res.error || '발급 요청이 처리되지 않았습니다.';
         toast.error(`${message} 결과를 다시 확인합니다.`);
       }
     } catch {
-      message = '네트워크 오류로 발급 결과를 받지 못했습니다.';
+      noResponse = true;
+      message = '네트워크 오류로 발급 결과를 받지 못했습니다. 1~2분 뒤 「결과 확인」을 눌러 주세요.';
       toast.error(message);
     } finally {
       markListDirty(LIST_KEYS.taxInvoice);
       setIssuing(false);
-      // 잠금은 풀지 않는다 — 대화상자를 닫고 상세를 다시 읽어 결과를 본다
-      onAttempted(message);
+      // 잠금은 풀지 않는다 — 대화상자를 닫고 상세를 다시 읽어 결과를 본다(응답이 없었으면 사장님이 잠시 뒤 확인)
+      onAttempted(message, noResponse);
     }
   };
 

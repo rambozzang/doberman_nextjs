@@ -11,6 +11,8 @@ export interface ApiError {
   success: false;
   message?: string;
   error: string;
+  /** 서버 응답을 받지 못했다(시간 초과 · 연결 끊김 · 502~504). 서버가 처리했는지 알 수 없다(2026-10-16) */
+  network?: boolean;
 }
 
 // 성공 응답 타입

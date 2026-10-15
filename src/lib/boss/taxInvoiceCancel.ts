@@ -184,7 +184,8 @@ export function previewBlockers(
 /** 응답 없는 요청이 서버에서 끝났다고 볼 시간 — 요청 대기(60초)보다 넉넉히. 앱과 같은 5분 */
 export const TAX_CANCEL_SETTLE_MS = 5 * 60 * 1000;
 /** 취소 요청 대기 시간 */
-export const TAX_CANCEL_TIMEOUT_MS = 60_000;
+// 웹 nginx(boss.doberman.kr) 60초 · Next 중계 58초보다 짧아야 응답을 받는다(2026-10-16)
+export const TAX_CANCEL_TIMEOUT_MS = 55_000;
 
 /**
  * 기록을 풀어도 되는지 — 방금 서버에서 읽은 문서로만 판단한다.

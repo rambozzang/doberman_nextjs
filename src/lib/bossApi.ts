@@ -171,10 +171,13 @@ class BossApiClient {
       const responseData = error.response?.data as ApiResponse;
       // 백엔드는 인증 실패를 message=null, error="다른 기기에서 로그인 되었습니다." 로 내려 준다.
       // message 만 보면 전부 "요청 처리 중 오류" 로 뭉개지므로 error 문구를 먼저 쓴다.
+      const status = error.response?.status;
       return {
         success: false,
         message: responseData?.message || responseData?.error || '요청 처리 중 오류가 발생했습니다.',
         error: responseData?.error || error.message || '알 수 없는 오류가 발생했습니다.',
+        // 응답 자체를 못 받았으면 서버가 처리했는지 모른다 — 화면이 '실패'로 단정하지 않게 표시한다
+        network: !error.response || status === 502 || status === 503 || status === 504,
       };
     }
     return {

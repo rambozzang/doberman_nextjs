@@ -68,6 +68,9 @@ const nextConfig: NextConfig = {
   experimental: {
     // 메모리 사용량 최적화
     optimizePackageImports: ['lucide-react', 'framer-motion'],
+    // /api/boss 중계 대기 — 기본 30초면 팝빌을 부르는 발급 · 취소가 중간에 끊긴다.
+    // 앞단 nginx(boss.doberman.kr) proxy_read_timeout 60초보다 짧게 둔다(2026-10-16)
+    proxyTimeout: 58_000,
   },
   
   // 컴파일 최적화

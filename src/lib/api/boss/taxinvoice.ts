@@ -305,15 +305,17 @@ export const bossTaxInvoiceApi = {
 
   // 전자 발급 — POST /taxinvoices/{id}/electronic/issue. 직전 미리보기의 previewToken 필수.
   // 실패 · 불명이어도 자동 재시도하지 않는다.
+  // 서버가 팝빌 준비 확인 · 발급을 차례로 부른다 — 기본 15초보다 넉넉히(웹 nginx 60초 · Next 중계 58초 안쪽)
   electronicIssue: (id: number | string, previewToken: string) =>
-    BossApiClient.postPrivate<TaxInvoice>(`/taxinvoices/${id}/electronic/issue`, {
-      confirmed: true,
-      previewToken,
-    }),
+    BossApiClient.postPrivate<TaxInvoice>(
+      `/taxinvoices/${id}/electronic/issue`,
+      { confirmed: true, previewToken },
+      { timeout: 55_000 },
+    ),
 
   // 발급 · 국세청 전송 상태 다시 받기 — POST /taxinvoices/{id}/electronic/sync
   electronicSync: (id: number | string) =>
-    BossApiClient.postPrivate<TaxInvoice>(`/taxinvoices/${id}/electronic/sync`),
+    BossApiClient.postPrivate<TaxInvoice>(`/taxinvoices/${id}/electronic/sync`, undefined, { timeout: 55_000 }),
 
   // 발급 문서 원본 보기 주소 — GET /taxinvoices/{id}/electronic/view
   electronicView: (id: number | string) =>
@@ -325,7 +327,8 @@ export const bossTaxInvoiceApi = {
     BossApiClient.postPrivate<TaxInvoice>(
       `/taxinvoices/${id}/electronic/cancel`,
       { confirmed: true, reason },
-      { timeout: 30_000 },
+      // 국세청 전송 확인 조회 + 취소 — 웹 nginx 60초 · Next 중계 58초 안쪽
+      { timeout: 55_000 },
     ),
 
   // 세금계산서 취소 미리보기 — GET /taxinvoices/{id}/electronic/tax-cancel-preview?reason=&occurrenceDate=
