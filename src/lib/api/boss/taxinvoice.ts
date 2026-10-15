@@ -2,6 +2,7 @@
 import axios from 'axios';
 import BossApiClient, { bossPrivateApi } from '@/lib/bossApi';
 import type { ApiResponse } from '@/types/api';
+import { isTaxCancelReason, TAX_CANCEL_TIMEOUT_MS } from '@/lib/boss/taxInvoiceCancel';
 import {
   isRegistrationStage,
   type CashCancelReason,
@@ -11,6 +12,9 @@ import {
   type ElectronicPreview,
   type ElectronicRegistrationRequest,
   type ElectronicRegistrationStatus,
+  type TaxCancelReason,
+  type TaxCancelRequest,
+  type TaxInvoiceCancellationPreview,
   type TaxInvoiceDocument,
 } from '@/types/boss-taxinvoice';
 import type {
@@ -125,6 +129,122 @@ async function documentCall(id: number | string): Promise<DocumentCall> {
   }
 }
 
+// ─────────────────────────────────────────────
+// 전자세금계산서 취소 — 미리보기(외부 변경 없음) · 확인(발행취소 또는 수정세금계산서 1회)
+// ─────────────────────────────────────────────
+
+const NOT_DEPLOYED_TAX_CANCEL = '서버에 세금계산서 취소 기능이 아직 반영되지 않았습니다.';
+
+export type TaxCancelPreviewCall =
+  | { ok: true; preview: TaxInvoiceCancellationPreview }
+  | { ok: false; failure: 'not-deployed' | 'network' | 'rejected'; message: string };
+
+function withItems(inv: TaxInvoice): TaxInvoice {
+  return { ...inv, items: Array.isArray(inv.items) ? inv.items : [] };
+}
+
+/** 미리보기 응답 정리 — 모르는 값은 안전한 쪽(발급 불가 · 실제 환경)으로 둔다 */
+export function normalizeCancelPreview(raw: unknown): TaxInvoiceCancellationPreview | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const p = raw as Partial<Record<keyof TaxInvoiceCancellationPreview, unknown>>;
+  if (!p.invoice || typeof p.invoice !== 'object') return null;
+  if (!isTaxCancelReason(p.reason)) return null;
+  const mode = p.mode === 'CANCEL_ISSUE' || p.mode === 'CORRECTION' ? p.mode : null;
+  return {
+    invoice: withItems(p.invoice as TaxInvoice),
+    correction: p.correction && typeof p.correction === 'object' ? withItems(p.correction as TaxInvoice) : null,
+    supplier: p.supplier && typeof p.supplier === 'object' ? (p.supplier as TaxInvoiceCancellationPreview['supplier']) : null,
+    mode,
+    reason: p.reason,
+    occurrenceDate: typeof p.occurrenceDate === 'string' && p.occurrenceDate ? p.occurrenceDate : null,
+    providerStateCode: typeof p.providerStateCode === 'number' && Number.isFinite(p.providerStateCode) ? p.providerStateCode : null,
+    // 방식을 모르면 진행하지 않는다
+    ready: p.ready === true && mode != null,
+    issues: Array.isArray(p.issues) ? p.issues.filter((v): v is string => typeof v === 'string' && v.trim() !== '') : [],
+    // 시험 여부를 모르면 실제로 본다(경고가 더 강한 쪽)
+    isTest: p.isTest === true,
+    previewToken: typeof p.previewToken === 'string' ? p.previewToken : '',
+  };
+}
+
+function errorText(data: unknown): string {
+  const d = (data && typeof data === 'object' ? data : {}) as ApiResponse;
+  return `${d.error ?? ''} ${d.message ?? ''}`.trim();
+}
+
+async function taxCancelPreviewCall(id: number | string, reason: TaxCancelReason, occurrenceDate: string | null): Promise<TaxCancelPreviewCall> {
+  try {
+    const res = await bossPrivateApi.get(`/taxinvoices/${id}/electronic/tax-cancel-preview`, {
+      params: occurrenceDate ? { reason, occurrenceDate } : { reason },
+      // 서버가 팝빌 상태를 새로 읽는다 — 기본 15초보다 넉넉히
+      timeout: 30_000,
+    });
+    const body = res.data as ApiResponse<TaxInvoiceCancellationPreview> | null | undefined;
+    if (body && typeof body === 'object' && body.success === false) {
+      return { ok: false, failure: 'rejected', message: body.error || body.message || '미리보기를 만들지 못했습니다.' };
+    }
+    const payload = body && typeof body === 'object' && 'success' in body ? body.data : body;
+    const preview = normalizeCancelPreview(payload);
+    if (preview) return { ok: true, preview };
+    return { ok: false, failure: 'rejected', message: '서버 응답으로 미리보기를 확인하지 못했습니다.' };
+  } catch (e) {
+    const code = axios.isAxiosError(e) ? e.response?.status : undefined;
+    const text = axios.isAxiosError(e) ? errorText(e.response?.data) : '';
+    if ((code === 404 && /No static resource/.test(text)) || code === 405 || code === 501) {
+      return { ok: false, failure: 'not-deployed', message: NOT_DEPLOYED_TAX_CANCEL };
+    }
+    if (code == null || code === 502 || code === 503 || code === 504) {
+      return { ok: false, failure: 'network', message: '서버에 연결하지 못했습니다. 잠시 뒤 다시 시도하세요.' };
+    }
+    return { ok: false, failure: 'rejected', message: text || `서버 오류(${code})로 미리보기를 만들지 못했습니다.` };
+  }
+}
+
+/**
+ * 취소 확인 결과.
+ *   done      — 서버가 원본을 돌려줬다(상태는 그 안의 taxCancelStatus 로 본다)
+ *   rejected  — 서버가 거절했다(서버가 응답했으므로 이후 조회가 진실)
+ *   lost      — 응답을 받지 못했다(연결 끊김 · 시간 초과 · 게이트웨이 오류). 서버가 처리했을 수도 있다 → 시도 기록 유지
+ */
+export type TaxCancelCall =
+  | { kind: 'done'; invoice: TaxInvoice }
+  | { kind: 'rejected'; message: string }
+  | { kind: 'lost'; message: string };
+
+const LOST_MESSAGE = '취소 요청의 응답을 받지 못했습니다. 서버가 처리했을 수 있으니 다시 요청하지 말고 상태를 확인하세요.';
+
+/** 응답 본문이 서버(스프링)가 만든 것인지 — 게이트웨이 HTML 오류 등은 서버 답이 아니다 */
+function isServerEnvelope(data: unknown): boolean {
+  return !!data && typeof data === 'object' && !Array.isArray(data) && ('success' in data || 'error' in data || 'message' in data);
+}
+
+async function taxCancelCall(id: number | string, body: TaxCancelRequest): Promise<TaxCancelCall> {
+  try {
+    const res = await bossPrivateApi.post(`/taxinvoices/${id}/electronic/tax-cancel`, body, { timeout: TAX_CANCEL_TIMEOUT_MS });
+    const data = res.data as ApiResponse<TaxInvoice> | null | undefined;
+    if (data && typeof data === 'object' && data.success === false) {
+      return { kind: 'rejected', message: data.error || data.message || '취소 요청이 처리되지 않았습니다.' };
+    }
+    const payload = data && typeof data === 'object' && 'success' in data ? data.data : data;
+    if (payload && typeof payload === 'object' && 'docType' in payload) return { kind: 'done', invoice: withItems(payload as TaxInvoice) };
+    // 2xx 인데 문서를 못 읽었다 — 서버는 처리했을 수 있다
+    return { kind: 'lost', message: '서버 응답에서 결과를 읽지 못했습니다. 다시 요청하지 말고 상태를 확인하세요.' };
+  } catch (e) {
+    if (!axios.isAxiosError(e)) return { kind: 'lost', message: LOST_MESSAGE };
+    const code = e.response?.status;
+    const data = e.response?.data;
+    if (code == null || code === 502 || code === 503 || code === 504 || !isServerEnvelope(data)) {
+      if ((code === 404 && /No static resource/.test(errorText(data))) || code === 405 || code === 501) {
+        return { kind: 'rejected', message: NOT_DEPLOYED_TAX_CANCEL };
+      }
+      return { kind: 'lost', message: LOST_MESSAGE };
+    }
+    const text = errorText(data);
+    if (code === 404 && /No static resource/.test(text)) return { kind: 'rejected', message: NOT_DEPLOYED_TAX_CANCEL };
+    return { kind: 'rejected', message: text || `서버 오류(${code})로 처리하지 못했습니다.` };
+  }
+}
+
 export const bossTaxInvoiceApi = {
   // 기간 목록 + 집계 — GET /taxinvoices?year=&quarter= (quarter 0 = 연간)
   period: (year: number, quarter: number) =>
@@ -207,6 +327,15 @@ export const bossTaxInvoiceApi = {
       { confirmed: true, reason },
       { timeout: 30_000 },
     ),
+
+  // 세금계산서 취소 미리보기 — GET /taxinvoices/{id}/electronic/tax-cancel-preview?reason=&occurrenceDate=
+  // 팝빌 상태만 새로 읽는다(외부 변경 없음). 착오에 의한 이중발급은 날짜를 보내지 않는다.
+  taxCancelPreview: (id: number | string, reason: TaxCancelReason, occurrenceDate: string | null) =>
+    taxCancelPreviewCall(id, reason, occurrenceDate),
+
+  // 세금계산서 취소 확인 — POST /taxinvoices/{id}/electronic/tax-cancel. 직전 미리보기 토큰 필수.
+  // 전송 전이면 발행취소, 전송 후면 음수 수정세금계산서 1장. 금액 · 승인번호는 보내지 않는다. 자동 재시도 없음.
+  taxCancel: (id: number | string, body: TaxCancelRequest) => taxCancelCall(id, body),
 
   // ── 발급 서비스 등록 (출시 값과 무관) ──
 

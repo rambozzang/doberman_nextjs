@@ -3,8 +3,10 @@
 // 전자 발급(팝빌) — 세금계산서 · 현금영수증 상세 우측 패널 + 미리보기 · 최종 확인 · 현금영수증 취소 대화상자
 //
 // 발급 전: 설정 확인(GET config?docType=) → 미리보기(외부 전송 없음) → 네 가지 확인 → 발급
-// 발급 후(대행사 관리 문서): 발급 · 국세청 전송 상태와 "상태 다시 확인"만. 현금영수증은 전액 취소를 더한다(정식 오픈 후).
-// 세금계산서 수정 · 취소(수정세금계산서)는 지원하지 않는다 — 현금영수증 취소로 처리하지 않는다.
+// 발급 후(대행사 관리 문서): 발급 · 국세청 전송 상태와 "상태 다시 확인"만. 정식 오픈 후에는
+//   현금영수증 → 전액 취소(POST /electronic/cancel, 현금영수증 전용)
+//   세금계산서 원본 → 세금계산서 취소(TaxCancelSection: 전송 전 발행취소 · 전송 후 전액 취소용 수정세금계산서)
+//   수정세금계산서(취소분) → 상태 확인만(수정 · 삭제 · 다시 발급 · 다시 취소 없음)
 //
 // 중복 방지: 발급 · 취소 요청은 한 번만 보낸다(진행 중 잠금 + 시도 후 상세를 다시 읽을 때까지 잠금).
 // 실패 · 불명이어도 자동으로 다시 보내지 않는다. 결과를 모르면 "상태 다시 확인"(같은 문서 키로 조회)만 연다.
@@ -18,7 +20,18 @@ import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaun
 import ElectronicLaunchNotice from './ElectronicLaunchNotice';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { cashFieldsOf, cashIdentityError, cashVatMismatch, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
-import { cashIdentityLine, cashIssuableToday, cashItemNameOf, cashTaxationOf, isoDateOf, kstToday } from '@/lib/boss/taxInvoiceDocument';
+import {
+  cashIdentityLine,
+  cashIssuableToday,
+  cashItemNameOf,
+  cashTaxationOf,
+  correctionReasonText,
+  displayState,
+  isoDateOf,
+  kstToday,
+  originIssueDateText,
+} from '@/lib/boss/taxInvoiceDocument';
+import { TaxCancelSection } from './TaxCancelSection';
 import {
   CASH_CANCEL_REASON_LABEL,
   CASH_MAX_TOTAL,
@@ -30,6 +43,7 @@ import {
   PROVIDER_CANCEL_STATUS_LABEL,
   PROVIDER_STATUS_LABEL,
   isProviderManaged,
+  isTaxCorrection,
   type CashCancelReason,
   type ElectronicConfig,
   type ElectronicPreview,
@@ -179,9 +193,12 @@ function ProviderStatusPanel({
   const [cancelError, setCancelError] = useState<string | null>(null);
   const syncing$ = useRef(false);
   const isCash = invoice.docType === 'CASH';
+  const correction = isTaxCorrection(invoice);
   const ps = invoice.providerStatus ?? null;
   const cancel = invoice.providerCancelStatus ?? null;
-  const docLabel = DOC_TYPE_LABEL[invoice.docType];
+  const docLabel = correction ? '수정세금계산서(취소분)' : DOC_TYPE_LABEL[invoice.docType];
+  // 세금계산서는 발행취소 · 수정발급 상태까지 담은 상태 이름을 쓴다
+  const ds = displayState(invoice);
 
   const sync = async () => {
     if (!invoice.id || syncing$.current) return;
@@ -244,9 +261,11 @@ function ProviderStatusPanel({
   return (
     <Panel
       kicker={`${docLabel} · 전자 발급`}
-      title={cancel ? PROVIDER_CANCEL_STATUS_LABEL[cancel] : ps ? PROVIDER_STATUS_LABEL[ps] : '상태 미확인'}
+      title={!isCash ? ds.label : cancel ? PROVIDER_CANCEL_STATUS_LABEL[cancel] : ps ? PROVIDER_STATUS_LABEL[ps] : '상태 미확인'}
       right={
-        cancel ? (
+        !isCash ? (
+          <Tag tone={ds.tone}>{ds.label}</Tag>
+        ) : cancel ? (
           <Tag tone={CANCEL_STATUS_TONE[cancel]}>{PROVIDER_CANCEL_STATUS_LABEL[cancel]}</Tag>
         ) : ps ? (
           <Tag tone={PROVIDER_STATUS_TONE[ps]}>{PROVIDER_STATUS_LABEL[ps]}</Tag>
@@ -298,6 +317,13 @@ function ProviderStatusPanel({
           <DescRow label="환경" value={invoice.providerIsTest ? '시험' : '실제'} />
           <DescRow label={isCash ? '원거래 국세청 전송' : '국세청 전송'} value={<NtsValue nts={invoice.ntsStatus} />} />
           <DescRow label={isCash ? '승인번호' : '국세청 승인번호'} value={invoice.approvalNo || '-'} />
+          {correction && (
+            <>
+              <DescRow label="수정사유" value={correctionReasonText(invoice)} />
+              <DescRow label="당초 승인번호" value={invoice.orgNtsConfirmNum || '확인 필요'} />
+              <DescRow label="당초 작성일자" value={originIssueDateText(invoice)} />
+            </>
+          )}
           {isCash && <DescRow label="승인 거래일자" value={isoDateOf(invoice.providerTradeDate) || '-'} />}
           <DescRow label="발급 일시" value={(invoice.issuedAt ?? '').slice(0, 16).replace('T', ' ') || '-'} />
           {isCash && cancel && (
@@ -316,7 +342,8 @@ function ProviderStatusPanel({
           </Button>
           {ps === 'ISSUED' && (
             <Button variant="secondary" size="sm" icon={ExternalLink} onClick={() => void view()} disabled={opening}>
-              {opening ? '여는 중…' : '원본 보기'}
+              {/* 세금계산서는 '원본(원래 문서)'과 헷갈리지 않게 팝빌 문서 보기로 부른다 */}
+              {opening ? '여는 중…' : isCash ? '원본 보기' : '팝빌에서 보기'}
             </Button>
           )}
           {canCancel && (
@@ -333,12 +360,15 @@ function ProviderStatusPanel({
             </a>
           </p>
         )}
+        {!isCash && !correction && <TaxCancelSection invoice={invoice} reload={reload} />}
         <p className="text-[11.5px] leading-relaxed text-boss-text-muted">
           {isCash
             ? ELECTRONIC_TAX_INVOICE_OPEN
               ? '현금영수증은 전액 취소만 지원합니다(부분 취소 없음). 취소는 승인된 원거래를 기준으로 서버가 처리합니다. 수정 · 삭제는 할 수 없습니다.'
               : '현금영수증 취소는 정식 오픈 후 이용할 수 있습니다. 전자 발급한 문서는 여기서 수정 · 삭제할 수 없습니다.'
-            : '전자 발급한 세금계산서는 여기서 수정 · 삭제 · 취소할 수 없습니다. 수정세금계산서는 아직 지원하지 않으니 필요하면 팝빌 또는 홈택스에서 발급하세요.'}
+            : correction
+              ? '수정세금계산서(취소분)는 수정 · 삭제 · 다시 발급 · 다시 취소할 수 없습니다. 원본과 함께 보관하세요.'
+              : '전자 발급한 세금계산서는 여기서 수정 · 삭제할 수 없습니다. 취소는 전액만 됩니다(발행취소 또는 수정세금계산서). 일부 반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환은 팝빌 또는 홈택스에서 처리하세요.'}
         </p>
       </div>
 

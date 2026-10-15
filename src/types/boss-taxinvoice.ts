@@ -70,6 +70,86 @@ export const CASH_CANCEL_REASON_LABEL: Record<CashCancelReason, string> = {
   OTHER: '기타',
 };
 
+// ── 전자세금계산서 취소 — 국세청 전송 전 발행취소 · 전송 후 전액 취소용 수정세금계산서 ──
+// 팝빌로 우리가 발급한 세금계산서 원본만. 미발급 · 수기 기록 · 현금영수증 · 수정분은 대상이 아니다.
+// 부분 환입 · 공급가액 변동 · 기재사항 정정 · 영세율 전환은 지원하지 않는다.
+export type TaxCancelReason = 'RETURN' | 'CONTRACT_CANCEL' | 'DUPLICATE';
+
+/** 화면에서 고르는 이름 — 국세청 수정사유 이름을 따른다 */
+export const TAX_CANCEL_REASON_LABEL: Record<TaxCancelReason, string> = {
+  CONTRACT_CANCEL: '계약의 해제',
+  RETURN: '환입(반품)',
+  DUPLICATE: '착오에 의한 이중발급',
+};
+
+/** 국세청 수정사유 코드 — 3 환입 · 4 계약의 해제 · 6 착오에 의한 이중발급 */
+export const TAX_CANCEL_MODIFY_CODE: Record<TaxCancelReason, number> = {
+  RETURN: 3,
+  CONTRACT_CANCEL: 4,
+  DUPLICATE: 6,
+};
+
+/** 수정사유 코드 → 서식 · 화면 이름. 이 기능이 만들지 않는 코드도 읽을 때는 이름을 보여 준다 */
+export const MODIFY_CODE_LABEL: Record<number, string> = {
+  1: '기재사항 착오정정',
+  2: '공급가액 변동',
+  3: '환입',
+  4: '계약의 해제',
+  5: '내국신용장 사후개설',
+  6: '착오에 의한 이중발급',
+};
+
+/** null = 취소 시도 없음. CANCELED 는 전송 전 발행취소 완료, CORRECTION_ISSUED 는 수정세금계산서(취소분) 발급 완료 */
+export type TaxCancelStatus = 'PROCESSING' | 'UNKNOWN' | 'CANCELED' | 'CORRECTION_ISSUED';
+export type TaxCancelMode = 'CANCEL_ISSUE' | 'CORRECTION';
+
+export const TAX_CANCEL_MODE_LABEL: Record<TaxCancelMode, string> = {
+  CANCEL_ISSUE: '발행취소(국세청 전송 전)',
+  CORRECTION: '수정세금계산서(취소분) 발급',
+};
+
+/**
+ * 팝빌 세금계산서 상태 코드 — 미리보기의 providerStateCode 를 사람 말로.
+ * 300 · 301 · 302 는 발행취소, 304 는 수정세금계산서, 그 밖은 서버가 막는다(판정은 서버가 한다).
+ */
+export const POPBILL_TAX_STATE_LABEL: Record<number, string> = {
+  300: '발행 완료',
+  301: '국세청 전송 전',
+  302: '국세청 전송 대기',
+  303: '국세청 전송 중',
+  304: '국세청 전송 성공',
+  305: '국세청 전송 실패',
+  600: '발행 취소됨',
+};
+
+/**
+ * GET /taxinvoices/{id}/electronic/tax-cancel-preview — 외부로 아무것도 보내지 않는다(팝빌 상태만 새로 읽는다).
+ * invoice = 원본, correction = 서버가 만든 음수 수정분(아직 발급 전 · id 없음). 전송 전 발행취소면 null.
+ * occurrenceDate 는 실제 적용 일자(착오에 의한 이중발급은 원본 작성일자로 서버가 정한다).
+ * previewToken 은 일반 발급 토큰과 바꿔 쓸 수 없다.
+ */
+export interface TaxInvoiceCancellationPreview {
+  invoice: TaxInvoice;
+  correction: TaxInvoice | null;
+  supplier: TaxInvoiceSupplier | null;
+  mode: TaxCancelMode | null;
+  reason: TaxCancelReason;
+  occurrenceDate: string | null;
+  providerStateCode: number | null;
+  ready: boolean;
+  issues: string[];
+  isTest: boolean;
+  previewToken: string;
+}
+
+/** POST /taxinvoices/{id}/electronic/tax-cancel — 금액 · 승인번호는 보내지 않는다(서버가 저장된 원본으로 정한다) */
+export interface TaxCancelRequest {
+  confirmed: true;
+  previewToken: string;
+  reason: TaxCancelReason;
+  occurrenceDate: string | null;
+}
+
 /** null = 취소 시도 없음 */
 export type ProviderCancelStatus = 'PROCESSING' | 'UNKNOWN' | 'CANCELED';
 export const PROVIDER_CANCEL_STATUS_LABEL: Record<ProviderCancelStatus, string> = {
@@ -137,6 +217,26 @@ export interface TaxInvoice {
   providerCancelApprovalNo?: string | null;
   /** 취소 거래의 국세청 전송 상태 — 원거래 ntsStatus 와 따로 본다(원거래가 전송 완료여도 취소 거래는 대기일 수 있다) */
   providerCancelNtsStatus?: TaxInvoiceNtsStatus | null;
+  // ── 전자세금계산서 취소(응답 전용 — 저장 요청에 보내지 않는다). providerCancel* 는 현금영수증 전용 그대로 ──
+  /** 원본의 취소 상태 */
+  taxCancelStatus?: TaxCancelStatus | null;
+  taxCancelMode?: TaxCancelMode | null;
+  taxCancelReason?: TaxCancelReason | null;
+  /** yyyy-MM-dd — 적용 일자(수정분 작성일자) */
+  taxCancelDate?: string | null;
+  /** 원본 → 음수 수정분 id */
+  taxCancelInvoiceId?: number | null;
+  /** 음수 수정분 → 원본 id. 값이 있으면 수정세금계산서(취소분) */
+  correctionOfInvoiceId?: number | null;
+  /** 수정분의 국세청 수정사유 코드(3 · 4 · 6) */
+  modifyCode?: number | null;
+  /** 수정분의 당초 국세청 승인번호(24자리) */
+  orgNtsConfirmNum?: string | null;
+  /**
+   * 수정분의 당초(원본) 작성일자 yyyy-MM-dd — 서버가 수정분에 고정 저장한 값. 서식 비고 · 팝빌 비고의 '당초 작성일자'.
+   * 없으면 "확인 필요"로 둔다 — 승인번호 앞자리 · 첫 품목 일자 · 내부 메모로 추정하지 않는다.
+   */
+  orgIssueDate?: string | null;
 }
 
 // ── 전자 발급(팝빌) — 기존 status(REQUESTED|ISSUED|CANCELED)와 별개로 둔다 ──
@@ -261,9 +361,15 @@ export interface ElectronicLinkRequest {
 /**
  * 전자 발급이 걸린 문서인지 — 수정 · 삭제 · 수기 상태 변경 · 재발급을 막고 상태 확인(sync)만 연다.
  * 실패(FAILED) · 불명(UNKNOWN)이어도 대행사에 문서가 남아 있을 수 있어 중복 발급을 막는다.
+ * 수정세금계산서(취소분)와 취소를 시도한 원본도 같다 — 대행사 값이 아직 비어 있어도 잠근다.
  */
-export function isProviderManaged(inv: Pick<TaxInvoice, 'provider'>): boolean {
-  return inv.provider != null;
+export function isProviderManaged(inv: Pick<TaxInvoice, 'provider' | 'correctionOfInvoiceId' | 'taxCancelStatus'>): boolean {
+  return inv.provider != null || inv.correctionOfInvoiceId != null || inv.taxCancelStatus != null;
+}
+
+/** 음수 수정세금계산서(취소분)인지 */
+export function isTaxCorrection(inv: Pick<TaxInvoice, 'correctionOfInvoiceId'>): boolean {
+  return inv.correctionOfInvoiceId != null;
 }
 
 export interface TaxInvoiceSaveRequest {
@@ -292,6 +398,8 @@ export interface TaxInvoiceSaveRequest {
   cashIdentityType?: CashIdentityType | null;
   cashIdentityNum?: string | null;
   cashTaxationType?: CashTaxationType | null;
+  /** 새 문서 저장 중복 방지 키(영문 · 숫자 · 하이픈 8~40자) — 같은 키로 다시 저장하면 앞서 만든 문서를 돌려준다(2026-10-16) */
+  clientRequestKey?: string;
 }
 
 export interface TaxInvoiceStatusRequest {

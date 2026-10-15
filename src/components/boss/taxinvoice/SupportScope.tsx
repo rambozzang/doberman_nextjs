@@ -102,7 +102,9 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
         note={cashNote}
       />
       <p className="mt-3 break-keep text-[11.5px] leading-relaxed text-boss-text-muted">
-        수정세금계산서 · 역발행 · 대량 발급 · 현금영수증 부분 취소는 지원하지 않습니다. 현금영수증 취소는 승인된 건의 전액 취소만 됩니다.
+        세금계산서 취소는 도배르만에서 전자 발급한 건의 전액만 됩니다 — 국세청 전송 전이면 발행취소, 전송 후면 수정세금계산서(환입 · 계약의
+        해제 · 착오에 의한 이중발급) 1장. 일부 반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환 수정세금계산서와 역발행 · 대량 발급은 지원하지
+        않습니다. 현금영수증 취소는 승인된 건의 전액 취소만 됩니다.{ELECTRONIC_TAX_INVOICE_OPEN ? '' : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
       </p>
     </Panel>
   );

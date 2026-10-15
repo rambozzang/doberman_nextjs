@@ -4,7 +4,8 @@
 //
 // 위: 상태 · 주요 버튼(미리보기 · PDF · 인쇄 / 수정 / 삭제)
 // 좌: 공급받는자(세금계산서) 또는 현금영수증 정보(용도 · 식별번호) · 금액 · 품목 · 내부 메모
-// 우: 전자 발급(오픈 전엔 안내 · 발급 후엔 상태 확인 · 현금영수증 취소) · 기록 상태(홈택스 발행 기록) · 서식 · 홈택스 입력 도우미
+// 우: 전자 발급(오픈 전엔 안내 · 발급 후엔 상태 확인 · 현금영수증 취소 · 세금계산서 취소) · 기록 상태(홈택스 발행 기록) · 서식 · 홈택스 입력 도우미
+// 수정세금계산서(취소분)와 그 원본은 좌측 위 연결 카드로 서로 오간다. 수정분은 음수 금액 그대로 보인다.
 //
 // 저장만 한 문서(REQUESTED)는 "미발급(작성 완료)"이다 — 외부 발급 요청이 아니다.
 // 발행은 두 갈래다. 전자 발급이 열리면 여기서 바로 발급하고, 아니면 홈택스에서 발행한 뒤 승인번호를 남긴다.
@@ -19,7 +20,6 @@ import { Copy, ExternalLink, FileText, Pencil, Trash2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
-import { toKoreanAmountLabel } from '@/lib/boss/koreanAmount';
 import { cashFieldsOf, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
 import {
   amountMismatch,
@@ -27,18 +27,21 @@ import {
   cashItemNameOf,
   cashTaxationOf,
   displayState,
+  docKindLabel,
   isoDateOf,
+  koreanAmountText,
   kstToday,
 } from '@/lib/boss/taxInvoiceDocument';
 import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import ElectronicIssuePanel, { TestTag } from '@/components/boss/taxinvoice/ElectronicIssuePanel';
+import { TaxCancelLinkPanel } from '@/components/boss/taxinvoice/TaxCancelSection';
 import {
   CASH_IDENTITY_LABEL,
   CASH_USAGE_LONG_LABEL,
-  DOC_TYPE_LABEL,
   PAY_TYPE_LABEL,
   STATUS_LABEL,
   isProviderManaged,
+  isTaxCorrection,
   type TaxInvoice,
   type TaxInvoiceStatus,
 } from '@/types/boss-taxinvoice';
@@ -209,7 +212,8 @@ export default function BossTaxInvoiceDetailPage() {
   }
 
   const isTax = data.docType === 'TAX';
-  const docLabel = DOC_TYPE_LABEL[data.docType];
+  const correction = isTaxCorrection(data);
+  const docLabel = docKindLabel(data);
   // 전자 발급 문서는 수정 · 삭제 · 수기 상태 변경 불가
   const managed = isProviderManaged(data);
   const ds = displayState(data);
@@ -330,6 +334,9 @@ export default function BossTaxInvoiceDetailPage() {
 
         {mismatch && <AlertBanner tone="warn">{mismatch}</AlertBanner>}
 
+        {/* 원본 ↔ 수정세금계산서(취소분) — 서로 오가는 링크 */}
+        <TaxCancelLinkPanel invoice={data} />
+
         {!isTax && !managed && data.status === 'REQUESTED' && !cashIssuableToday(data) && (
           <AlertBanner tone="info">
             거래일자({data.issueDate || '미정'})가 오늘(한국시간 {kstToday()})이 아니라 전자 발급할 수 없습니다. 이 문서는 기록으로 보관됩니다. 오늘
@@ -382,7 +389,12 @@ export default function BossTaxInvoiceDetailPage() {
             <MetricBox label={isTax ? '세액' : '부가세'} value={`${fmt(data.vatAmount)}원`} />
             <MetricBox label="합계" value={`${fmt(data.totalAmount)}원`} />
           </div>
-          <p className="mt-2 font-boss-head text-[13px] text-boss-text-secondary">{toKoreanAmountLabel(data.totalAmount)}</p>
+          <p className="mt-2 font-boss-head text-[13px] text-boss-text-secondary">{koreanAmountText(data.totalAmount)}</p>
+          {correction && (
+            <p className="mt-1 text-[12px] leading-relaxed text-boss-text-muted">
+              원본 금액 전액을 차감하는 음수(-) 금액입니다. 발급이 확정되면 원본과 함께 집계되어 합계가 0원이 됩니다.
+            </p>
+          )}
         </Panel>
 
         {data.items.length > 0 && (
@@ -478,7 +490,7 @@ export default function BossTaxInvoiceDetailPage() {
                 )}
                 {data.status !== 'CANCELED' && (
                   <Button variant="secondary" size="sm" onClick={() => void changeStatus('CANCELED')} disabled={changing}>
-                    취소로 기록
+                    취소로 기록 (기록만 변경)
                   </Button>
                 )}
                 {data.status === 'CANCELED' && (

@@ -7,16 +7,20 @@
 //   → 합계금액 · 현금 · 수표 · 어음 · 외상미수금 · 이 금액을 (영수/청구) 함
 //
 // 품목이 많으면 다음 쪽으로 넘어가고 품목 머리글 · 상태 띠 · 쪽 바닥이 쪽마다 반복된다. 한 품목 줄은 쪽 사이에서 갈라지지 않는다.
+// 수정세금계산서(취소분): 제목 '수정(전자)세금계산서', 수정사유 칸 = 사유(코드), 비고 = 당초 작성일자(서버 orgIssueDate) · 당초 승인번호,
+//   금액은 음수 그대로(부호를 뒤집지 않는다). 일반 세금계산서의 제목 · 금액은 그대로다.
 // 화면 미리보기도 이 PDF 를 그대로 그림으로 구워 보여 주므로, 화면 · 저장 · 인쇄의 값이 같다.
 
 import { Document, Page, Text, View } from '@react-pdf/renderer';
 import { formatBizNoLoose } from '@/lib/boss/docMeta';
-import { toKoreanAmountLabel } from '@/lib/boss/koreanAmount';
 import {
   approvalText,
+  correctionReasonText,
   docTitle,
   fmtNum,
   isoDateOf,
+  koreanAmountText,
+  originIssueDateText,
   paperItems,
 } from '@/lib/boss/taxInvoiceDocument';
 import { PAY_TYPE_LABEL } from '@/types/boss-taxinvoice';
@@ -169,7 +173,14 @@ export default function TaxInvoicePdf({ model }: { model: PaperModel }) {
   const title = docTitle('TAX', inv);
   const approval = approvalText(inv);
   const lastCol = ITEM_COLUMNS.length - 1;
-  const footerLeft = `${title} · 공급받는자 ${inv.buyerName || '-'} · 작성일자 ${issueDate || '미정'} · 합계 ${fmtNum(inv.totalAmount)}원`;
+  const correction = inv.correctionOfInvoiceId != null;
+  // 수정분 비고 — 당초 작성일자는 서버가 고정 저장한 값만(추정 금지), 당초 승인번호와 함께
+  const remark = correction
+    ? `당초 작성일자 ${originIssueDateText(inv)} · 당초 승인번호 ${inv.orgNtsConfirmNum?.trim() || '확인 필요'}`
+    : ' ';
+  const footerLeft = `${title}${correction ? '(취소분)' : ''} · 공급받는자 ${inv.buyerName || '-'} · 작성일자 ${issueDate || '미정'} · 합계 ${fmtNum(inv.totalAmount)}원`;
+  // 수정분 제목(수정 · 수정전자세금계산서)은 부제가 길어 글자 간격을 줄인다 — 승인번호 칸과 겹치지 않게
+  const longTitle = correction || title.length > 7;
 
   return (
     <Document title={`${title}_${inv.buyerName ?? ''}_${issueDate}`} author="도배르만" creator="도배르만" producer="도배르만">
@@ -183,8 +194,10 @@ export default function TaxInvoicePdf({ model }: { model: PaperModel }) {
         {/* 제목 · 승인번호 */}
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 6 }}>
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 22, fontWeight: 700, letterSpacing: 9 }}>{title}</Text>
-            <Text style={{ fontSize: 8, color: MUTED, marginLeft: 8, marginBottom: 3 }}>(공급받는자 보관용)</Text>
+            <Text style={{ fontSize: longTitle ? 18 : 22, fontWeight: 700, letterSpacing: longTitle ? 3 : 9 }}>{title}</Text>
+            <Text style={{ fontSize: 8, color: MUTED, marginLeft: 8, marginBottom: 3 }}>
+              {correction ? '(취소분 · 공급받는자 보관용)' : '(공급받는자 보관용)'}
+            </Text>
           </View>
           <View style={{ flexDirection: 'row', borderWidth: RULE, borderColor: BORDER, width: 228 }}>
             <LabelCell w={56} bottom>
@@ -223,16 +236,22 @@ export default function TaxInvoicePdf({ model }: { model: PaperModel }) {
             <Cell align="right" bold size={10}>
               {fmtNum(inv.vatAmount)}
             </Cell>
-            <Cell w={96} last align="center" color={MUTED}>
-              -
-            </Cell>
+            {correction ? (
+              <Cell w={96} last align="center" size={7.5} bold>
+                {correctionReasonText(inv)}
+              </Cell>
+            ) : (
+              <Cell w={96} last align="center" color={MUTED}>
+                -
+              </Cell>
+            )}
           </View>
           <View style={{ flexDirection: 'row' }}>
             <LabelCell w={96} bottom>
               비고
             </LabelCell>
-            <Cell last bottom>
-              {' '}
+            <Cell last bottom size={7.5} tw={420}>
+              {remark}
             </Cell>
           </View>
         </View>
@@ -313,7 +332,7 @@ export default function TaxInvoicePdf({ model }: { model: PaperModel }) {
           </View>
         </View>
         <Text style={{ fontSize: 8, color: MUTED, textAlign: 'right', marginTop: 4 }}>
-          합계 {toKoreanAmountLabel(inv.totalAmount)}
+          합계 {koreanAmountText(inv.totalAmount)}
         </Text>
 
         <PageFooter left={footerLeft} printedAt={model.printedAt} />

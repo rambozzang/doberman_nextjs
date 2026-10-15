@@ -8,6 +8,7 @@
 //
 // 세금계산서는 A4 국세청 출력 서식, 현금영수증은 별도 영수증 서식(TaxInvoicePdf · CashReceiptPdf).
 // 화면 미리보기 · PDF 저장 · 이미지 · 인쇄가 모두 같은 PDF 에서 나온다. 미발급 · 시험 · 결과 불명 · 취소 표시는 종이 안에 찍힌다.
+// 수정세금계산서(취소분)는 사유 · 당초 승인번호 · 당초 작성일자(서버 orgIssueDate)를 찍고 음수 금액을 그대로 둔다.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -21,9 +22,13 @@ import {
   approvalText,
   cashIdentityLine,
   cashItemNameOf,
+  correctionReasonText,
   displayState,
+  docKindLabel,
   documentFileName,
   documentShareText,
+  koreanAmountText,
+  originIssueDateText,
   paperItems,
   paperState,
   tradeDateText,
@@ -33,7 +38,7 @@ import type { PaperModel } from '@/components/boss/taxinvoice/pdf/paper';
 import DocumentPreview from '@/components/boss/taxinvoice/DocumentPreview';
 import { PrintActions } from '@/components/boss/print/PrintActions';
 import { AlertBanner, Button, ButtonLink, DetailActions, EmptyState, Skeleton, Tag } from '@/components/boss/ui';
-import { DOC_TYPE_LABEL, isProviderManaged, type TaxInvoice, type TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
+import { isProviderManaged, type TaxInvoice, type TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
 
 type Loaded = {
   invoice: TaxInvoice;
@@ -62,9 +67,13 @@ function paperTexts(l: Loaded): string[] {
     s?.name, s?.ceo, s?.address, s?.bizType, s?.bizKind, s?.email, s?.phone, s?.bizNo,
     ...paperItems(inv).flatMap((it) => [it.name, it.spec]),
   ];
+  texts.push(koreanAmountText(inv.totalAmount));
   if (inv.docType === 'CASH') {
     const c = cashIdentityLine(inv);
     texts.push(c.usage, c.kind, c.masked, tradeDateText(inv), inv.providerCancelApprovalNo, cashItemNameOf(inv).name);
+  }
+  if (inv.correctionOfInvoiceId != null) {
+    texts.push(correctionReasonText(inv), inv.orgNtsConfirmNum, originIssueDateText(inv), '수정전자세금계산서 당초 작성일자 승인번호 취소분 공급받는자 보관용');
   }
   return texts.filter((t): t is string => typeof t === 'string' && t.length > 0);
 }
@@ -163,7 +172,7 @@ export default function BossTaxInvoicePrintPage() {
 
   const inv = loaded?.invoice ?? null;
   const ds = inv ? displayState(inv) : null;
-  const docLabel = inv ? DOC_TYPE_LABEL[inv.docType] : '세금계산서';
+  const docLabel = inv ? docKindLabel(inv) : '세금계산서';
   const mismatch = inv ? amountMismatch(inv) : null;
   const legacyCash = inv?.docType === 'CASH' && cashIdentityLine(inv).inferred;
   const editable = inv ? !isProviderManaged(inv) : false;
@@ -323,6 +332,11 @@ export default function BossTaxInvoicePrintPage() {
             </AlertBanner>
           )}
           {mismatch && <AlertBanner tone="warn">{mismatch}</AlertBanner>}
+          {inv?.correctionOfInvoiceId != null && !inv.orgIssueDate && (
+            <AlertBanner tone="warn">
+              서버에서 당초 작성일자를 받지 못해 비고에 &lsquo;확인 필요&rsquo;로 찍었습니다. 다른 값으로 추정하지 않았습니다. 상세에서 상태를 다시 확인하세요.
+            </AlertBanner>
+          )}
           {legacyCash && (
             <AlertBanner
               tone="warn"

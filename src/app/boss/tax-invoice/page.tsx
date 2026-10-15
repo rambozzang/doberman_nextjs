@@ -8,6 +8,7 @@
 // 우: 기간 요약(서버 집계) · 부가세 예상 · 홈택스 바로가기
 //
 // 저장만 한 문서(REQUESTED)는 "미발급"이다. 전자 발급 결과를 모르는 문서는 "확인 필요"로 모아 먼저 보이게 한다.
+// 수정세금계산서(취소분)는 음수 금액 그대로 보이고, 발급이 확정된 것만 합계에 더한다(원본과 합쳐 0원).
 // 화면 제목 · "새로 작성" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -19,7 +20,7 @@ import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/lis
 import RegistrationEntry from '@/components/boss/taxinvoice/RegistrationEntry';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { cashDigits, cashFieldsOf, maskCashIdentity } from '@/lib/boss/taxInvoiceCash';
-import { DISPLAY_KEY_LABEL, displayState, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
+import { DISPLAY_KEY_LABEL, correctionReasonText, displayState, listTotals, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
 import {
   CASH_USAGE_LABEL,
   DOC_TYPE_LABEL,
@@ -81,13 +82,15 @@ function matches(inv: TaxInvoice, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const digits = cashDigits(q);
-  const text = [inv.buyerName, inv.buyerCeo, inv.itemSummary, inv.approvalNo, inv.providerCancelApprovalNo]
+  const text = [inv.buyerName, inv.buyerCeo, inv.itemSummary, inv.approvalNo, inv.providerCancelApprovalNo, inv.orgNtsConfirmNum]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
   if (text.includes(q)) return true;
   if (digits.length >= 3 && digits.length === q.replace(/[\s-]/g, '').length) {
-    const numbers = [inv.buyerBizNo, inv.cashIdentityNum, inv.buyerPhone, inv.approvalNo, inv.providerCancelApprovalNo].map(cashDigits);
+    const numbers = [inv.buyerBizNo, inv.cashIdentityNum, inv.buyerPhone, inv.approvalNo, inv.providerCancelApprovalNo, inv.orgNtsConfirmNum].map(
+      cashDigits,
+    );
     return numbers.some((n) => n.includes(digits));
   }
   return false;
@@ -168,20 +171,8 @@ function TaxInvoiceList() {
     return c;
   }, [scoped]);
 
-  // 지금 보이는 목록의 합계 — 취소 · 시험 발급은 금액에서 뺀다
-  const shown = useMemo(() => {
-    const counted = invoices.filter((i) => {
-      const s = displayState(i);
-      return s.key !== 'canceled' && !s.test;
-    });
-    return {
-      count: invoices.length,
-      excluded: invoices.length - counted.length,
-      supply: counted.reduce((a, i) => a + i.supplyAmount, 0),
-      vat: counted.reduce((a, i) => a + i.vatAmount, 0),
-      total: counted.reduce((a, i) => a + i.totalAmount, 0),
-    };
-  }, [invoices]);
+  // 지금 보이는 목록의 합계 — 취소 · 시험 발급 · 발급이 확정되지 않은 수정분은 금액에서 뺀다
+  const shown = useMemo(() => listTotals(invoices), [invoices]);
 
   const years = useMemo(() => {
     const y = now.getFullYear();
@@ -302,8 +293,12 @@ function TaxInvoiceList() {
               <MetricBox label="합계" value={`${fmt(shown.total)}원`} />
             </div>
           )}
-          {invoices.length > 0 && shown.excluded > 0 && (
-            <p className="-mt-1 text-[12px] text-boss-text-muted">취소 · 시험 발급 {shown.excluded}건은 금액 합계에서 뺐습니다.</p>
+          {invoices.length > 0 && (shown.excluded > 0 || shown.corrections > 0) && (
+            <p className="-mt-1 text-[12px] leading-relaxed text-boss-text-muted">
+              {shown.excluded > 0 &&
+                `취소 · 시험 발급${shown.unsettledCorrections > 0 ? ` · 발급 확정 전 수정분(${shown.unsettledCorrections}건)` : ''} ${shown.excluded}건은 금액 합계에서 뺐습니다. `}
+              {shown.corrections > 0 && `발급된 수정세금계산서(취소분) ${shown.corrections}건은 음수로 더했습니다.`}
+            </p>
           )}
 
           {loading && !period ? (
@@ -390,7 +385,9 @@ function TaxInvoiceList() {
                     미발급 {period.requestedCount}건이 있습니다. 발행한 뒤 승인번호를 기록해야 부가세 예상에 들어갑니다.
                   </p>
                 )}
-                <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">서버 집계입니다. 시험 발급 건은 빠집니다.</p>
+                <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
+                  서버 집계입니다. 시험 발급 건은 빠지고, 수정세금계산서(취소분)는 각 작성일자 기준 기간에 음수로 들어갑니다.
+                </p>
               </>
             ) : (
               <p className="text-[13px] text-boss-text-secondary">기간을 고르면 집계가 보입니다.</p>
@@ -424,6 +421,7 @@ function InvoiceRow({ inv, onOpen }: { inv: TaxInvoice; onOpen: () => void }) {
   const s = displayState(inv);
   const isCash = inv.docType === 'CASH';
   const cash = isCash ? cashFieldsOf(inv) : null;
+  const correction = inv.correctionOfInvoiceId != null;
   return (
     <tr
       className="cursor-pointer"
@@ -437,11 +435,17 @@ function InvoiceRow({ inv, onOpen }: { inv: TaxInvoice; onOpen: () => void }) {
         <ListDateCell at={inv.createdDt ?? inv.issueDate} id={inv.id} />
       </td>
       <td>
-        <Tag tone={isCash ? 'neutral' : 'info'}>{DOC_TYPE_LABEL[inv.docType]}</Tag>
+        {correction ? <Tag tone="warn">수정분</Tag> : <Tag tone={isCash ? 'neutral' : 'info'}>{DOC_TYPE_LABEL[inv.docType]}</Tag>}
       </td>
       <td className="wrap">
         <span className="font-semibold text-boss-text">{inv.buyerName || (isCash ? '(고객명 없음)' : '(상호 없음)')}</span>
-        {inv.itemSummary && <span className="ml-2 text-[12px] text-boss-text-muted">{inv.itemSummary}</span>}
+        {correction ? (
+          <span className="mt-0.5 block text-[12px] text-boss-text-muted">
+            수정세금계산서(취소분) · {correctionReasonText(inv)} · 당초 승인번호 {inv.orgNtsConfirmNum || '확인 필요'}
+          </span>
+        ) : (
+          inv.itemSummary && <span className="ml-2 text-[12px] text-boss-text-muted">{inv.itemSummary}</span>
+        )}
       </td>
       <td className="font-boss-head tabular-nums text-boss-text-secondary">
         {cash ? (
