@@ -261,6 +261,13 @@ function TaxInvoiceForm() {
   const [draftReady, setDraftReady] = useState(Boolean(editId));
 
   const inFlight = useRef(false);
+  // 새 문서 저장 중복 방지 키 — 이 화면에서 처음 만든 값을 다시 저장할 때도 그대로 쓴다.
+  // 응답이 끊겨 다시 저장해도 서버가 앞서 만든 문서를 돌려줘 같은 거래가 두 건이 되지 않는다(2026-10-16).
+  const requestKey = useRef<string>(
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}-${Math.random().toString(36).slice(2, 12)}`,
+  );
   const mounted = useRef(true);
   // 늦게 온 견적 품목이 이미 적은 품목을 덮지 않았는지 볼 때 쓴다
   const rowsRef = useRef<Row[]>(rows);
@@ -368,8 +375,9 @@ function TaxInvoiceForm() {
           const items = Array.isArray(d.items) ? d.items : [];
           setRows(
             items.length > 0
-              ? items.map((it) => newRow({ ...it, taxFree: (it.vatAmount ?? 0) === 0 && (it.supplyAmount ?? 0) > 0 }))
-              : [newRow({ supplyAmount: d.supplyAmount, vatAmount: d.vatAmount, name: d.itemSummary ?? '', taxFree: d.vatAmount === 0 && d.supplyAmount > 0 })],
+              // 세액 0원이 과세로도 맞는 소액(공급가 9원 이하)은 면세로 짐작하지 않는다(2026-10-16)
+              ? items.map((it) => newRow({ ...it, taxFree: (it.vatAmount ?? 0) === 0 && !isValidVat(it.supplyAmount ?? 0, 0) }))
+              : [newRow({ supplyAmount: d.supplyAmount, vatAmount: d.vatAmount, name: d.itemSummary ?? '', taxFree: d.vatAmount === 0 && !isValidVat(d.supplyAmount, 0) })],
           );
           setItemsLoaded(d.customerId ? String(d.customerId) : null);
         } else {
@@ -645,6 +653,7 @@ function TaxInvoiceForm() {
         cashIdentityType: isCash ? cashIdentityType : null,
         cashIdentityNum: identityNum,
         cashTaxationType: isCash ? cashTaxation : null,
+        ...(editId ? {} : { clientRequestKey: requestKey.current }),
       };
       let ok = false;
       try {
@@ -1166,6 +1175,12 @@ function TaxInvoiceForm() {
                   ))}
                 </tbody>
               </table>
+              {/* 면세 거래는 세금계산서가 아니라 계산서 대상 — 저장 · 서식은 되지만 전자 발급은 막힌다(2026-10-16) */}
+              {!isCash && rows.some((r) => r.taxFree && rowHasContent(r)) && (
+                <p role="note" className="mt-2 text-[12.5px] leading-relaxed text-boss-error">
+                  면세 품목이 있어 세금계산서 전자 발급을 할 수 없습니다. 면세 거래는 세금계산서가 아니라 계산서로 발행해야 합니다.
+                </p>
+              )}
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
               <MetricBox label="공급가액" value={`${fmt(totals.supply)}원`} />
