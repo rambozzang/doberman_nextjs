@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SocialAuthService from '@/services/socialAuthService';
 import { toast } from 'react-hot-toast';
+import { socialReturnPath } from '@/lib/socialReturnPath';
 
 // 이 페이지는 동적으로만 렌더링되어야 함 (정적 생성 방지)
 export const dynamic = 'force-dynamic';
@@ -65,7 +66,7 @@ function NaverCallbackContent() {
                         toast.success('Naver 로그인이 완료되었습니다!', {
                             duration: 2000,
                         });
-                        router.push('/');
+                        router.push(socialReturnPath());
                     }
                 } else {
                     if (window.opener) {

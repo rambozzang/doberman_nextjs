@@ -34,6 +34,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
       if (event.origin !== window.location.origin) {
         return;
       }
+      // 이 창이 열려 있을 때(이 창에서 소셜 로그인을 시작했을 때)만 처리한다(2026-10-16).
+      // 닫혀 있어도 머리말에 늘 붙어 있어서, 견적 신청 7단계의 소셜 로그인 성공 신호까지 받아
+      // 페이지를 새로 고쳐 자동 제출이 끊기고 1단계로 돌아갔다.
+      if (!isOpen) {
+        return;
+      }
 
       if (event.data.type === 'GOOGLE_LOGIN_SUCCESS' || event.data.type === 'KAKAO_LOGIN_SUCCESS' || event.data.type === 'NAVER_LOGIN_SUCCESS') {
         // 소셜 로그인 성공: 모달 닫고 페이지 새로고침
@@ -54,7 +60,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [onLoginSuccess, onClose]);
+  }, [isOpen, onLoginSuccess, onClose]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -12,6 +12,9 @@ import { toast } from 'react-hot-toast';
 // 폼 데이터 저장 키
 const QUOTE_FORM_STORAGE_KEY = 'quote_request_form_data';
 const PENDING_SUBMIT_KEY = 'quote_request_pending_submit';
+// 탭 안 자동 저장(입력 내용 + 현재 단계) — 새로 고침 · 머리말 로그인 뒤에도 이어서 쓰게 한다(2026-10-16)
+const QUOTE_AUTOSAVE_KEY = 'quote_request_autosave';
+const AUTOSAVE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 // 단계 정의
 const steps = [
@@ -466,6 +469,34 @@ const getRegionLabelStatic = (regionId: string, districtId: string): string => {
   return `${region.name} ${district.name}`;
 };
 
+/** 로그인 고객의 저장된 견적 → 서버 요청(자동 제출 공통). 고객 번호는 서버가 로그인 토큰으로 다시 정한다. */
+const buildLoggedInRequest = (saved: FormState, user: UserInfo): CreateCustomerRequestRequest => ({
+  webCustomerId: user.customerId,
+  buildingType: getBuildingTypeLabelStatic(saved.buildingType),
+  constructionLocation: getConstructionScopeLabelsStatic(saved.constructionScope, saved.roomCount),
+  roomCount: saved.roomCount || 0,
+  area: saved.area.pyeong || 0,
+  areaSize: saved.area.squareMeter || 0,
+  wallpaper: getWallpaperTypeLabelStatic(saved.wallpaperType),
+  ceiling: "전체",
+  specialInfo: getAdditionalRequestLabelsStatic(saved.additionalRequest),
+  specialInfoDetail: "",
+  hasItems: saved.additionalRequest.includes('furniture-move') ? "짐이 있음" : "",
+  preferredDate: saved.visitDate,
+  preferredDateDetail: saved.visitDate ? "원하는 날짜가 있어요" : "",
+  region: getRegionLabelStatic(saved.region, saved.district),
+  customerName: user.customerName,
+  customerPhone: user.customerPhone,
+  customerEmail: user.customerEmail,
+  customerPassword: user.customerPassword,
+  agreeTerms: saved.privacyConsent,
+  requestDate: new Date().toISOString(),
+  status: "검토중",
+  etc1: "",
+  etc2: "",
+  etc3: "",
+});
+
 // 폼 상태 타입 정의
 interface FormState {
   buildingType: string;
@@ -568,6 +599,88 @@ export default function QuoteRequestPage() {
     return false;
   }, []);
 
+  // 탭 안 자동 저장 지우기(신청 완료 · 처음부터 다시)
+  const clearAutosave = useCallback(() => {
+    try {
+      sessionStorage.removeItem(QUOTE_AUTOSAVE_KEY);
+    } catch {
+      // 저장소를 못 쓰면 지울 것도 없다
+    }
+  }, []);
+
+  // 이 탭에서 쓰던 내용 · 단계를 되살린다(2026-10-16). 로그인 상태면 고객정보 단계(6)는 건너뛰므로 지역 선택(5)으로.
+  const restoreAutosave = useCallback((loggedIn: boolean) => {
+    try {
+      const raw = sessionStorage.getItem(QUOTE_AUTOSAVE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { formState?: FormState; currentStep?: number; savedAt?: number };
+      if (!saved.formState || !saved.savedAt || Date.now() - saved.savedAt > AUTOSAVE_MAX_AGE_MS) {
+        sessionStorage.removeItem(QUOTE_AUTOSAVE_KEY);
+        return;
+      }
+      const step = Math.max(0, Math.min(saved.currentStep ?? 0, loggedIn ? 5 : 6));
+      setFormState(saved.formState);
+      setCurrentStep(step);
+      if (step > 0) {
+        toast.success(loggedIn ? '로그인되었습니다. 작성하던 내용을 불러왔어요. 신청 버튼을 눌러 주세요.' : '작성하던 내용을 불러왔어요.', {
+          duration: 3000,
+          position: 'top-center',
+        });
+      }
+    } catch {
+      // 깨진 저장값은 버린다
+    }
+  }, []);
+
+  /**
+   * 로그인 직후 저장해 둔 견적을 자동 제출한다 — 페이지 로드 · 팝업 신호 두 경로 공통(2026-10-16).
+   * 대기 표시(pending)는 서버 응답을 받은 뒤에만 지운다. 예전엔 보내기 전에 지워, 그 사이 페이지가
+   * 새로 고쳐지면 견적이 사라지고 1단계로 돌아갔다. 다시 보내도 서버가 10분 안 같은 견적은 한 건으로 받는다.
+   * 실패하면 입력 내용을 되살려 마지막 단계에서 신청을 다시 누를 수 있게 한다.
+   */
+  const autoSubmitSaved = useCallback(
+    async (saved: FormState, user: UserInfo, toastId: string) => {
+      setIsAutoSubmitting(true);
+      toast.loading('견적 신청을 처리 중입니다...', { id: toastId, duration: 10000 });
+      const restoreForRetry = () => {
+        setFormState(saved);
+        setCurrentStep(5);
+      };
+      try {
+        const response = await CustomerRequestService.createCustomerRequest(buildLoggedInRequest(saved, user));
+        toast.dismiss(toastId);
+        if (response.success) {
+          toast.success('견적 요청이 완료되었습니다!', { duration: 2000, position: 'top-center' });
+          clearFormDataFromStorage();
+          clearAutosave();
+          setIsComplete(true);
+        } else if ('network' in response && response.network) {
+          // 서버가 받았는지 모른다 — 대기 표시는 남겨 다음에 다시 보내고(서버가 중복을 막는다), 화면은 이어서 쓰게 둔다
+          restoreForRetry();
+          toast.error('연결이 불안정해 견적 신청 결과를 받지 못했습니다. 잠시 뒤 신청 버튼을 다시 눌러 주세요.', {
+            duration: 4000,
+            position: 'top-center',
+          });
+        } else {
+          setPendingSubmit(false);
+          restoreForRetry();
+          toast.error(response.message || '견적 요청 중 오류가 발생했습니다. 내용을 확인하고 다시 신청해 주세요.', {
+            duration: 4000,
+            position: 'top-center',
+          });
+        }
+      } catch (error) {
+        console.error('자동 제출 오류:', error);
+        toast.dismiss(toastId);
+        restoreForRetry();
+        toast.error('견적 요청 중 오류가 발생했습니다. 신청 버튼을 다시 눌러 주세요.', { duration: 4000, position: 'top-center' });
+      } finally {
+        setIsAutoSubmitting(false);
+      }
+    },
+    [clearFormDataFromStorage, clearAutosave, setPendingSubmit],
+  );
+
   // 로그인 상태 확인 및 pending submit 처리
   useEffect(() => {
     const checkLoginAndPendingSubmit = async () => {
@@ -576,88 +689,41 @@ export default function QuoteRequestPage() {
       setIsLoggedIn(loginStatus);
       setUserInfo(user);
 
-      // pending submit이 있고 로그인된 상태면 자동 제출 처리
+      // 대기 중인 제출이 있고 로그인된 상태면 자동 제출 처리
       if (hasPendingSubmit() && loginStatus && user) {
         const savedFormData = loadFormDataFromStorage();
         if (savedFormData) {
-          // 중복 자동제출 방지: 메모리 가드로 1회만 실행하고, 네트워크 호출 전에 pending 플래그를 즉시 소비
+          // 중복 자동제출 방지: 같은 화면에서는 1회만(다시 보내도 서버가 10분 안 같은 견적은 한 건으로 받는다)
           if (autoSubmitTriedRef.current) return;
           autoSubmitTriedRef.current = true;
-          setPendingSubmit(false);
           console.log('페이지 로드 시 pending submit 발견, 자동 제출 처리');
-          setIsAutoSubmitting(true);
-          toast.loading('견적 신청을 처리 중입니다...', {
-            id: 'auto-submit-load',
-            duration: 10000,
-          });
-
-          try {
-            // API 요청 데이터 구성
-            const requestData: CreateCustomerRequestRequest = {
-              webCustomerId: user.customerId,
-              buildingType: getBuildingTypeLabelStatic(savedFormData.buildingType),
-              constructionLocation: getConstructionScopeLabelsStatic(savedFormData.constructionScope, savedFormData.roomCount),
-              roomCount: savedFormData.roomCount || 0,
-              area: savedFormData.area.pyeong || 0,
-              areaSize: savedFormData.area.squareMeter || 0,
-              wallpaper: getWallpaperTypeLabelStatic(savedFormData.wallpaperType),
-              ceiling: "전체",
-              specialInfo: getAdditionalRequestLabelsStatic(savedFormData.additionalRequest),
-              specialInfoDetail: "",
-              hasItems: savedFormData.additionalRequest.includes('furniture-move') ? "짐이 있음" : "",
-              preferredDate: savedFormData.visitDate,
-              preferredDateDetail: savedFormData.visitDate ? "원하는 날짜가 있어요" : "",
-              region: getRegionLabelStatic(savedFormData.region, savedFormData.district),
-              customerName: user.customerName,
-              customerPhone: user.customerPhone,
-              customerEmail: user.customerEmail,
-              customerPassword: user.customerPassword,
-              agreeTerms: savedFormData.privacyConsent,
-              requestDate: new Date().toISOString(),
-              status: "검토중",
-              etc1: "",
-              etc2: "",
-              etc3: ""
-            };
-
-            const response = await CustomerRequestService.createCustomerRequest(requestData);
-
-            if (response.success) {
-              toast.dismiss('auto-submit-load');
-              toast.success('견적 요청이 완료되었습니다!', {
-                duration: 2000,
-                position: 'top-center',
-              });
-              clearFormDataFromStorage();
-              setIsComplete(true);
-            } else {
-              toast.dismiss('auto-submit-load');
-              toast.error(response.message || '견적 요청 중 오류가 발생했습니다.', {
-                duration: 3000,
-                position: 'top-center',
-              });
-              clearFormDataFromStorage();
-            }
-          } catch (error) {
-            console.error('자동 제출 오류:', error);
-            toast.dismiss('auto-submit-load');
-            toast.error('견적 요청 중 오류가 발생했습니다.', {
-              duration: 3000,
-              position: 'top-center',
-            });
-            clearFormDataFromStorage();
-          } finally {
-            setIsAutoSubmitting(false);
-          }
-        } else {
-          // 폼 데이터가 없으면 pending submit 플래그만 삭제
-          clearFormDataFromStorage();
+          await autoSubmitSaved(savedFormData, user, 'auto-submit-load');
+          return;
         }
+        // 폼 데이터가 없으면 pending submit 플래그만 삭제
+        clearFormDataFromStorage();
       }
+
+      // 자동 제출이 없으면 이 탭에서 쓰던 내용을 이어서 보여 준다(새로 고침 · 머리말 로그인 뒤)
+      restoreAutosave(loginStatus);
     };
 
     checkLoginAndPendingSubmit();
-  }, [hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage, setPendingSubmit]);
+  }, [hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage, autoSubmitSaved, restoreAutosave]);
+
+  // 입력 내용 · 단계를 탭 안에 계속 저장한다(진행이 있을 때만 — 첫 화면의 빈 값으로 저장본을 덮지 않게)
+  useEffect(() => {
+    if (isComplete) {
+      clearAutosave();
+      return;
+    }
+    if (currentStep === 0 && !formState.buildingType) return;
+    try {
+      sessionStorage.setItem(QUOTE_AUTOSAVE_KEY, JSON.stringify({ formState, currentStep, savedAt: Date.now() }));
+    } catch {
+      // 저장소가 가득 차거나 막혀 있으면 저장하지 않는다
+    }
+  }, [formState, currentStep, isComplete, clearAutosave]);
 
   // 팝업창으로부터 메시지 수신 처리
   useEffect(() => {
@@ -681,78 +747,13 @@ export default function QuoteRequestPage() {
 
         // 대기 중인 제출이 있는지 확인
         if (hasPendingSubmit()) {
-          // 저장된 폼 데이터 복원
+          // 저장된 폼 데이터 복원 후 자동 제출
           const savedFormData = loadFormDataFromStorage();
           if (savedFormData && loginStatus && user) {
-            // 중복 자동제출 방지: 메모리 가드로 1회만 실행하고, 네트워크 호출 전에 pending 플래그를 즉시 소비
+            // 중복 자동제출 방지: 같은 화면에서는 1회만
             if (autoSubmitTriedRef.current) return;
             autoSubmitTriedRef.current = true;
-            setPendingSubmit(false);
-            setIsAutoSubmitting(true);
-            toast.loading('견적 신청을 처리 중입니다...', {
-              id: 'auto-submit',
-              duration: 5000,
-            });
-
-            // 폼 데이터 복원 후 자동 제출
-            try {
-              // API 요청 데이터 구성 (정적 헬퍼 함수 사용)
-              const requestData: CreateCustomerRequestRequest = {
-                webCustomerId: user.customerId,
-                buildingType: getBuildingTypeLabelStatic(savedFormData.buildingType),
-                constructionLocation: getConstructionScopeLabelsStatic(savedFormData.constructionScope, savedFormData.roomCount),
-                roomCount: savedFormData.roomCount || 0,
-                area: savedFormData.area.pyeong || 0,
-                areaSize: savedFormData.area.squareMeter || 0,
-                wallpaper: getWallpaperTypeLabelStatic(savedFormData.wallpaperType),
-                ceiling: "전체",
-                specialInfo: getAdditionalRequestLabelsStatic(savedFormData.additionalRequest),
-                specialInfoDetail: "",
-                hasItems: savedFormData.additionalRequest.includes('furniture-move') ? "짐이 있음" : "",
-                preferredDate: savedFormData.visitDate,
-                preferredDateDetail: savedFormData.visitDate ? "원하는 날짜가 있어요" : "",
-                region: getRegionLabelStatic(savedFormData.region, savedFormData.district),
-                customerName: user.customerName,
-                customerPhone: user.customerPhone,
-                customerEmail: user.customerEmail,
-                customerPassword: user.customerPassword,
-                agreeTerms: savedFormData.privacyConsent,
-                requestDate: new Date().toISOString(),
-                status: "검토중",
-                etc1: "",
-                etc2: "",
-                etc3: ""
-              };
-
-              const response = await CustomerRequestService.createCustomerRequest(requestData);
-
-              if (response.success) {
-                toast.dismiss('auto-submit');
-                toast.success('견적 요청이 완료되었습니다!', {
-                  duration: 2000,
-                  position: 'top-center',
-                });
-                clearFormDataFromStorage();
-                setIsComplete(true);
-              } else {
-                toast.dismiss('auto-submit');
-                toast.error(response.message || '견적 요청 중 오류가 발생했습니다.', {
-                  duration: 3000,
-                  position: 'top-center',
-                });
-                clearFormDataFromStorage();
-              }
-            } catch (error) {
-              console.error('자동 제출 오류:', error);
-              toast.dismiss('auto-submit');
-              toast.error('견적 요청 중 오류가 발생했습니다.', {
-                duration: 3000,
-                position: 'top-center',
-              });
-              clearFormDataFromStorage();
-            } finally {
-              setIsAutoSubmitting(false);
-            }
+            await autoSubmitSaved(savedFormData, user, 'auto-submit');
           } else {
             clearFormDataFromStorage();
           }
@@ -772,7 +773,7 @@ export default function QuoteRequestPage() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [currentStep, hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage, setPendingSubmit]);
+  }, [currentStep, hasPendingSubmit, loadFormDataFromStorage, clearFormDataFromStorage, autoSubmitSaved]);
 
   // 고객정보 단계로 넘어갈 때 스크롤 최상단 이동 및 이름 필드 포커스
   useEffect(() => {
@@ -1035,6 +1036,8 @@ export default function QuoteRequestPage() {
 
       if (response.success) {
         console.log("견적 요청 성공:", response.data);
+        clearFormDataFromStorage();
+        clearAutosave();
         setIsComplete(true);
       } else {
         console.error("견적 요청 실패:", response.message);
@@ -1090,6 +1093,7 @@ export default function QuoteRequestPage() {
     setCurrentStep(0);
     setIsComplete(false);
     setIsSubmitting(false);
+    clearAutosave();
   };
 
   // 폼 필드 업데이트

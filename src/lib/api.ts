@@ -165,11 +165,14 @@ class ApiClient {
   private static handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
       const responseData = error.response?.data as ApiResponse;
+      const status = error.response?.status;
 
       return {
         success: false,
         message: responseData?.message || '요청 처리 중 오류가 발생했습니다.',
         error: responseData?.error || error.message || '알 수 없는 오류가 발생했습니다.',
+        // 응답 자체를 못 받았으면 서버가 처리했는지 모른다(2026-10-16)
+        network: !error.response || status === 502 || status === 503 || status === 504,
       };
     }
 
@@ -177,6 +180,7 @@ class ApiClient {
       success: false,
       message: '네트워크 오류가 발생했습니다.',
       error: '네트워크 연결을 확인해주세요.',
+      network: true,
     };
   }
 }
