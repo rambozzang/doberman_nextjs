@@ -318,7 +318,16 @@ const PAGE_META: Record<string, PageMeta> = {
   "/boss/tax-invoice/registration": {
     title: "발급 서비스 등록",
     subtitle:
-      "전자세금계산서 발급에 필요한 사업자 권한 확인 · 팝빌 연동 · 공동인증서 등록을 진행합니다.",
+      "전자세금계산서 발급에 필요한 사업자 권한 확인 · 팝빌 연동 · 공동인증서 등록을 진행하고 운영 상태를 확인합니다.",
+  },
+  "/boss/tax-invoice/activity": {
+    title: "세금계산서 알림",
+    subtitle: "발급 결과 · 국세청 전송 · 권한 심사 · 인증서 만료 안내를 모아 봅니다.",
+    width: "wide",
+  },
+  "/boss/tax-invoice/admin": {
+    title: "전자 발급 운영 관리",
+    subtitle: "발급 권한 신청 심사 · 결과 확인이 필요한 문서 · 처리 이력을 봅니다. 운영자만 이용할 수 있습니다.",
   },
   "/boss/tax-invoice/new": {
     title: "세금계산서 · 현금영수증 작성",

@@ -10,6 +10,8 @@
 // 저장만 한 문서(REQUESTED)는 "미발급(작성 완료)"이다 — 외부 발급 요청이 아니다.
 // 발행은 두 갈래다. 전자 발급이 열리면 여기서 바로 발급하고, 아니면 홈택스에서 발행한 뒤 승인번호를 남긴다.
 // 전자 발급을 시도한 문서(provider 있음)는 수정 · 삭제 · 수기 상태 변경을 막고 상태 확인만 연다.
+// 정식 오픈 뒤 결과를 기다리는 문서는 보이는 동안 정해진 횟수만 상세를 다시 읽는다(서버 저장값만 — 팝빌 조회 아님, 대화상자가 열려 있으면 건너뜀).
+// 전자 발급 관련 문서는 좌측 아래 처리 이력(열 때만 불러옴)을 둔다.
 // 화면 제목 · ← 세금계산서 링크는 셸 헤더가 그린다.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -34,7 +36,11 @@ import {
 } from '@/lib/boss/taxInvoiceDocument';
 import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import ElectronicIssuePanel, { TestTag } from '@/components/boss/taxinvoice/ElectronicIssuePanel';
+import { InvoiceHistoryPanel } from '@/components/boss/taxinvoice/HistoryList';
 import { TaxCancelLinkPanel } from '@/components/boss/taxinvoice/TaxCancelSection';
+import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
+import { awaitsServerUpdate } from '@/lib/boss/taxInvoiceOps';
+import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
 import {
   CASH_IDENTITY_LABEL,
   CASH_USAGE_LONG_LABEL,
@@ -118,6 +124,12 @@ export default function BossTaxInvoiceDetailPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const scope = useBossScope();
+  useBoundedRefresh({
+    enabled: ELECTRONIC_TAX_INVOICE_OPEN && scope != null && data != null && awaitsServerUpdate(data),
+    run: () => (isCurrentScope(scope) ? load() : undefined),
+  });
 
   const changeStatus = async (status: TaxInvoiceStatus) => {
     if (!data?.id || busy.current || isProviderManaged(data)) return;
@@ -431,6 +443,8 @@ export default function BossTaxInvoiceDetailPage() {
             <p className="whitespace-pre-wrap text-[13.5px] leading-[1.7] text-boss-text">{data.memo}</p>
           </Panel>
         )}
+
+        {managed && data.id != null && scope && <InvoiceHistoryPanel key={scope} invoiceId={data.id} scope={scope} />}
       </div>
 
       {/* ── 우 ── */}

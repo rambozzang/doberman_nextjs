@@ -164,9 +164,11 @@ export function validateLinkCredentials(c: LinkCredentials): LinkErrors {
   return errors;
 }
 
-// ── 진행 단계 ──
-export type StepState = 'done' | 'current' | 'blocked' | 'todo';
-export type RegistrationStepKey = 'apply' | 'verify' | 'link' | 'certificate';
+// ── 진행 단계 — 회사 → 권한 신청 · 심사 → 팝빌 연동 → 공동인증서 → 세금계산서 발급 준비 ──
+// 현금영수증 준비는 공동인증서가 필요 없어 따로 본다(SupportScope).
+/** waiting = 준비는 끝났고 정식 오픈을 기다린다 */
+export type StepState = 'done' | 'current' | 'blocked' | 'waiting' | 'todo';
+export type RegistrationStepKey = 'company' | 'review' | 'link' | 'certificate' | 'ready';
 export interface RegistrationStep {
   key: RegistrationStepKey;
   label: string;
@@ -174,48 +176,70 @@ export interface RegistrationStep {
   note: string;
 }
 
-const STEP_ORDER: RegistrationStepKey[] = ['apply', 'verify', 'link', 'certificate'];
+const STEP_ORDER: RegistrationStepKey[] = ['company', 'review', 'link', 'certificate', 'ready'];
 const STEP_LABEL: Record<RegistrationStepKey, string> = {
-  apply: '사업자 정보 신청',
-  verify: '발급 권한 확인',
-  link: '서비스 연동',
+  company: '회사 정보',
+  review: '권한 신청 · 심사',
+  link: '팝빌 연동',
   certificate: '공동인증서 등록',
+  ready: '세금계산서 발급 준비',
 };
 
-/** 지금 진행할 단계의 위치(0~3). 모두 끝났으면 4 */
+/** 지금 진행할 단계의 위치(0~4) */
 const CURRENT_INDEX: Record<RegistrationStage, number> = {
   NEED_COMPANY: 0,
-  NOT_REGISTERED: 0,
+  NOT_REGISTERED: 1,
   PENDING_VERIFICATION: 1,
+  REJECTED: 1,
   VERIFIED: 2,
   NEEDS_CERTIFICATE: 3,
   READY: 4,
 };
 
-function currentNote(key: RegistrationStepKey, s: Pick<ElectronicRegistrationStatus, 'stage' | 'serviceConfigured' | 'memberLinked'>): string {
+type StepInput = Pick<ElectronicRegistrationStatus, 'stage' | 'serviceConfigured' | 'memberLinked' | 'reviewStatus'>;
+
+/**
+ * 화면이 따를 단계 — 서버가 단계는 확인 중(PENDING_VERIFICATION)으로 두고 심사 결과만 반려로 준 경우도 반려로 본다.
+ * 그 밖에는 서버 단계를 그대로 쓴다.
+ */
+export function effectiveStage(s: Pick<ElectronicRegistrationStatus, 'stage' | 'reviewStatus'>): RegistrationStage {
+  if (s.stage === 'PENDING_VERIFICATION' && s.reviewStatus === 'REJECTED') return 'REJECTED';
+  return s.stage;
+}
+
+function currentNote(key: RegistrationStepKey, s: StepInput, stage: RegistrationStage): string {
   switch (key) {
-    case 'apply':
-      return s.stage === 'NEED_COMPANY' ? '회사 정보 필요' : '정보 입력';
-    case 'verify':
-      return '운영팀 확인 중';
+    case 'company':
+      return '회사 정보 필요';
+    case 'review':
+      if (stage === 'REJECTED') return '반려 · 다시 신청 필요';
+      return stage === 'PENDING_VERIFICATION' ? '운영팀 심사 중' : '신청서 작성';
     case 'link':
       if (!s.serviceConfigured) return '연동 설정 준비 중';
       if (s.memberLinked == null) return '연동 상태 확인 필요';
       return '팝빌 가입 필요';
     case 'certificate':
       return '인증서 등록 필요';
+    case 'ready':
+      return '준비 완료';
   }
 }
 
-export function registrationSteps(
-  s: Pick<ElectronicRegistrationStatus, 'stage' | 'serviceConfigured' | 'memberLinked'>,
-): RegistrationStep[] {
-  const current = CURRENT_INDEX[s.stage];
+/** launchOpen = 정식 오픈 값. 꺼져 있으면 마지막 단계는 "준비 완료 · 오픈 예정"으로 기다린다(완료로 보이지 않게) */
+export function registrationSteps(s: StepInput, launchOpen = false): RegistrationStep[] {
+  const stage = effectiveStage(s);
+  const current = CURRENT_INDEX[stage];
   return STEP_ORDER.map((key, i) => {
     if (i < current) return { key, label: STEP_LABEL[key], state: 'done', note: '완료' };
     if (i === current) {
-      const blocked = s.stage === 'NEED_COMPANY' || (key === 'link' && (!s.serviceConfigured || s.memberLinked == null));
-      return { key, label: STEP_LABEL[key], state: blocked ? 'blocked' : 'current', note: currentNote(key, s) };
+      if (key === 'ready') {
+        return launchOpen
+          ? { key, label: STEP_LABEL[key], state: 'done', note: '준비 완료' }
+          : { key, label: STEP_LABEL[key], state: 'waiting', note: '준비 완료 · 오픈 예정' };
+      }
+      const blocked =
+        stage === 'NEED_COMPANY' || stage === 'REJECTED' || (key === 'link' && (!s.serviceConfigured || s.memberLinked == null));
+      return { key, label: STEP_LABEL[key], state: blocked ? 'blocked' : 'current', note: currentNote(key, s, stage) };
     }
     return { key, label: STEP_LABEL[key], state: 'todo', note: '대기' };
   });

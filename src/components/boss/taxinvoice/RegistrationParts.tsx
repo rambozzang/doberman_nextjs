@@ -36,6 +36,7 @@ const STEP_BAR: Record<StepState, string> = {
   done: 'bg-boss-success',
   current: 'bg-boss-primary',
   blocked: 'bg-boss-warning',
+  waiting: 'bg-boss-info',
   todo: 'bg-transparent',
 };
 
@@ -43,6 +44,7 @@ const STEP_NUM: Record<StepState, string> = {
   done: 'text-boss-success',
   current: 'text-boss-primary',
   blocked: 'text-boss-pill-warn-fg',
+  waiting: 'text-boss-pill-info-fg',
   todo: 'text-boss-text-ghost',
 };
 
@@ -50,6 +52,7 @@ const STEP_NOTE: Record<StepState, string> = {
   done: 'text-boss-pill-ok-fg',
   current: 'font-semibold text-boss-primary',
   blocked: 'font-semibold text-boss-pill-warn-fg',
+  waiting: 'font-semibold text-boss-pill-info-fg',
   todo: 'text-boss-text-muted',
 };
 
@@ -57,17 +60,22 @@ const STEP_SR: Record<StepState, string> = {
   done: '완료한 단계',
   current: '지금 진행할 단계',
   blocked: '진행이 막힌 단계',
+  waiting: '정식 오픈을 기다리는 단계',
   todo: '아직 대기 중인 단계',
 };
 
-/** 진행 단계 띠 — 1px 칸막이 격자. 좁은 화면은 세로, sm 2열, lg 4열 */
+/** 진행 단계 띠 — 1px 칸막이 격자. 좁은 화면은 세로, sm 2열, lg 5열 */
 export function RegistrationProgress({ steps }: { steps: RegistrationStep[] }) {
   return (
-    <ol aria-label="등록 진행 단계" className="grid gap-px border border-boss-border bg-boss-border sm:grid-cols-2 lg:grid-cols-4">
+    <ol
+      id="registration-progress"
+      aria-label="등록 진행 단계"
+      className="grid scroll-mt-4 gap-px border border-boss-border bg-boss-border sm:grid-cols-2 lg:grid-cols-5"
+    >
       {steps.map((s, i) => (
         <li
           key={s.key}
-          aria-current={s.state === 'current' || s.state === 'blocked' ? 'step' : undefined}
+          aria-current={s.state === 'current' || s.state === 'blocked' || s.state === 'waiting' ? 'step' : undefined}
           className={`relative min-w-0 px-4 pb-3 pt-3.5 ${s.state === 'current' ? 'bg-boss-elevated' : 'bg-boss-surface'}`}
         >
           <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${STEP_BAR[s.state]}`} />

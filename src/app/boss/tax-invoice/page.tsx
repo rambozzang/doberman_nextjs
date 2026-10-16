@@ -8,16 +8,22 @@
 // 우: 기간 요약(서버 집계) · 부가세 예상 · 홈택스 바로가기
 //
 // 저장만 한 문서(REQUESTED)는 "미발급"이다. 전자 발급 결과를 모르는 문서는 "확인 필요"로 모아 먼저 보이게 한다.
+// 정식 오픈 뒤 결과를 기다리는 문서가 있으면 보이는 동안 정해진 횟수만 목록을 다시 읽는다(서버 저장값만 — 팝빌 조회 아님).
+// 운영 관리 진입은 서버가 운영자라고 답했을 때만 보인다.
 // 수정세금계산서(취소분)는 음수 금액 그대로 보이고, 발급이 확정된 것만 합계에 더한다(원본과 합쳐 0원).
 // 화면 제목 · "새로 작성" 버튼은 셸 헤더(nav.ts PAGE_META)가 담당한다.
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ExternalLink, FilePlus2, RefreshCw } from 'lucide-react';
+import { BellRing, ExternalLink, FilePlus2, RefreshCw } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
+import AdminEntry from '@/components/boss/taxinvoice/AdminEntry';
 import RegistrationEntry from '@/components/boss/taxinvoice/RegistrationEntry';
+import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
+import { awaitsServerUpdate } from '@/lib/boss/taxInvoiceOps';
+import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { cashDigits, cashFieldsOf, maskCashIdentity } from '@/lib/boss/taxInvoiceCash';
 import { DISPLAY_KEY_LABEL, correctionReasonText, displayState, listTotals, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
@@ -161,6 +167,12 @@ function TaxInvoiceList() {
   useSaveListSnapshot<Filters, Data>(LIST_KEYS.taxInvoice, { year, quarter, tab, doc, query }, { period, vat }, loaded);
 
   const all = useMemo(() => period?.invoices ?? [], [period]);
+  const scope = useBossScope();
+  // 정식 오픈 뒤, 결과를 기다리는 문서가 보일 때만 — 같은 계정일 때만 다시 읽는다
+  useBoundedRefresh({
+    enabled: ELECTRONIC_TAX_INVOICE_OPEN && scope != null && all.some(awaitsServerUpdate),
+    run: () => (isCurrentScope(scope) ? load() : undefined),
+  });
   // 문서 종류 · 검색까지 거른 목록 — 상태 탭 건수는 여기서 센다
   const scoped = useMemo(() => all.filter((i) => (doc === 'all' || i.docType === doc) && matches(i, query)), [all, doc, query]);
   const invoices = useMemo(() => (tab === 'all' ? scoped : scoped.filter((i) => displayState(i).key === tab)), [scoped, tab]);
@@ -249,7 +261,11 @@ function TaxInvoiceList() {
             조건 지우기
           </Button>
         )}
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
+          {scope && <AdminEntry key={scope} scope={scope} />}
+          <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" size="sm" icon={BellRing}>
+            알림
+          </ButtonLink>
           <ButtonLink href="/boss/tax-invoice/new?docType=CASH" variant="secondary" size="sm" icon={FilePlus2}>
             현금영수증 작성
           </ButtonLink>

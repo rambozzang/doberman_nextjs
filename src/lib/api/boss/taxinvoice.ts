@@ -4,7 +4,22 @@ import BossApiClient, { bossPrivateApi } from '@/lib/bossApi';
 import type { ApiResponse } from '@/types/api';
 import { isTaxCancelReason, TAX_CANCEL_TIMEOUT_MS } from '@/lib/boss/taxInvoiceCancel';
 import {
+  parseActivity,
+  parseActivityPage,
+  parseAdminAccess,
+  parseAdminRegistration,
+  parseAdminRegistrationPage,
+  parseHistoryPage,
+  parseInvoice,
+  parseOperations,
+  parseProblemPage,
+} from '@/lib/boss/taxInvoiceOps';
+import {
   isRegistrationStage,
+  type AdminReviewRequest,
+  type AdminSyncRequest,
+  type RegistrationReviewStatus,
+  type TaxInvoiceAdminAccess,
   type CashCancelReason,
   type ElectronicConfig,
   type ElectronicDocType,
@@ -245,6 +260,95 @@ async function taxCancelCall(id: number | string, body: TaxCancelRequest): Promi
   }
 }
 
+// ─────────────────────────────────────────────
+// 운영 준비 · 개인 알림 · 처리 이력 · 운영자(2026-10-16)
+// ─────────────────────────────────────────────
+
+/**
+ * 결과 분류. 화면은 이 값으로 문구 · 다음 행동을 정한다(서버 원문 코드는 보이지 않는다).
+ *   not-deployed — 서버에 아직 이 기능이 없다(404 · 405 · 501)
+ *   network      — 응답을 받지 못했다. 처리 요청이었다면 서버가 처리했을 수 있다 → 다시 읽어 확인
+ *   forbidden    — 권한 없음(운영자 아님 등)
+ *   stale        — 보던 내용이 바뀌었거나 이미 처리됐다(409) → 다시 불러와 다시 확인
+ *   rejected     — 서버가 거절했다(이유 문장 그대로)
+ *   unconfirmed  — 응답은 왔지만 모양을 읽지 못했다
+ */
+export type OpsFailure = 'not-deployed' | 'network' | 'forbidden' | 'stale' | 'rejected' | 'unconfirmed';
+export type OpsCall<T> = { ok: true; data: T } | { ok: false; failure: OpsFailure; message: string };
+
+const OPS_MESSAGE: Record<Exclude<OpsFailure, 'rejected'>, string> = {
+  'not-deployed': '아직 준비 중인 기능입니다. 잠시 뒤 다시 확인해 주세요.',
+  network: '연결이 끊겨 결과를 받지 못했습니다. 잠시 뒤 다시 불러와 주세요.',
+  forbidden: '이 기능을 쓸 권한이 없습니다.',
+  stale: '그사이 내용이 바뀌었거나 이미 처리되었습니다. 최신 내용을 다시 불러와 확인해 주세요.',
+  unconfirmed: '결과를 확인하지 못했습니다. 다시 불러와 확인해 주세요.',
+};
+
+const NO_RESOURCE = /No static resource/i;
+
+const opsFail = <T>(failure: OpsFailure, message?: string): OpsCall<T> => ({
+  ok: false,
+  failure,
+  message: failure === 'rejected' ? message || '요청을 처리하지 못했습니다.' : OPS_MESSAGE[failure],
+});
+
+async function opsCall<T>(send: () => Promise<{ data: unknown }>, parse: (raw: unknown) => T | null): Promise<OpsCall<T>> {
+  try {
+    const res = await send();
+    const body = res.data;
+    if (body && typeof body === 'object' && (body as ApiResponse).success === false) {
+      const text = errorText(body);
+      if (NO_RESOURCE.test(text)) return opsFail('not-deployed');
+      return opsFail('rejected', text);
+    }
+    const payload = body && typeof body === 'object' && 'success' in body ? (body as ApiResponse).data : body;
+    const data = parse(payload);
+    return data != null ? { ok: true, data } : opsFail('unconfirmed');
+  } catch (e) {
+    if (!axios.isAxiosError(e)) return opsFail('network');
+    const code = e.response?.status;
+    const data = e.response?.data;
+    const text = errorText(data);
+    // 예전 서버는 없는 경로를 500 + "No static resource …" 로도 준다 — 상태 코드와 상관없이 미배포로 본다(경로 원문은 보이지 않는다)
+    if (NO_RESOURCE.test(text) || code === 405 || code === 501 || (code === 404 && !isServerEnvelope(data))) {
+      return opsFail('not-deployed');
+    }
+    if (code == null || code === 502 || code === 503 || code === 504 || !isServerEnvelope(data)) return opsFail('network');
+    if (code === 403) return opsFail('forbidden');
+    if (code === 409) return opsFail('stale');
+    return opsFail('rejected', text || `요청을 처리하지 못했습니다(${code}).`);
+  }
+}
+
+const pageParams = (page: number, size: number) => ({ page: Math.max(0, Math.floor(page)), size: Math.max(1, Math.floor(size)) });
+
+/**
+ * 같은 계정(아이디 + 토큰 범위 값) 안에서 잠깐 기억하는 운영자 판정 — 계정 · 토큰이 바뀌면 다시 묻는다.
+ * 실패는 기억하지 않는다. 화면 표시용일 뿐이고 모든 운영자 요청은 서버가 다시 검사한다.
+ */
+const ADMIN_ACCESS_TTL_MS = 5 * 60_000;
+let adminAccessMemo: { scope: string; at: number; call: Promise<OpsCall<TaxInvoiceAdminAccess>> } | null = null;
+
+function adminAccessCall(scope: string | null | undefined, now = Date.now()): Promise<OpsCall<TaxInvoiceAdminAccess>> {
+  const key = scope ?? '';
+  if (key && adminAccessMemo && adminAccessMemo.scope === key && now - adminAccessMemo.at < ADMIN_ACCESS_TTL_MS) {
+    return adminAccessMemo.call;
+  }
+  const call = opsCall(() => bossPrivateApi.get('/taxinvoices/admin/access'), parseAdminAccess);
+  if (key) {
+    adminAccessMemo = { scope: key, at: now, call };
+    void call.then((r) => {
+      if (!r.ok && adminAccessMemo?.call === call) adminAccessMemo = null;
+    });
+  }
+  return call;
+}
+
+/** 운영자 판정 기억을 지운다(로그아웃 · 계정 전환 · 권한 거절을 받았을 때) */
+export function forgetTaxInvoiceAdminAccess(): void {
+  adminAccessMemo = null;
+}
+
 export const bossTaxInvoiceApi = {
   // 기간 목록 + 집계 — GET /taxinvoices?year=&quarter= (quarter 0 = 연간)
   period: (year: number, quarter: number) =>
@@ -353,4 +457,61 @@ export const bossTaxInvoiceApi = {
   // 외부 가입이라 기본 15초보다 넉넉히 기다린다. 실패 · 불명이어도 자동으로 다시 보내지 않는다.
   linkMember: (body: ElectronicLinkRequest) =>
     registrationCall(() => bossPrivateApi.post('/taxinvoices/electronic/link', body, { timeout: 30_000 })),
+
+  // ── 운영 준비 · 개인 알림 · 처리 이력 (읽기 — 출시 값과 무관, 팝빌을 부르지 않는다) ──
+
+  // 인증서 · 비용 정책 · 자동 상태 확인 · 안내 — GET /taxinvoices/electronic/operations
+  operations: () => opsCall(() => bossPrivateApi.get('/taxinvoices/electronic/operations'), parseOperations),
+
+  // 내 알림 — GET /taxinvoices/electronic/activity?page=&size=&unreadOnly=
+  activity: (page = 0, size = 20, unreadOnly = false) =>
+    opsCall(
+      () => bossPrivateApi.get('/taxinvoices/electronic/activity', { params: { ...pageParams(page, size), unreadOnly } }),
+      parseActivityPage,
+    ),
+
+  // 알림 읽음 — POST /taxinvoices/electronic/activity/{id}/read (본인 것만, 서버가 확인)
+  markActivityRead: (id: number) =>
+    opsCall(() => bossPrivateApi.post(`/taxinvoices/electronic/activity/${id}/read`, {}), parseActivity),
+
+  // 문서 처리 이력(원본 · 수정분, 내 문서만) — GET /taxinvoices/{id}/electronic/history?page=&size=
+  history: (id: number | string, page = 0, size = 20) =>
+    opsCall(() => bossPrivateApi.get(`/taxinvoices/${id}/electronic/history`, { params: pageParams(page, size) }), parseHistoryPage),
+
+  // ── 운영자 — 화면 진입은 access 판정 뒤에만. 서버가 모든 요청을 다시 검사한다 ──
+
+  // 운영자 여부(로그인한 본인 판정) — GET /taxinvoices/admin/access. scope = 계정 범위 값(useBossScope)
+  adminAccess: (scope: string | null | undefined) => adminAccessCall(scope),
+
+  // 발급 권한 신청 목록 — GET /taxinvoices/admin/registrations?status=&page=&size=&isTest=
+  adminRegistrations: (status: RegistrationReviewStatus, page = 0, size = 20, isTest: boolean | null = null) =>
+    opsCall(
+      () =>
+        bossPrivateApi.get('/taxinvoices/admin/registrations', {
+          params: isTest == null ? { status, ...pageParams(page, size) } : { status, ...pageParams(page, size), isTest },
+        }),
+      parseAdminRegistrationPage,
+    ),
+
+  // 승인 · 반려 — POST /taxinvoices/admin/registrations/{id}/review. 자동 재시도 없음.
+  // 신청 내용이 바뀌었거나 이미 처리됐으면 stale — 다시 불러와 다시 확인한다.
+  adminReview: (id: number, body: AdminReviewRequest) =>
+    opsCall(() => bossPrivateApi.post(`/taxinvoices/admin/registrations/${id}/review`, body, { timeout: 30_000 }), parseAdminRegistration),
+
+  // 문제 문서 — GET /taxinvoices/admin/problems?page=&size=
+  adminProblems: (page = 0, size = 20) =>
+    opsCall(() => bossPrivateApi.get('/taxinvoices/admin/problems', { params: pageParams(page, size) }), parseProblemPage),
+
+  // 전체 처리 이력 — GET /taxinvoices/admin/history?page=&size=
+  adminHistory: (page = 0, size = 20) =>
+    opsCall(() => bossPrivateApi.get('/taxinvoices/admin/history', { params: pageParams(page, size) }), parseHistoryPage),
+
+  // 문서별 처리 이력 — GET /taxinvoices/admin/invoices/{id}/history?page=&size=
+  adminInvoiceHistory: (id: number, page = 0, size = 20) =>
+    opsCall(() => bossPrivateApi.get(`/taxinvoices/admin/invoices/${id}/history`, { params: pageParams(page, size) }), parseHistoryPage),
+
+  // 문서 상태 조회(문서 주인의 기존 상태 조회로 처리) — POST /taxinvoices/admin/invoices/{id}/sync. 자동 재시도 없음.
+  // 서버가 팝빌 상태를 읽는다 — 기본 15초보다 넉넉히(웹 nginx 60초 · Next 중계 58초 안쪽)
+  adminSync: (id: number, body: AdminSyncRequest) =>
+    opsCall(() => bossPrivateApi.post(`/taxinvoices/admin/invoices/${id}/sync`, body, { timeout: 55_000 }), parseInvoice),
 };

@@ -45,6 +45,8 @@ import {
   type StatusTone,
 } from '@/components/boss/ui';
 import ListDateCell from '@/components/boss/ListDateCell';
+import { TaxActivityEntry } from '@/components/boss/taxinvoice/ActivityList';
+import { useBossScope } from '@/lib/boss/bossScope';
 
 const PAGE_SIZE = 20;
 
@@ -210,10 +212,13 @@ export default function BossNotificationsPage() {
 
   const isFiltering = keyword.trim().length > 0;
   const pageNum = page + 1;
+  // 세금계산서 알림은 따로 모아 본다 — 진입만(계정이 바뀌면 새로 그린다)
+  const scope = useBossScope();
   const categoryLabel = CATEGORIES.find((c) => c.code === category)?.label ?? '전체';
 
   return (
     <div className="flex flex-col gap-4">
+      {scope && <TaxActivityEntry key={scope} scope={scope} />}
       {/* 필터 줄 */}
       <div className="flex flex-wrap items-center gap-2.5">
         <ListTabs

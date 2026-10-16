@@ -305,10 +305,12 @@ export interface CashCancelRequest {
 
 // ── 발급 서비스 등록 — 사업자 권한 확인 신청 → 운영 확인 → 팝빌 연동 → 공동인증서 ──
 // 출시 값(ELECTRONIC_TAX_INVOICE_OPEN)과 별개로 늘 열린다. 단계는 서버가 정한다.
+// REJECTED(2026-10-16): 운영 확인에서 반려됨 — 사유를 보고 정보를 고쳐 다시 신청하면 서버가 PENDING 으로 되돌린다.
 export const REGISTRATION_STAGES = [
   'NEED_COMPANY',
   'NOT_REGISTERED',
   'PENDING_VERIFICATION',
+  'REJECTED',
   'VERIFIED',
   'NEEDS_CERTIFICATE',
   'READY',
@@ -324,6 +326,7 @@ export const REGISTRATION_STAGE_LABEL: Record<RegistrationStage, string> = {
   NEED_COMPANY: '회사 정보 없음',
   NOT_REGISTERED: '미신청',
   PENDING_VERIFICATION: '권한 확인 중',
+  REJECTED: '반려됨',
   VERIFIED: '연동 필요',
   NEEDS_CERTIFICATE: '인증서 필요',
   READY: '준비 완료',
@@ -343,7 +346,19 @@ export interface ElectronicRegistrationStatus {
   /** 팝빌 연동 회원 여부. null 은 "확인하지 못함" — 미가입(false)과 다르다 */
   memberLinked: boolean | null;
   certificateExpiresAt: string | null;
+  /** 운영 심사 결과(2026-10-16, 예전 서버는 없음). 반려면 사유 · 시각이 함께 온다 */
+  reviewStatus?: RegistrationReviewStatus | null;
+  reviewReason?: string | null;
+  reviewedAt?: string | null;
 }
+
+export type RegistrationReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export const REVIEW_STATUS_LABEL: Record<RegistrationReviewStatus, string> = {
+  PENDING: '심사 대기',
+  APPROVED: '승인',
+  REJECTED: '반려',
+};
 
 /** 권한 확인 신청 — 저장은 신청일 뿐 발급 권한을 주지 않는다 */
 export interface ElectronicRegistrationRequest {
@@ -356,6 +371,140 @@ export interface ElectronicLinkRequest {
   memberId: string;
   password: string;
   consent: true;
+}
+
+// ── 운영 준비(2026-10-16) — 인증서 · 비용 정책 · 자동 상태 확인 · 안내, 개인 알림, 문서 처리 이력 ──
+// 모두 읽기다(읽음 표시 제외). 출시 값이 꺼져 있어도 열리고, 팝빌을 직접 부르지 않는다.
+
+/** 공동인증서 — 세금계산서에만 필요하다(현금영수증은 필요 없음). UNKNOWN 은 "확인하지 못함"(날짜를 짐작하지 않는다) */
+export type CertificateStatus = 'UNKNOWN' | 'VALID' | 'EXPIRING' | 'EXPIRED';
+
+/** 발급 비용 부담 — UNDECIDED 는 정책 미확정(기본). 금액 · 잔액을 모르면 null 이다(0원으로 보지 않는다) */
+export type BillingMode = 'UNDECIDED' | 'PARTNER' | 'MEMBER';
+export type BalanceScope = 'PARTNER' | 'MEMBER';
+
+export type OperationSeverity = 'INFO' | 'WARNING' | 'ERROR';
+export type OperationAction = 'REGISTRATION' | 'CERTIFICATE' | 'BILLING' | 'SUPPORT';
+
+export interface OperationIssue {
+  code: string;
+  severity: OperationSeverity;
+  title: string;
+  message: string;
+  action: OperationAction;
+  invoiceId: number | null;
+}
+
+/** GET /taxinvoices/electronic/operations — 자기 회사 · 자기 권한만 */
+export interface ElectronicOperations {
+  /** 단계를 읽지 못했으면 null(등록 화면 자체 조회가 진실) */
+  registration: ElectronicRegistrationStatus | null;
+  certificate: { status: CertificateStatus; expiresAt: string | null; daysRemaining: number | null };
+  billing: {
+    mode: BillingMode;
+    label: string;
+    message: string;
+    taxUnitCost: string | null;
+    cashUnitCost: string | null;
+    balance: string | null;
+    balanceScope: BalanceScope | null;
+    checkedAt: string | null;
+    error: string | null;
+  };
+  /** intervalSeconds 를 모르면 null */
+  autoSync: { enabled: boolean; intervalSeconds: number | null; lastRunAt: string | null; nextRunAt: string | null };
+  issues: OperationIssue[];
+}
+
+/** 개인 알림 한 건 — invoiceId 가 있으면 그 문서, 없으면 발급 서비스 등록으로 잇는다 */
+export interface TaxInvoiceActivity {
+  id: number;
+  invoiceId: number | null;
+  registrationId: number | null;
+  eventType: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+/** GET /taxinvoices/electronic/activity — unreadCount 를 모르면 null */
+export interface TaxInvoiceActivityPage {
+  items: TaxInvoiceActivity[];
+  totalElements: number;
+  unreadCount: number | null;
+}
+
+/** 처리 이력 한 줄 — 대행사 원문 · 식별번호는 담지 않는다 */
+export interface TaxInvoiceHistoryItem {
+  id: number;
+  invoiceId: number | null;
+  registrationId: number | null;
+  action: string;
+  actorLabel: string;
+  outcome: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface TaxInvoiceHistoryPage {
+  items: TaxInvoiceHistoryItem[];
+  totalElements: number;
+}
+
+// ── 운영자 — 화면에 보이는지는 GET /taxinvoices/admin/access 로만 정한다. 모든 판정은 서버가 다시 한다 ──
+export interface TaxInvoiceAdminAccess {
+  isAdmin: boolean;
+}
+
+/** 발급 권한 신청 한 건. reviewStatus 를 모르면 null — 처리하지 않고 다시 불러오게 한다 */
+export interface AdminRegistration {
+  id: number;
+  companyId: number;
+  userId: string;
+  companyName: string | null;
+  isTest: boolean;
+  supplier: TaxInvoiceSupplier | null;
+  submittedAt: string;
+  reviewStatus: RegistrationReviewStatus | null;
+  reviewedAt: string | null;
+  reviewReason: string | null;
+  /** 이번에 본 신청 내용에 묶인 값 — 그대로 돌려보낸다. 내용이 바뀌었거나 이미 처리됐으면 서버가 거절한다 */
+  reviewToken: string;
+}
+
+export interface AdminRegistrationPage {
+  items: AdminRegistration[];
+  totalElements: number;
+}
+
+export type AdminReviewDecision = 'APPROVE' | 'REJECT';
+
+/** POST /taxinvoices/admin/registrations/{id}/review — 승인해도 팝빌 가입 · 발급 · 오픈 상태는 바뀌지 않는다 */
+export interface AdminReviewRequest {
+  decision: AdminReviewDecision;
+  reviewToken: string;
+  reason: string;
+  confirmed: true;
+}
+
+export interface AdminProblem {
+  invoice: TaxInvoice;
+  ownerUserId: string;
+  lastError: string | null;
+  lastSyncedAt: string | null;
+  canSync: boolean;
+}
+
+export interface AdminProblemPage {
+  items: AdminProblem[];
+  totalElements: number;
+}
+
+/** POST /taxinvoices/admin/invoices/{id}/sync — 문서 주인의 기존 상태 조회로 처리된다(재발급 · 강제 성공 없음) */
+export interface AdminSyncRequest {
+  confirmed: true;
+  note: string;
 }
 
 /**

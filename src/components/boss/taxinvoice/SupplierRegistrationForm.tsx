@@ -67,8 +67,8 @@ export default function SupplierRegistrationForm({
 }: {
   value: TaxInvoiceSupplier;
   onChange: (next: TaxInvoiceSupplier) => void;
-  /** new: 첫 신청 · edit: 확인 전 신청 내용 고치기 */
-  mode: 'new' | 'edit';
+  /** new: 첫 신청 · edit: 확인 전 신청 내용 고치기 · reapply: 반려된 신청을 고쳐 다시 신청 */
+  mode: 'new' | 'edit' | 'reapply';
   prefillNote?: string | null;
   serviceConfigured: boolean;
   submitting: boolean;
@@ -123,7 +123,7 @@ export default function SupplierRegistrationForm({
   };
 
   return (
-    <Panel kicker={mode === 'new' ? '1단계 · 신청서' : '신청 내용 수정'} title="발급 권한 확인 신청">
+    <Panel kicker={mode === 'new' ? '신청서' : mode === 'reapply' ? '반려 후 다시 신청' : '신청 내용 수정'} title="발급 권한 확인 신청">
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4" aria-describedby="reg-supplier-desc">
         <p id="reg-supplier-desc" className="break-keep text-[13px] leading-relaxed text-boss-text-secondary">
           전자세금계산서의 공급자로 실릴 사업자 정보입니다. 사업자등록증과 똑같이 적어 주세요. 모든 칸이 필수입니다.
@@ -194,7 +194,7 @@ export default function SupplierRegistrationForm({
               </Button>
             )}
             <Button type="submit" variant="primary" disabled={submitting} aria-busy={submitting || undefined}>
-              {submitting ? '신청 중…' : mode === 'new' ? '권한 확인 신청' : '수정 내용으로 다시 신청'}
+              {submitting ? '신청 중…' : mode === 'new' ? '권한 확인 신청' : mode === 'reapply' ? '고친 내용으로 다시 신청' : '수정 내용으로 다시 신청'}
             </Button>
           </div>
         </div>
