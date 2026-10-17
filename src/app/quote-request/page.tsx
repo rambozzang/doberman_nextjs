@@ -6,6 +6,7 @@ import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, Sparkles, MapPin, Home, C
 import { CustomerRequestService } from "@/services/customerRequestService";
 import { CreateCustomerRequestRequest, UserInfo } from "@/types/api";
 import { AuthManager } from "@/lib/auth";
+import { useAuth } from "@/providers/AuthProvider";
 import SocialAuthService from '@/services/socialAuthService';
 import { toast } from 'react-hot-toast';
 
@@ -536,6 +537,12 @@ const initialFormState: FormState = {
 
 export default function QuoteRequestPage() {
   const router = useRouter();
+  // 헤더가 보는 공용 로그인 상태 — 소셜 로그인 직후 다시 읽게 한다(2026-10-17).
+  // 예전엔 이 화면 상태만 바꿔서 견적 접수 뒤에도 새로고침 전까지 헤더에 '로그인'이 남았다. 페이지는 새로 고치지 않는다.
+  const { refreshAuth } = useAuth();
+  // 메시지 수신 effect 를 다시 걸지 않도록 최신 함수만 참조로 들고 있는다
+  const refreshAuthRef = useRef(refreshAuth);
+  refreshAuthRef.current = refreshAuth;
   const districtRef = useRef<HTMLDivElement>(null); // 구/군 선택 영역 참조
   const nameInputRef = useRef<HTMLInputElement>(null); // 이름 입력 필드 참조
   const autoSubmitTriedRef = useRef(false); // 소셜로그인 자동제출 1회 실행 가드(중복 견적 방지)
@@ -744,6 +751,7 @@ export default function QuoteRequestPage() {
         const user = AuthManager.getUserInfo();
         setIsLoggedIn(loginStatus);
         setUserInfo(user);
+        refreshAuthRef.current();
 
         // 대기 중인 제출이 있는지 확인
         if (hasPendingSubmit()) {
