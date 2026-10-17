@@ -26,6 +26,7 @@ import { BossAuthManager } from '@/lib/bossAuth';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { formatOpsDateTime } from '@/lib/boss/taxInvoiceOps';
+import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 import { EMPTY_SUPPLIER, daysUntil, effectiveStage, normalizeSupplier, registrationSteps, supplierFormValue, supplierFromCompany } from '@/lib/boss/taxInvoiceRegistration';
 import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
 import { REGISTRATION_STAGE_LABEL, type ElectronicRegistrationStatus, type RegistrationStage, type TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
@@ -205,7 +206,7 @@ function RegistrationScreen({ scope }: { scope: string }) {
   useBoundedRefresh({ enabled: pending && !editing && busy === null && !needsRefresh, run: refresh, refreshOnResume: false });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="boss-touch flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <ButtonLink href="/boss/tax-invoice" variant="secondary" size="sm">계산서 목록</ButtonLink>
@@ -239,7 +240,7 @@ function RegistrationScreen({ scope }: { scope: string }) {
                       <b>반려 사유</b>
                       <span className="mt-1 block whitespace-pre-wrap">{status.reviewReason?.trim() || '사유가 함께 오지 않았습니다. 운영팀에 문의해 주세요.'}</span>
                     </Note>
-                    {status.reviewedAt && <p className="text-[12px] text-boss-text-muted">처리 시각: {formatOpsDateTime(status.reviewedAt) ?? '-'}</p>}
+                    {status.reviewedAt && <p className="text-[12px] text-boss-text-secondary">처리 시각: {formatOpsDateTime(status.reviewedAt) ?? '-'}</p>}
                     {status.supplier && <SupplierSummary supplier={status.supplier} />}
                     <p className="break-keep text-[12.5px] leading-relaxed text-boss-text-secondary">사유에 맞게 사업자 정보를 고쳐 다시 신청하면 운영팀이 다시 확인합니다.</p>
                     <div>
@@ -250,8 +251,8 @@ function RegistrationScreen({ scope }: { scope: string }) {
               ) : (
                 <Panel title={pending ? '사업자 권한 확인 중' : '확인된 사업자 정보'}>
                   {status.supplier && <SupplierSummary supplier={status.supplier} />}
-                  {status.submittedAt && <p className="mt-3 text-[12px] text-boss-text-muted">신청 시각: {status.submittedAt.replace('T', ' ').slice(0, 16)}</p>}
-                  {pending ? <div className="mt-4 flex flex-col gap-3"><Note>운영팀이 사업자 발급 권한을 확인하고 있습니다. 확인이 끝나면 서비스 연동 단계가 열립니다.</Note><Button variant="secondary" disabled={disabled} onClick={() => { setEditing(true); setFeedback(null); }}>신청 내용 수정</Button></div> : <p className="mt-3 text-[12px] leading-relaxed text-boss-text-muted">권한 확인된 정보는 여기서 변경할 수 없습니다. 변경이 필요하면 운영팀에 요청해 주세요.</p>}
+                  {status.submittedAt && <p className="mt-3 text-[12px] text-boss-text-secondary">신청 시각: {status.submittedAt.replace('T', ' ').slice(0, 16)}</p>}
+                  {pending ? <div className="mt-4 flex flex-col gap-3"><Note>운영팀이 사업자 발급 권한을 확인하고 있습니다. 확인이 끝나면 서비스 연동 단계가 열립니다.</Note><Button variant="secondary" disabled={disabled} onClick={() => { setEditing(true); setFeedback(null); }}>신청 내용 수정</Button></div> : <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">권한 확인된 정보는 여기서 변경할 수 없습니다. 변경이 필요하면 운영팀에 요청해 주세요.</p>}
                 </Panel>
               )}
               {status.stage === 'VERIFIED' && status.serviceConfigured && status.memberLinked === false && !needsRefresh && !loadError && (
@@ -260,6 +261,18 @@ function RegistrationScreen({ scope }: { scope: string }) {
               {(status.stage === 'NEEDS_CERTIFICATE' || status.stage === 'READY') && (
                 <Panel title="공동인증서 등록">
                   <p className="mb-3 text-[13px] leading-relaxed text-boss-text-secondary">사업자 공동인증서는 팝빌 등록 페이지에서 등록합니다. 인증서 파일과 인증서 비밀번호는 도배르만에 저장하지 않습니다.</p>
+                  {/* 무료 1개월은 가입일이 아니라 인증서를 등록한 날부터(2026-10-17 사장님 결정) — 등록하는 이 칸에서 먼저 알린다 */}
+                  <div className="mb-3">
+                    {status.stage === 'NEEDS_CERTIFICATE' ? (
+                      <Note tone="ok">
+                        <b>공동인증서를 등록한 날부터 1개월 무료</b>로 전자 발급할 수 있습니다. 이후에는 {TAX_SUBSCRIPTION_PRICE} 앱 구독이 필요합니다.
+                      </Note>
+                    ) : (
+                      <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+                        무료 기간 · 구독 상태는 <a href="#subscription" className="font-semibold text-boss-primary underline">구독 · 요금</a>에서 확인하세요.
+                      </p>
+                    )}
+                  </div>
                   {status.certificateExpiresAt && <p className="mb-3 text-[13px] text-boss-text">인증서 만료일: <b>{status.certificateExpiresAt}</b>{expiryDays !== null && expiryDays < 30 ? ' · 갱신 날짜를 확인해 주세요.' : ''}</p>}
                   <Button disabled={disabled || status.memberLinked !== true || !status.serviceConfigured} onClick={() => void openCertificate()}>{busy === 'certificate' ? '등록 페이지 준비 중…' : ready ? '공동인증서 갱신·관리' : '공동인증서 등록'}</Button>
                   {certificateUrl && <a href={certificateUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block text-[13px] font-semibold text-boss-primary underline">인증서 등록 페이지 열기 (새 창)</a>}
@@ -270,11 +283,11 @@ function RegistrationScreen({ scope }: { scope: string }) {
             </div>
             <div className="flex flex-col gap-5">
             <Panel title="현재 등록 상태">
-              <div className="mb-3 flex flex-wrap gap-2"><Tag tone={ready ? 'ok' : rejected ? 'bad' : 'warn'}>{stage ? REGISTRATION_STAGE_LABEL[stage] : ''}</Tag>{status.isTest && <Tag tone="warn">테스트 환경</Tag>}</div>
+              <div className="mb-3 flex flex-wrap gap-2"><Tag tone={ready ? 'ok' : rejected ? 'bad' : 'warn'}>{stage ? REGISTRATION_STAGE_LABEL[stage] : ''}</Tag>{status.isTest && <Tag tone="warn">시험 환경 · 효력 없음</Tag>}</div>
               {ready ? <Note tone="ok">{ELECTRONIC_TAX_INVOICE_OPEN ? '발급 준비가 완료되었습니다.' : '등록 준비 완료 · 발급은 정식 오픈 후 이용'}</Note> : <p className="break-keep text-[13px] leading-relaxed text-boss-text-secondary">{status.reason || '다음 등록 단계를 진행해 주세요.'}</p>}
-              {!status.serviceConfigured && <p className="mt-3 text-[12px] leading-relaxed text-boss-text-muted">발급 서비스의 연동 설정을 준비 중입니다. 권한 확인 신청은 저장할 수 있습니다.</p>}
+              {!status.serviceConfigured && <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">발급 서비스의 연동 설정을 준비 중입니다. 권한 확인 신청은 저장할 수 있습니다.</p>}
               {status.stage === 'VERIFIED' && status.memberLinked === null && status.serviceConfigured && <Note tone="warn">팝빌 연동 여부를 확인하지 못했습니다. 다시 확인 후 진행해 주세요.</Note>}
-              {status.reviewStatus === 'APPROVED' && status.reviewedAt && <p className="mt-3 text-[12px] text-boss-text-muted">권한 승인: {formatOpsDateTime(status.reviewedAt) ?? '-'}</p>}
+              {status.reviewStatus === 'APPROVED' && status.reviewedAt && <p className="mt-3 text-[12px] text-boss-text-secondary">권한 승인: {formatOpsDateTime(status.reviewedAt) ?? '-'}</p>}
             </Panel>
             <OperationsPanel refreshKey={checkedAt} scope={scope} />
             <SupportScope stage={status.stage} refreshKey={checkedAt} />

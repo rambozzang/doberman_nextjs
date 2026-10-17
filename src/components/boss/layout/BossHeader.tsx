@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Search } from 'lucide-react';
+import { formatBizNo } from '@/lib/boss/bizno';
 import { CONTENT_MAX_WIDTH, getPageMeta } from './nav';
 import { useBossSearchBar } from './BossSearchContext';
 import { useBossPortal } from './BossPortalContext';
@@ -40,7 +41,9 @@ export default function BossHeader() {
   const kicker = 'text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-text-muted';
 
   return (
-    <header className="sticky top-[53px] z-30 border-b border-boss-border bg-boss-bg/95 px-5 pb-4 pt-5 backdrop-blur sm:px-7 lg:top-0">
+    // 휴대폰 · 태블릿(lg 미만)은 고정하지 않는다 — 위 막대 · 이 머리 · 아래 메뉴가 화면의 34%를 덮어
+    // 내리면 입력칸이 머리 밑에 깔렸다(2026-10-17 세금계산서 점검). 넓은 화면만 위에 붙여 둔다.
+    <header className="relative z-30 border-b border-boss-border bg-boss-bg/95 px-5 pb-4 pt-5 backdrop-blur sm:px-7 lg:sticky lg:top-0">
       {/* 면색·하단 보더는 화면 전체 폭을 유지하고, 내용만 본문과 같은 폭으로 가운데 정렬한다 */}
       <div
         className={`flex w-full ${CONTENT_MAX_WIDTH[meta.width ?? 'full']} flex-wrap items-end justify-between gap-x-6 gap-y-3`}
@@ -76,7 +79,8 @@ export default function BossHeader() {
           {company?.name && (
             <span className="hidden max-w-[320px] items-center truncate border border-boss-border bg-boss-surface px-2.5 py-[5px] text-[12px] text-boss-text-dim md:inline-flex">
               {company.name}
-              {company.bizno ? ` · ${company.bizno}` : ''}
+              {/* 사업자번호는 어디서나 000-00-00000 으로(2026-10-17 — 머리만 숫자 10자리로 보였다) */}
+              {company.bizno ? ` · ${formatBizNo(company.bizno)}` : ''}
             </span>
           )}
 

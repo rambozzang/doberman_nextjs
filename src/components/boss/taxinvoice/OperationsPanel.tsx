@@ -2,7 +2,7 @@
 
 // 발급 운영 상태 — 발급 서비스 등록 화면 오른쪽
 //
-//   안내 항목(서버가 고른 할 일) → 공동인증서(세금계산서 전용) → 발급 비용 정책 → 자동 상태 확인
+//   안내 항목(서버가 고른 할 일) → 공동인증서(세금계산서 전용) → 구독 · 요금(2026-10-17) → 발급 비용 정책 → 자동 상태 확인
 //   읽기만 한다. 충전 · 결제 · 가입 버튼은 없다. 모르는 금액 · 날짜는 "확인 전"으로 둔다.
 //   refreshKey 가 바뀔 때마다(등록 화면의 다시 확인) 다시 읽는다. 늦게 온 이전 응답 · 다른 계정으로 바뀐 뒤 온 응답은 버린다.
 
@@ -19,7 +19,8 @@ import {
   certificateView,
   issueHref,
 } from '@/lib/boss/taxInvoiceOps';
-import type { ElectronicOperations } from '@/types/boss-taxinvoice';
+import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_POLICY, TAX_SUBSCRIPTION_WHERE, subscriptionView } from '@/lib/boss/taxInvoiceSubscription';
+import type { ElectronicOperations, TaxInvoiceSubscriptionStatus } from '@/types/boss-taxinvoice';
 import { Panel, Skeleton, Tag, type StatusTone } from '@/components/boss/ui';
 import { Note } from './RegistrationParts';
 
@@ -51,9 +52,41 @@ function Rows({ rows }: { rows: { label: string; value: string }[] }) {
   );
 }
 
+/** 구독 · 요금 — 서버가 정한 상태(무료 남은 날 · 구독 중 · 구독 필요)와 정책 한 줄. 결제는 앱에서만 한다 */
+function SubscriptionBlock({ status }: { status: TaxInvoiceSubscriptionStatus | null | undefined }) {
+  if (status === undefined) {
+    return (
+      <Block id="subscription" title="구독 · 요금" tone="neutral" tag="확인 중">
+        <Skeleton className="h-10" />
+      </Block>
+    );
+  }
+  const view = subscriptionView(status);
+  const reason = status?.reason;
+  const subscribed = reason === 'SUBSCRIBED' || reason === 'NOT_REQUIRED';
+  // 상태 문장에 요금이 이미 들어 있는 경우(무료 · 구독 필요)는 정책 문장을 되풀이하지 않는다
+  const known = reason === 'FREE_NOT_STARTED' || reason === 'FREE_PERIOD' || reason === 'SUBSCRIPTION_REQUIRED';
+  return (
+    <Block id="subscription" title="구독 · 요금" tone={view.tone} tag={view.tag}>
+      <p className={view.needsSubscription ? 'font-semibold text-boss-pill-warn-fg' : 'text-boss-text'}>
+        {status ? view.text : '구독 상태를 확인하지 못했습니다. 위의 다시 확인을 눌러 주세요.'}
+      </p>
+      {!subscribed && !known && <p>{TAX_SUBSCRIPTION_POLICY}</p>}
+      {!subscribed && (
+        <>
+          <p>{TAX_SUBSCRIPTION_WHERE}</p>
+          <p className="text-[12px]">{TAX_SUBSCRIPTION_FREE_USES}</p>
+        </>
+      )}
+    </Block>
+  );
+}
+
 /** scope — 이 화면을 연 계정(부모가 계정이 바뀌면 key 로 새로 그린다) */
 export default function OperationsPanel({ refreshKey, scope }: { refreshKey: number; scope: string }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' });
+  // 구독 상태 — 따로 읽는다(못 읽어도 운영 상태는 그대로 보인다). undefined: 읽는 중 · null: 못 읽음
+  const [subscription, setSubscription] = useState<TaxInvoiceSubscriptionStatus | null | undefined>(undefined);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -64,6 +97,15 @@ export default function OperationsPanel({ refreshKey, scope }: { refreshKey: num
       if (my !== seq.current || !isCurrentScope(scope)) return;
       setLoad(r.ok ? { state: 'done', data: r.data } : { state: 'error', result: r });
     });
+    bossTaxInvoiceApi
+      .electronicSubscription()
+      .then((r) => {
+        if (my !== seq.current || !isCurrentScope(scope)) return;
+        setSubscription(r.success !== false && r.data ? r.data : null);
+      })
+      .catch(() => {
+        if (my === seq.current && isCurrentScope(scope)) setSubscription(null);
+      });
     return () => {
       seq.current += 1;
     };
@@ -120,8 +162,10 @@ export default function OperationsPanel({ refreshKey, scope }: { refreshKey: num
 
       <Block id="certificate" title="공동인증서 (세금계산서)" tone={cert.tone} tag={cert.tag}>
         <p>{cert.text}</p>
-        <p className="text-[12px] text-boss-text-muted">현금영수증은 공동인증서 없이 발급합니다.</p>
+        <p className="text-[12px] text-boss-text-secondary">현금영수증은 공동인증서 없이 발급합니다.</p>
       </Block>
+
+      <SubscriptionBlock status={subscription} />
 
       <Block id="billing" title="발급 비용" tone={bill.tone} tag={bill.tag}>
         {bill.title !== bill.tag && <p className="font-semibold text-boss-text">{bill.title}</p>}
@@ -130,8 +174,7 @@ export default function OperationsPanel({ refreshKey, scope }: { refreshKey: num
         ))}
         <Rows rows={bill.rows} />
         {bill.error && <p className="text-boss-pill-warn-fg">잔액 · 비용을 확인하지 못했습니다: {bill.error}</p>}
-        {bill.checkedAt && <p className="text-[12px] text-boss-text-muted">확인 시각 {bill.checkedAt}</p>}
-        <p className="text-[12px] text-boss-text-muted">이 화면에서는 충전 · 결제를 하지 않습니다.</p>
+        {bill.checkedAt && <p className="text-[12px] text-boss-text-secondary">확인 시각 {bill.checkedAt}</p>}
       </Block>
 
       <Block title="자동 상태 확인" tone={sync.tone} tag={sync.tag}>

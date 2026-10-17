@@ -459,10 +459,10 @@ function TaxCancelDialog({
                 </div>
               )}
               {reason === 'DUPLICATE' && guide && (
-                <p className="text-[12px] leading-relaxed text-boss-text-muted">{guide.dateHint}</p>
+                <p className="text-[12px] leading-relaxed text-boss-text-secondary">{guide.dateHint}</p>
               )}
 
-              <p className="text-[11.5px] leading-relaxed text-boss-text-muted">
+              <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
                 전액 취소만 지원합니다. 일부 반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환은 여기서 처리하지 않으니 팝빌 또는 홈택스를 이용하세요.
                 국세청 전송 전이면 고른 사유와 상관없이 발행취소로 처리됩니다.
               </p>
@@ -489,7 +489,7 @@ function TaxCancelDialog({
           ) : (
             <div className="flex flex-col gap-4">
               {isTest ? (
-                <AlertBanner tone="warn">시험 환경입니다. 국세청에 전송되지 않고 효력이 없으며, 발행 · 부가세 집계에서 빠집니다.</AlertBanner>
+                <AlertBanner tone="warn">시험 환경입니다. 국세청에 전송되지 않고 효력이 없으며, 발급 · 부가세 집계에서 빠집니다.</AlertBanner>
               ) : mode === 'CANCEL_ISSUE' ? (
                 <AlertBanner tone="bad">실제 발행취소입니다. 취소하면 되돌릴 수 없습니다.</AlertBanner>
               ) : mode === 'CORRECTION' ? (
@@ -569,14 +569,14 @@ function TaxCancelDialog({
                       </tr>
                     </tbody>
                   </DataTable>
-                  <p className="-mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
+                  <p className="-mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
                     순합계는 수정분이 발급된 뒤의 예상입니다. 발급이 확정되기 전에는 목록 · 집계에 수정분이 들어가지 않습니다. 작성일자가 다른 분기면
                     수정분은 그 분기에 음수로 반영됩니다.
                   </p>
 
                   <div className="border border-boss-border p-3">
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-boss-text-muted">미발급 수정분 미리보기</p>
+                      <p className="text-[12px] font-semibold uppercase tracking-wide text-boss-text-secondary">미발급 수정분 미리보기</p>
                       <Tag tone="neutral">아직 발급 전</Tag>
                     </div>
                     <dl>
@@ -753,7 +753,7 @@ export function TaxCancelLinkPanel({ invoice }: { invoice: TaxInvoice }) {
           <DescRow label="원본 상태" value={ls ? <Tag tone={ls.tone}>{ls.label}</Tag> : loadingText} />
           <DescRow label="원본 합계" value={linked ? won(linked.totalAmount) : loadingText} />
         </dl>
-        <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
+        <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
           원본은 지워지지 않고 그대로 남습니다. 원본과 이 수정분을 함께 보관하고, 신고 · 집계에는 둘이 함께 들어갑니다. 이 수정분은 수정 · 삭제 ·
           다시 발급 · 다시 취소할 수 없습니다.
         </p>
@@ -786,7 +786,7 @@ export function TaxCancelLinkPanel({ invoice }: { invoice: TaxInvoice }) {
         <DescRow label="수정분 작성일자" value={(linked && isoDateOf(linked.issueDate)) || isoDateOf(invoice.taxCancelDate) || '-'} />
         <DescRow label="수정분 합계" value={linked ? won(linked.totalAmount) : loadingText} />
       </dl>
-      <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
+      <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
         이 문서는 원본 그대로입니다. 수정분이 발급되면 원본과 함께 신고 · 집계되어 합계가 0원이 됩니다. 수정분 발급이 확정되기 전에는 집계에 들어가지
         않습니다.
       </p>

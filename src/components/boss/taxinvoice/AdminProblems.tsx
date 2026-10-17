@@ -156,7 +156,7 @@ export default function AdminProblems({ scope, onForbidden }: { scope: string; o
                   <tr key={p.invoice.id}>
                     <td className="wrap">
                       <span className="font-semibold text-boss-text">{p.invoice.buyerName || '(이름 없음)'}</span>
-                      <span className="mt-0.5 block text-[12px] text-boss-text-muted">
+                      <span className="mt-0.5 block text-[12px] text-boss-text-secondary">
                         {docKindLabel(p.invoice)} · {p.invoice.issueDate || '작성일 미정'} · #{p.invoice.id}
                       </span>
                     </td>
@@ -184,7 +184,7 @@ export default function AdminProblems({ scope, onForbidden }: { scope: string; o
                   {docKindLabel(p.invoice)} · {p.invoice.issueDate || '작성일 미정'} · {fmt(p.invoice.totalAmount)}원 · 주인 {p.ownerUserId || '-'}
                 </p>
                 {p.lastError && <p className="break-keep text-[12px] leading-relaxed text-boss-error [overflow-wrap:anywhere]">{p.lastError}</p>}
-                <p className="font-boss-head text-[12px] tabular-nums text-boss-text-muted">마지막 확인 {formatOpsDateTime(p.lastSyncedAt) ?? '-'}</p>
+                <p className="font-boss-head text-[12px] tabular-nums text-boss-text-secondary">마지막 확인 {formatOpsDateTime(p.lastSyncedAt) ?? '-'}</p>
                 {action(p)}
               </li>
             ))}

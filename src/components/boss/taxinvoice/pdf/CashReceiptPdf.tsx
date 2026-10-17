@@ -79,7 +79,7 @@ export default function CashReceiptPdf({ model }: { model: PaperModel }) {
         ? '승인 거래'
         : '결과 확인 필요'
     : inv.status === 'ISSUED'
-      ? '승인 거래 (홈택스 발행 기록)'
+      ? '승인 거래 (홈택스 발급 기록)'
       : inv.status === 'CANCELED'
         ? '취소로 기록'
         : '발급 전';

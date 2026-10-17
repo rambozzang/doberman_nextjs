@@ -12,7 +12,7 @@
 //
 // ?id= 수정, ?customerId= 그 고객으로 시작, ?docType=CASH 현금영수증으로 시작.
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type InputHTMLAttributes } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Eye, Plus, Trash2 } from 'lucide-react';
@@ -68,7 +68,17 @@ import {
 } from '@/components/boss/ui';
 import { useSubmitHotkey } from '@/components/boss/layout/BossSearchContext';
 
-type Row = TaxInvoiceItem & { key: string; taxFree: boolean };
+type Row = TaxInvoiceItem & {
+  key: string;
+  taxFree: boolean;
+  /** 부가세 포함 단가 — '부가세 포함'으로 직접 넣은 줄만 있다(2026-10-17) */
+  gross?: number | null;
+  /** 견적 · 저장 문서에서 온 금액 — 수량 · 단가를 고치기 전까지 공급가액 · 세액을 그대로 쓴다 */
+  fixed?: boolean;
+};
+
+/** 단가 입력 방식 — EX: 부가세 별도(공급가액), IN: 부가세 포함(받을 금액) */
+type VatMode = 'EX' | 'IN';
 
 /** 서버 검증과 같은 길이 */
 const MEMO_MAX = 500;
@@ -82,7 +92,11 @@ const fmt = (n?: number | null) => (n ?? 0).toLocaleString('ko-KR');
 // 새 문서 기본 날짜는 서버와 같은 한국시간 오늘
 const todayIso = () => kstToday();
 let rowSeq = 0;
-const newRow = (init?: Partial<Row>): Row => ({
+/**
+ * [fixedKey] — 첫 화면의 빈 줄만 쓴다. 서버 그림과 브라우저 그림의 칸 id 가 같아야 한다(2026-10-17):
+ * 전역 번호는 서버(요청마다 늘어남)와 브라우저가 달라 id 가 어긋났고, 그러면 '확인할 것'을 눌러도 그 칸으로 가지 못했다.
+ */
+const newRow = (init?: Partial<Row>, fixedKey?: string): Row => ({
   name: '',
   spec: '',
   qty: 1,
@@ -92,11 +106,97 @@ const newRow = (init?: Partial<Row>): Row => ({
   date: todayIso(),
   taxFree: false,
   ...init,
-  key: `r${++rowSeq}`,
+  key: fixedKey ?? `r${++rowSeq}`,
 });
 
 // 10% 원 단위 반올림 — 0.1 곱셈은 이진 소수 오차가 있어 10으로 나눈다(정수 공급가액의 .5 는 정확히 올림)
 const vatOf = (supply: number, taxFree: boolean) => (taxFree ? 0 : Math.round(supply / 10));
+
+/**
+ * 부가세 포함 금액으로 넣은 줄 → 공급가액 · 세액 · 공급가 기준 단가(2026-10-17).
+ * 수량 × 포함 단가(받을 돈)는 그대로 지키고 견적 가져오기와 같은 규칙(splitVatInclusive)으로 나눈다.
+ * 예: 550,000원 → 500,000 + 50,000. 예전엔 받은 돈을 단가에 넣으면 10%가 더 붙어 605,000원이 됐다.
+ */
+function fromGross(qty: number, gross: number, noVat: boolean) {
+  const total = Math.round(qty * gross);
+  const { supply, vat } = noVat ? { supply: total, vat: 0 } : splitVatInclusive(total);
+  return { supplyAmount: supply, vatAmount: vat, unitPrice: qty > 0 ? Math.round(supply / qty) : 0 };
+}
+
+/** '부가세 포함' 칸에 보일 단가 — 직접 넣은 값, 없으면(견적 · 저장 금액) 합계 ÷ 수량 */
+const grossOf = (r: Row) =>
+  r.gross ?? ((r.qty ?? 0) > 0 ? Math.round(((r.supplyAmount ?? 0) + (r.vatAmount ?? 0)) / (r.qty ?? 1)) : 0);
+
+/**
+ * 숫자 칸(수량 · 단가) — 쉼표를 찍어 보여 주고, 누르면 전체를 골라 새로 친 숫자가 기존 값 앞에 붙지 않게 한다.
+ * 예전엔 단가 칸의 기본값 0 왼쪽을 누르고 550000 을 치면 5,500,000 이 됐다(2026-10-17 점검).
+ * [emptyWhenZero] 면 0 을 빈칸(흐린 0)으로 보인다.
+ */
+function AmountInput({
+  value,
+  onValue,
+  emptyWhenZero = false,
+  ...rest
+}: {
+  value: number;
+  onValue: (next: number) => void;
+  emptyWhenZero?: boolean;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'>) {
+  const ref = useRef<HTMLInputElement>(null);
+  // 쉼표를 뺀 숫자 기준 커서 위치 — 쉼표가 늘거나 줄어도 커서가 끝으로 튀지 않게
+  const caretDigits = useRef<number | null>(null);
+  const selectOnMouseUp = useRef(false);
+  const text = emptyWhenZero && value === 0 ? '' : value.toLocaleString('ko-KR');
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const digits = caretDigits.current;
+    if (!el || digits == null || document.activeElement !== el) return;
+    caretDigits.current = null;
+    let pos = 0;
+    let seen = 0;
+    while (pos < el.value.length && seen < digits) {
+      if (/\d/.test(el.value[pos])) seen += 1;
+      pos += 1;
+    }
+    el.setSelectionRange(pos, pos);
+  });
+
+  return (
+    <input
+      ref={ref}
+      {...rest}
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      value={text}
+      onChange={(e) => {
+        const raw = e.target.value;
+        caretDigits.current = raw.slice(0, e.target.selectionStart ?? raw.length).replace(/\D/g, '').length;
+        const digits = raw.replace(/\D/g, '').slice(0, 15);
+        onValue(digits === '' ? 0 : Number(digits));
+      }}
+      onFocus={(e) => {
+        const el = e.currentTarget;
+        el.select();
+        selectOnMouseUp.current = true;
+        // iOS 는 포커스 직후 select() 를 무시해 한 번 더 고른다
+        window.setTimeout(() => {
+          if (document.activeElement === el) el.setSelectionRange(0, el.value.length);
+        }, 0);
+        rest.onFocus?.(e);
+      }}
+      onMouseUp={(e) => {
+        // 누른 마우스를 뗄 때 선택이 풀리지 않게 — 첫 번째만
+        if (selectOnMouseUp.current) {
+          e.preventDefault();
+          selectOnMouseUp.current = false;
+        }
+        rest.onMouseUp?.(e);
+      }}
+    />
+  );
+}
 
 /**
  * 견적 품목 → 서식 행. 견적의 공급가액 · 세액이 있으면 그대로, 없으면 단가×수량으로 계산.
@@ -124,6 +224,7 @@ function fromEstimateItem(it: BossEstimateItem): Row {
     vatAmount: vat,
     date: (it.createdDt ?? '').slice(0, 10) || todayIso(),
     taxFree,
+    fixed: true,
   });
 }
 
@@ -152,6 +253,8 @@ type Draft = {
   cashIdentityType: CashIdentityType;
   cashIdentityNum: string;
   cashTaxation: CashTaxationType;
+  /** 예전 보관본에는 없다 */
+  vatMode?: VatMode;
   rows: Row[];
   memo: string;
 };
@@ -247,7 +350,9 @@ function TaxInvoiceForm() {
   const [cashIdentityNum, setCashIdentityNum] = useState('');
   // 현금영수증 과세 구분 — 문서 전체에 적용. 새 문서는 과세
   const [cashTaxation, setCashTaxation] = useState<CashTaxationType>('TAXABLE');
-  const [rows, setRows] = useState<Row[]>(() => [newRow()]);
+  // 단가 입력 방식 — 현금영수증은 받은 돈 그대로(부가세 포함), 세금계산서는 공급가액(부가세 별도)으로 시작한다(앱과 같다)
+  const [vatMode, setVatMode] = useState<VatMode>(presetDocType === 'CASH' ? 'IN' : 'EX');
+  const [rows, setRows] = useState<Row[]>(() => [newRow(undefined, 'r0')]);
   const [memo, setMemo] = useState('');
   const [itemsLoaded, setItemsLoaded] = useState<string | null>(null);
   // 이미 적은 품목이 있으면 견적 품목으로 바로 덮지 않고 묻는다
@@ -325,6 +430,7 @@ function TaxInvoiceForm() {
       setCashIdentityType(d.cashIdentityType);
       setCashIdentityNum(d.cashIdentityNum);
       setCashTaxation(d.cashTaxation === 'NON_TAXABLE' ? 'NON_TAXABLE' : 'TAXABLE');
+      setVatMode(d.vatMode === 'IN' || d.vatMode === 'EX' ? d.vatMode : 'EX');
       setRows(d.rows.length ? d.rows.map((r) => newRow({ ...r })) : [newRow()]);
       setMemo(d.memo);
       // 되살린 품목을 견적 품목으로 덮지 않게
@@ -373,11 +479,13 @@ function TaxInvoiceForm() {
           }
           setMemo(d.memo ?? '');
           const items = Array.isArray(d.items) ? d.items : [];
+          // 저장된 단가는 공급가액 기준이라 '부가세 별도'로 보여 준다. 저장된 금액은 수량 · 단가를 고치기 전까지 그대로다
+          setVatMode('EX');
           setRows(
             items.length > 0
               // 세액 0원이 과세로도 맞는 소액(공급가 9원 이하)은 면세로 짐작하지 않는다(2026-10-16)
-              ? items.map((it) => newRow({ ...it, taxFree: (it.vatAmount ?? 0) === 0 && !isValidVat(it.supplyAmount ?? 0, 0) }))
-              : [newRow({ supplyAmount: d.supplyAmount, vatAmount: d.vatAmount, name: d.itemSummary ?? '', taxFree: d.vatAmount === 0 && !isValidVat(d.supplyAmount, 0) })],
+              ? items.map((it) => newRow({ ...it, fixed: true, taxFree: (it.vatAmount ?? 0) === 0 && !isValidVat(it.supplyAmount ?? 0, 0) }))
+              : [newRow({ supplyAmount: d.supplyAmount, vatAmount: d.vatAmount, name: d.itemSummary ?? '', fixed: true, taxFree: d.vatAmount === 0 && !isValidVat(d.supplyAmount, 0) })],
           );
           setItemsLoaded(d.customerId ? String(d.customerId) : null);
         } else {
@@ -454,7 +562,7 @@ function TaxInvoiceForm() {
     if (editId || !draftReady) return;
     const draft: Draft = {
       docType, payType, payTypeTouched, customerId, estimateId, issueDate, buyerName, buyerBizNo, buyerCeo, buyerAddress,
-      buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation, rows, memo,
+      buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation, vatMode, rows, memo,
     };
     const empty =
       !customerId && !buyerName.trim() && !buyerBizNo.trim() && !cashIdentityNum.trim() && !memo.trim() && !rows.some(rowHasContent);
@@ -467,26 +575,32 @@ function TaxInvoiceForm() {
   }, [
     editId, draftReady, docType, payType, payTypeTouched, customerId, estimateId, issueDate, buyerName, buyerBizNo, buyerCeo,
     buyerAddress, buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation,
-    rows, memo,
+    vatMode, rows, memo,
   ]);
 
   const isCash = docType === 'CASH';
   // 현금영수증은 문서 단위 과세 구분을 모든 품목에 적용한다(품목별 면세 선택은 세금계산서에서만).
   // 행 자체는 바꾸지 않아 세금계산서로 돌아가면 품목별 선택이 그대로 남는다.
+  // '부가세 포함'으로 넣은 줄은 받을 돈(수량 × 포함 단가)을 지키며 과세 구분이 바뀌어도 다시 나눈다.
   const effectiveRows = useMemo(
     () =>
-      isCash
-        ? rows.map((r) => ({
-            ...r,
-            taxFree: cashTaxation === 'NON_TAXABLE',
-            // 이미 10% 규칙에 맞는 과세 세액(부가세 포함 견적을 나눈 값 등)은 그대로 둔다 — 받은 돈(합계)이 1원 달라지지 않게
-            vatAmount:
-              cashTaxation === 'TAXABLE' && (r.vatAmount ?? 0) > 0 && isValidVat(r.supplyAmount ?? 0, r.vatAmount ?? 0)
-                ? (r.vatAmount ?? 0)
-                : cashVatOf(r.supplyAmount ?? 0, cashTaxation),
-          }))
-        : rows,
-    [isCash, rows, cashTaxation],
+      rows.map((r) => {
+        const noVat = isCash ? cashTaxation === 'NON_TAXABLE' : r.taxFree;
+        if (vatMode === 'IN' && r.gross != null && !r.fixed) {
+          return { ...r, taxFree: noVat, ...fromGross(r.qty ?? 0, r.gross, noVat) };
+        }
+        if (!isCash) return r;
+        return {
+          ...r,
+          taxFree: noVat,
+          // 이미 10% 규칙에 맞는 과세 세액(부가세 포함 견적을 나눈 값 등)은 그대로 둔다 — 받은 돈(합계)이 1원 달라지지 않게
+          vatAmount:
+            cashTaxation === 'TAXABLE' && (r.vatAmount ?? 0) > 0 && isValidVat(r.supplyAmount ?? 0, r.vatAmount ?? 0)
+              ? (r.vatAmount ?? 0)
+              : cashVatOf(r.supplyAmount ?? 0, cashTaxation),
+        };
+      }),
+    [isCash, rows, cashTaxation, vatMode],
   );
   const contentRows = useMemo(() => effectiveRows.filter(rowHasContent), [effectiveRows]);
   const totals = useMemo(() => {
@@ -543,21 +657,75 @@ function TaxInvoiceForm() {
     return problems.find((p) => p.field === f)?.message ?? null;
   };
 
-  const updateRow = (key: string, patch: Partial<Row>) =>
+  /** 품목 한 줄 고치기 — [price] 는 칸에 넣은 단가(입력 방식에 따라 부가세 별도 · 포함) */
+  const updateRow = (key: string, patch: Partial<Row> & { price?: number }) =>
     setRows((rs) =>
       rs.map((r) => {
         if (r.key !== key) return r;
-        const next = { ...r, ...patch };
+        const { price, ...rest } = patch;
+        const next: Row = { ...r, ...rest };
+        const amountTouched = 'qty' in patch || price !== undefined;
+        // 수량 · 단가를 고치면 더는 가져온 금액이 아니다
+        if (amountTouched) next.fixed = false;
+        if (vatMode === 'IN' && (amountTouched || ('taxFree' in patch && r.gross != null && !r.fixed))) {
+          // 부가세 포함 — 수량 × 포함 단가(받을 돈)를 공급가액 · 세액으로 나눈다. 가져온 금액을 고치면 그 금액의 포함 단가에서 이어 간다
+          const gross = price ?? grossOf(r);
+          const noVat = isCash ? cashTaxation === 'NON_TAXABLE' : next.taxFree;
+          return { ...next, gross, ...fromGross(next.qty ?? 0, gross, noVat) };
+        }
+        if (price !== undefined) {
+          next.unitPrice = price;
+          next.gross = null;
+        }
         // 수량 · 단가를 바꿨을 때만 공급가액을 다시 계산한다 — 견적에서 온 고정 공급가액을 면세 전환만으로 바꾸지 않는다
-        if ('qty' in patch || 'unitPrice' in patch) next.supplyAmount = Math.round((next.qty ?? 0) * (next.unitPrice ?? 0));
-        if ('qty' in patch || 'unitPrice' in patch || 'taxFree' in patch) next.vatAmount = vatOf(next.supplyAmount ?? 0, next.taxFree);
+        if (amountTouched) next.supplyAmount = Math.round((next.qty ?? 0) * (next.unitPrice ?? 0));
+        if (amountTouched || 'taxFree' in patch) next.vatAmount = vatOf(next.supplyAmount ?? 0, next.taxFree);
         return next;
       }),
     );
 
+  /**
+   * 단가 입력 방식 바꾸기 — 직접 넣은 단가는 그 숫자를 새 방식으로 다시 읽는다(550,000 → 별도면 합계 605,000, 포함이면 550,000).
+   * 견적 · 저장 문서에서 가져온 금액과 빈 줄은 그대로 두고 칸에 보이는 단가만 새 방식에 맞춘다(앱과 같다).
+   */
+  const changeVatMode = (mode: VatMode) => {
+    if (mode === vatMode) return;
+    setVatMode(mode);
+    setRows((rs) =>
+      rs.map((r) => {
+        if (r.fixed) return r;
+        if (mode === 'IN') {
+          const gross = r.unitPrice ?? 0;
+          if (gross <= 0) return { ...r, gross: null };
+          return { ...r, gross, ...fromGross(r.qty ?? 0, gross, isCash ? cashTaxation === 'NON_TAXABLE' : r.taxFree) };
+        }
+        if (r.gross == null) return r;
+        const unitPrice = r.gross;
+        const supplyAmount = Math.round((r.qty ?? 0) * unitPrice);
+        return { ...r, gross: null, unitPrice, supplyAmount, vatAmount: vatOf(supplyAmount, r.taxFree) };
+      }),
+    );
+  };
+
+  // 품목을 더하면 새 줄의 품목 칸으로 바로 옮긴다
+  const focusRowKey = useRef<string | null>(null);
+  const addRow = () => {
+    const r = newRow();
+    focusRowKey.current = r.key;
+    setRows((rs) => [...rs, r]);
+  };
+  useEffect(() => {
+    const k = focusRowKey.current;
+    if (!k) return;
+    focusRowKey.current = null;
+    focusTarget(`row-name-${k}`);
+  }, [rows]);
+
   const changeDocType = (next: TaxInvoiceDocType) => {
     setDocType(next);
     setServerFieldError(null);
+    // 아직 금액을 넣지 않았으면 문서 종류의 기본 입력 방식으로(넣은 금액이 몰래 바뀌지 않게)
+    if (rows.every((r) => !r.fixed && !(r.unitPrice ?? 0) && !(r.gross ?? 0))) setVatMode(next === 'CASH' ? 'IN' : 'EX');
     // 사장님이 직접 고르지 않았으면 현금영수증은 영수(받은 대금), 세금계산서는 청구로 시작한다
     if (!payTypeTouched) setPayType(next === 'CASH' ? 'RECEIPT' : 'CLAIM');
   };
@@ -599,6 +767,7 @@ function TaxInvoiceForm() {
     setCashIdentityType('PHONE');
     setCashIdentityNum('');
     setCashTaxation('TAXABLE');
+    setVatMode(presetDocType === 'CASH' ? 'IN' : 'EX');
     setRows([newRow()]);
     setMemo('');
     setItemsLoaded(null);
@@ -643,7 +812,7 @@ function TaxInvoiceForm() {
         supplyAmount: totals.supply,
         vatAmount: totals.vat,
         totalAmount: totals.total,
-        items: contentRows.map(({ key: _k, taxFree: _t, ...rest }) => ({
+        items: contentRows.map(({ key: _k, taxFree: _t, gross: _g, fixed: _f, ...rest }) => ({
           ...rest,
           name: (rest.name ?? '').trim(),
           spec: (rest.spec ?? '').trim() || null,
@@ -695,6 +864,11 @@ function TaxInvoiceForm() {
 
   const handleHotkey = useCallback(() => void submit('detail'), [submit]);
   useSubmitHotkey(handleHotkey, canSubmit);
+  // 저장 단축키 표시 — 서버 그림과 맞추려고 그린 뒤 정한다
+  const [hotkeyLabel, setHotkeyLabel] = useState<string | null>(null);
+  useEffect(() => {
+    setHotkeyLabel(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘ Enter' : 'Ctrl + Enter');
+  }, []);
 
   if (loadingEdit) {
     return (
@@ -725,7 +899,7 @@ function TaxInvoiceForm() {
   const errClass = (f: FieldKey) => (fieldError(f) ? 'text-boss-error' : '');
 
   return (
-    <div className="grid max-w-[1180px] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <div className="boss-touch grid max-w-[1180px] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
       <div className="flex min-w-0 flex-col gap-4">
         {serverError && (
           <div ref={serverErrorRef} tabIndex={-1} className="outline-none">
@@ -1030,8 +1204,8 @@ function TaxInvoiceForm() {
             kicker="03"
             title="품목 · 금액"
             right={
-              <Button variant="secondary" size="sm" icon={Plus} onClick={() => setRows((rs) => [...rs, newRow()])}>
-                행 추가
+              <Button variant="secondary" size="sm" icon={Plus} onClick={addRow} className="hidden md:inline-flex">
+                품목 추가
               </Button>
             }
           >
@@ -1067,8 +1241,26 @@ function TaxInvoiceForm() {
                 {fieldError('items')}
               </p>
             )}
-            {isCash && (
-              <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 border border-boss-border bg-boss-bg px-3 py-2.5">
+            {/* 단가 입력 방식 · 과세 구분 — 받기로 한 금액(부가세 포함)을 계산 없이 그대로 넣을 수 있게(2026-10-17) */}
+            <div className="mb-3 flex flex-col gap-3 border border-boss-border bg-boss-bg px-3 py-3 md:flex-row md:flex-wrap md:items-start md:gap-x-6">
+              <div>
+                <FieldLabel>단가 입력</FieldLabel>
+                <Segmented
+                  ariaLabel="단가 입력 방식"
+                  value={vatMode}
+                  onChange={changeVatMode}
+                  options={[
+                    { key: 'EX', label: '부가세 별도' },
+                    { key: 'IN', label: '부가세 포함' },
+                  ]}
+                />
+                <p id="vat-mode-hint" className="mt-1.5 max-w-[440px] text-[12.5px] leading-relaxed text-boss-text-secondary">
+                  {vatMode === 'IN'
+                    ? '받을 금액(부가세 포함)을 단가에 넣으면 공급가액과 세액으로 나눠 드립니다.'
+                    : '부가세를 뺀 금액을 단가에 넣으면 세액(10%)을 더해 드립니다.'}
+                </p>
+              </div>
+              {isCash && (
                 <div>
                   <FieldLabel required>과세 구분 (문서 전체)</FieldLabel>
                   <Segmented
@@ -1080,21 +1272,22 @@ function TaxInvoiceForm() {
                       { key: 'NON_TAXABLE', label: '비과세(면세)' },
                     ]}
                   />
+                  <p className="mt-1.5 max-w-[440px] text-[12.5px] leading-relaxed text-boss-text-secondary">
+                    현금영수증 한 장은 과세나 비과세 하나로만 씁니다. 비과세는 세액이 0원입니다.
+                  </p>
                 </div>
-                <p className="min-w-[200px] flex-1 text-[12px] leading-relaxed text-boss-text-secondary">
-                  현금영수증은 한 문서에 과세 · 비과세를 섞지 않습니다. 비과세는 세액 0원, 과세는 품목마다 공급가액의 10%(원 단위 반올림)이며 소액이면
-                  과세여도 세액이 0원일 수 있습니다.
-                </p>
-              </div>
-            )}
-            <div className="boss-scroll overflow-x-auto">
-              <table className="boss-table">
+              )}
+            </div>
+            {/* 넓은 화면은 표, 휴대폰은 품목마다 카드(boss-table-stack) — 칸은 하나만 그려 id 가 겹치지 않는다.
+                relative: 숨긴 읽기 도우미 글자가 바깥 카드 기준으로 자리를 잡아 휴대폰 화면을 옆으로 넓히던 문제(2026-10-17) */}
+            <div className="boss-scroll relative overflow-x-auto">
+              <table className="boss-table boss-table-stack">
                 <thead>
                   <tr>
                     <th>품목</th>
                     <th>규격</th>
                     <th className="num">수량</th>
-                    <th className="num">단가</th>
+                    <th className="num">{vatMode === 'IN' ? '단가 (부가세 포함)' : '단가 (부가세 별도)'}</th>
                     <th className="num">공급가액</th>
                     <th className="num">세액</th>
                     {!isCash && <th>면세</th>}
@@ -1106,7 +1299,7 @@ function TaxInvoiceForm() {
                 <tbody>
                   {effectiveRows.map((r, i) => (
                     <tr key={r.key}>
-                      <td className="min-w-[160px]">
+                      <td className="stack-name md:min-w-[150px]" data-label={effectiveRows.length > 1 ? `품목 ${i + 1}` : '품목'}>
                         <input
                           id={`row-name-${r.key}`}
                           className="boss-input"
@@ -1117,7 +1310,7 @@ function TaxInvoiceForm() {
                           maxLength={100}
                         />
                       </td>
-                      <td className="min-w-[120px]">
+                      <td className="stack-spec md:min-w-[104px]" data-label="규격 (선택)">
                         <input
                           className="boss-input"
                           value={r.spec ?? ''}
@@ -1127,40 +1320,42 @@ function TaxInvoiceForm() {
                           maxLength={50}
                         />
                       </td>
-                      <td className="w-[90px]">
-                        <input
+                      <td className="stack-qty md:w-[76px] md:min-w-[68px]" data-label="수량">
+                        <AmountInput
                           id={`row-qty-${r.key}`}
-                          className="boss-input text-right"
-                          type="number"
-                          min={0}
-                          step={1}
+                          className="boss-input text-right tabular-nums"
                           value={r.qty ?? 0}
-                          onChange={(e) => updateRow(r.key, { qty: e.target.value === '' ? 0 : Number(e.target.value) })}
+                          onValue={(n) => updateRow(r.key, { qty: n })}
                           aria-label={`${i + 1}번 수량`}
                         />
                       </td>
-                      <td className="w-[140px]">
-                        <input
+                      <td className="stack-price md:w-[136px] md:min-w-[124px]" data-label={vatMode === 'IN' ? '단가 (부가세 포함)' : '단가 (부가세 별도)'}>
+                        <AmountInput
                           id={`row-price-${r.key}`}
-                          className="boss-input text-right"
-                          type="number"
-                          min={0}
-                          step={1000}
-                          value={r.unitPrice ?? 0}
-                          onChange={(e) => updateRow(r.key, { unitPrice: e.target.value === '' ? 0 : Number(e.target.value) })}
-                          aria-label={`${i + 1}번 단가`}
+                          className="boss-input text-right tabular-nums"
+                          value={vatMode === 'IN' ? grossOf(r) : (r.unitPrice ?? 0)}
+                          onValue={(n) => updateRow(r.key, { price: n })}
+                          emptyWhenZero
+                          placeholder="0"
+                          aria-label={`${i + 1}번 단가 (${vatMode === 'IN' ? '부가세 포함' : '부가세 별도'})`}
+                          aria-describedby="vat-mode-hint"
                         />
                       </td>
-                      <td className="num text-boss-text">{fmt(r.supplyAmount)}</td>
-                      <td className="num text-boss-text-secondary">{fmt(r.vatAmount)}</td>
+                      <td className="stack-supply num text-boss-text" data-label="공급가액">
+                        {fmt(r.supplyAmount)}
+                      </td>
+                      <td className="stack-vat num text-boss-text-secondary" data-label="세액">
+                        {fmt(r.vatAmount)}
+                      </td>
                       {!isCash && (
-                        <td>
+                        <td className="stack-free">
                           <CheckLine checked={r.taxFree} onChange={(v) => updateRow(r.key, { taxFree: v })}>
+                            <span className="md:sr-only">면세</span>
                             <span className="sr-only">{i + 1}번 면세</span>
                           </CheckLine>
                         </td>
                       )}
-                      <td className="text-right">
+                      <td className="stack-del text-right">
                         <button
                           type="button"
                           className="boss-btn boss-btn-sm boss-btn-ghost !text-boss-text-muted hover:!text-boss-error"
@@ -1169,6 +1364,7 @@ function TaxInvoiceForm() {
                           disabled={rows.length <= 1}
                         >
                           <Trash2 size={13} />
+                          <span className="md:hidden">삭제</span>
                         </button>
                       </td>
                     </tr>
@@ -1178,10 +1374,13 @@ function TaxInvoiceForm() {
               {/* 면세 거래는 세금계산서가 아니라 계산서 대상 — 저장 · 서식은 되지만 전자 발급은 막힌다(2026-10-16) */}
               {!isCash && rows.some((r) => r.taxFree && rowHasContent(r)) && (
                 <p role="note" className="mt-2 text-[12.5px] leading-relaxed text-boss-error">
-                  면세 품목이 있어 세금계산서 전자 발급을 할 수 없습니다. 면세 거래는 세금계산서가 아니라 계산서로 발행해야 합니다.
+                  면세 품목이 있어 세금계산서 전자 발급을 할 수 없습니다. 면세 거래는 세금계산서가 아니라 계산서로 발급해야 합니다.
                 </p>
               )}
             </div>
+            <Button variant="secondary" icon={Plus} onClick={addRow} className="mt-3 min-h-[44px] w-full md:hidden">
+              품목 추가
+            </Button>
             <div className="mt-4 grid grid-cols-3 gap-2">
               <MetricBox label="공급가액" value={`${fmt(totals.supply)}원`} />
               <MetricBox label={isCash ? `부가세 · ${CASH_TAXATION_LABEL[cashTaxation]}` : '세액 (10%)'} value={`${fmt(totals.vat)}원`} />
@@ -1207,11 +1406,10 @@ function TaxInvoiceForm() {
                   ) : isCash ? (
                     issueDate && issueDate !== todayIso() ? (
                       <span className="text-boss-pill-warn-fg">
-                        오늘(한국시간 {todayIso()})이 아닌 날짜라 전자 발급은 할 수 없고 기록으로만 저장됩니다. 발급할 때 날짜가 오늘로 몰래 바뀌지
-                        않습니다.
+                        오늘({todayIso()})이 아닌 날짜라 전자 발급은 할 수 없고 기록으로만 저장됩니다.
                       </span>
                     ) : (
-                      `실제 발급은 거래일자가 오늘(한국시간 ${todayIso()})인 문서만 됩니다. 지난 날짜는 기록으로만 저장됩니다.`
+                      `전자 발급은 거래일자가 오늘(${todayIso()})인 문서만 됩니다. 지난 날짜는 기록으로만 저장됩니다.`
                     )
                   ) : (
                     '공급 시기와 작성일자를 확인해 주세요.'
@@ -1269,8 +1467,11 @@ function TaxInvoiceForm() {
                 ? '저장 중입니다…'
                 : showErrors && problems.length > 0
                   ? `고칠 항목 ${problems.length}개`
-                  : '저장하면 미발급(작성 완료) 문서로 보관됩니다. 발급은 상세에서 따로 합니다.'}{' '}
-            <kbd className="ml-1 border border-boss-border px-1 font-boss-head text-[11px]">⌘↵</kbd>
+                  : '저장하면 미발급(작성 완료) 문서로 보관됩니다. 발급은 상세에서 따로 합니다.'}
+            {/* 단축키는 자판이 있는 넓은 화면에서만 — 맥은 ⌘, 그 밖은 Ctrl */}
+            {hotkeyLabel && (
+              <kbd className="ml-2 hidden border border-boss-border px-1 font-boss-head text-[11px] md:inline">{hotkeyLabel}</kbd>
+            )}
           </span>
           <div className="flex flex-wrap gap-2">
             <ButtonLink href={editId ? `/boss/tax-invoice/${editId}` : '/boss/tax-invoice'} variant="secondary">
@@ -1320,16 +1521,16 @@ function TaxInvoiceForm() {
               <span className="font-semibold text-boss-text">2. 미리보기 · PDF</span> — 실물 서식으로 확인하고 인쇄 · PDF로 보냅니다.
             </li>
             <li>
-              <span className="font-semibold text-boss-text">3. 발급</span> — 전자 발급은 정식 오픈 후 상세에서 합니다. 지금은 홈택스에서
-              발행한 뒤 승인번호를 기록하세요.
+              <span className="font-semibold text-boss-text">3. 발급</span> — 상세 화면에서 전자 발급합니다. 홈택스에서 직접 발급했다면 상세에서
+              승인번호를 적어 둡니다.
             </li>
           </ol>
         </Panel>
         <Panel kicker="참고" title="금액 계산">
           <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-            세액은 공급가액의 10%로 계산합니다(원 단위 반올림). 면세 품목은 세액이 0이 됩니다. 견적에서 불러온 공급가액은 면세를 바꿔도
-            그대로 두고, 수량 · 단가를 바꿀 때만 다시 계산합니다. 합계는 서버가 공급가액 + 세액으로 다시 계산해 저장합니다.
-            {isCash && ` 현금영수증은 과세 구분을 문서 전체에 적용하고, 한 건에 ${fmt(CASH_MAX_TOTAL)}원까지입니다.`}
+            &lsquo;부가세 별도&rsquo;는 단가에 세액(10%)을 더하고, &lsquo;부가세 포함&rsquo;은 넣은 금액을 공급가액과 세액으로 나눕니다.
+            {!isCash && ' 면세 품목은 세액이 0원입니다.'} 견적에서 불러온 금액은 수량 · 단가를 고칠 때만 다시 계산합니다.
+            {isCash && ` 현금영수증은 한 건에 ${fmt(CASH_MAX_TOTAL)}원까지입니다.`}
           </p>
         </Panel>
       </div>

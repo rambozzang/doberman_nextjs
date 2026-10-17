@@ -337,7 +337,7 @@ export function certificateView(c: ElectronicOperations['certificate']): StatusV
 
 export const BILLING_MODE_TAG: Record<BillingMode, string> = {
   UNDECIDED: '정책 확정 전',
-  PARTNER: '서비스 부담',
+  PARTNER: '도배르만 부담',
   MEMBER: '내 계정 차감',
 };
 
@@ -374,8 +374,9 @@ export function billingView(b: ElectronicOperations['billing']): BillingView {
     return {
       tone: 'info',
       tag: BILLING_MODE_TAG.PARTNER,
-      title: b.label || '발급 비용은 도배르만 서비스가 부담합니다',
-      lines: [b.message || '이 계정의 발급 비용은 도배르만 서비스가 부담하는 방식입니다. 정책이 바뀌면 미리 안내해 드립니다.'],
+      title: '발급 비용은 도배르만이 부담합니다',
+      // 서버 안내에는 구독 요금도 함께 오지만, 요금은 바로 위 '구독 · 요금'에서 따로 보여 준다(같은 말 반복 방지 · 2026-10-17)
+      lines: ['팝빌 포인트를 따로 충전하거나 결제할 필요가 없습니다.'],
       rows: [],
       checkedAt: null,
       error: null,
@@ -402,16 +403,19 @@ export function billingView(b: ElectronicOperations['billing']): BillingView {
 
 /** 자동 상태 확인 — 정식 오픈 전에는 쉬고 있다는 것을 먼저 말한다 */
 export function autoSyncView(a: ElectronicOperations['autoSync'], launchOpen: boolean): StatusView & { rows: { label: string; value: string }[] } {
+  // 값이 있는 줄만 — "기록 없음 · 예정 없음" 같은 빈 줄은 사장님께 뜻이 없다(2026-10-17)
+  const last = formatOpsDateTime(a.lastRunAt);
+  const next = formatOpsDateTime(a.nextRunAt);
   const rows = [
-    { label: '마지막 확인', value: formatOpsDateTime(a.lastRunAt) ?? '기록 없음' },
-    { label: '다음 확인 예정', value: formatOpsDateTime(a.nextRunAt) ?? '예정 없음' },
+    ...(last ? [{ label: '마지막 확인', value: last }] : []),
+    ...(next ? [{ label: '다음 확인', value: next }] : []),
   ];
   if (!launchOpen) {
     return {
       tone: 'neutral',
       tag: '오픈 후 동작',
-      text: '정식 오픈 전이라 발급 결과 · 국세청 전송 상태 자동 확인은 쉬고 있습니다. 오픈하면 처리 중인 문서를 자동으로 다시 확인해 알려 드립니다.',
-      rows,
+      text: '정식 오픈 뒤 켜집니다. 발급 결과 · 국세청 전송 상태를 자동으로 다시 확인해 알려 드립니다.',
+      rows: [],
     };
   }
   if (!a.enabled) {

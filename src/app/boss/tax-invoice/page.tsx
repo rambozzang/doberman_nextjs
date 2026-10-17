@@ -2,7 +2,8 @@
 
 // 세금계산서 · 현금영수증 관리 — Industry 패턴
 //
-// 위: 발급 서비스 등록 진입(오픈 전엔 오픈 예정 안내)
+// 위: 작성 단추 두 개(세금계산서 · 현금영수증, 같은 크기 · 2026-10-17) → 발급 서비스 등록 진입(오픈 전엔 오픈 예정 안내)
+// 휴대폰은 표 대신 카드 목록(고객 · 합계 · 상태)을 보인다 — 9칸 표가 옆으로 밀려 상태 · 합계가 안 보였다.
 // 필터: 연도 · 분기 → 문서 종류 · 상태(미발급 · 발급 완료 · 확인 필요 · 취소) → 검색(고객 · 사업자번호 · 식별번호 · 승인번호)
 // 좌: 조회 합계 + 표(작성일 · 종류 · 고객 · 사업자번호/식별번호 · 공급가액 · 세액 · 합계 · 상태 · 승인번호)
 // 우: 기간 요약(서버 집계) · 부가세 예상 · 홈택스 바로가기
@@ -16,7 +17,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BellRing, ExternalLink, FilePlus2, RefreshCw } from 'lucide-react';
+import { BellRing, ChevronRight, ExternalLink, FilePlus2, Receipt, RefreshCw } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import AdminEntry from '@/components/boss/taxinvoice/AdminEntry';
@@ -26,6 +27,7 @@ import { awaitsServerUpdate } from '@/lib/boss/taxInvoiceOps';
 import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { cashDigits, cashFieldsOf, maskCashIdentity } from '@/lib/boss/taxInvoiceCash';
+import { formatBizNo } from '@/lib/boss/bizno';
 import { DISPLAY_KEY_LABEL, correctionReasonText, displayState, listTotals, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
 import {
   CASH_USAGE_LABEL,
@@ -199,7 +201,17 @@ function TaxInvoiceList() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="boss-touch flex flex-col gap-4">
+      {/* 작성 — 세금계산서 · 현금영수증을 같은 크기로 나란히(예전엔 현금영수증이 거르기 줄 끝 작은 단추라 휴대폰 첫 화면 밖이었다) */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <ButtonLink href="/boss/tax-invoice/new" variant="primary" icon={FilePlus2} className="min-h-[44px] sm:min-w-[168px]">
+          세금계산서 작성
+        </ButtonLink>
+        <ButtonLink href="/boss/tax-invoice/new?docType=CASH" variant="accent" icon={Receipt} className="min-h-[44px] sm:min-w-[168px]">
+          현금영수증 작성
+        </ButtonLink>
+      </div>
+
       {/* 발급 서비스 등록 진입 — 출시 값 · 목록 조회 성패와 상관없이 늘 보인다(오픈 전이면 오픈 예정 안내 포함) */}
       <RegistrationEntry />
 
@@ -263,11 +275,9 @@ function TaxInvoiceList() {
         )}
         <div className="ml-auto flex flex-wrap gap-2">
           {scope && <AdminEntry key={scope} scope={scope} />}
+          {/* 머리의 종(전체 알림)과 다르다 — 세금계산서 발급 결과 알림만 */}
           <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" size="sm" icon={BellRing}>
-            알림
-          </ButtonLink>
-          <ButtonLink href="/boss/tax-invoice/new?docType=CASH" variant="secondary" size="sm" icon={FilePlus2}>
-            현금영수증 작성
+            발급 알림
           </ButtonLink>
         </div>
       </div>
@@ -310,7 +320,7 @@ function TaxInvoiceList() {
             </div>
           )}
           {invoices.length > 0 && (shown.excluded > 0 || shown.corrections > 0) && (
-            <p className="-mt-1 text-[12px] leading-relaxed text-boss-text-muted">
+            <p className="-mt-1 text-[12px] leading-relaxed text-boss-text-secondary">
               {shown.excluded > 0 &&
                 `취소 · 시험 발급${shown.unsettledCorrections > 0 ? ` · 발급 확정 전 수정분(${shown.unsettledCorrections}건)` : ''} ${shown.excluded}건은 금액 합계에서 뺐습니다. `}
               {shown.corrections > 0 && `발급된 수정세금계산서(취소분) ${shown.corrections}건은 음수로 더했습니다.`}
@@ -359,7 +369,14 @@ function TaxInvoiceList() {
               />
             )
           ) : (
-            <DataTable>
+            <>
+            {/* 휴대폰 — 카드 목록. 고객 · 합계 · 상태를 한눈에, 누르면 상세 */}
+            <ul aria-label="문서 목록" className="flex flex-col gap-2 md:hidden">
+              {invoices.map((inv) => (
+                <InvoiceCard key={inv.id} inv={inv} />
+              ))}
+            </ul>
+            <DataTable className="hidden md:block">
               <thead>
                 <tr>
                   <th>작성일</th>
@@ -379,6 +396,7 @@ function TaxInvoiceList() {
                 ))}
               </tbody>
             </DataTable>
+            </>
           )}
         </div>
 
@@ -388,21 +406,21 @@ function TaxInvoiceList() {
             {period ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <MetricBox label="발행 완료" value={`${period.issuedCount}건`} />
+                  <MetricBox label="발급 완료" value={`${period.issuedCount}건`} />
                   <MetricBox label="미발급" value={`${period.requestedCount}건`} />
                 </div>
                 <dl className="mt-3">
-                  <DescRow label="발행 공급가액" value={`${fmt(period.issuedSupplyAmount)}원`} />
-                  <DescRow label="발행 세액" value={`${fmt(period.issuedVatAmount)}원`} />
+                  <DescRow label="발급 공급가액" value={`${fmt(period.issuedSupplyAmount)}원`} />
+                  <DescRow label="발급 세액" value={`${fmt(period.issuedVatAmount)}원`} />
                   <DescRow label="미발급 금액" value={`${fmt(period.requestedSupplyAmount + period.requestedVatAmount)}원`} />
                 </dl>
                 {period.requestedCount > 0 && (
                   <p className="mt-3 text-[12.5px] leading-relaxed text-boss-pill-warn-fg">
-                    미발급 {period.requestedCount}건이 있습니다. 발행한 뒤 승인번호를 기록해야 부가세 예상에 들어갑니다.
+                    미발급 {period.requestedCount}건이 있습니다. 발급해야 부가세 예상에 들어갑니다(홈택스에서 발급했다면 상세에서 승인번호를 적어 주세요).
                   </p>
                 )}
-                <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
-                  서버 집계입니다. 시험 발급 건은 빠지고, 수정세금계산서(취소분)는 각 작성일자 기준 기간에 음수로 들어갑니다.
+                <p className="mt-2 text-[12px] leading-relaxed text-boss-text-secondary">
+                  시험 발급은 빠지고, 취소로 낸 수정세금계산서는 빼기(음수)로 들어갑니다.
                 </p>
               </>
             ) : (
@@ -412,11 +430,11 @@ function TaxInvoiceList() {
 
           <VatPanel vat={vat} />
 
-          <Panel kicker="홈택스" title={ELECTRONIC_TAX_INVOICE_OPEN ? '전자 발급 · 홈택스' : '발행은 지금 홈택스에서'}>
+          <Panel kicker="홈택스" title={ELECTRONIC_TAX_INVOICE_OPEN ? '전자 발급 · 홈택스' : '지금은 홈택스에서 발급'}>
             <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
               {ELECTRONIC_TAX_INVOICE_OPEN
-                ? '발급 서비스 등록을 마쳤다면 상세 화면에서 바로 발급할 수 있습니다. 시험 발급 건은 집계에서 빠집니다.'
-                : '전자 발급은 정식 오픈 후 열립니다. 지금은 홈택스에서 발행하고, 상세 화면의 입력 도우미로 사업자번호 · 금액을 복사해 붙여 넣으세요.'}
+                ? '발급 서비스 등록을 마쳤다면 상세 화면에서 바로 발급할 수 있습니다.'
+                : '홈택스에서 발급할 때 상세 화면의 입력 도우미로 사업자번호 · 금액을 복사해 붙여 넣으세요.'}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <a href="https://www.hometax.go.kr" target="_blank" rel="noreferrer" className="boss-btn boss-btn-sm boss-btn-secondary">
@@ -456,22 +474,22 @@ function InvoiceRow({ inv, onOpen }: { inv: TaxInvoice; onOpen: () => void }) {
       <td className="wrap">
         <span className="font-semibold text-boss-text">{inv.buyerName || (isCash ? '(고객명 없음)' : '(상호 없음)')}</span>
         {correction ? (
-          <span className="mt-0.5 block text-[12px] text-boss-text-muted">
+          <span className="mt-0.5 block text-[12px] text-boss-text-secondary">
             수정세금계산서(취소분) · {correctionReasonText(inv)} · 당초 승인번호 {inv.orgNtsConfirmNum || '확인 필요'}
           </span>
         ) : (
-          inv.itemSummary && <span className="ml-2 text-[12px] text-boss-text-muted">{inv.itemSummary}</span>
+          inv.itemSummary && <span className="ml-2 text-[12px] text-boss-text-secondary">{inv.itemSummary}</span>
         )}
       </td>
       <td className="font-boss-head tabular-nums text-boss-text-secondary">
         {cash ? (
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-[11.5px] text-boss-text-muted">{CASH_USAGE_LABEL[cash.usage]}</span>
+            <span className="text-[12.5px] text-boss-text-secondary">{CASH_USAGE_LABEL[cash.usage]}</span>
             {maskCashIdentity(cash.identityType, cash.identityNum) || '-'}
             {cash.inferred && <Tag tone="warn">확인 필요</Tag>}
           </span>
         ) : (
-          inv.buyerBizNo || '-'
+          (inv.buyerBizNo && formatBizNo(inv.buyerBizNo)) || '-'
         )}
       </td>
       <td className="num text-boss-text-secondary">{fmt(inv.supplyAmount)}</td>
@@ -489,7 +507,43 @@ function InvoiceRow({ inv, onOpen }: { inv: TaxInvoice; onOpen: () => void }) {
   );
 }
 
-// 부가세 예상 — 매출세액(발행 완료) − 매입세액(영수증). 없는 값은 지어내지 않는다.
+/** 휴대폰 카드 한 장 — 고객(상호) · 합계 · 상태가 첫눈에. 종류 · 작성일 · 번호는 아래 줄 */
+function InvoiceCard({ inv }: { inv: TaxInvoice }) {
+  const s = displayState(inv);
+  const isCash = inv.docType === 'CASH';
+  const cash = isCash ? cashFieldsOf(inv) : null;
+  const correction = inv.correctionOfInvoiceId != null;
+  const idText = cash ? maskCashIdentity(cash.identityType, cash.identityNum) : inv.buyerBizNo ? formatBizNo(inv.buyerBizNo) : '';
+  return (
+    <li>
+      <Link
+        href={`/boss/tax-invoice/${inv.id}`}
+        className="boss-card flex items-center gap-3 px-4 py-3 !text-boss-text active:bg-boss-elevated"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-1.5">
+            {correction ? <Tag tone="warn">수정분</Tag> : <Tag tone={isCash ? 'neutral' : 'info'}>{DOC_TYPE_LABEL[inv.docType]}</Tag>}
+            <Tag tone={s.tone}>{s.label}</Tag>
+            {s.test && <Tag tone="warn">시험</Tag>}
+          </span>
+          <span className="mt-1.5 block truncate text-[15.5px] font-semibold">
+            {inv.buyerName || (isCash ? '(고객명 없음)' : '(상호 없음)')}
+          </span>
+          <span className="mt-0.5 block truncate text-[12.5px] text-boss-text-secondary">
+            {[(inv.issueDate ?? inv.createdDt ?? '').slice(0, 10), idText, inv.itemSummary].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+        <span className="flex-none text-right">
+          <span className="block font-boss-head text-[18px] font-semibold tabular-nums">{fmt(inv.totalAmount)}원</span>
+          {inv.approvalNo && <span className="block text-[11.5px] text-boss-text-secondary">승인 {inv.approvalNo.slice(-8)}</span>}
+        </span>
+        <ChevronRight size={16} strokeWidth={1.75} className="flex-none text-boss-text-muted" aria-hidden />
+      </Link>
+    </li>
+  );
+}
+
+// 부가세 예상 — 매출세액(발급 완료) − 매입세액(영수증). 없는 값은 지어내지 않는다.
 function VatPanel({ vat }: { vat: VatSummary | null }) {
   if (!vat) {
     return (
@@ -513,10 +567,10 @@ function VatPanel({ vat }: { vat: VatSummary | null }) {
       </div>
       <div className="mt-3">
         <Bar pct={ratio} height={6} tone="ok" />
-        <p className="mt-1 text-[11.5px] text-boss-text-muted">매출세액 대비 매입세액 {Math.round(ratio)}%</p>
+        <p className="mt-1 text-[12.5px] text-boss-text-secondary">매출세액 대비 매입세액 {Math.round(ratio)}%</p>
       </div>
       <dl className="mt-3">
-        <DescRow label={`매출세액 (발행 ${vat.salesCount}건)`} value={`${fmt(vat.salesVatAmount)}원`} />
+        <DescRow label={`매출세액 (발급 ${vat.salesCount}건)`} value={`${fmt(vat.salesVatAmount)}원`} />
         <DescRow label={`매입세액 (영수증 ${vat.purchaseWithVatCount}/${vat.purchaseCount}건)`} value={`− ${fmt(vat.purchaseVatAmount)}원`} />
       </dl>
       <div
@@ -527,8 +581,8 @@ function VatPanel({ vat }: { vat: VatSummary | null }) {
         신고 · 납부 기한 <span className="font-boss-head font-semibold tabular-nums text-boss-text">{vat.filingDeadline}</span>
         {dLeft >= 0 ? ` (D-${dLeft})` : ' (지남)'}
       </div>
-      <p className="mt-2 text-[11.5px] leading-relaxed text-boss-text-muted">
-        발행 완료로 기록한 문서와 영수증 관리에 올린 매입 영수증의 세액만 계산합니다. 카드 매출 · 간이과세 여부에 따라 실제 신고액과 다를 수
+      <p className="mt-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
+        발급 완료 문서와 영수증 관리에 올린 매입 영수증의 세액만 계산합니다. 카드 매출 · 간이과세 여부에 따라 실제 신고액과 다를 수
         있습니다.
       </p>
     </Panel>

@@ -36,6 +36,7 @@ import type {
   TaxInvoice,
   TaxInvoiceBuyerPrefill,
   TaxInvoicePeriodSummary,
+  TaxInvoiceSubscriptionStatus,
   TaxInvoiceSaveRequest,
   TaxInvoiceStatus,
   TaxInvoiceStatusRequest,
@@ -394,6 +395,12 @@ export const bossTaxInvoiceApi = {
   document: (id: number | string) => documentCall(id),
 
   // ── 전자 발급(팝빌) ──
+
+  // 전자 발급 구독 상태 — GET /taxinvoices/electronic/subscription. refresh 면 서버가 결제 기록을 바로 다시 묻는다(앱에서 막 구독한 뒤)
+  electronicSubscription: (refresh = false) =>
+    BossApiClient.getPrivate<TaxInvoiceSubscriptionStatus>('/taxinvoices/electronic/subscription', {
+      params: refresh ? { refresh: true } : undefined,
+    }),
 
   // 전자 발급 설정 · 준비 상태 — GET /taxinvoices/electronic/config?docType=TAX|CASH
   // 현금영수증 준비 상태는 세금계산서 인증서를 요구하지 않는다(서버 판정)

@@ -22,6 +22,7 @@ import { Copy, ExternalLink, FileText, Pencil, Trash2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
+import { formatBizNo } from '@/lib/boss/bizno';
 import { cashFieldsOf, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
 import {
   amountMismatch,
@@ -87,6 +88,8 @@ export default function BossTaxInvoiceDetailPage() {
   const [changing, setChanging] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // '취소로 기록'은 한 번 묻는다(2026-10-17 — 예전엔 누르자마자 바뀌었다)
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // 늦게 도착한 이전 조회가 새 조회 결과를 덮지 않게
   const seq = useRef(0);
@@ -125,6 +128,15 @@ export default function BossTaxInvoiceDetailPage() {
     void load();
   }, [load]);
 
+  // 홈택스 발급 기록 칸을 열면 그 칸으로 내려가 승인번호 칸에 둔다 — 휴대폰에서 맨 위 단추를 눌러도 반응이 보이게(예전엔 1,600px 아래에서 열렸다)
+  useEffect(() => {
+    if (!issueOpen) return;
+    const el = document.getElementById('approvalNo');
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    (el as HTMLInputElement).focus({ preventScroll: true });
+  }, [issueOpen]);
+
   const scope = useBossScope();
   useBoundedRefresh({
     enabled: ELECTRONIC_TAX_INVOICE_OPEN && scope != null && data != null && awaitsServerUpdate(data),
@@ -144,9 +156,10 @@ export default function BossTaxInvoiceDetailPage() {
       if (res.success !== false && res.data) {
         applyData(res.data);
         setIssueOpen(false);
+        setConfirmCancel(false);
         toast.success(
           status === 'ISSUED'
-            ? '홈택스 발행 완료로 기록했습니다. 분기 부가세 예상에 반영됩니다.'
+            ? '홈택스 발급 완료로 기록했습니다. 분기 부가세 예상에 반영됩니다.'
             : status === 'REQUESTED'
               ? '미발급(작성 완료)으로 되돌렸습니다.'
               : '취소로 기록했습니다.',
@@ -264,7 +277,7 @@ export default function BossTaxInvoiceDetailPage() {
       ];
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="boss-touch grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       {/* 주요 행동은 화면 맨 위에 — 스크롤하지 않고 바로 누른다 */}
       <div className="lg:col-span-2">
         <DetailActions
@@ -278,7 +291,7 @@ export default function BossTaxInvoiceDetailPage() {
         >
           {!managed && data.status !== 'ISSUED' && (
             <Button variant="secondary" size="sm" onClick={() => setIssueOpen(true)} disabled={changing}>
-              홈택스 발행 기록
+              홈택스에서 발급했어요
             </Button>
           )}
           <ButtonLink href={printHref} variant="primary" size="sm" icon={FileText}>
@@ -312,22 +325,15 @@ export default function BossTaxInvoiceDetailPage() {
         )}
 
         {data.providerIsTest && (
-          <AlertBanner tone="warn">시험 환경에서 발급한 문서입니다. 효력이 없고 발행 · 부가세 집계에서 빠집니다.</AlertBanner>
+          <AlertBanner tone="warn">시험 환경에서 발급한 문서입니다. 효력이 없고 발급 · 부가세 집계에서 빠집니다.</AlertBanner>
         )}
 
         {!managed && data.status === 'REQUESTED' && (
-          <AlertBanner
-            tone="info"
-            action={
-              <ButtonLink href={printHref} variant="secondary" size="sm">
-                미리보기
-              </ButtonLink>
-            }
-          >
+          <AlertBanner tone="info">
             작성 완료 · 아직 발급하지 않은 {docLabel}입니다.{' '}
             {ELECTRONIC_TAX_INVOICE_OPEN
-              ? '오른쪽 전자 발급에서 바로 발급하거나, 홈택스에서 발행한 뒤 승인번호를 기록하세요.'
-              : '전자 발급은 정식 오픈 후 열립니다. 지금은 홈택스에서 발행한 뒤 승인번호를 기록하면 부가세 예상에 반영됩니다.'}
+              ? '전자 발급에서 바로 발급하거나, 홈택스에서 발급했다면 승인번호를 적어 두세요.'
+              : '홈택스에서 발급했다면 승인번호를 적어 두세요. 부가세 예상에 반영됩니다.'}
           </AlertBanner>
         )}
 
@@ -359,7 +365,7 @@ export default function BossTaxInvoiceDetailPage() {
         {isTax ? (
           <Panel kicker={docLabel} title={data.buyerName || '(상호 없음)'} right={<Tag tone={ds.tone}>{ds.label}</Tag>}>
             <dl>
-              <DescRow label="사업자등록번호" value={data.buyerBizNo || '-'} />
+              <DescRow label="사업자등록번호" value={data.buyerBizNo ? formatBizNo(data.buyerBizNo) : '-'} />
               <DescRow label="대표자" value={data.buyerCeo || '-'} />
               <DescRow label="사업장 주소" value={data.buyerAddress || '-'} />
               <DescRow label="업태 / 종목" value={[data.buyerBizType, data.buyerBizKind].filter(Boolean).join(' / ') || '-'} />
@@ -403,7 +409,7 @@ export default function BossTaxInvoiceDetailPage() {
           </div>
           <p className="mt-2 font-boss-head text-[13px] text-boss-text-secondary">{koreanAmountText(data.totalAmount)}</p>
           {correction && (
-            <p className="mt-1 text-[12px] leading-relaxed text-boss-text-muted">
+            <p className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">
               원본 금액 전액을 차감하는 음수(-) 금액입니다. 발급이 확정되면 원본과 함께 집계되어 합계가 0원이 됩니다.
             </p>
           )}
@@ -454,7 +460,7 @@ export default function BossTaxInvoiceDetailPage() {
         {!managed && (
           <Panel kicker="기록 상태" title={data.status === 'REQUESTED' ? '미발급 (작성 완료)' : STATUS_LABEL[data.status]}>
             <p className="mb-3 text-[12px] leading-relaxed text-boss-text-secondary">
-              홈택스 등 도배르만 밖에서 발행했다면 승인번호를 기록해 두세요. 기록만 바뀌며 국세청 문서는 바뀌지 않습니다.
+              홈택스 등 도배르만 밖에서 발급했다면 승인번호를 적어 두세요. 기록만 바뀌며 국세청 문서는 바뀌지 않습니다.
             </p>
             {data.status === 'ISSUED' && (
               <dl className="mb-3">
@@ -470,8 +476,14 @@ export default function BossTaxInvoiceDetailPage() {
                   label={isTax ? '홈택스 승인번호' : '현금영수증 승인번호'}
                   value={approvalNo}
                   onChange={(e) => setApprovalNo(e.target.value)}
-                  placeholder={isTax ? '20260906-41000000-12345678' : '승인번호 9자리'}
-                  hint={isTax ? '홈택스 발급 완료 화면의 승인번호(24자리)입니다.' : '홈택스 현금영수증 발급 화면의 승인번호입니다.'}
+                  inputMode={isTax ? 'text' : 'numeric'}
+                  autoComplete="off"
+                  hint={
+                    isTax
+                      ? '홈택스 발급 완료 화면의 승인번호(24자리)입니다. 예: 20261017-41000000-12345678'
+                      : '홈택스 현금영수증 발급 화면의 승인번호(9자리)입니다.'
+                  }
+                  hideCounter
                   maxLength={50}
                 />
                 <Field
@@ -486,7 +498,7 @@ export default function BossTaxInvoiceDetailPage() {
                     닫기
                   </Button>
                   <Button variant="primary" size="sm" onClick={() => void changeStatus('ISSUED')} disabled={changing}>
-                    {changing ? '처리 중…' : '홈택스 발행 완료로 기록'}
+                    {changing ? '처리 중…' : '발급 완료로 기록'}
                   </Button>
                 </div>
               </div>
@@ -494,7 +506,7 @@ export default function BossTaxInvoiceDetailPage() {
               <div className="flex flex-col gap-2">
                 {data.status !== 'ISSUED' && (
                   <Button variant="secondary" onClick={() => setIssueOpen(true)} disabled={changing}>
-                    홈택스 발행 기록
+                    홈택스에서 발급했어요 (승인번호 적기)
                   </Button>
                 )}
                 {data.status === 'ISSUED' && (
@@ -503,7 +515,7 @@ export default function BossTaxInvoiceDetailPage() {
                   </Button>
                 )}
                 {data.status !== 'CANCELED' && (
-                  <Button variant="secondary" size="sm" onClick={() => void changeStatus('CANCELED')} disabled={changing}>
+                  <Button variant="secondary" size="sm" onClick={() => setConfirmCancel(true)} disabled={changing}>
                     취소로 기록 (기록만 변경)
                   </Button>
                 )}
@@ -517,17 +529,7 @@ export default function BossTaxInvoiceDetailPage() {
           </Panel>
         )}
 
-        <Panel kicker="문서" title="미리보기 · PDF · 인쇄">
-          <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-            {isTax ? 'A4 세금계산서 서식' : '현금영수증 서식'}으로 미리 보고 PDF로 저장하거나 인쇄합니다. 미발급 · 시험 · 결과 확인 필요 · 취소
-            표시는 종이에도 함께 찍힙니다.
-          </p>
-          <div className="mt-3">
-            <ButtonLink href={printHref} variant="primary" size="sm" icon={FileText}>
-              미리보기 · PDF · 인쇄
-            </ButtonLink>
-          </div>
-        </Panel>
+        {/* 미리보기 단추는 맨 위 한 곳에만 둔다(2026-10-17 — 같은 단추가 세 번 있었다) */}
 
         {!managed && (
           <Panel
@@ -552,9 +554,9 @@ export default function BossTaxInvoiceDetailPage() {
               ))}
             </dl>
             {company && (
-              <p className="mt-3 text-[11.5px] leading-relaxed text-boss-text-muted">
+              <p className="mt-3 text-[12.5px] leading-relaxed text-boss-text-secondary">
                 공급자(우리 회사) 정보는 홈택스 로그인 계정에서 자동으로 채워집니다: {company.name}
-                {company.bizno ? ` · ${company.bizno}` : ''}
+                {company.bizno ? ` · ${formatBizNo(company.bizno)}` : ''}
               </p>
             )}
           </Panel>
@@ -564,10 +566,22 @@ export default function BossTaxInvoiceDetailPage() {
       <ConfirmDialog
         open={confirmDelete}
         title={`이 ${docLabel} 기록을 삭제할까요?`}
-        description="홈택스에서 이미 발행한 문서는 취소되지 않습니다. 여기 기록만 지워지며 부가세 예상에서 빠집니다."
+        description="홈택스에서 이미 발급한 문서는 취소되지 않습니다. 여기 기록만 지워지며 부가세 예상에서 빠집니다."
         loading={deleting}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => void handleDelete()}
+      />
+      <ConfirmDialog
+        open={confirmCancel}
+        title="취소로 기록할까요?"
+        description={`도배르만 기록만 취소로 바뀌고 부가세 예상에서 빠집니다.${
+          isTax ? ' 홈택스에서 발급한 세금계산서는 취소되지 않으니, 실제 취소는 홈택스에서 해 주세요.' : ''
+        } 잘못 눌렀다면 '미발급으로 되돌리기'로 되돌릴 수 있습니다.`}
+        confirmLabel="취소로 기록"
+        cancelLabel="닫기"
+        loading={changing}
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={() => void changeStatus('CANCELED')}
       />
     </div>
   );

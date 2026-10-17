@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Ban, ExternalLink, FileCheck2, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_PRICE, TAX_SUBSCRIPTION_WHERE } from '@/lib/boss/taxInvoiceSubscription';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import ElectronicLaunchNotice from './ElectronicLaunchNotice';
@@ -275,7 +276,7 @@ function ProviderStatusPanel({
       <div className="flex flex-col gap-3">
         {invoice.providerIsTest && (
           <AlertBanner tone="warn">
-            시험 환경에서 발급한 문서입니다. 국세청에 전송되지 않으며 효력이 없고, 발행 · 부가세 집계에서 빠집니다.
+            시험 환경에서 발급한 문서입니다. 국세청에 전송되지 않으며 효력이 없고, 발급 · 부가세 집계에서 빠집니다.
           </AlertBanner>
         )}
         {(ps === 'UNKNOWN' || ps === 'PROCESSING' || ps == null) && (
@@ -361,7 +362,7 @@ function ProviderStatusPanel({
           </p>
         )}
         {!isCash && !correction && <TaxCancelSection invoice={invoice} reload={reload} />}
-        <p className="text-[11.5px] leading-relaxed text-boss-text-muted">
+        <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
           {isCash
             ? ELECTRONIC_TAX_INVOICE_OPEN
               ? '현금영수증은 전액 취소만 지원합니다(부분 취소 없음). 취소는 승인된 원거래를 기준으로 서버가 처리합니다. 수정 · 삭제는 할 수 없습니다.'
@@ -469,7 +470,7 @@ function CancelDialog({
               <DescRow label="용도 · 식별" value={`${id.usage} · ${id.masked}`} />
               <DescRow label="취소 금액(전액)" value={`${fmt(invoice.totalAmount)}원`} />
             </dl>
-            <p className="text-[12px] leading-relaxed text-boss-text-muted">
+            <p className="text-[12px] leading-relaxed text-boss-text-secondary">
               취소 거래일자 · 원거래 정보는 서버가 승인된 원본을 기준으로 정합니다.
             </p>
             <fieldset className="flex flex-col gap-2" disabled={sending}>
@@ -603,7 +604,7 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
         </AlertBanner>
       ) : config && !config.enabled ? (
         <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-          {docLabel} 전자 발급을 쓰지 않는 상태입니다{config.reason ? ` (${config.reason})` : ''}. 홈택스에서 발행한 뒤 승인번호를 남겨 주세요.
+          {docLabel} 전자 발급을 쓰지 않는 상태입니다{config.reason ? ` (${config.reason})` : ''}. 홈택스에서 발급한 뒤 승인번호를 남겨 주세요.
         </p>
       ) : config ? (
         <div className="flex flex-col gap-3">
@@ -676,7 +677,7 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
               </a>
             </p>
           )}
-          <p className="text-[11.5px] leading-relaxed text-boss-text-muted">
+          <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
             {isCash
               ? '현금영수증은 공동인증서 없이 발급 서비스 연동이 끝나면 발급할 수 있습니다. 준비 상태는 서버가 판단합니다.'
               : '인증서 등록은 팝빌 회원으로 가입된 사업자만 할 수 있습니다. 가입은 자동으로 되지 않습니다.'}
@@ -871,10 +872,19 @@ function PreviewDialog({
                 </div>
               )}
 
+              {/* 무료 1개월이 끝났다 — 결제는 앱에서만 한다(2026-10-17). 구독 뒤 미리보기를 다시 열면 바로 발급할 수 있다 */}
+              {preview.subscriptionRequired && (
+                <div className="border border-boss-warning/35 bg-boss-pill-warn px-4 py-3 text-[13px] leading-relaxed text-boss-pill-warn-fg">
+                  <p className="font-semibold">구독하면 바로 이어서 발급할 수 있습니다 ({TAX_SUBSCRIPTION_PRICE})</p>
+                  <p className="mt-1">{TAX_SUBSCRIPTION_WHERE.replace('이 화면에서 다시 확인을 누르세요', '이 미리보기를 다시 여세요')}</p>
+                  <p className="mt-1">{TAX_SUBSCRIPTION_FREE_USES}</p>
+                </div>
+              )}
+
               <div className="grid gap-4 md:grid-cols-2">
                 <PartyBlock title={isCash ? '가맹점(공급자)' : '공급자'} supplier={preview.supplier} />
                 <div className="border border-boss-border p-3">
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-boss-text-muted">{isCash ? '고객' : '공급받는자'}</p>
+                  <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-boss-text-secondary">{isCash ? '고객' : '공급받는자'}</p>
                   {isCash && cash ? (
                     <dl>
                       <DescRow label="용도" value={CASH_USAGE_LONG_LABEL[cash.usage]} />
@@ -975,7 +985,7 @@ function PreviewDialog({
 function PartyBlock({ title, supplier }: { title: string; supplier: TaxInvoiceSupplier | null }) {
   return (
     <div className="border border-boss-border p-3">
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-boss-text-muted">{title}</p>
+      <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-boss-text-secondary">{title}</p>
       {supplier ? (
         <dl>
           <DescRow label="상호" value={supplier.name || '-'} />

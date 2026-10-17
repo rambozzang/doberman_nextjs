@@ -107,7 +107,7 @@ export function displayState(inv: TaxInvoice): DisplayState {
         return { ...base, key: 'attention', label: '발급 결과 확인 필요', tone: 'warn' };
     }
   }
-  if (inv.status === 'ISSUED') return { ...base, key: 'issued', label: '발행 완료', tone: 'ok' };
+  if (inv.status === 'ISSUED') return { ...base, key: 'issued', label: '발급 완료', tone: 'ok' };
   if (inv.status === 'CANCELED') return { ...base, key: 'canceled', label: '취소', tone: 'neutral' };
   return { ...base, key: 'draft', label: '미발급', tone: 'warn' };
 }
@@ -267,7 +267,7 @@ export function paperState(inv: TaxInvoice): PaperState {
   if (inv.taxCancelStatus === 'CANCELED') {
     return {
       banner: '발행취소 완료 · 효력 없음',
-      note: '국세청 전송 전에 발행을 취소한 세금계산서입니다. 세금계산서로서 효력이 없고 발행 · 부가세 집계에서 빠집니다.',
+      note: '국세청 전송 전에 발행을 취소한 세금계산서입니다. 세금계산서로서 효력이 없고 발급 · 부가세 집계에서 빠집니다.',
       watermark: '발행취소',
       tone: 'bad',
     };
@@ -332,8 +332,8 @@ export function paperState(inv: TaxInvoice): PaperState {
   }
   if (inv.status === 'ISSUED') {
     return {
-      banner: '홈택스 발행 기록 · 사본',
-      note: `홈택스 등 도배르만 밖에서 발행했다고 기록한 ${doc}의 사본입니다. 이 종이는 국세청 원본이 아닙니다.`,
+      banner: '홈택스 발급 기록 · 사본',
+      note: `홈택스 등 도배르만 밖에서 발급했다고 기록한 ${doc}의 사본입니다. 이 종이는 국세청 원본이 아닙니다.`,
       watermark: null,
       tone: 'plain',
     };
@@ -367,7 +367,7 @@ export function approvalOf(inv: TaxInvoice): { label: string; value: string } | 
     if (inv.providerStatus !== 'ISSUED') return null;
     return { label: inv.docType === 'TAX' ? '국세청 승인번호' : '승인번호', value: no };
   }
-  if (inv.status === 'ISSUED' || inv.status === 'CANCELED') return { label: '승인번호(홈택스 발행분)', value: no };
+  if (inv.status === 'ISSUED' || inv.status === 'CANCELED') return { label: '승인번호(홈택스 발급분)', value: no };
   return null;
 }
 

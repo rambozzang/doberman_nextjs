@@ -286,6 +286,27 @@ export interface ElectronicPreview {
   isTest: boolean;
   /** 발급 요청에 그대로 돌려보낸다 — 미리보기 이후 문서 · 공급자 · 시험 여부가 바뀌면 서버가 거절 */
   previewToken: string;
+  /** 무료 1개월이 끝나 구독이 있어야 발급할 수 있다(2026-10-17) */
+  subscriptionRequired?: boolean;
+  subscription?: TaxInvoiceSubscriptionStatus | null;
+}
+
+/**
+ * GET /taxinvoices/electronic/subscription — 전자 발급 구독 상태(2026-10-17). 판정은 서버가 한다.
+ * reason: NOT_REQUIRED | FREE_NOT_STARTED(인증서 등록 전) | FREE_PERIOD | SUBSCRIBED | SUBSCRIPTION_REQUIRED | CHECK_FAILED
+ */
+export interface TaxInvoiceSubscriptionStatus {
+  required: boolean;
+  /** 지금 전자 발급을 할 수 있는가 */
+  entitled: boolean;
+  reason: string;
+  /** 무료 시작(인증서 등록일) · 끝 */
+  freeStartedAt?: string | null;
+  freeUntil?: string | null;
+  freeDaysLeft?: number | null;
+  /** 구독 다음 갱신 예정. 평생 권한이면 없음 */
+  expiresAt?: string | null;
+  message?: string | null;
 }
 
 /**

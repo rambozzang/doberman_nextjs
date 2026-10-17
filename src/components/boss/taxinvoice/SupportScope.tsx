@@ -25,7 +25,7 @@ function Row({ title, tone, tag, steps, note }: { title: string; tone: StatusTon
         <Tag tone={tone}>{tag}</Tag>
       </div>
       <p className="mt-1 break-keep text-[12px] leading-relaxed text-boss-text-secondary">{steps}</p>
-      <p className="mt-1 break-keep text-[12px] leading-relaxed text-boss-text-muted">{note}</p>
+      <p className="mt-1 break-keep text-[12px] leading-relaxed text-boss-text-secondary">{note}</p>
     </div>
   );
 }
@@ -92,7 +92,7 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
         tone={taxReady ? 'ok' : verified ? 'info' : 'neutral'}
         tag={taxTag}
         steps="사업자 권한 확인 → 팝빌 서비스 연동 → 공동인증서 등록"
-        note={`일반 과세 정발행만 지원합니다.${taxReady ? closed : ''}`}
+        note={`사업자 고객에게 보내는 일반(과세) 세금계산서를 발급합니다.${taxReady ? closed : ''}`}
       />
       <Row
         title="현금영수증"
@@ -101,11 +101,18 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
         steps="사업자 권한 확인 → 팝빌 서비스 연동 (공동인증서 필요 없음)"
         note={cashNote}
       />
-      <p className="mt-3 break-keep text-[11.5px] leading-relaxed text-boss-text-muted">
-        세금계산서 취소는 도배르만에서 전자 발급한 건의 전액만 됩니다 — 국세청 전송 전이면 발행취소, 전송 후면 수정세금계산서(환입 · 계약의
-        해제 · 착오에 의한 이중발급) 1장. 일부 반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환 수정세금계산서와 역발행 · 대량 발급은 지원하지
-        않습니다. 현금영수증 취소는 승인된 건의 전액 취소만 됩니다.{ELECTRONIC_TAX_INVOICE_OPEN ? '' : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
+      <p className="mt-3 break-keep text-[12.5px] leading-relaxed text-boss-text-secondary">
+        취소는 도배르만에서 전자 발급한 건을 통째로(전액) 취소할 때만 됩니다. 금액 일부만 고치거나 일부만 취소하려면 홈택스에서 해 주세요.
       </p>
+      {/* 자세한 범위 — 세무 용어가 많아 접어 둔다(2026-10-17) */}
+      <details className="mt-2 text-[12px] leading-relaxed text-boss-text-secondary">
+        <summary className="cursor-pointer select-none font-semibold text-boss-text">자세한 지원 범위</summary>
+        <p className="mt-1.5 break-keep">
+          세금계산서: 국세청 전송 전이면 발행취소, 전송 후면 수정세금계산서(환입 · 계약의 해제 · 착오에 의한 이중발급) 1장을 발급합니다. 일부
+          반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환 수정세금계산서와 역발행 · 대량 발급은 지원하지 않습니다. 현금영수증은 승인된 건의
+          전액 취소만 됩니다.{ELECTRONIC_TAX_INVOICE_OPEN ? '' : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
+        </p>
+      </details>
     </Panel>
   );
 }

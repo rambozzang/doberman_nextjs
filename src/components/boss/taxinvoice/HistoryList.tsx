@@ -24,7 +24,7 @@ export function HistoryRows({ items, extra }: { items: TaxInvoiceHistoryItem[]; 
         return (
           <li key={h.id} className="border-b border-boss-border-row py-2.5 last:border-b-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-boss-head text-[12.5px] tabular-nums text-boss-text-muted">{formatOpsDateTime(h.createdAt) ?? '시각 확인 전'}</span>
+              <span className="font-boss-head text-[12.5px] tabular-nums text-boss-text-secondary">{formatOpsDateTime(h.createdAt) ?? '시각 확인 전'}</span>
               <span className="break-keep text-[13px] font-semibold text-boss-text">{historyActionLabel(h.action)}</span>
               <Tag tone={outcome.tone}>{outcome.label}</Tag>
               {h.actorLabel && <span className="break-keep text-[12px] text-boss-text-secondary">{h.actorLabel}</span>}

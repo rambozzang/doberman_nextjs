@@ -29,6 +29,7 @@ import {
   Rows3,
   Search,
   AlertTriangle,
+  Check,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -819,7 +820,7 @@ export function RadioOption({
 }
 
 // ═══════════════════════════════════════════
-// CheckLine — 참조 .radio 모양의 체크박스 (같은 점 모양을 쓴다)
+// CheckLine — 체크박스. 네모 + 체크 표시(2026-10-17 — 예전엔 라디오와 같은 동그라미라 하나만 고르는 단추처럼 보였다)
 // ═══════════════════════════════════════════
 export function CheckLine({
   checked,
@@ -847,11 +848,11 @@ export function CheckLine({
       />
       <span
         aria-hidden
-        className={`mt-[2px] grid h-4 w-4 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-boss-primary ${
-          checked ? 'border-boss-primary bg-boss-primary' : 'border-boss-border-hover bg-transparent'
+        className={`mt-[1px] grid h-[18px] w-[18px] shrink-0 place-items-center border-[1.5px] transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-boss-primary ${
+          checked ? 'border-boss-primary bg-boss-primary text-boss-bg' : 'border-boss-border-hover bg-boss-bg'
         }`}
       >
-        {checked && <span className="block h-1.5 w-1.5 rounded-full bg-boss-bg" />}
+        {checked && <Check size={13} strokeWidth={3} />}
       </span>
       <span className="min-w-0">{children}</span>
     </label>
@@ -1404,9 +1405,14 @@ export function Field({
   );
 }
 
-/** 글자 수 표시 — 값이 문자열이고 maxLength 가 있을 때만 */
+/**
+ * 글자 수 표시 — 값이 문자열이고 maxLength 가 있을 때만.
+ * 빈 칸의 "0/100" 은 모든 칸에 붙어 화면만 어지러웠다(2026-10-17 점검) — 적기 시작한 긴 글(200자 이상 칸)이거나
+ * 한도의 70%를 넘었을 때만 보인다. 한도에 다가가면 여전히 바로 알 수 있다.
+ */
 function fieldCounter(value: unknown, maxLength?: number): string | null {
-  if (!maxLength || typeof value !== 'string') return null;
+  if (!maxLength || typeof value !== 'string' || value.length === 0) return null;
+  if (maxLength < 200 && value.length < maxLength * 0.7) return null;
   return `${value.length}/${maxLength}`;
 }
 

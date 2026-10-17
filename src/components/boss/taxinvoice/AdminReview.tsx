@@ -185,7 +185,7 @@ export default function AdminReview({ scope, onForbidden }: { scope: string; onF
                     <td className="font-boss-head tabular-nums text-boss-text-secondary">{formatOpsDateTime(r.submittedAt) ?? '-'}</td>
                     <td className="wrap">
                       <span className="font-semibold text-boss-text">{nameOf(r)}</span>
-                      <span className="mt-0.5 block font-boss-head text-[12px] tabular-nums text-boss-text-muted">{r.supplier?.bizNo ? formatBizNo(r.supplier.bizNo) : '사업자번호 없음'}</span>
+                      <span className="mt-0.5 block font-boss-head text-[12px] tabular-nums text-boss-text-secondary">{r.supplier?.bizNo ? formatBizNo(r.supplier.bizNo) : '사업자번호 없음'}</span>
                     </td>
                     <td className="text-boss-text-secondary">{r.userId || '-'}</td>
                     <td>{r.isTest ? <Tag tone="warn">시험</Tag> : <Tag tone="neutral">실제</Tag>}</td>
@@ -394,7 +394,7 @@ export function ReviewDialog({
         {!pending ? (
           row.reviewReason && (
             <div className="border border-boss-border bg-boss-bg px-3 py-2.5">
-              <p className="text-[12px] text-boss-text-muted">
+              <p className="text-[12px] text-boss-text-secondary">
                 {row.reviewStatus === 'REJECTED' ? '반려 사유' : row.reviewStatus === 'APPROVED' ? '승인 사유' : '심사 사유'} (사장님 화면에 공개됨)
               </p>
               <p className="mt-1 whitespace-pre-wrap break-keep text-[13px] leading-relaxed text-boss-text">{row.reviewReason}</p>
@@ -437,7 +437,7 @@ export function ReviewDialog({
               </ul>
             )}
             {!attempted && blockers.length > 0 && (
-              <p className="text-[12px] leading-relaxed text-boss-text-muted">남은 항목: {blockers.join(' · ')}</p>
+              <p className="text-[12px] leading-relaxed text-boss-text-secondary">남은 항목: {blockers.join(' · ')}</p>
             )}
           </>
         )}

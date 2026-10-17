@@ -146,7 +146,7 @@ export default function DocumentPreview({
           {pages.length === 0 && !error ? (
             <div className="no-print relative w-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)]" style={{ aspectRatio: '210 / 297' }}>
               <div className="no-print absolute inset-0 grid place-items-center">
-                <span className="font-boss-head text-[11px] uppercase tracking-[0.1em] text-boss-text-muted">문서를 그리는 중…</span>
+                <span className="font-boss-head text-[12px] uppercase tracking-[0.1em] text-boss-text-secondary">문서를 그리는 중…</span>
               </div>
             </div>
           ) : (

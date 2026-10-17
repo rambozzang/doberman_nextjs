@@ -87,7 +87,7 @@ export function ActivityRows({
                 {a.message && (
                   <p className={`mt-1 break-keep text-[12.5px] leading-relaxed text-boss-text-secondary ${compact ? 'line-clamp-2' : ''}`}>{a.message}</p>
                 )}
-                <p className="mt-1 font-boss-head text-[12px] tabular-nums text-boss-text-muted">{formatOpsDateTime(a.createdAt) ?? '시각 확인 전'}</p>
+                <p className="mt-1 font-boss-head text-[12px] tabular-nums text-boss-text-secondary">{formatOpsDateTime(a.createdAt) ?? '시각 확인 전'}</p>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                 <Link

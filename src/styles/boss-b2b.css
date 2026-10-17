@@ -487,6 +487,110 @@ select.boss-input {
   text-align: right;
 }
 
+/* 입력 표를 휴대폰에서 카드로 쌓는다(2026-10-17 세금계산서 품목) — 넓은 화면은 그대로 표.
+ * 칸 이름은 td 의 data-label 로 보여 준다. 칸 배치는 stack-* 이름으로 정한다.
+ * 예전엔 390px 화면에서 수량 · 단가 칸이 22px 로 줄고 금액은 옆으로 밀어야 보였다. */
+/* 손가락으로 누르는 화면(휴대폰 · 태블릿) — 누르는 칸을 44px 이상으로(2026-10-17 세금계산서 화면부터, .boss-touch 안만).
+ * 예전엔 보조 단추 27px · 연도/분기 칸 35px 로 잘못 누르기 쉬웠다. 입력칸 글자 16px 은 iOS 가 화면을 확대하지 않게 한다. */
+@media (pointer: coarse) {
+  .boss-touch .boss-btn,
+  .boss-touch [role='radiogroup'] > button {
+    min-height: 44px;
+  }
+  .boss-touch .boss-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
+/* 넓은 화면: 입력 표는 칸 사이를 좁혀 본문 폭(약 690px) 안에 면세 · 삭제까지 들어오게 한다 */
+@media (min-width: 768px) {
+  .boss-table-stack thead th,
+  .boss-table-stack tbody td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .boss-table-stack thead th:first-child,
+  .boss-table-stack tbody td:first-child {
+    padding-left: 12px;
+  }
+  .boss-table-stack thead th:last-child,
+  .boss-table-stack tbody td:last-child {
+    padding-right: 12px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .boss-table-stack,
+  .boss-table-stack tbody {
+    display: block;
+  }
+  .boss-table-stack thead {
+    display: none;
+  }
+  .boss-table-stack tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'name name'
+      'spec spec'
+      'qty price'
+      'supply vat'
+      'free del';
+    gap: 10px 12px;
+    height: auto;
+    margin-bottom: 10px;
+    border: 1px solid rgb(var(--boss-border));
+    background-color: rgb(var(--boss-bg));
+    padding: 12px;
+  }
+  .boss-table-stack tbody td {
+    display: block;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    white-space: normal;
+  }
+  .boss-table-stack tbody tr:hover td {
+    background-color: transparent;
+  }
+  .boss-table-stack td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgb(var(--boss-text-secondary));
+  }
+  .boss-table-stack td.num {
+    text-align: left;
+    font-size: 15px;
+  }
+  /* 휴대폰 글자 16px — iOS 가 칸을 누를 때 화면을 확대하지 않게. 누르는 칸은 44px */
+  .boss-table-stack .boss-input {
+    height: 44px;
+    font-size: 16px;
+  }
+  .boss-table-stack .stack-name { grid-area: name; }
+  .boss-table-stack .stack-spec { grid-area: spec; }
+  .boss-table-stack .stack-qty { grid-area: qty; }
+  .boss-table-stack .stack-price { grid-area: price; }
+  .boss-table-stack .stack-supply { grid-area: supply; }
+  .boss-table-stack .stack-vat { grid-area: vat; }
+  .boss-table-stack .stack-free {
+    grid-area: free;
+    align-self: center;
+  }
+  .boss-table-stack .stack-del {
+    grid-area: del;
+    justify-self: end;
+  }
+  .boss-table-stack .stack-del .boss-btn {
+    min-height: 44px;
+    padding: 0 12px;
+  }
+}
+
 /* ───────────────────────────────────────────
  * 전체폭 레이아웃
  * 인박스(3열)·컴포저(2열)·설정(서브내비)은 본문 패딩 없이

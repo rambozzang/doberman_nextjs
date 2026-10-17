@@ -7,10 +7,10 @@ export default function ElectronicLaunchNotice({ docType = 'TAX' }: { docType?: 
   return (
     <Panel kicker={`${label} · 전자 발급`} title={`전자 ${label} 발급, 곧 정식 오픈합니다`} right={<Tag tone="info">오픈 예정</Tag>}>
       <p className="text-[13px] leading-relaxed text-boss-text-secondary">
-        미리보기부터 발급까지 한 번에 처리할 수 있도록 준비하고 있습니다. 지금은 작성 · 실물 서식 미리보기 · PDF · 인쇄와 발행 기록 관리를
+        미리보기부터 발급까지 한 번에 처리할 수 있도록 준비하고 있습니다. 지금은 작성 · 실물 서식 미리보기 · PDF · 인쇄와 발급 기록 관리를
         이용해 주세요.
       </p>
-      <p className="mt-2 text-[12px] text-boss-text-muted">
+      <p className="mt-2 text-[12px] text-boss-text-secondary">
         발급 서비스 등록을 미리 마쳐도 실제 발급은 정식 오픈 후 열립니다. 오픈하면 앱과 웹에서 안내해 드리겠습니다.
       </p>
     </Panel>

@@ -189,6 +189,8 @@ export type PageMeta = {
   secondary?: { label: string; href: string };
   /** 본문 최대 폭 — narrow 620 / wide 860 / full 1280. 기본 full */
   width?: PageWidth;
+  /** id 경로 하위 화면(상세 등)의 부제 — 없으면 상위 부제를 그대로 쓴다(2026-10-17: 세금계산서 상세가 목록 설명을 되풀이했다) */
+  detailSubtitle?: string;
   /** 상위 화면 링크 — kicker 자리에 `← 라벨` 로 들어간다. 하위 화면은 자동 파생 */
   back?: { label: string; href: string };
   /**
@@ -332,7 +334,8 @@ const PAGE_META: Record<string, PageMeta> = {
     title: "세금계산서",
     subtitle:
       "세금계산서 · 현금영수증을 작성하고 실물 서식으로 확인 · 출력하며 분기 부가세를 가늠합니다.",
-    action: { label: "세금계산서 작성", href: "/boss/tax-invoice/new" },
+    detailSubtitle: "문서 내용을 확인하고 미리보기 · PDF, 발급, 발급 기록을 관리합니다.",
+    // 작성 단추는 화면 맨 위에 세금계산서 · 현금영수증 두 개를 같은 크기로 둔다(2026-10-17) — 머리에는 두지 않는다
   },
   "/boss/tax-invoice/registration": {
     title: "발급 서비스 등록",
@@ -576,7 +579,7 @@ export function getPageMeta(pathname: string | null): PageMeta {
   // 상세 화면(id 경로)은 상위 제목을 쓰되 헤더 주요 버튼은 숨기고 상위 링크를 붙인다
   return {
     title: parent.title,
-    subtitle: parent.subtitle,
+    subtitle: parent.detailSubtitle ?? parent.subtitle,
     width: parent.width,
     kicker: parent.kicker,
     back:

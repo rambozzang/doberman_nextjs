@@ -132,8 +132,7 @@ export default function SupplierRegistrationForm({
         {prefillNote && <Note tone="info">{prefillNote}</Note>}
         {!serviceConfigured && (
           <Note tone="warn">
-            서버의 팝빌 연동 설정은 아직 준비 중입니다. 신청은 지금 저장해 둘 수 있고, 연동은 준비가 끝난 뒤 이 화면에서 이어
-            갑니다.
+            발급 서비스 연결을 준비하고 있습니다. 신청은 지금 저장해 둘 수 있고, 준비가 끝나면 이 화면에서 다음 단계를 이어 갑니다.
           </Note>
         )}
 
@@ -184,7 +183,7 @@ export default function SupplierRegistrationForm({
         {feedback && <AlertBanner tone={feedback.tone}>{feedback.text}</AlertBanner>}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-boss-border-row pt-4">
-          <p className="min-w-0 flex-1 basis-[240px] break-keep text-[12px] leading-relaxed text-boss-text-muted">
+          <p className="min-w-0 flex-1 basis-[240px] break-keep text-[12px] leading-relaxed text-boss-text-secondary">
             신청은 승인 요청입니다. 저장해도 바로 발급 권한이 생기지 않으며, 운영팀 확인이 끝나야 다음 단계가 열립니다.
           </p>
           <div className="flex flex-wrap gap-2">
