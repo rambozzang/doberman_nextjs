@@ -18,6 +18,8 @@ import { Menu, X } from 'lucide-react';
 import { useBossAuth } from '@/hooks/useBossAuth';
 import { SECTIONS, isNavActive, type NavItem, type NavSection } from './nav';
 import { currentBossIsAdmin } from '@/lib/boss/admin';
+import { useBossScope } from '@/lib/boss/bossScope';
+import { usePlatformAdminAccess } from '@/lib/boss/platformAdminAccess';
 import { useBossPortal } from './BossPortalContext';
 import type { BossSubscriptionStatusResponse } from '@/types/boss-billing';
 
@@ -218,18 +220,25 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** 운영자가 아니면 adminOnly 항목을 뺀다 — 마운트 뒤에 판정해 서버 · 첫 화면이 어긋나지 않게 */
+/**
+ * 운영자 메뉴 거르기 — 계정 범위(useBossScope)마다 서버 판정(GET /platform-admin/access)을 따른다.
+ *   platformAdmin 항목: 서버가 운영자라고 답했을 때만. 판정 전 · 확인 실패 · 로그아웃이면 감춘다.
+ *   adminOnly 항목(예전 목록 기준): 서버가 거절하면 감추고, 판정 전 · 확인 실패(서버 미반영 포함)일 때만 예전 목록으로 대신한다.
+ * 범위는 서버 · 첫 그리기에서 null 이라 첫 화면이 어긋나지 않는다. 메뉴 감춤은 보안이 아니다 — 화면 · 요청을 서버가 다시 검사한다.
+ */
 function useVisibleSections(): NavSection[] {
-  const [admin, setAdmin] = useState(false);
-  useEffect(() => {
-    setAdmin(currentBossIsAdmin());
-  }, []);
+  const scope = useBossScope();
+  const access = usePlatformAdminAccess(scope);
+  const platformAdmin = access.status === 'admin';
+  const legacyAdmin =
+    platformAdmin || (scope != null && (access.status === 'checking' || access.status === 'error') && currentBossIsAdmin());
   return useMemo(
     () =>
-      SECTIONS.map((s) => ({ ...s, items: s.items.filter((it) => !it.adminOnly || admin) })).filter(
-        (s) => s.items.length > 0
-      ),
-    [admin]
+      SECTIONS.map((s) => ({
+        ...s,
+        items: s.items.filter((it) => (!it.platformAdmin || platformAdmin) && (!it.adminOnly || legacyAdmin)),
+      })).filter((s) => s.items.length > 0),
+    [platformAdmin, legacyAdmin]
   );
 }
 

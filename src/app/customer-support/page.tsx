@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   HeadphonesIcon, 
@@ -131,6 +131,7 @@ export default function CustomerSupportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
+  const submitting = useRef(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -146,6 +147,8 @@ export default function CustomerSupportPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setIsSubmitting(true);
     setSubmitError("");
     
@@ -181,6 +184,7 @@ export default function CustomerSupportPage() {
       console.error("문의 전송 중 오류:", error);
       setSubmitError("문의 전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   };
@@ -355,6 +359,7 @@ export default function CustomerSupportPage() {
                             type="text"
                             name="name"
                             id="name"
+                            maxLength={100}
                             value={formData.name}
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white"
@@ -369,6 +374,7 @@ export default function CustomerSupportPage() {
                             type="email"
                             name="email"
                             id="email"
+                            maxLength={254}
                             value={formData.email}
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white"
@@ -386,6 +392,7 @@ export default function CustomerSupportPage() {
                             type="tel"
                             name="phone"
                             id="phone"
+                            maxLength={50}
                             value={formData.phone}
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white"
@@ -420,6 +427,7 @@ export default function CustomerSupportPage() {
                           type="text"
                           name="subject"
                           id="subject"
+                          maxLength={200}
                           value={formData.subject}
                           onChange={handleInputChange}
                           className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-white"
@@ -434,6 +442,7 @@ export default function CustomerSupportPage() {
                         <textarea
                           name="message"
                           id="message"
+                          maxLength={20000}
                           rows={6}
                           value={formData.message}
                           onChange={handleInputChange}
@@ -573,4 +582,4 @@ export default function CustomerSupportPage() {
       </motion.main>
     </div>
   );
-} 
+}

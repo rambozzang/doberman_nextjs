@@ -9,12 +9,12 @@
 // 하위 카테고리(typeDtCd) 로 공지(NOTI)/광고(AD)/업데이트(UPDATE) 를 구분한다.
 //
 //   필터 줄 : ListTabs(카테고리) + 검색 + 우측 "안 읽음 n" · "전체 n건" · 모두 읽음 · 새로고침
-//   표      : 유형 Tag · 제목 · 내용 · 조회 · 시간 · 삭제. 읽지 않은 행은 좌측 3px accent + 제목 굵게
-//   첫 조회 실패(AlertBanner + 다시 시도)와 0건(검색/카테고리 안내)을 구분한다. 삭제는 ConfirmDialog.
+//   표      : 유형 Tag · 제목 · 내용 · 조회 · 시간. 읽지 않은 행은 좌측 3px accent + 제목 굵게
+//   공지는 전체 회원이 함께 보므로 삭제는 운영 관리에서만 한다.
 //
 // 화면 제목은 셸 헤더(PAGE_META)가 그린다.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, CheckCheck, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -32,6 +32,7 @@ import type {
 import {
   SearchInput,
   Button,
+  ButtonLink,
   ListTabs,
   DataTable,
   Tag,
@@ -39,14 +40,13 @@ import {
   Pagination,
   RowSkeleton,
   ContentCard,
-  RowActions,
-  ConfirmDialog,
   AlertBanner,
   type StatusTone,
 } from '@/components/boss/ui';
 import ListDateCell from '@/components/boss/ListDateCell';
 import { TaxActivityEntry } from '@/components/boss/taxinvoice/ActivityList';
 import { useBossScope } from '@/lib/boss/bossScope';
+import { usePlatformAdminAccess } from '@/lib/boss/platformAdminAccess';
 
 const PAGE_SIZE = 20;
 
@@ -90,20 +90,17 @@ type Data = { items: BossNotificationItem[]; hasMore: boolean };
 
 export default function BossNotificationsPage() {
   const router = useRouter();
-  // 알림을 보고 돌아왔으면 보던 탭 · 쪽과 목록을 그대로 되살린다 (지웠으면 null 이라 다시 부른다)
+  // 보던 조건만 되살리고 목록은 다시 읽는다. 운영자가 숨긴 공지를 이전 캐시에서 노출하지 않는다.
   const restored = useMemo(() => readListSnapshot<Filters, Data>(LIST_KEYS.notifications), []);
   const [category, setCategory] = useState<BossNotificationCategory>(restored?.filters.category ?? 'ALL');
-  const [items, setItems] = useState<BossNotificationItem[]>(restored?.data.items ?? []);
+  const [items, setItems] = useState<BossNotificationItem[]>([]);
   const [page, setPage] = useState(restored?.filters.page ?? 0);
   const [keyword, setKeyword] = useState(restored?.filters.keyword ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(restored?.data.hasMore ?? false);
-  const [loaded, setLoaded] = useState(restored != null);
-  const skipFirstLoad = useRef(restored != null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [readVersion, setReadVersion] = useState(0);
-  const [pendingDelete, setPendingDelete] = useState<BossNotificationItem | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(
     async (targetPage: number, cat: BossNotificationCategory) => {
@@ -138,10 +135,6 @@ export default function BossNotificationsPage() {
   );
 
   useEffect(() => {
-    if (skipFirstLoad.current) {
-      skipFirstLoad.current = false;
-      return;
-    }
     void load(page, category);
   }, [load, page, category]);
 
@@ -163,27 +156,6 @@ export default function BossNotificationsPage() {
     bossNotificationsReadStore.markRead(item.boardId);
     setReadVersion((v) => v + 1);
     router.push(`/boss/notifications/${item.boardId}`);
-  };
-
-  // 알림 삭제 (확인 모달 → API → 목록 반영)
-  const handleDelete = async () => {
-    const target = pendingDelete;
-    if (target?.boardId == null) return;
-    setDeleting(true);
-    try {
-      const res = await bossNotificationsApi.remove(target.boardId);
-      if (res.success !== false) {
-        toast.success('알림이 삭제되었습니다.');
-        setItems((prev) => prev.filter((x) => x.boardId !== target.boardId));
-        setPendingDelete(null);
-      } else {
-        toast.error(res.message || '삭제에 실패했습니다.');
-      }
-    } catch {
-      toast.error('네트워크 오류로 삭제에 실패했습니다.');
-    } finally {
-      setDeleting(false);
-    }
   };
 
   const markAllRead = () => {
@@ -214,6 +186,7 @@ export default function BossNotificationsPage() {
   const pageNum = page + 1;
   // 세금계산서 알림은 따로 모아 본다 — 진입만(계정이 바뀌면 새로 그린다)
   const scope = useBossScope();
+  const adminAccess = usePlatformAdminAccess(scope);
   const categoryLabel = CATEGORIES.find((c) => c.code === category)?.label ?? '전체';
 
   return (
@@ -234,6 +207,7 @@ export default function BossNotificationsPage() {
           hint={false}
         />
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          {adminAccess.status === 'admin' && <ButtonLink href="/boss/admin/notices" size="sm">공지 관리</ButtonLink>}
           {unreadCount > 0 && <Tag tone="info">안 읽음 {unreadCount}</Tag>}
           <span className="font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
             {loading ? '불러오는 중…' : `전체 ${filtered.length}건`}
@@ -316,7 +290,6 @@ export default function BossNotificationsPage() {
               <th>제목</th>
               <th>내용</th>
               <th className="num">조회</th>
-              <th />
             </tr>
           </thead>
           <tbody>
@@ -357,12 +330,6 @@ export default function BossNotificationsPage() {
                     </span>
                   </td>
                   <td className="num text-boss-text-secondary">{item.viewCnt ?? 0}</td>
-                  <td className="text-right">
-                    <RowActions
-                      onDelete={() => setPendingDelete(item)}
-                      deleting={deleting && pendingDelete?.boardId === item.boardId}
-                    />
-                  </td>
                 </tr>
               );
             })}
@@ -383,15 +350,6 @@ export default function BossNotificationsPage() {
         </p>
       ) : null}
 
-      {/* 삭제 확인 */}
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        title="알림을 삭제할까요?"
-        description={`'${pendingDelete?.subject ?? '선택한 알림'}' — 삭제한 알림은 되돌릴 수 없습니다.`}
-        loading={deleting}
-        onCancel={() => setPendingDelete(null)}
-        onConfirm={() => void handleDelete()}
-      />
     </div>
   );
 }

@@ -33,6 +33,8 @@ import {
   FileCheck2,
   LayoutTemplate,
   ShoppingBag,
+  Newspaper,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -44,8 +46,10 @@ export type NavItem = {
   badge?: string;
   /** 활성 판정에서 제외할 하위 경로 */
   exclude?: string[];
-  /** 운영자(admin.user-ids)에게만 보인다 */
+  /** 운영자(admin.user-ids)에게만 보인다. 서버 판정이 거절이면 감추고, 판정 전 · 확인 실패 때만 이 목록으로 대신한다 */
   adminOnly?: boolean;
+  /** 서버 운영자 판정(GET /platform-admin/access)이 운영자일 때만 보인다 — 판정 전 · 실패 때는 감춘다 */
+  platformAdmin?: boolean;
   /** 소비자 사이트 등 바깥 링크 — 새 창으로 연다 */
   external?: boolean;
 };
@@ -129,8 +133,15 @@ export const SECTIONS: NavSection[] = [
     items: [
       // 결제 API 가 서버에 아직 없어 화면을 감춰 둔다. 결제가 열리면 이 줄만 되살리면 된다.
       // { href: '/boss/billing', label: '구독 · 결제', icon: CreditCard },  ← 되살릴 때 CreditCard import 도 함께
+      // 공지사항 — 게시된 공지 읽기(모든 사장님). 작성 · 숨김은 운영 관리의 공지 관리에서 한다
+      { href: "/boss/notices", label: "공지사항", icon: Newspaper },
       { href: "/boss/settings", label: "설정", icon: Settings },
     ],
+  },
+  {
+    // 대표(운영자) 전용 — 서버가 운영자라고 답한 계정에만 보인다. 화면 · 모든 요청도 서버가 다시 검사한다
+    title: "도배르만 운영",
+    items: [{ href: "/boss/admin", label: "운영 관리", icon: ShieldCheck, platformAdmin: true }],
   },
 ];
 
@@ -180,7 +191,15 @@ export type PageMeta = {
   width?: PageWidth;
   /** 상위 화면 링크 — kicker 자리에 `← 라벨` 로 들어간다. 하위 화면은 자동 파생 */
   back?: { label: string; href: string };
+  /**
+   * 제목 위 머리글(기본 "사장님 센터"). 구역 머리글을 준 화면(예: 도배르만 운영)은 그 구역 안에서 따로 이동 메뉴를 그리므로
+   * 상위 링크(back)를 자동으로 붙이지 않는다.
+   */
+  kicker?: string;
 };
+
+// 대표 전용 운영 화면 머리글 — 일반 사장님 화면과 구분해 보인다
+const PLATFORM_ADMIN_KICKER = "도배르만 운영 · 대표 전용";
 
 // 긴 경로가 먼저 매칭되도록 정의 순서를 지킬 것 (아래에서 length 순 정렬)
 const PAGE_META: Record<string, PageMeta> = {
@@ -412,6 +431,55 @@ const PAGE_META: Record<string, PageMeta> = {
     subtitle: "현재 플랜 정보입니다.",
     width: "wide",
   },
+  "/boss/notices": {
+    // 상세(/boss/notices/[id])는 이 제목을 쓰고 "← 공지사항" 링크가 붙는다
+    title: "공지사항",
+    subtitle: "도배르만이 알려 드리는 서비스 소식입니다.",
+    width: "wide",
+  },
+
+  // ── 도배르만 운영(대표 전용) — 화면 진입 · 모든 요청을 서버가 운영자인지 검사한다 ──
+  "/boss/admin": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "운영 개요",
+    subtitle: "회원 · 공지 · 신고 · 문의 현황을 서버 집계로 봅니다. 운영자만 이용할 수 있습니다.",
+  },
+  "/boss/admin/members": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "회원 관리",
+    subtitle: "회원을 찾아보고 이용 정지 · 해제를 처리합니다. 처리는 사유와 함께 감사 이력에 남습니다.",
+  },
+  "/boss/admin/subscriptions": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "구독 기록",
+    subtitle: "서버에 저장된 구독 기록을 읽기 전용으로 봅니다. 결제 · 해지는 여기서 하지 않습니다.",
+  },
+  "/boss/admin/payments": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "결제 기록",
+    subtitle: "서버에 저장된 결제 거래 기록을 읽기 전용으로 봅니다. 환불은 여기서 하지 않습니다.",
+  },
+  "/boss/admin/notices": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "공지 관리",
+    subtitle: "앱 · 웹 공지를 쓰고 미리 보고 공개 · 숨김 · 삭제합니다. 푸시 · 이메일은 보내지 않습니다.",
+  },
+  "/boss/admin/reports": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "신고 처리",
+    subtitle: "커뮤니티 신고를 확인하고 기각하거나 글을 숨깁니다. 글을 지우지는 않습니다.",
+  },
+  "/boss/admin/inquiries": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "문의 처리",
+    subtitle: "접수된 문의를 확인하고 운영 메모와 함께 처리 완료로 바꿉니다. 이메일 회신은 하지 않습니다.",
+  },
+  "/boss/admin/audit": {
+    kicker: PLATFORM_ADMIN_KICKER,
+    title: "감사 이력",
+    subtitle: "회원 상태 · 공지 · 신고 · 문의 변경을 누가 언제 왜 했는지 봅니다.",
+  },
+
   "/boss/settings": {
     title: "설정",
     subtitle: "계정 · 알림 · 약관을 관리합니다.",
@@ -492,6 +560,7 @@ export function getPageMeta(pathname: string | null): PageMeta {
     const isTopLevel = NAV_ITEMS.some((n) => n.href === pathname);
     if (
       !own.back &&
+      !own.kicker &&
       !isTopLevel &&
       parent &&
       parentKey &&
@@ -509,6 +578,7 @@ export function getPageMeta(pathname: string | null): PageMeta {
     title: parent.title,
     subtitle: parent.subtitle,
     width: parent.width,
+    kicker: parent.kicker,
     back:
       parentKey === "/boss"
         ? undefined

@@ -8,33 +8,31 @@
 // 백엔드 알림은 BBS(`/bbs/...`) 의 typeCd='NOTI' 를 재사용한다.
 //
 //   좌 본문 패널 : kicker(유형) + 제목 + 본문(HTML 은 sanitize 후 렌더) + 첨부 링크
-//   우 요약 패널 : DescRow(유형 · 작성자 · 등록일 · 조회수 · 첨부) + 액션(목록 · 삭제)
-//   삭제는 ConfirmDialog. 첫 조회 실패는 AlertBanner + 목록으로.
+//   우 요약 패널 : DescRow(유형 · 작성자 · 등록일 · 조회수 · 첨부) + 액션(목록 · 운영자 공지 관리)
+//   첫 조회 실패는 AlertBanner + 목록으로. 전체 회원 공지의 삭제는 운영 관리에서 한다.
 //
 // 화면 제목("알림")과 ← 알림 링크는 셸 헤더(PAGE_META)가 그린다.
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
-import { Trash2, ExternalLink } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { ExternalLink } from 'lucide-react';
 import {
   Panel,
-  Button,
   ButtonLink,
   Tag,
   Skeleton,
   DescRow,
   AlertBanner,
-  ConfirmDialog,
   type StatusTone,
 } from '@/components/boss/ui';
 import {
   bossNotificationsApi,
   bossNotificationsReadStore,
 } from '@/lib/api/boss/notifications';
-import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import type { BossNotificationItem } from '@/types/boss-notifications';
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
+import { useBossScope } from '@/lib/boss/bossScope';
+import { usePlatformAdminAccess } from '@/lib/boss/platformAdminAccess';
 
 const CATEGORY_META: Record<string, { label: string; tone: StatusTone }> = {
   AD: { label: '광고', tone: 'warn' },
@@ -78,15 +76,14 @@ function authorName(item: BossNotificationItem): string | undefined {
 
 export default function BossNotificationDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
+  const scope = useBossScope();
+  const adminAccess = usePlatformAdminAccess(scope);
   const rawId = params?.id;
   const boardId = rawId ? Number(rawId) : NaN;
 
   const [item, setItem] = useState<BossNotificationItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (Number.isNaN(boardId)) {
@@ -126,26 +123,6 @@ export default function BossNotificationDetailPage() {
       cancelled = true;
     };
   }, [boardId]);
-
-  const handleDelete = async () => {
-    if (Number.isNaN(boardId)) return;
-
-    setDeleting(true);
-    try {
-      const res = await bossNotificationsApi.remove(boardId);
-      if (res.success !== false) {
-        toast.success('알림이 삭제되었습니다.');
-        markListDirty(LIST_KEYS.notifications);
-        router.push('/boss/notifications');
-      } else {
-        toast.error(res.message || '삭제에 실패했습니다.');
-      }
-    } catch {
-      toast.error('네트워크 오류로 삭제에 실패했습니다.');
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   // 로딩
   if (loading) {
@@ -247,31 +224,14 @@ export default function BossNotificationDetailPage() {
           )}
         </dl>
 
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-boss-border pt-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-boss-border pt-4">
           <ButtonLink href="/boss/notifications" variant="secondary" size="sm">
             목록
           </ButtonLink>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={Trash2}
-            className="!text-boss-text-muted hover:!text-boss-error"
-            onClick={() => setConfirmDelete(true)}
-            disabled={deleting}
-          >
-            삭제
-          </Button>
+          {adminAccess.status === 'admin' && <ButtonLink href="/boss/admin/notices" size="sm">공지 관리</ButtonLink>}
         </div>
       </Panel>
 
-      <ConfirmDialog
-        open={confirmDelete}
-        title="이 알림을 삭제할까요?"
-        description={`'${item.subject ?? '(제목 없음)'}' — 삭제한 알림은 되돌릴 수 없습니다.`}
-        loading={deleting}
-        onCancel={() => setConfirmDelete(false)}
-        onConfirm={() => void handleDelete()}
-      />
     </div>
   );
 }

@@ -54,7 +54,12 @@ export default function BossHeader() {
               <span aria-hidden>←</span> {meta.back.label}
             </Link>
           ) : (
-            <div className={kicker}>사장님 센터</div>
+            // 구역 머리글(도배르만 운영 등)은 accent 색으로 — 일반 사장님 화면과 구분된다
+            meta.kicker ? (
+              <div className="text-[10px] font-semibold uppercase tracking-[0.09em] text-boss-primary">{meta.kicker}</div>
+            ) : (
+              <div className={kicker}>사장님 센터</div>
+            )
           )}
           <h1 className="mt-0.5 truncate font-boss-head text-[22px] font-semibold leading-tight tracking-[-0.015em] text-boss-text sm:text-[26px]">
             {title}
