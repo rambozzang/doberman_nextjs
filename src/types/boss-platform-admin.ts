@@ -112,6 +112,23 @@ export type NoticeStatusFilter = 'ALL' | NoticeStatus;
 /** 작성 · 수정에서 고를 수 있는 상태(삭제는 따로) */
 export type NoticeEditableStatus = Exclude<NoticeStatus, 'DELETED'>;
 
+export const NOTICE_POPUP_KINDS = ['NOTICE', 'EVENT', 'FEATURE'] as const;
+export const NOTICE_POPUP_DESTINATIONS = ['NOTICE_DETAIL', 'TAX_INVOICES', 'TAX_REGISTRATION', 'TAX_GUIDE', 'MATERIAL_CALCULATOR'] as const;
+export type NoticePopupKind = (typeof NOTICE_POPUP_KINDS)[number];
+export type NoticePopupDestination = (typeof NOTICE_POPUP_DESTINATIONS)[number];
+
+export interface NoticePopupSettings {
+  enabled: boolean;
+  kind: NoticePopupKind;
+  summary: string;
+  ctaLabel: string;
+  destination: NoticePopupDestination;
+  /** 한국 시각(Asia/Seoul), yyyy-MM-ddTHH:mm:ss. null이면 제한 없음. */
+  startsAt: string | null;
+  endsAt: string | null;
+  priority: number;
+}
+
 export interface PlatformNotice {
   id: number;
   title: string;
@@ -121,12 +138,14 @@ export interface PlatformNotice {
   createdAt: string | null;
   updatedAt: string | null;
   authorUserId: string | null;
+  popup?: NoticePopupSettings | null;
 }
 
 export interface NoticeCreateRequest {
   title: string;
   content: string;
   status: NoticeEditableStatus;
+  popup?: NoticePopupSettings;
 }
 
 export interface NoticeUpdateRequest extends NoticeCreateRequest {

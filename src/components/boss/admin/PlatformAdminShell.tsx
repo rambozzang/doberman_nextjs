@@ -40,7 +40,7 @@ const ADMIN_NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: '/boss/admin/members', label: '회원' },
   { href: '/boss/admin/subscriptions', label: '구독' },
   { href: '/boss/admin/payments', label: '결제' },
-  { href: '/boss/admin/notices', label: '공지' },
+  { href: '/boss/admin/notices', label: '공지 · 이벤트' },
   { href: '/boss/admin/reports', label: '신고' },
   { href: '/boss/admin/inquiries', label: '문의' },
   { href: '/boss/admin/audit', label: '감사 이력' },

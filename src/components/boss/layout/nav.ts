@@ -461,8 +461,8 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/boss/admin/notices": {
     kicker: PLATFORM_ADMIN_KICKER,
-    title: "공지 관리",
-    subtitle: "앱 · 웹 공지를 쓰고 미리 보고 공개 · 숨김 · 삭제합니다. 푸시 · 이메일은 보내지 않습니다.",
+    title: "공지 · 이벤트 관리",
+    subtitle: "공지 · 이벤트 · 새 기능을 알리고 앱 로그인 팝업과 이동할 화면을 설정합니다.",
   },
   "/boss/admin/reports": {
     kicker: PLATFORM_ADMIN_KICKER,

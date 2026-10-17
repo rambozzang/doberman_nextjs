@@ -13,6 +13,8 @@ import {
   type CaseStatus,
   type MemberStatus,
   type NoticeEditableStatus,
+  type NoticeCreateRequest,
+  type NoticePopupSettings,
   type NoticeStatus,
   type PlatformAdminAccess,
   type PlatformAudit,
@@ -29,6 +31,8 @@ import {
   type PlatformSubscription,
   type PlatformSubscriptionPage,
 } from '@/types/boss-platform-admin';
+import { parseNoticePopup, popupBlockers, popupPayload, samePopup } from './noticePopup';
+import { plainNoticeContent, plainNoticeTitle } from './noticeText';
 
 export type AdminTone = 'ok' | 'warn' | 'bad' | 'neutral' | 'info';
 
@@ -192,6 +196,8 @@ export function parseNotice(raw: unknown): PlatformNotice | null {
   const n = obj(raw);
   const nid = id(n?.id);
   if (!n || nid == null) return null;
+  const popup = n.popup == null ? null : parseNoticePopup(n.popup);
+  if (n.popup != null && !popup) return null;
   return {
     id: nid,
     title: text(n.title),
@@ -200,6 +206,7 @@ export function parseNotice(raw: unknown): PlatformNotice | null {
     createdAt: str(n.createdAt),
     updatedAt: str(n.updatedAt),
     authorUserId: label(n.authorUserId),
+    popup,
   };
 }
 
@@ -382,40 +389,7 @@ export const QUERY_MAX = 100;
 
 // 서버 PlatformText.plain 과 같은 규칙 — 저장 값 = 앱에 보이는 값이 되도록 서버가 태그 모양 글자를 걷어 낸다.
 // 화면 미리보기와 "결과를 모를 때 반영 여부 확인"이 서버와 같은 결과를 보게 맞춘다(화면은 이 값을 HTML 로 그리지 않는다).
-const TAG = /<[a-zA-Z/!][^>]*>/;
-const TAG_ALL = /<[a-zA-Z/!][^>]*>/g;
-const SCRIPT_BLOCK = /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
-const LINE_BREAK = /<br\s*\/?>/gi;
-const BLOCK_END = /<\/(p|div|li|h[1-6]|tr)\s*>/gi;
-
-/** 본문에 저장할 때 지워질 태그 모양 글자(<b>, </p> 등)가 있는가 */
-export function hasTagLikeText(content: string): boolean {
-  return TAG.test(content);
-}
-
-/** 서버가 저장할 본문(일반 글자) — 태그 모양 글자를 걷고 앞뒤 공백을 지운다 */
-export function plainNoticeContent(raw: string): string {
-  const s = raw.replace(/\r\n/g, '\n');
-  if (!TAG.test(s)) return s.trim();
-  return s
-    .replace(SCRIPT_BLOCK, '')
-    .replace(LINE_BREAK, '\n')
-    .replace(BLOCK_END, '\n')
-    .replace(TAG_ALL, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-/** 서버가 저장할 제목 — 줄바꿈 · 탭은 공백 하나로 */
-export function plainNoticeTitle(raw: string): string {
-  return raw.replace(/[\r\n\t]+/g, ' ').trim();
-}
+export { hasTagLikeText, plainNoticeContent, plainNoticeTitle } from './noticeText';
 
 export function reasonBlocker(reason: string, what = '사유'): string | null {
   const r = reason.trim();
@@ -430,6 +404,7 @@ export interface NoticeForm {
   status: NoticeEditableStatus;
   /** 공개로 저장할 때 — 회원 전체에 바로 보인다는 확인 */
   publishConfirmed: boolean;
+  popup?: NoticePopupSettings;
 }
 
 export function noticeBlockers(form: NoticeForm): string[] {
@@ -441,20 +416,21 @@ export function noticeBlockers(form: NoticeForm): string[] {
   if (!content) out.push('본문을 적어 주세요.');
   else if (content.length > NOTICE_CONTENT_MAX) out.push(`본문은 ${NOTICE_CONTENT_MAX.toLocaleString()}자 이하로 줄여 주세요.`);
   if (form.status === 'PUBLISHED' && !form.publishConfirmed) out.push('공개 확인 항목에 체크하세요.');
-  return out;
+  return out.concat(popupBlockers(form.popup));
 }
 
 /** 보낼 내용 — 앞뒤 공백만 걷는다(본문 안 줄바꿈 · 들여쓰기는 그대로). 태그 정리는 서버가 한다 */
-export function noticePayload(form: NoticeForm): { title: string; content: string; status: NoticeEditableStatus } {
-  return { title: plainNoticeTitle(form.title), content: form.content.trim(), status: form.status };
+export function noticePayload(form: NoticeForm): NoticeCreateRequest {
+  return { title: plainNoticeTitle(form.title), content: form.content.trim(), status: form.status,
+    ...(form.popup ? { popup: popupPayload(form.popup) } : {}) };
 }
 
 /** 서버에 저장된 공지가 이 작성 내용과 같은가 — 결과를 모를 때 반영 여부를 확인하는 데 쓴다 */
-export function noticeMatches(n: Pick<PlatformNotice, 'title' | 'content' | 'status'>, form: NoticeForm): boolean {
+export function noticeMatches(n: Pick<PlatformNotice, 'title' | 'content' | 'status' | 'popup'>, form: NoticeForm): boolean {
   return (
     n.title.trim() === plainNoticeTitle(form.title) &&
     n.content.replace(/\r\n/g, '\n').trim() === plainNoticeContent(form.content) &&
-    n.status === form.status
+    n.status === form.status && (!form.popup || samePopup(n.popup, form.popup))
   );
 }
 

@@ -32,6 +32,8 @@ import {
 } from '@/lib/boss/platformAdmin';
 import { formatOpsDateTime } from '@/lib/boss/taxInvoiceOps';
 import type { NoticeEditableStatus, NoticeStatusFilter, PlatformNotice } from '@/types/boss-platform-admin';
+import { EMPTY_NOTICE_POPUP, POPUP_KIND_OPTIONS, popupVisibility, samePopup } from '@/lib/boss/noticePopup';
+import { NoticePopupPreview, NoticePopupSettings } from './NoticePopupSettings';
 import {
   AlertBanner,
   Button,
@@ -79,6 +81,7 @@ const COLUMNS: AdminColumn<PlatformNotice>[] = [
     cell: (n) => <span className="font-semibold text-boss-text [overflow-wrap:anywhere]">{n.title || '(제목 없음)'}</span>,
   },
   { key: 'status', header: '상태', card: 'badge', cell: (n) => <StatusTag status={n.status} view={NOTICE_STATUS_VIEW} /> },
+  { key: 'popup', header: '로그인 팝업', card: 'line', cell: (n) => n.popup?.enabled ? `${POPUP_KIND_OPTIONS.find((o) => o.key === n.popup?.kind)?.label ?? '안내'} · ${popupVisibility(n.status, n.popup)}` : '사용 안 함' },
   { key: 'author', header: '작성자', card: 'line', cell: (n) => n.authorUserId || '-' },
   { key: 'created', header: '작성', card: 'line', cell: (n) => <When value={n.createdAt} /> },
   { key: 'updated', header: '마지막 수정', card: 'line', cell: (n) => <When value={n.updatedAt} /> },
@@ -119,7 +122,7 @@ export default function AdminNotices() {
           }}
         />
         <Button variant="primary" size="sm" icon={Plus} className="ml-auto" onClick={() => setEditor({ id: null })}>
-          새 공지 쓰기
+          공지 · 이벤트 쓰기
         </Button>
       </div>
       <ListBar total={data?.totalElements ?? null} loading={loading} onRefresh={() => void reload()}>
@@ -198,16 +201,16 @@ export default function AdminNotices() {
 
 type Message = { tone: 'bad' | 'warn' | 'info'; text: string };
 
-const EMPTY_FORM: NoticeForm = { title: '', content: '', status: 'DRAFT', publishConfirmed: false };
+const EMPTY_FORM: NoticeForm = { title: '', content: '', status: 'DRAFT', publishConfirmed: false, popup: EMPTY_NOTICE_POPUP };
 
 /** 연 공지 → 작성값. 삭제 · 모르는 상태는 숨김(회원에게 안 보이는 쪽)으로 두고 화면이 따로 알린다 */
 function formOf(n: PlatformNotice): NoticeForm {
   const status: NoticeEditableStatus = n.status === 'DRAFT' || n.status === 'PUBLISHED' || n.status === 'HIDDEN' ? n.status : 'HIDDEN';
-  return { title: n.title, content: n.content, status, publishConfirmed: false };
+  return { title: n.title, content: n.content, status, publishConfirmed: false, popup: n.popup ?? { ...EMPTY_NOTICE_POPUP } };
 }
 
 function sameForm(a: NoticeForm, b: NoticeForm): boolean {
-  return a.title === b.title && a.content === b.content && a.status === b.status;
+  return a.title === b.title && a.content === b.content && a.status === b.status && samePopup(a.popup, b.popup);
 }
 
 /**
@@ -325,7 +328,16 @@ function NoticeEditor({
         : await platformAdminApi.createNotice(payload);
       if (!isCurrentScope(scope)) return;
       if (r.ok) {
-        onSaved(r.data, base ? 'updated' : 'created');
+        if (noticeMatches(r.data, form)) {
+          onSaved(r.data, base ? 'updated' : 'created');
+        } else {
+          // 구버전 서버가 새 popup 필드를 무시해도 설정이 저장됐다고 안내하지 않는다.
+          setUnknown(true);
+          setNotFoundYet(false);
+          setDuplicateAck(false);
+          setSentForm(form);
+          setMessage({ tone: 'warn', text: '저장 응답의 내용이나 팝업 설정이 작성한 값과 다릅니다. 다시 보내지 않았습니다. 결과 확인으로 저장된 내용을 확인해 주세요.' });
+        }
         return;
       }
       switch (r.failure) {
@@ -591,6 +603,8 @@ function NoticeEditor({
                     onChange={(e) => update({ content: e.target.value })}
                     hint="일반 글자로 저장됩니다. 줄바꿈은 그대로 보이고, 태그 모양 글자(<b>, <p> 등)는 저장할 때 지워집니다."
                   />
+                  <NoticePopupSettings value={form.popup ?? EMPTY_NOTICE_POPUP} disabled={busy || readOnly}
+                    onChange={(popup) => update({ popup, publishConfirmed: false })} />
                   {!readOnly && (
                     <div className="flex flex-col gap-2">
                       <p className="boss-label">공개 상태</p>
@@ -611,7 +625,7 @@ function NoticeEditor({
                   )}
                   {publish && !readOnly && (
                     <div className="flex flex-col gap-2 border border-boss-border bg-boss-inset px-4 py-3">
-                      <Note tone="warn">공개로 저장하면 앱 · 웹의 모든 회원 공지 목록에 바로 보입니다. 내용 · 맞춤법을 미리보기로 확인하세요.</Note>
+                      <Note tone="warn">공개로 저장하면 앱 · 웹의 회원 공지 목록에 바로 보입니다.{form.popup?.enabled ? ' 로그인 팝업도 설정한 기간에 표시됩니다.' : ''} 미리보기로 확인하세요.</Note>
                       <CheckLine checked={form.publishConfirmed} onChange={(v) => update({ publishConfirmed: v })} disabled={busy}>
                         미리보기로 확인했고, 이 공지를 회원 전체에게 공개합니다.
                       </CheckLine>
@@ -620,7 +634,10 @@ function NoticeEditor({
                   {!readOnly && <Blockers items={blockers} attempted={attempted} busy={busy} />}
                 </div>
               ) : (
-                <NoticePreview form={form} createdAt={base?.createdAt ?? null} />
+                <div className="flex flex-col gap-5">
+                  {form.popup?.enabled && <NoticePopupPreview value={form.popup} title={plainNoticeTitle(form.title)} content={plainNoticeContent(form.content)} />}
+                  <NoticePreview form={form} createdAt={base?.createdAt ?? null} />
+                </div>
               )}
             </>
           )}
