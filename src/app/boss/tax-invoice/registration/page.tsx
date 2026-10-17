@@ -7,13 +7,16 @@
 // 반려되면 사유를 보이고 정보를 고쳐 다시 신청하게 한다(다시 신청하면 서버가 심사 대기로 되돌린다).
 // 심사 대기 중에는 보이는 동안 정해진 횟수만 다시 읽어 결과를 반영한다(입력 · 요청 중에는 멈춘다).
 // 계정이 바뀌면(공용 PC) 화면을 새로 그리고, 앞 계정 요청의 응답은 넣지 않는다.
+// 시작 전 준비 안내는 화면을 옮기면 작성 중인 신청서가 사라지므로 같은 본문을 대화상자로 띄운다(조회 성패 · 로딩과 상관없이 열린다).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { BookOpen, RefreshCw } from 'lucide-react';
 import { Button, ButtonLink, Panel, Skeleton, Tag } from '@/components/boss/ui';
 import { RecentActivity } from '@/components/boss/taxinvoice/ActivityList';
 import OperationsPanel from '@/components/boss/taxinvoice/OperationsPanel';
+import OpsDialog from '@/components/boss/taxinvoice/OpsDialog';
 import PopbillLinkForm from '@/components/boss/taxinvoice/PopbillLinkForm';
+import PreparationGuide from '@/components/boss/taxinvoice/PreparationGuide';
 import SupplierRegistrationForm, { type SubmitFeedback } from '@/components/boss/taxinvoice/SupplierRegistrationForm';
 import { Note, RegistrationProgress, SupplierSummary } from '@/components/boss/taxinvoice/RegistrationParts';
 import SupportScope from '@/components/boss/taxinvoice/SupportScope';
@@ -51,6 +54,8 @@ function RegistrationScreen({ scope }: { scope: string }) {
   const [certificateUrl, setCertificateUrl] = useState<string | null>(null);
   // 다시 확인할 때마다 문서별 준비 상태(현금영수증 설정)도 다시 읽는다
   const [checkedAt, setCheckedAt] = useState(0);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const closeGuide = useCallback(() => setGuideOpen(false), []);
   const mounted = useRef(false);
   const inFlight = useRef(false);
   const dirty = useRef(false);
@@ -206,7 +211,13 @@ function RegistrationScreen({ scope }: { scope: string }) {
           <ButtonLink href="/boss/tax-invoice" variant="secondary" size="sm">계산서 목록</ButtonLink>
           <Button variant="secondary" size="sm" icon={RefreshCw} disabled={loading || busy !== null} onClick={() => void refresh()}>{loading ? '확인 중…' : '다시 확인'}</Button>
         </div>
+        <Button variant="ghost" size="sm" icon={BookOpen} onClick={() => setGuideOpen(true)}>시작 전 준비 안내</Button>
       </div>
+      {guideOpen && (
+        <OpsDialog title="시작 전 준비 안내" wide onClose={closeGuide} footer={<Button variant="primary" onClick={closeGuide}>준비됐어요, 등록하기</Button>}>
+          <PreparationGuide />
+        </OpsDialog>
+      )}
       {!ELECTRONIC_TAX_INVOICE_OPEN && <Note>전자세금계산서 · 현금영수증 발급은 곧 정식 오픈합니다. 등록 준비가 끝나도 실제 발급은 정식 오픈 후 이용할 수 있습니다.</Note>}
       {loadError && <Note tone="warn" live>{loadError} {status ? '아래는 마지막으로 확인한 상태입니다. 다시 확인 후 진행해 주세요.' : '현재 신청·연동은 진행할 수 없습니다. 다시 확인해 주세요.'}</Note>}
       {notice && <Note tone="ok" live>{notice}</Note>}

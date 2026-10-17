@@ -1,9 +1,10 @@
-import { ShieldCheck } from 'lucide-react';
+import { BookOpen, ShieldCheck } from 'lucide-react';
 import { ButtonLink, Tag } from '@/components/boss/ui';
 import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
 
-// 세금계산서 목록 맨 위 — 발급 서비스 등록 진입.
-// 출시 값 · API 상태와 상관없이 늘 보인다(아무것도 부르지 않는다). 등록은 정식 오픈 전에 미리 마칠 수 있다.
+// 세금계산서 목록 맨 위 — 발급 서비스 등록 진입 · 시작 전 준비 안내 진입.
+// 출시 값 · API 상태와 상관없이 늘 보인다(아무것도 부르지 않는다).
+// 사업자 정보 등록 · 권한 확인 신청은 정식 오픈 전에 미리 해 둘 수 있고, 팝빌 연동 · 인증서 등록은 연동 준비가 끝난 뒤다.
 // 오픈 전에는 앱과 같은 "곧 정식 오픈" 문구를 함께 싣는다.
 export default function RegistrationEntry() {
   const open = ELECTRONIC_TAX_INVOICE_OPEN;
@@ -26,14 +27,19 @@ export default function RegistrationEntry() {
         </p>
         {!open && (
           <p className="mt-1 break-keep text-[12px] leading-relaxed text-boss-text-muted">
-            발급 서비스 등록(사업자 권한 확인 · 팝빌 연동 · 공동인증서)은 지금 미리 해 둘 수 있습니다. 정식 오픈 시 앱과 웹에서
-            안내해 드리겠습니다.
+            사업자 정보 등록 · 권한 확인 신청은 지금 미리 해 둘 수 있습니다. 팝빌 연동 · 공동인증서 등록은 연동 준비가 끝나면 앱과
+            웹에서 안내해 드리겠습니다.
           </p>
         )}
       </div>
-      <ButtonLink href="/boss/tax-invoice/registration" variant="primary" size="sm" icon={ShieldCheck}>
-        발급 서비스 등록
-      </ButtonLink>
+      <div className="flex flex-wrap gap-2">
+        <ButtonLink href="/boss/tax-invoice/guide" variant="secondary" size="sm" icon={BookOpen}>
+          시작 전 준비 안내
+        </ButtonLink>
+        <ButtonLink href="/boss/tax-invoice/registration" variant="primary" size="sm" icon={ShieldCheck}>
+          발급 서비스 등록
+        </ButtonLink>
+      </div>
     </section>
   );
 }

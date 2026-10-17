@@ -320,6 +320,11 @@ const PAGE_META: Record<string, PageMeta> = {
     subtitle:
       "전자세금계산서 발급에 필요한 사업자 권한 확인 · 팝빌 연동 · 공동인증서 등록을 진행하고 운영 상태를 확인합니다.",
   },
+  "/boss/tax-invoice/guide": {
+    // 본문 머리(준비물 확인은 5초 · 세금계산서, 시작은 간단하게)는 화면이 그린다. 등록 화면은 같은 본문을 대화상자로 띄운다
+    title: "시작 전 준비 안내",
+    width: "wide",
+  },
   "/boss/tax-invoice/activity": {
     title: "세금계산서 알림",
     subtitle: "발급 결과 · 국세청 전송 · 권한 심사 · 인증서 만료 안내를 모아 봅니다.",
