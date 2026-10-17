@@ -231,7 +231,7 @@ export function AdminTable<T>({
                 ))}
               </dl>
             )}
-            {action && <div>{action(r)}</div>}
+            {action && <div className="[&_button]:scroll-mb-24">{action(r)}</div>}
           </li>
         ))}
       </ul>
