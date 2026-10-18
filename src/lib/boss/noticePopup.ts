@@ -7,8 +7,26 @@ import {
 
 export const EMPTY_NOTICE_POPUP: NoticePopupSettings = {
   enabled: false, kind: 'NOTICE', summary: '', ctaLabel: '자세히 보기',
-  destination: 'NOTICE_DETAIL', startsAt: null, endsAt: null, priority: 0,
+  destination: 'NOTICE_DETAIL', startsAt: null, endsAt: null, priority: 0, imageUrl: null,
 };
+
+/** 팝업 이미지 — 우리 이미지 올리기가 돌려준 Cloudflare Images 주소만(물음표 · # · 공백 없이). 서버와 같은 규칙. */
+const POPUP_IMAGE_URL = /^https:\/\/imagedelivery\.net\/[A-Za-z0-9_-]{1,64}\/[A-Za-z0-9_-]{1,100}\/[A-Za-z0-9_-]{1,40}$/;
+export const POPUP_IMAGE_URL_MAX = 500;
+export const POPUP_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+export const POPUP_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+export const POPUP_IMAGE_URL_MESSAGE = '팝업 이미지는 이미지 올리기로 올린 주소만 사용할 수 있습니다.';
+
+export function isPopupImageUrl(value: string): boolean {
+  return value.length <= POPUP_IMAGE_URL_MAX && POPUP_IMAGE_URL.test(value);
+}
+
+/** 올리기 전에 고른 파일을 확인한다 — 문제가 없으면 null */
+export function popupImageFileProblem(file: { type: string; size: number }): string | null {
+  if (!POPUP_IMAGE_TYPES.includes(file.type as never)) return 'PNG · JPG · WEBP 이미지만 올릴 수 있습니다.';
+  if (file.size > POPUP_IMAGE_MAX_BYTES) return '10MB 이하 이미지만 올릴 수 있습니다.';
+  return null;
+}
 
 export const POPUP_KIND_OPTIONS = [
   { key: 'NOTICE', label: '공지사항' },
@@ -41,14 +59,18 @@ export function parseNoticePopup(raw: unknown): NoticePopupSettings | null {
       typeof p.summary !== 'string' || typeof p.ctaLabel !== 'string' ||
       !Number.isInteger(p.priority) || (p.priority as number) < 0 || (p.priority as number) > 100 ||
       (p.startsAt != null && (typeof p.startsAt !== 'string' || !popupDate(p.startsAt))) ||
-      (p.endsAt != null && (typeof p.endsAt !== 'string' || !popupDate(p.endsAt)))) return null;
-  return p as unknown as NoticePopupSettings;
+      (p.endsAt != null && (typeof p.endsAt !== 'string' || !popupDate(p.endsAt))) ||
+      (p.imageUrl != null && (typeof p.imageUrl !== 'string' || !isPopupImageUrl(p.imageUrl)))) return null;
+  // 이미지 칸이 없는 옛 서버 응답은 '이미지 없음'으로 읽는다
+  return { ...(p as unknown as NoticePopupSettings), imageUrl: (p.imageUrl as string | null | undefined) ?? null };
 }
 
 export function popupPayload(p: NoticePopupSettings): NoticePopupSettings {
   return { ...p, summary: plainNoticeContent(p.summary).replace(/\t/g, ' '), ctaLabel: plainNoticeTitle(plainNoticeContent(p.ctaLabel)) || '자세히 보기',
-    startsAt: popupDate(p.startsAt), endsAt: popupDate(p.endsAt) };
+    startsAt: popupDate(p.startsAt), endsAt: popupDate(p.endsAt), imageUrl: p.imageUrl?.trim() || null };
 }
+
+export const POPUP_EVENT_IMAGE_MESSAGE = '이벤트 팝업은 이미지 한 장으로 띄웁니다. 팝업 이미지를 올려 주세요.';
 
 export function popupBlockers(p?: NoticePopupSettings | null): string[] {
   if (!p) return [];
@@ -62,13 +84,30 @@ export function popupBlockers(p?: NoticePopupSettings | null): string[] {
   if (p.startsAt && !start) out.push('팝업 시작 시각을 올바르게 적어 주세요.');
   if (p.endsAt && !end) out.push('팝업 종료 시각을 올바르게 적어 주세요.');
   if (start && end && start >= end) out.push('팝업 종료는 시작보다 뒤여야 합니다.');
+  const image = p.imageUrl?.trim();
+  if (image && !isPopupImageUrl(image)) out.push(POPUP_IMAGE_URL_MESSAGE);
+  // 이벤트는 이미지 한 장으로만 띄운다(2026-10-18) — 서버 PlatformNoticePopups.EVENT_IMAGE_REQUIRED 와 같은 규칙
+  if (p.enabled && p.kind === 'EVENT' && !image) out.push(POPUP_EVENT_IMAGE_MESSAGE);
   return out;
 }
 
 export function samePopup(a?: NoticePopupSettings | null, b?: NoticePopupSettings | null): boolean {
   const x = popupPayload(a ?? EMPTY_NOTICE_POPUP), y = popupPayload(b ?? EMPTY_NOTICE_POPUP);
   return x.enabled === y.enabled && x.kind === y.kind && x.summary === y.summary && x.ctaLabel === y.ctaLabel &&
-    x.destination === y.destination && x.startsAt === y.startsAt && x.endsAt === y.endsAt && x.priority === y.priority;
+    x.destination === y.destination && x.startsAt === y.startsAt && x.endsAt === y.endsAt && x.priority === y.priority &&
+    x.imageUrl === y.imageUrl;
+}
+
+/** 팝업 기간 한 줄 — 앱과 같은 모양. 자정에 끝나면 '10월 31일까지', 아니면 '10월 31일 18:00 전까지'. */
+export function popupPeriodLabel(endsAt: string | null): string | null {
+  const v = popupDate(endsAt);
+  if (!v) return null;
+  const end = new Date(`${v}Z`); // 한국 벽시계 값을 그대로 다룬다(브라우저 시간대와 무관)
+  if (v.endsWith('T00:00:00')) {
+    const last = new Date(end.getTime() - 86_400_000);
+    return `${last.getUTCMonth() + 1}월 ${last.getUTCDate()}일까지`;
+  }
+  return `${end.getUTCMonth() + 1}월 ${end.getUTCDate()}일 ${v.slice(11, 16)} 전까지`;
 }
 
 export function popupVisibility(status: string | null, p?: NoticePopupSettings | null, now = Date.now()): string {

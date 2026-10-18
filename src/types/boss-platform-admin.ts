@@ -127,6 +127,11 @@ export interface NoticePopupSettings {
   startsAt: string | null;
   endsAt: string | null;
   priority: number;
+  /**
+   * 이벤트 이미지 팝업 — 우리 이미지 올리기(POST /images/upload)가 돌려준 Cloudflare Images 주소만.
+   * null 이면 글자 팝업. 옛 앱은 이 값을 모르고 글자 팝업으로 보여 준다.
+   */
+  imageUrl: string | null;
 }
 
 export interface PlatformNotice {

@@ -254,6 +254,8 @@ function NoticeEditor({
   /** 공지가 없어짐 */
   const [gone, setGone] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  /** 팝업 이미지를 올리는 중 — 다 올라가기 전에 저장하면 이미지 없이 저장된다 */
+  const [popupImageUploading, setPopupImageUploading] = useState(false);
   const inFlight = useRef(false);
 
   const loadBase = useCallback(async (): Promise<PlatformNotice | null> => {
@@ -296,6 +298,7 @@ function NoticeEditor({
         !creating && !dirty ? ['바뀐 내용이 없습니다.'] : [],
         unknown && !(creating && notFoundYet) ? ['"결과 확인"으로 처음 요청이 반영됐는지 먼저 확인하세요.'] : [],
         creating && unknown && notFoundYet && !duplicateAck ? ['다시 저장하려면 중복 가능성 확인 항목에 체크하세요.'] : [],
+        popupImageUploading ? ['팝업 이미지를 올리는 중입니다. 다 올라간 뒤 저장해 주세요.'] : [],
       )
     : ['공지를 불러오는 중입니다.'];
   // 결과를 모르면 막는다. 새 공지는 확인에서 아직 못 찾았고 중복 가능성을 알고 체크했을 때만 다시 저장할 수 있다
@@ -604,7 +607,7 @@ function NoticeEditor({
                     hint="일반 글자로 저장됩니다. 줄바꿈은 그대로 보이고, 태그 모양 글자(<b>, <p> 등)는 저장할 때 지워집니다."
                   />
                   <NoticePopupSettings value={form.popup ?? EMPTY_NOTICE_POPUP} disabled={busy || readOnly}
-                    onChange={(popup) => update({ popup, publishConfirmed: false })} />
+                    onChange={(popup) => update({ popup, publishConfirmed: false })} onUploadingChange={setPopupImageUploading} />
                   {!readOnly && (
                     <div className="flex flex-col gap-2">
                       <p className="boss-label">공개 상태</p>

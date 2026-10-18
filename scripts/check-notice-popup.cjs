@@ -60,4 +60,73 @@ check('future popup is scheduled', () => assert.equal(p.popupVisibility('PUBLISH
 check('start is inclusive', () => assert.equal(p.popupVisibility('PUBLISHED', config, starts), '노출 중'));
 check('end is exclusive', () => assert.equal(p.popupVisibility('PUBLISHED', config, ends), '기간 종료'));
 check('disabled popup never marked visible', () => assert.equal(p.popupVisibility('PUBLISHED', { ...config, enabled: false }, starts), '사용 안 함'));
+// ── 이벤트 이미지 팝업(imageUrl) — 2026-10-17 23:15 계약 추가분 ──
+const IMG = 'https://imagedelivery.net/AbC_12-x/0f3c2a9e-1b2c-4d5e-8f90-123456789abc/public';
+const imageConfig = { ...config, kind: 'EVENT', imageUrl: IMG };
+check('empty popup has no image', () => assert.equal(p.EMPTY_NOTICE_POPUP.imageUrl, null));
+check('uploaded Cloudflare Images URL accepted', () => assert.deepEqual(p.popupBlockers(imageConfig), []));
+// 2026-10-18: 이벤트 = 이미지 한 장만, 공지 = 글자 또는 이미지
+check('enabled event without image rejected', () => assert.ok(p.popupBlockers({ ...config, enabled: true, kind: 'EVENT', imageUrl: null }).includes(p.POPUP_EVENT_IMAGE_MESSAGE)));
+check('enabled event with blank image rejected', () => assert.ok(p.popupBlockers({ ...config, enabled: true, kind: 'EVENT', imageUrl: '   ' }).includes(p.POPUP_EVENT_IMAGE_MESSAGE)));
+check('enabled event with uploaded image accepted', () => assert.deepEqual(p.popupBlockers({ ...imageConfig, enabled: true, kind: 'EVENT' }), []));
+check('disabled event draft without image allowed', () => assert.deepEqual(p.popupBlockers({ ...config, enabled: false, kind: 'EVENT', imageUrl: null }), []));
+check('notice text popup without image allowed', () => assert.deepEqual(p.popupBlockers({ ...config, enabled: true, kind: 'NOTICE', imageUrl: null }), []));
+check('notice image popup allowed', () => assert.deepEqual(p.popupBlockers({ ...imageConfig, enabled: true, kind: 'NOTICE' }), []));
+check('uploaded image URL parses unchanged', () => assert.equal(p.parseNoticePopup(imageConfig).imageUrl, IMG));
+check('legacy server without imageUrl reads as no image', () => {
+  const { imageUrl, ...legacy } = config;
+  const parsed = p.parseNoticePopup(legacy);
+  assert.ok(parsed);
+  assert.equal(parsed.imageUrl, null);
+});
+check('null imageUrl reads as no image', () => assert.equal(p.parseNoticePopup({ ...config, imageUrl: null }).imageUrl, null));
+for (const bad of [
+  'http://imagedelivery.net/AbC/id/public',
+  'https://evil.example/AbC/id/public',
+  'https://imagedelivery.net.evil.example/AbC/id/public',
+  'https://imagedelivery.net/AbC/id',
+  'https://imagedelivery.net/AbC/id/public/extra',
+  IMG + '?w=10',
+  IMG + '#x',
+  IMG + '\n',
+  ' ' + IMG,
+  'https://imagedelivery.net/AbC/i d/public',
+  'https://imagedelivery.net/' + 'a'.repeat(65) + '/id/public',
+  'https://imagedelivery.net/AbC/' + 'a'.repeat(101) + '/public',
+  'https://imagedelivery.net/AbC/id/' + 'a'.repeat(41),
+  'javascript:alert(1)',
+  '',
+]) {
+  check('server popup with invalid imageUrl is unparseable: ' + JSON.stringify(bad).slice(0, 60), () => assert.equal(p.parseNoticePopup({ ...config, imageUrl: bad }), null));
+}
+check('non-string imageUrl is unparseable', () => assert.equal(p.parseNoticePopup({ ...config, imageUrl: 42 }), null));
+check('longest allowed segments accepted', () => assert.ok(p.isPopupImageUrl('https://imagedelivery.net/' + 'a'.repeat(64) + '/' + 'b'.repeat(100) + '/' + 'c'.repeat(40))));
+check('invalid imageUrl blocks save with server wording', () => assert.deepEqual(p.popupBlockers({ ...config, imageUrl: 'https://example.com/a.png' }), ['팝업 이미지는 이미지 올리기로 올린 주소만 사용할 수 있습니다.']));
+check('blank imageUrl is not a blocker', () => assert.deepEqual(p.popupBlockers({ ...config, imageUrl: '   ' }), []));
+check('payload trims imageUrl', () => assert.equal(p.popupPayload({ ...config, imageUrl: '  ' + IMG + ' ' }).imageUrl, IMG));
+check('payload sends blank imageUrl as null', () => assert.equal(p.popupPayload({ ...config, imageUrl: '  ' }).imageUrl, null));
+check('payload sends missing imageUrl as null', () => assert.equal(p.popupPayload({ ...config, imageUrl: undefined }).imageUrl, null));
+check('adding an image is a real edit', () => assert.equal(p.samePopup(config, imageConfig), false));
+check('changing the image is a real edit', () => assert.equal(p.samePopup(imageConfig, { ...imageConfig, imageUrl: IMG.replace('public', 'thumb') }), false));
+check('removing the image is a real edit', () => assert.equal(p.samePopup(imageConfig, { ...imageConfig, imageUrl: null }), false));
+check('whitespace around imageUrl is not an edit', () => assert.equal(p.samePopup(imageConfig, { ...imageConfig, imageUrl: ` ${IMG} ` }), true));
+const imageForm = { ...form, popup: imageConfig };
+const imageNotice = { ...notice, popup: p.popupPayload(imageConfig) };
+check('image popup is included in save', () => assert.equal(admin.noticePayload(imageForm).popup.imageUrl, IMG));
+check('saved image matches unknown-result check', () => assert.equal(admin.noticeMatches(imageNotice, imageForm), true));
+check('server that dropped imageUrl is not mistaken for saved image', () => assert.equal(admin.noticeMatches({ ...imageNotice, popup: { ...imageNotice.popup, imageUrl: null } }, imageForm), false));
+check('notice with foreign image host blocks editing', () => assert.equal(admin.parseNotice({ ...notice, popup: { ...config, imageUrl: 'https://example.com/a.png' } }), null));
+check('invalid image blocks the whole notice save', () => assert.ok(admin.noticeBlockers({ ...form, popup: { ...config, imageUrl: 'data:image/png;base64,AAAA' } }).length));
+for (const type of ['image/png', 'image/jpeg', 'image/webp']) check('upload type allowed ' + type, () => assert.equal(p.popupImageFileProblem({ type, size: 1024 }), null));
+for (const type of ['image/gif', 'image/svg+xml', 'image/heic', 'application/pdf', '']) check('upload type rejected ' + (type || '(none)'), () => assert.ok(p.popupImageFileProblem({ type, size: 1024 })));
+check('10MB image allowed', () => assert.equal(p.popupImageFileProblem({ type: 'image/png', size: 10 * 1024 * 1024 }), null));
+check('over 10MB image rejected', () => assert.ok(p.popupImageFileProblem({ type: 'image/png', size: 10 * 1024 * 1024 + 1 })));
+// 기간 한 줄 — 앱(popupPeriodLabel)과 같은 글자
+check('midnight end shows the previous day', () => assert.equal(p.popupPeriodLabel('2026-11-01T00:00:00'), '10월 31일까지'));
+check('midnight end across the year', () => assert.equal(p.popupPeriodLabel('2027-01-01T00:00'), '12월 31일까지'));
+check('midnight end on March 1 of a leap year', () => assert.equal(p.popupPeriodLabel('2028-03-01T00:00:00'), '2월 29일까지'));
+check('timed end shows the time', () => assert.equal(p.popupPeriodLabel('2026-10-20T23:59'), '10월 20일 23:59 전까지'));
+check('morning end keeps two-digit hour', () => assert.equal(p.popupPeriodLabel('2026-10-20T09:05:00'), '10월 20일 09:05 전까지'));
+check('no end shows no period', () => assert.equal(p.popupPeriodLabel(null), null));
+check('invalid end shows no period', () => assert.equal(p.popupPeriodLabel('2026-02-31T00:00'), null));
 console.log(`${checks} popup regression checks passed`);
