@@ -20,7 +20,7 @@ import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Copy, ExternalLink, FileText, Pencil, Trash2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { formatBizNo } from '@/lib/boss/bizno';
 import { cashFieldsOf, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
@@ -73,6 +73,8 @@ const fmt = (n?: number | null) => (n ?? 0).toLocaleString('ko-KR');
 const todayIso = () => kstToday();
 
 export default function BossTaxInvoiceDetailPage() {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
   const router = useRouter();
@@ -139,7 +141,7 @@ export default function BossTaxInvoiceDetailPage() {
 
   const scope = useBossScope();
   useBoundedRefresh({
-    enabled: ELECTRONIC_TAX_INVOICE_OPEN && scope != null && data != null && awaitsServerUpdate(data),
+    enabled: issuanceOpen && scope != null && data != null && awaitsServerUpdate(data),
     run: () => (isCurrentScope(scope) ? load() : undefined),
   });
 
@@ -331,7 +333,7 @@ export default function BossTaxInvoiceDetailPage() {
         {!managed && data.status === 'REQUESTED' && (
           <AlertBanner tone="info">
             작성 완료 · 아직 발급하지 않은 {docLabel}입니다.{' '}
-            {ELECTRONIC_TAX_INVOICE_OPEN
+            {issuanceOpen
               ? '전자 발급에서 바로 발급하거나, 홈택스에서 발급했다면 승인번호를 적어 두세요.'
               : '홈택스에서 발급했다면 승인번호를 적어 두세요. 부가세 예상에 반영됩니다.'}
           </AlertBanner>

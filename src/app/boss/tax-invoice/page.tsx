@@ -25,7 +25,7 @@ import RegistrationEntry from '@/components/boss/taxinvoice/RegistrationEntry';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
 import { awaitsServerUpdate } from '@/lib/boss/taxInvoiceOps';
 import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { cashDigits, cashFieldsOf, maskCashIdentity } from '@/lib/boss/taxInvoiceCash';
 import { formatBizNo } from '@/lib/boss/bizno';
 import { DISPLAY_KEY_LABEL, correctionReasonText, displayState, listTotals, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
@@ -113,6 +113,8 @@ export default function BossTaxInvoicePage() {
 }
 
 function TaxInvoiceList() {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const router = useRouter();
   const search = useSearchParams();
   const statusParam = search.get('status');
@@ -172,7 +174,7 @@ function TaxInvoiceList() {
   const scope = useBossScope();
   // 정식 오픈 뒤, 결과를 기다리는 문서가 보일 때만 — 같은 계정일 때만 다시 읽는다
   useBoundedRefresh({
-    enabled: ELECTRONIC_TAX_INVOICE_OPEN && scope != null && all.some(awaitsServerUpdate),
+    enabled: issuanceOpen && scope != null && all.some(awaitsServerUpdate),
     run: () => (isCurrentScope(scope) ? load() : undefined),
   });
   // 문서 종류 · 검색까지 거른 목록 — 상태 탭 건수는 여기서 센다
@@ -430,9 +432,9 @@ function TaxInvoiceList() {
 
           <VatPanel vat={vat} />
 
-          <Panel kicker="홈택스" title={ELECTRONIC_TAX_INVOICE_OPEN ? '전자 발급 · 홈택스' : '지금은 홈택스에서 발급'}>
+          <Panel kicker="홈택스" title={issuanceOpen ? '전자 발급 · 홈택스' : '지금은 홈택스에서 발급'}>
             <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-              {ELECTRONIC_TAX_INVOICE_OPEN
+              {issuanceOpen
                 ? '발급 서비스 등록을 마쳤다면 상세 화면에서 바로 발급할 수 있습니다.'
                 : '홈택스에서 발급할 때 상세 화면의 입력 도우미로 사업자번호 · 금액을 복사해 붙여 넣으세요.'}
             </p>

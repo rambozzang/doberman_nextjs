@@ -325,7 +325,7 @@ export interface CashCancelRequest {
 }
 
 // ── 발급 서비스 등록 — 사업자 권한 확인 신청 → 운영 확인 → 팝빌 연동 → 공동인증서 ──
-// 출시 값(ELECTRONIC_TAX_INVOICE_OPEN)과 별개로 늘 열린다. 단계는 서버가 정한다.
+// 정식 오픈 여부(useElectronicTaxInvoiceOpen)와 별개로 늘 열린다. 단계는 서버가 정한다.
 // REJECTED(2026-10-16): 운영 확인에서 반려됨 — 사유를 보고 정보를 고쳐 다시 신청하면 서버가 PENDING 으로 되돌린다.
 export const REGISTRATION_STAGES = [
   'NEED_COMPANY',

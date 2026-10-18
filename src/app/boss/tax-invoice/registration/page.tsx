@@ -24,7 +24,7 @@ import { bossTaxInvoiceApi, type RegistrationCall } from '@/lib/api/boss/taxinvo
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { formatOpsDateTime } from '@/lib/boss/taxInvoiceOps';
 import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 import { EMPTY_SUPPLIER, daysUntil, effectiveStage, normalizeSupplier, registrationSteps, supplierFormValue, supplierFromCompany } from '@/lib/boss/taxInvoiceRegistration';
@@ -42,6 +42,8 @@ export default function TaxInvoiceRegistrationPage() {
 }
 
 function RegistrationScreen({ scope }: { scope: string }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [status, setStatus] = useState<ElectronicRegistrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -219,14 +221,14 @@ function RegistrationScreen({ scope }: { scope: string }) {
           <PreparationGuide />
         </OpsDialog>
       )}
-      {!ELECTRONIC_TAX_INVOICE_OPEN && <Note>전자세금계산서 · 현금영수증 발급은 곧 정식 오픈합니다. 등록 준비가 끝나도 실제 발급은 정식 오픈 후 이용할 수 있습니다.</Note>}
+      {!issuanceOpen && <Note>전자세금계산서 · 현금영수증 발급은 곧 정식 오픈합니다. 등록 준비가 끝나도 실제 발급은 정식 오픈 후 이용할 수 있습니다.</Note>}
       {loadError && <Note tone="warn" live>{loadError} {status ? '아래는 마지막으로 확인한 상태입니다. 다시 확인 후 진행해 주세요.' : '현재 신청·연동은 진행할 수 없습니다. 다시 확인해 주세요.'}</Note>}
       {notice && <Note tone="ok" live>{notice}</Note>}
       {loading && !status ? <Skeleton className="h-64" /> : !status ? (
         <Panel title="등록 상태 확인 필요"><p className="text-[13px] leading-relaxed text-boss-text-secondary">회사 정보는 내정보의 회사 정보에서 먼저 등록할 수 있습니다. 발급 서비스의 최신 상태가 확인되면 신청서를 표시합니다.</p><div className="mt-4"><ButtonLink href="/boss/me/company" variant="secondary">회사 정보 확인</ButtonLink></div></Panel>
       ) : (
         <>
-          <RegistrationProgress steps={registrationSteps(status, ELECTRONIC_TAX_INVOICE_OPEN)} />
+          <RegistrationProgress steps={registrationSteps(status, issuanceOpen)} />
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
             <div className="flex min-w-0 flex-col gap-5">
               {status.stage === 'NEED_COMPANY' ? (
@@ -284,7 +286,7 @@ function RegistrationScreen({ scope }: { scope: string }) {
             <div className="flex flex-col gap-5">
             <Panel title="현재 등록 상태">
               <div className="mb-3 flex flex-wrap gap-2"><Tag tone={ready ? 'ok' : rejected ? 'bad' : 'warn'}>{stage ? REGISTRATION_STAGE_LABEL[stage] : ''}</Tag>{status.isTest && <Tag tone="warn">시험 환경 · 효력 없음</Tag>}</div>
-              {ready ? <Note tone="ok">{ELECTRONIC_TAX_INVOICE_OPEN ? '발급 준비가 완료되었습니다.' : '등록 준비 완료 · 발급은 정식 오픈 후 이용'}</Note> : <p className="break-keep text-[13px] leading-relaxed text-boss-text-secondary">{status.reason || '다음 등록 단계를 진행해 주세요.'}</p>}
+              {ready ? <Note tone="ok">{issuanceOpen ? '발급 준비가 완료되었습니다.' : '등록 준비 완료 · 발급은 정식 오픈 후 이용'}</Note> : <p className="break-keep text-[13px] leading-relaxed text-boss-text-secondary">{status.reason || '다음 등록 단계를 진행해 주세요.'}</p>}
               {!status.serviceConfigured && <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">발급 서비스의 연동 설정을 준비 중입니다. 권한 확인 신청은 저장할 수 있습니다.</p>}
               {status.stage === 'VERIFIED' && status.memberLinked === null && status.serviceConfigured && <Note tone="warn">팝빌 연동 여부를 확인하지 못했습니다. 다시 확인 후 진행해 주세요.</Note>}
               {status.reviewStatus === 'APPROVED' && status.reviewedAt && <p className="mt-3 text-[12px] text-boss-text-secondary">권한 승인: {formatOpsDateTime(status.reviewedAt) ?? '-'}</p>}

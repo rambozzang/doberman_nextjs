@@ -1,3 +1,5 @@
+'use client';
+
 // 전자세금계산서 시작 전 준비 안내 — 본문
 //
 // 독립 화면(/boss/tax-invoice/guide)과 등록 화면의 안내 대화상자가 같은 본문을 쓴다.
@@ -10,7 +12,7 @@
 
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 import { Note } from './RegistrationParts';
 
@@ -45,6 +47,8 @@ const FAQ = [
 
 /** cta — 독립 화면은 등록 화면으로 가는 링크, 대화상자는 하단 버튼을 쓰므로 넘기지 않는다 */
 export default function PreparationGuide({ cta }: { cta?: ReactNode }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -98,7 +102,7 @@ export default function PreparationGuide({ cta }: { cta?: ReactNode }) {
         </p>
       </section>
 
-      {!ELECTRONIC_TAX_INVOICE_OPEN && <Note>곧 정식 오픈해요. 지금 미리 준비해 둘 수 있고, 실제 연동은 설정이 끝나면 안내해 드려요.</Note>}
+      {!issuanceOpen && <Note>곧 정식 오픈해요. 지금 미리 준비해 둘 수 있고, 실제 연동은 설정이 끝나면 안내해 드려요.</Note>}
 
       {cta}
 

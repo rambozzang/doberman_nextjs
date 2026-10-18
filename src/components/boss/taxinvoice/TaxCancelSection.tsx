@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast';
 import { ArrowLeft, FileMinus2, RefreshCw, X } from 'lucide-react';
 import { bossTaxInvoiceApi, type TaxCancelCall } from '@/lib/api/boss/taxinvoice';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import {
   TAX_CANCEL_REASONS,
@@ -74,6 +74,8 @@ function timeText(ms: number): string {
 // 우측 패널 안 — 원본 세금계산서의 취소 상태 · 진입
 // ─────────────────────────────────────────────
 export function TaxCancelSection({ invoice, reload }: { invoice: TaxInvoice; reload: () => Promise<TaxInvoice | null> }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [attemptAt, setAttemptAt] = useState<number | null>(null);
   // 시도 뒤 상세를 다시 읽을 때까지 잠근다(응답을 받았어도 화면의 문서는 아직 예전 값이다)
   const [awaitingReload, setAwaitingReload] = useState(false);
@@ -158,7 +160,7 @@ export function TaxCancelSection({ invoice, reload }: { invoice: TaxInvoice; rel
   }
 
   // ── 출시 전: 오픈 예정 안내만(조회 · 변경 버튼 없음) ──
-  if (!ELECTRONIC_TAX_INVOICE_OPEN) {
+  if (!issuanceOpen) {
     return (
       <Section right={<Tag tone="info">오픈 예정</Tag>}>
         <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">

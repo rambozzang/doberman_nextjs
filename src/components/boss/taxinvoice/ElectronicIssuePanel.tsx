@@ -10,14 +10,14 @@
 //
 // 중복 방지: 발급 · 취소 요청은 한 번만 보낸다(진행 중 잠금 + 시도 후 상세를 다시 읽을 때까지 잠금).
 // 실패 · 불명이어도 자동으로 다시 보내지 않는다. 결과를 모르면 "상태 다시 확인"(같은 문서 키로 조회)만 연다.
-// 출시 값(ELECTRONIC_TAX_INVOICE_OPEN)이 꺼져 있으면 설정 조회 · 발급 · 취소 대신 오픈 예정 안내를 보인다.
+// 정식 오픈 여부(서버가 정한다, useElectronicTaxInvoiceOpen)가 꺼져 있으면 설정 조회 · 발급 · 취소 대신 오픈 예정 안내를 보인다.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Ban, ExternalLink, FileCheck2, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_PRICE, TAX_SUBSCRIPTION_WHERE } from '@/lib/boss/taxInvoiceSubscription';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import ElectronicLaunchNotice from './ElectronicLaunchNotice';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { cashFieldsOf, cashIdentityError, cashVatMismatch, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
@@ -162,12 +162,14 @@ export default function ElectronicIssuePanel({
   /** 상세를 다시 읽는다. 읽지 못하면 null */
   reload: () => Promise<TaxInvoice | null>;
 }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   // 대행사가 관리하는 문서는 상태 확인(현금영수증은 취소 포함)만 — 출시 값과 상관없이 먼저 보여 준다
   if (isProviderManaged(invoice)) {
     return <ProviderStatusPanel invoice={invoice} onUpdated={onUpdated} reload={reload} />;
   }
   // 오픈 전에는 설정 API 호출과 발급 · 인증서 등록 대신 안내를 보여 준다
-  if (!ELECTRONIC_TAX_INVOICE_OPEN) return <ElectronicLaunchNotice docType={invoice.docType} />;
+  if (!issuanceOpen) return <ElectronicLaunchNotice docType={invoice.docType} />;
   // 홈택스에서 수기로 발행 완료 표시했거나 취소한 건은 전자 발급 대상이 아니다
   if (invoice.status !== 'REQUESTED') return null;
   return <IssueReadyPanel invoice={invoice} reload={reload} />;
@@ -185,6 +187,8 @@ function ProviderStatusPanel({
   onUpdated: (inv: TaxInvoice) => void;
   reload: () => Promise<TaxInvoice | null>;
 }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [syncing, setSyncing] = useState(false);
   const [opening, setOpening] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
@@ -257,7 +261,7 @@ function ProviderStatusPanel({
 
   const cancelUnsettled = cancel === 'UNKNOWN' || cancel === 'PROCESSING';
   const canCancel =
-    isCash && ps === 'ISSUED' && cancel == null && !cancelPending && ELECTRONIC_TAX_INVOICE_OPEN && invoice.id != null;
+    isCash && ps === 'ISSUED' && cancel == null && !cancelPending && issuanceOpen && invoice.id != null;
 
   return (
     <Panel
@@ -364,7 +368,7 @@ function ProviderStatusPanel({
         {!isCash && !correction && <TaxCancelSection invoice={invoice} reload={reload} />}
         <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
           {isCash
-            ? ELECTRONIC_TAX_INVOICE_OPEN
+            ? issuanceOpen
               ? '현금영수증은 전액 취소만 지원합니다(부분 취소 없음). 취소는 승인된 원거래를 기준으로 서버가 처리합니다. 수정 · 삭제는 할 수 없습니다.'
               : '현금영수증 취소는 정식 오픈 후 이용할 수 있습니다. 전자 발급한 문서는 여기서 수정 · 삭제할 수 없습니다.'
             : correction

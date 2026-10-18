@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { Panel, Tag, type StatusTone } from '@/components/boss/ui';
 import type { ElectronicConfig, RegistrationStage } from '@/types/boss-taxinvoice';
 
@@ -31,6 +31,8 @@ function Row({ title, tone, tag, steps, note }: { title: string; tone: StatusTon
 }
 
 export default function SupportScope({ stage, refreshKey }: { stage: RegistrationStage; refreshKey: number }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [cash, setCash] = useState<CashCheck>({ state: 'idle', config: null, message: null });
   const seq = useRef(0);
   const verified = VERIFIED_STAGES.includes(stage);
@@ -54,9 +56,9 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
     })();
   }, [verified, refreshKey]);
 
-  const closed = ELECTRONIC_TAX_INVOICE_OPEN ? '' : ' 정식 오픈 전이라 준비가 끝나도 실제 발급은 열리지 않습니다.';
+  const closed = issuanceOpen ? '' : ' 정식 오픈 전이라 준비가 끝나도 실제 발급은 열리지 않습니다.';
   const taxReady = stage === 'READY';
-  const taxTag = taxReady ? (ELECTRONIC_TAX_INVOICE_OPEN ? '준비 완료' : '준비 완료 · 오픈 전') : verified ? '등록 진행 중' : '권한 확인 전';
+  const taxTag = taxReady ? (issuanceOpen ? '준비 완료' : '준비 완료 · 오픈 전') : verified ? '등록 진행 중' : '권한 확인 전';
 
   let cashTag = '권한 확인 전';
   let cashTone: StatusTone = 'neutral';
@@ -75,7 +77,7 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
       cashTone = 'neutral';
       cashNote = cash.config.reason || '현금영수증 발급 기능을 준비하고 있습니다.';
     } else if (cash.config?.ready) {
-      cashTag = ELECTRONIC_TAX_INVOICE_OPEN ? '준비 완료' : '준비 완료 · 오픈 전';
+      cashTag = issuanceOpen ? '준비 완료' : '준비 완료 · 오픈 전';
       cashTone = 'ok';
       cashNote = `서버 확인 결과 현금영수증 발급 준비가 끝났습니다.${closed}`;
     } else {
@@ -110,7 +112,7 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
         <p className="mt-1.5 break-keep">
           세금계산서: 국세청 전송 전이면 발행취소, 전송 후면 수정세금계산서(환입 · 계약의 해제 · 착오에 의한 이중발급) 1장을 발급합니다. 일부
           반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환 수정세금계산서와 역발행 · 대량 발급은 지원하지 않습니다. 현금영수증은 승인된 건의
-          전액 취소만 됩니다.{ELECTRONIC_TAX_INVOICE_OPEN ? '' : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
+          전액 취소만 됩니다.{issuanceOpen ? '' : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
         </p>
       </details>
     </Panel>

@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { bossTaxInvoiceApi, forgetTaxInvoiceAdminAccess, type OpsFailure } from '@/lib/api/boss/taxinvoice';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import AdminReview from '@/components/boss/taxinvoice/AdminReview';
 import AdminProblems, { AdminHistory } from '@/components/boss/taxinvoice/AdminProblems';
 import { Note } from '@/components/boss/taxinvoice/RegistrationParts';
@@ -34,6 +34,8 @@ export default function TaxInvoiceAdminPage() {
 }
 
 function AdminConsole({ scope }: { scope: string }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [access, setAccess] = useState<Access>({ state: 'checking' });
   const [tab, setTab] = useState<Tab>('registrations');
 
@@ -89,7 +91,7 @@ function AdminConsole({ scope }: { scope: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {!ELECTRONIC_TAX_INVOICE_OPEN && (
+      {!issuanceOpen && (
         <Note tone="info">정식 오픈 전입니다. 승인해도 실제 발급은 열리지 않고, 문서 상태 조회는 막힐 수 있습니다.</Note>
       )}
       <ListTabs ariaLabel="운영 관리" tabs={TABS} active={tab} onChange={setTab} />

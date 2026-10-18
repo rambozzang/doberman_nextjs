@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { History, RefreshCw } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { isCurrentScope } from '@/lib/boss/bossScope';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { displayState, docKindLabel } from '@/lib/boss/taxInvoiceDocument';
 import { SYNC_NOTE_MAX, formatOpsDateTime, syncBlockers, totalPages } from '@/lib/boss/taxInvoiceOps';
 import type { AdminProblem, AdminProblemPage, TaxInvoice } from '@/types/boss-taxinvoice';
@@ -48,6 +48,8 @@ function InvoiceState({ inv }: { inv: TaxInvoice }) {
 }
 
 export default function AdminProblems({ scope, onForbidden }: { scope: string; onForbidden: () => void }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [page, setPage] = useState(0);
   const [data, setData] = useState<AdminProblemPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function AdminProblems({ scope, onForbidden }: { scope: string; o
           새로고침
         </Button>
       </div>
-      {!ELECTRONIC_TAX_INVOICE_OPEN && <Note tone="info">정식 오픈 전에는 상태 조회가 막힐 수 있습니다. 막히면 그 이유가 그대로 보입니다.</Note>}
+      {!issuanceOpen && <Note tone="info">정식 오픈 전에는 상태 조회가 막힐 수 있습니다. 막히면 그 이유가 그대로 보입니다.</Note>}
       {error && (
         <AlertBanner
           tone="bad"

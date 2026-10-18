@@ -1,6 +1,8 @@
+'use client';
+
 import { BookOpen, ShieldCheck } from 'lucide-react';
 import { ButtonLink, Tag } from '@/components/boss/ui';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 
 // 세금계산서 목록 맨 위 — 발급 서비스 등록 진입 · 시작 전 준비 안내 진입.
@@ -8,7 +10,8 @@ import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 // 사업자 정보 등록 · 권한 확인 신청은 정식 오픈 전에 미리 해 둘 수 있고, 팝빌 연동 · 인증서 등록은 연동 준비가 끝난 뒤다.
 // 오픈 전에는 앱과 같은 "곧 정식 오픈" 문구를 함께 싣는다.
 export default function RegistrationEntry() {
-  const open = ELECTRONIC_TAX_INVOICE_OPEN;
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const open = useElectronicTaxInvoiceOpen();
   return (
     <section
       aria-labelledby="tax-invoice-registration-entry"

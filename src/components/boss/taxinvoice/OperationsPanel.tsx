@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { bossTaxInvoiceApi, type OpsCall } from '@/lib/api/boss/taxinvoice';
-import { ELECTRONIC_TAX_INVOICE_OPEN } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { isCurrentScope } from '@/lib/boss/bossScope';
 import {
   ISSUE_ACTION_LABEL,
@@ -84,6 +84,8 @@ function SubscriptionBlock({ status }: { status: TaxInvoiceSubscriptionStatus | 
 
 /** scope — 이 화면을 연 계정(부모가 계정이 바뀌면 key 로 새로 그린다) */
 export default function OperationsPanel({ refreshKey, scope }: { refreshKey: number; scope: string }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
+  const issuanceOpen = useElectronicTaxInvoiceOpen();
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   // 구독 상태 — 따로 읽는다(못 읽어도 운영 상태는 그대로 보인다). undefined: 읽는 중 · null: 못 읽음
   const [subscription, setSubscription] = useState<TaxInvoiceSubscriptionStatus | null | undefined>(undefined);
@@ -134,7 +136,7 @@ export default function OperationsPanel({ refreshKey, scope }: { refreshKey: num
   const { data } = load;
   const cert = certificateView(data.certificate);
   const bill = billingView(data.billing);
-  const sync = autoSyncView(data.autoSync, ELECTRONIC_TAX_INVOICE_OPEN);
+  const sync = autoSyncView(data.autoSync, issuanceOpen);
 
   return (
     <Panel kicker="운영 상태" title="발급 운영 준비">

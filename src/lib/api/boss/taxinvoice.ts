@@ -350,6 +350,18 @@ export function forgetTaxInvoiceAdminAccess(): void {
   adminAccessMemo = null;
 }
 
+export interface ElectronicTaxInvoiceLaunch {
+  taxOpen: boolean;
+  cashOpen: boolean;
+  test: boolean;
+}
+
+function parseLaunch(raw: unknown): ElectronicTaxInvoiceLaunch | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  return { taxOpen: r.taxOpen === true, cashOpen: r.cashOpen === true, test: r.test === true };
+}
+
 export const bossTaxInvoiceApi = {
   // 기간 목록 + 집계 — GET /taxinvoices?year=&quarter= (quarter 0 = 연간)
   period: (year: number, quarter: number) =>
@@ -466,6 +478,9 @@ export const bossTaxInvoiceApi = {
     registrationCall(() => bossPrivateApi.post('/taxinvoices/electronic/link', body, { timeout: 30_000 })),
 
   // ── 운영 준비 · 개인 알림 · 처리 이력 (읽기 — 출시 값과 무관, 팝빌을 부르지 않는다) ──
+
+  // 정식 오픈 여부(2026-10-18) — GET /taxinvoices/electronic/launch. 모르는 값은 닫힘으로 읽는다.
+  launch: () => opsCall(() => bossPrivateApi.get('/taxinvoices/electronic/launch'), parseLaunch),
 
   // 인증서 · 비용 정책 · 자동 상태 확인 · 안내 — GET /taxinvoices/electronic/operations
   operations: () => opsCall(() => bossPrivateApi.get('/taxinvoices/electronic/operations'), parseOperations),
