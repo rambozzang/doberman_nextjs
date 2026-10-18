@@ -33,6 +33,7 @@ import {
 } from '@/types/boss-platform-admin';
 import { parseNoticePopup, popupBlockers, popupPayload, samePopup } from './noticePopup';
 import { plainNoticeContent, plainNoticeTitle } from './noticeText';
+import type { ProtectedPlatformMember } from './memberPrivacy';
 
 export type AdminTone = 'ok' | 'warn' | 'bad' | 'neutral' | 'info';
 
@@ -117,11 +118,12 @@ export function parseOverview(raw: unknown): PlatformOverview | null {
   };
 }
 
-export function parseMember(raw: unknown): PlatformMember | null {
+export function parseMember(raw: unknown): ProtectedPlatformMember | null {
   const m = obj(raw);
   const mid = id(m?.id);
   const userId = label(m?.userId);
-  if (!m || mid == null || !userId) return null;
+  // 구버전 서버의 원본 응답은 화면에 올리지 않는다. 마스킹 확인 표식이 있는 응답만 허용한다.
+  if (!m || mid == null || !userId || m.privacyMasked !== true || typeof m.isSelf !== 'boolean' || typeof m.isOperator !== 'boolean') return null;
   return {
     id: mid,
     userId,
@@ -135,6 +137,9 @@ export function parseMember(raw: unknown): PlatformMember | null {
     lastLoginAt: str(m.lastLoginAt),
     // TB_USER.EXTENDED_ACCESS 원래 값(0/1) — 유료 구독 여부가 아니다
     extendedAccess: flag(m.extendedAccess),
+    privacyMasked: true,
+    isSelf: m.isSelf,
+    isOperator: m.isOperator,
   };
 }
 
@@ -347,6 +352,7 @@ export function resolutionLabel(v: string | null): string | null {
 const AUDIT_ACTION_LABEL: Record<string, string> = {
   MEMBER_SUSPEND: '회원 이용 정지',
   MEMBER_RESUME: '회원 정지 해제',
+  MEMBER_FIELD_REVEAL: '회원 개인정보 확인',
   NOTICE_CREATE: '공지 작성',
   NOTICE_UPDATE: '공지 수정',
   NOTICE_STATUS: '공지 상태 변경',
@@ -435,11 +441,12 @@ export function noticeMatches(n: Pick<PlatformNotice, 'title' | 'content' | 'sta
 }
 
 /** 정지 · 해제할 수 있는 상태인가 — 본인 · 탈퇴 · 상태를 모르는 계정은 화면에서 먼저 막는다(운영자 계정은 서버가 막는다) */
-export function memberStatusBlockers(m: PlatformMember, myUserId: string | null, reason: string, confirmed: boolean): string[] {
+export function memberStatusBlockers(m: PlatformMember & { isSelf?: boolean; isOperator?: boolean }, myUserId: string | null, reason: string, confirmed: boolean): string[] {
   const out: string[] = [];
   if (m.status == null) out.push('회원 상태를 확인하지 못했습니다. 다시 불러와 주세요.');
   else if (m.status === 'DELETED') out.push('탈퇴한 계정은 이 화면에서 바꾸지 않습니다.');
-  if (myUserId && m.userId === myUserId) out.push('본인 계정은 바꿀 수 없습니다.');
+  if (m.isSelf || (myUserId && m.userId === myUserId)) out.push('본인 계정은 바꿀 수 없습니다.');
+  else if (m.isOperator) out.push('운영자 계정의 이용 상태는 바꿀 수 없습니다.');
   const r = reasonBlocker(reason);
   if (r) out.push(r);
   if (!confirmed) out.push('확인 항목에 체크하세요.');

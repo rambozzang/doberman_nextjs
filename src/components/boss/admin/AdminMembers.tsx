@@ -14,7 +14,9 @@ import { UserCheck, UserX } from 'lucide-react';
 import { platformAdminApi } from '@/lib/api/boss/platformAdmin';
 import { isCurrentScope } from '@/lib/boss/bossScope';
 import { MEMBER_STATUS_VIEW, REASON_MAX, memberName, memberStatusBlockers } from '@/lib/boss/platformAdmin';
-import type { MemberStatusFilter, PlatformMember } from '@/types/boss-platform-admin';
+import type { MemberStatusFilter } from '@/types/boss-platform-admin';
+import type { ProtectedPlatformMember as PlatformMember } from '@/lib/boss/memberPrivacy';
+import { MaskedMemberValue, MemberPrivacyProvider } from './MaskedMemberValue';
 import { AlertBanner, Button, CheckLine, DescRow, Segmented, Skeleton, TextareaField } from '@/components/boss/ui';
 import OpsDialog from '@/components/boss/taxinvoice/OpsDialog';
 import {
@@ -46,7 +48,8 @@ function ExtendedAccess({ value }: { value: boolean | null }) {
   return <span>{value ? '있음' : '없음'}</span>;
 }
 
-const contact = (m: PlatformMember) => [m.phone, m.email].filter(Boolean).join(' · ') || '-';
+const privateValue = (m: PlatformMember, field: 'userId' | 'name' | 'nickName' | 'companyName' | 'phone' | 'email', label: string) =>
+  <MaskedMemberValue memberId={m.id} field={field} masked={m[field]} label={label} />;
 
 const COLUMNS: AdminColumn<PlatformMember>[] = [
   {
@@ -56,20 +59,24 @@ const COLUMNS: AdminColumn<PlatformMember>[] = [
     className: 'wrap',
     cell: (m) => (
       <span className="flex min-w-0 flex-col">
-        <span className="font-semibold text-boss-text">{memberName(m)}</span>
-        <span className="text-[12px] font-normal text-boss-text-muted">{m.userId}</span>
+        <span className="font-semibold text-boss-text">{privateValue(m, m.name ? 'name' : m.nickName ? 'nickName' : 'userId', '회원 이름')}</span>
+        <span className="text-[12px] font-normal text-boss-text-muted">{privateValue(m, 'userId', '아이디')}</span>
       </span>
     ),
   },
   { key: 'status', header: '상태', card: 'badge', cell: (m) => <StatusTag status={m.status} view={MEMBER_STATUS_VIEW} /> },
-  { key: 'company', header: '상호', card: 'line', className: 'wrap', cell: (m) => m.companyName || '-' },
-  { key: 'contact', header: '연락처', card: 'line', className: 'wrap', cell: contact },
+  { key: 'company', header: '상호', card: 'line', className: 'wrap', cell: (m) => privateValue(m, 'companyName', '상호') },
+  { key: 'contact', header: '연락처', card: 'line', className: 'wrap', cell: (m) => <span className="flex flex-col items-start gap-0.5">{privateValue(m, 'phone', '휴대폰')}{privateValue(m, 'email', '이메일')}</span> },
   { key: 'created', header: '가입', card: 'line', cell: (m) => <When value={m.createdAt} /> },
   { key: 'login', header: '최근 로그인', card: 'line', cell: (m) => <When value={m.lastLoginAt} empty="기록 없음" /> },
   { key: 'ext', header: '확장 권한', card: 'line', cell: (m) => <ExtendedAccess value={m.extendedAccess} /> },
 ];
 
 export default function AdminMembers() {
+  return <MemberPrivacyProvider><MembersContent /></MemberPrivacyProvider>;
+}
+
+function MembersContent() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<MemberStatusFilter>('ALL');
   const [page, setPage] = useState(0);
@@ -106,7 +113,8 @@ export default function AdminMembers() {
         />
       </ListBar>
       <p className="break-keep text-[12px] leading-relaxed text-boss-text-muted">
-        확장 권한은 회원 계정의 확장 이용 권한 표시입니다. 유료 구독 여부가 아닙니다. 연락처는 운영 확인에만 쓰고 밖으로 옮기지 마세요.
+        개인정보는 가려져 있습니다. 항목에 마우스를 잠깐 올리거나 선택하면 해당 정보만 확인할 수 있고, 확인 기록이 남습니다.
+        확장 권한은 유료 구독 여부가 아닙니다.
       </p>
 
       {notice && (
@@ -264,7 +272,7 @@ function MemberDialog({
 
   const suspend = target === 'SUSPENDED';
   // 본인 계정 — 바꿀 수 없으니 처리 칸 · 버튼을 그리지 않는다(서버도 막는다)
-  const self = !!myUserId && view.userId === myUserId;
+  const self = view.isSelf;
   const changeable = !!member && target != null && !self;
 
   return (
@@ -316,12 +324,12 @@ function MemberDialog({
         {!member && !loadError && <Skeleton className="h-6" />}
 
         <dl className="[&_dd]:overflow-visible [&_dd]:whitespace-normal [&_dd]:break-words [&_dd]:[overflow-wrap:anywhere]">
-          <DescRow label="아이디" value={view.userId} />
-          <DescRow label="이름" value={view.name || '-'} />
-          <DescRow label="닉네임" value={view.nickName || '-'} />
-          <DescRow label="상호" value={view.companyName || '-'} />
-          <DescRow label="휴대폰" value={view.phone || '-'} />
-          <DescRow label="이메일" value={view.email || '-'} />
+          <DescRow label="아이디" value={privateValue(view, 'userId', '아이디')} />
+          <DescRow label="이름" value={privateValue(view, 'name', '이름')} />
+          <DescRow label="닉네임" value={privateValue(view, 'nickName', '닉네임')} />
+          <DescRow label="상호" value={privateValue(view, 'companyName', '상호')} />
+          <DescRow label="휴대폰" value={privateValue(view, 'phone', '휴대폰')} />
+          <DescRow label="이메일" value={privateValue(view, 'email', '이메일')} />
           <DescRow label="상태" value={<StatusTag status={view.status} view={MEMBER_STATUS_VIEW} />} />
           <DescRow label="가입" value={<When value={view.createdAt} />} />
           <DescRow label="최근 로그인" value={<When value={view.lastLoginAt} empty="기록 없음" />} />

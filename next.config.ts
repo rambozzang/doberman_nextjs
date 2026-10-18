@@ -128,6 +128,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // 사장님 API는 개인·운영 자료를 반환한다. 위 공용 API 캐시 규칙보다 뒤에서 덮어쓴다.
+        source: '/api/boss/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' },
+        ],
+      },
     ];
   },
   

@@ -6,6 +6,7 @@
 
 import axios from 'axios';
 import { bossPrivateApi } from '@/lib/bossApi';
+import { parseMemberFieldValue, type MemberPrivateField } from '@/lib/boss/memberPrivacy';
 import type { ApiResponse } from '@/types/api';
 import {
   QUERY_MAX,
@@ -134,6 +135,11 @@ export const platformAdminApi = {
 
   // 회원 한 명 — GET /platform-admin/members/{id}
   member: (id: number) => call(() => bossPrivateApi.get(`${BASE}/members/${id}`), parseMember),
+
+  // 개인정보 하나만 그때 조회. 저장·미리 읽기·재시도 없음. 포인터가 벗어나면 요청도 취소한다.
+  revealMemberField: (id: number, field: MemberPrivateField, signal: AbortSignal) =>
+    call(() => bossPrivateApi.post(`${BASE}/members/${id}/reveal`, { field }, { signal, timeout: 10_000 }),
+      (raw) => parseMemberFieldValue(raw, id, field)),
 
   // 이용 정지 · 해제 — POST /platform-admin/members/{id}/status. 보던 상태(expectedStatus)가 바뀌었으면 409. 자동 재시도 없음.
   setMemberStatus: (id: number, body: MemberStatusRequest) =>
