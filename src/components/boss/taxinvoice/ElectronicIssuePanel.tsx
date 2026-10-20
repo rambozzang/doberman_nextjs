@@ -17,7 +17,7 @@ import toast from 'react-hot-toast';
 import { Ban, ExternalLink, FileCheck2, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_PRICE, TAX_SUBSCRIPTION_WHERE } from '@/lib/boss/taxInvoiceSubscription';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useIssuanceOpenFor } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import ElectronicLaunchNotice from './ElectronicLaunchNotice';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { cashFieldsOf, cashIdentityError, cashVatMismatch, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
@@ -162,8 +162,8 @@ export default function ElectronicIssuePanel({
   /** 상세를 다시 읽는다. 읽지 못하면 null */
   reload: () => Promise<TaxInvoice | null>;
 }) {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  // 이 문서를 지금 전자로 발급할 수 있는지 — 현금영수증은 따로 연다(2026-10-21)
+  const issuanceOpen = useIssuanceOpenFor(invoice.docType);
   // 대행사가 관리하는 문서는 상태 확인(현금영수증은 취소 포함)만 — 출시 값과 상관없이 먼저 보여 준다
   if (isProviderManaged(invoice)) {
     return <ProviderStatusPanel invoice={invoice} onUpdated={onUpdated} reload={reload} />;
@@ -187,8 +187,8 @@ function ProviderStatusPanel({
   onUpdated: (inv: TaxInvoice) => void;
   reload: () => Promise<TaxInvoice | null>;
 }) {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  // 이 문서를 지금 전자로 발급할 수 있는지 — 현금영수증은 따로 연다(2026-10-21)
+  const issuanceOpen = useIssuanceOpenFor(invoice.docType);
   const [syncing, setSyncing] = useState(false);
   const [opening, setOpening] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);

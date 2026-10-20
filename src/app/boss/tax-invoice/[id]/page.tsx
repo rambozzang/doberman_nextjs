@@ -20,7 +20,7 @@ import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Copy, ExternalLink, FileText, Pencil, Trash2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { formatBizNo } from '@/lib/boss/bizno';
 import { cashFieldsOf, formatCashIdentity } from '@/lib/boss/taxInvoiceCash';
@@ -74,13 +74,15 @@ const todayIso = () => kstToday();
 
 export default function BossTaxInvoiceDetailPage() {
   // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  const launch = useElectronicTaxInvoiceLaunch();
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
   const router = useRouter();
   const { company } = useBossPortal();
 
   const [data, setData] = useState<TaxInvoice | null>(null);
+  // 이 문서를 지금 전자로 발급할 수 있는지 — 현금영수증은 따로 연다(2026-10-21)
+  const issuanceOpen = data?.docType === 'CASH' ? launch.cashOpen : launch.taxOpen;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -25,7 +25,7 @@ import RegistrationEntry from '@/components/boss/taxinvoice/RegistrationEntry';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
 import { awaitsServerUpdate } from '@/lib/boss/taxInvoiceOps';
 import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { cashDigits, cashFieldsOf, maskCashIdentity } from '@/lib/boss/taxInvoiceCash';
 import { formatBizNo } from '@/lib/boss/bizno';
 import { DISPLAY_KEY_LABEL, correctionReasonText, displayState, listTotals, type DisplayKey } from '@/lib/boss/taxInvoiceDocument';
@@ -113,8 +113,8 @@ export default function BossTaxInvoicePage() {
 }
 
 function TaxInvoiceList() {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21).
+  const { taxOpen: issuanceOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
   const router = useRouter();
   const search = useSearchParams();
   const statusParam = search.get('status');
@@ -435,7 +435,9 @@ function TaxInvoiceList() {
           <Panel kicker="홈택스" title={issuanceOpen ? '전자 발급 · 홈택스' : '지금은 홈택스에서 발급'}>
             <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
               {issuanceOpen
-                ? '발급 서비스 등록을 마쳤다면 상세 화면에서 바로 발급할 수 있습니다.'
+                ? `발급 서비스 등록을 마쳤다면 상세 화면에서 바로 발급할 수 있습니다.${
+                    cashOpen ? '' : ' 현금영수증은 아직 홈택스에서 발급해 주세요.'
+                  }`
                 : '홈택스에서 발급할 때 상세 화면의 입력 도우미로 사업자번호 · 금액을 복사해 붙여 넣으세요.'}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
