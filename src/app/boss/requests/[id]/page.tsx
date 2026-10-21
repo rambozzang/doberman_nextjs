@@ -25,6 +25,7 @@ import {
   DetailActions,
 } from '@/components/boss/ui';
 import { formatPreferredDate, stripBrackets } from '@/lib/boss/requestFormat';
+import { useCompanyRegistered } from '@/lib/boss/useCompanyRegistered';
 
 export default function BossRequestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -34,6 +35,8 @@ export default function BossRequestDetailPage() {
   const [myAnswer, setMyAnswer] = useState<BossMyRequestAnswer | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // 회사 미등록이면 답변(웹견적서)을 보낼 수 없다 — 답변 단추 대신 회사 등록 안내(2026-10-21)
+  const companyRegistered = useCompanyRegistered();
 
   useEffect(() => {
     if (!id || Number.isNaN(id)) return;
@@ -208,9 +211,21 @@ export default function BossRequestDetailPage() {
                 <p className="mt-1 text-[12.5px] leading-relaxed text-boss-text-secondary">
                   먼저 답변한 업체가 고객 화면 위쪽에 보입니다. 견적 금액과 시공 범위를 적어 보내세요.
                 </p>
-                <ButtonLink href={answerHref} variant="primary" size="sm" className="mt-4">
-                  답변 작성
-                </ButtonLink>
+                {companyRegistered === false ? (
+                  // 회사 미등록 — 보내기 전에 회사 정보부터(2026-10-21)
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <p className="text-[12.5px] font-semibold text-boss-pill-warn-fg">
+                      회사 정보를 등록해야 웹견적서를 보낼 수 있습니다.
+                    </p>
+                    <ButtonLink href="/boss/me/company" variant="primary" size="sm">
+                      회사 정보 등록
+                    </ButtonLink>
+                  </div>
+                ) : (
+                  <ButtonLink href={answerHref} variant="primary" size="sm" className="mt-4">
+                    답변 작성
+                  </ButtonLink>
+                )}
               </div>
             ) : (
               <div className="border border-boss-border bg-boss-inset p-4">

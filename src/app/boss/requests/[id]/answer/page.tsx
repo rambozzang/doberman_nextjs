@@ -23,6 +23,7 @@ import { formatPreferredDate, requestSummary, stripBrackets } from '@/lib/boss/r
 import { BossAuthManager } from '@/lib/bossAuth';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { amountInKorean } from '@/lib/boss/docMeta';
+import { useCompanyRegistered } from '@/lib/boss/useCompanyRegistered';
 
 /** 자주 쓰는 금액 — 누르면 더해진다 */
 const QUICK_AMOUNTS = [50000, 100000, 500000, 1000000];
@@ -62,6 +63,9 @@ export default function BossAnswerPage() {
   // 폼을 다 채운 뒤에야 실패를 알기보다, 열자마자 막고 기존 답변으로 보낸다.
   // null = 아직 확인 중, false = 답변 없음(정상 진행), true = 이미 답변함(폼 대신 안내)
   const [alreadyAnswered, setAlreadyAnswered] = useState<boolean | null>(null);
+
+  // 회사를 등록하지 않으면 웹견적서를 보낼 수 없다(2026-10-21) — 폼을 다 채우기 전에 먼저 알린다. 서버도 막는다
+  const companyRegistered = useCompanyRegistered();
 
   // 답변 양식
   const [templates, setTemplates] = useState<BossTemplate[]>([]);
@@ -131,6 +135,10 @@ export default function BossAnswerPage() {
       toast.error('이미 이 요청에 답변을 등록했습니다.');
       return;
     }
+    if (companyRegistered !== true) {
+      toast.error('회사 정보를 등록해야 웹견적서를 보낼 수 있습니다.');
+      return;
+    }
     if (!title.trim() || !bodyText || !cost.trim()) {
       toast.error('제목, 내용, 견적 금액을 모두 입력해주세요.');
       return;
@@ -190,6 +198,26 @@ export default function BossAnswerPage() {
 
   // 이미 답변한 요청 — 빈 폼을 다시 보여 주면 재제출로 오해해 중복 답변을 만든다.
   // 백엔드도 같은 요청에 두 번째 답변을 거부하므로, 여기서 폼 자체를 막고 기존 답변으로 보낸다.
+  // 회사 미등록 — 폼 대신 회사 등록 안내(보는 것은 그대로, 보내는 것만 막는다)
+  if (companyRegistered === false && !alreadyAnswered) {
+    return (
+      <EmptyState
+        title="회사 정보를 등록해야 웹견적서를 보낼 수 있습니다"
+        description="고객에게 가는 견적서에 회사 이름 · 연락처가 들어갑니다. 회사 정보를 등록하면 바로 이어서 쓸 수 있어요. 견적 요청은 등록하지 않아도 계속 받아 볼 수 있습니다."
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <ButtonLink href="/boss/me/company" variant="primary" size="sm">
+              회사 정보 등록
+            </ButtonLink>
+            <ButtonLink href={`/boss/requests/${requestId}`} variant="secondary" size="sm">
+              요청 상세로
+            </ButtonLink>
+          </div>
+        }
+      />
+    );
+  }
+
   if (alreadyAnswered) {
     return (
       <EmptyState
