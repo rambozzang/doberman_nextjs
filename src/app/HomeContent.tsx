@@ -11,6 +11,7 @@ import { CustomerRequestService } from '@/services/customerRequestService';
 import { CustomerRequest } from '@/types/api';
 import { YoutubeService } from '@/services/youtubeService';
 import { YoutubeVideo } from '@/types/api';
+import CustomerQuoteShortcut from '@/components/CustomerQuoteShortcut';
 
 
 
@@ -177,6 +178,8 @@ export default function Home() {
           <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-slate-900 to-transparent pointer-events-none"></div>
         </motion.div>
         
+        <CustomerQuoteShortcut />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -1,26 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Home, FileText, Sparkles, Bell, User, ChevronDown, LogOut } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, ChevronDown, FileText, LogOut, Menu, User, X } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
-import { useAuth } from "@/providers/AuthProvider";
-import { useStore } from "@/store/useStore";
-import { useRouter, useSearchParams } from "next/navigation";
-
-import Image from "next/image";
 
 interface NavigationItem {
   title: string;
   href?: string;
   icon?: React.ReactNode;
   description?: string;
-  items?: {
-    title: string;
-    href: string;
-  }[];
+  items?: { title: string; href: string }[];
 }
 
 interface HeaderProps {
@@ -30,626 +26,331 @@ interface HeaderProps {
   className?: string;
 }
 
+const MY_QUOTES = "/quote-request/my-quotes";
+const PENDING_QUOTES_KEY = "header:open-my-quotes-after-login";
+const focusStyle = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900";
+const linkStyle = `inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors ${focusStyle}`;
+
 const defaultNavigationItems: NavigationItem[] = [
+  { title: "견적 요청하기", href: "/quote-request" },
   {
-    title: "홈",
-    href: "/",
-    icon: <Home className="w-4 h-4" />,
-  },
-  {
-    title: "서비스 소개",
-    href: "/service-intro",
-    icon: <Sparkles className="w-4 h-4" />,
-  },
-  {
-    title: "견적 받기",
-    icon: <FileText className="w-4 h-4" />,
+    title: "도배 알아보기",
     items: [
-      {
-        title: "무료 견적 받기",
-        href: "/quote-request",
-      },
-      {
-        title: "AI로 견적 받기",
-        href: "/quote-request-ai",
-      },
-      {
-        title: "도배 비용 계산하기",
-        href: "/quote-calculator",
-      },
-      {
-        title: "내 견적 관리",
-        href: "/quote-request/my-quotes",
-      },
-      {
-        title: "실제 견적 요청 보기",
-        href: "/quote-request/list",
-      },
+      { title: "도배 비용 계산", href: "/quote-calculator" },
+      { title: "AI 상담으로 견적 요청", href: "/quote-request-ai" },
+      { title: "다른 견적 요청 둘러보기", href: "/quote-request/list" },
+      { title: "서비스 소개", href: "/service-intro" },
     ],
   },
-  {
-    title: "고객지원",
-    href: "/customer-support",
-    icon: <Bell className="w-4 h-4" />,
-  },
+  { title: "고객센터", href: "/customer-support" },
 ];
 
-// URL 파라미터 기반 모달 제어 컴포넌트 (Suspense로 감싸기 위해 분리)
-const URLParamHandler: React.FC<{
+function URLParamHandler({ isLoggedIn, openLogin, openRegister }: {
   isLoggedIn: boolean;
-  setIsLoginModalOpen: (open: boolean) => void;
-  setIsRegisterModalOpen: (open: boolean) => void;
-}> = ({ isLoggedIn, setIsLoginModalOpen, setIsRegisterModalOpen }) => {
+  openLogin: () => void;
+  openRegister: () => void;
+}) {
   const searchParams = useSearchParams();
-
   useEffect(() => {
-    const loginParam = searchParams.get('login');
-    const registerParam = searchParams.get('register');
-    
-    if (loginParam === 'true' && !isLoggedIn) {
-      setIsLoginModalOpen(true);
-      const url = new URL(window.location.href);
-      url.searchParams.delete('login');
-      window.history.replaceState({}, '', url.toString());
-    } else if (registerParam === 'true' && !isLoggedIn) {
-      setIsRegisterModalOpen(true);
-      const url = new URL(window.location.href);
-      url.searchParams.delete('register');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [searchParams, isLoggedIn, setIsLoginModalOpen, setIsRegisterModalOpen]);
-
+    const login = searchParams.get("login") === "true";
+    const register = searchParams.get("register") === "true";
+    if (isLoggedIn || (!login && !register)) return;
+    if (login) openLogin();
+    else openRegister();
+    const url = new URL(window.location.href);
+    url.searchParams.delete(login ? "login" : "register");
+    window.history.replaceState({}, "", url.toString());
+  }, [searchParams, isLoggedIn, openLogin, openRegister]);
   return null;
-};
+}
 
-const Header: React.FC<HeaderProps> = ({
-  logo = "도배 비교견적 플랫폼",
+export default function Header({
+  logo = "도배르만",
   navigationItems = defaultNavigationItems,
   showAuth = true,
   className = "",
-}) => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const dropdownCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // 드롭다운 hover 유지: 트리거에서 메뉴로 이동하는 짧은 빈틈 동안 닫히지 않도록 delay 적용
-  const openDropdown = useCallback((title: string) => {
-    if (dropdownCloseTimerRef.current) {
-      clearTimeout(dropdownCloseTimerRef.current);
-      dropdownCloseTimerRef.current = null;
-    }
-    setActiveDropdown(title);
-  }, []);
-
-  const scheduleCloseDropdown = useCallback(() => {
-    if (dropdownCloseTimerRef.current) clearTimeout(dropdownCloseTimerRef.current);
-    dropdownCloseTimerRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-      dropdownCloseTimerRef.current = null;
-    }, 200);
-  }, []);
-
-  // 컴포넌트 언마운트 시 타이머 정리
-  useEffect(() => {
-    return () => {
-      if (dropdownCloseTimerRef.current) clearTimeout(dropdownCloseTimerRef.current);
-    };
-  }, []);
-  
-  // 인증 상태 관리
-  const { isLoggedIn, user, logout, refreshAuth } = useAuth();
-  const { checkLoginAndNavigate } = useStore();
+}: HeaderProps) {
+  const { isLoggedIn, user, logout, refreshAuth, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobilePanelRef = useRef<HTMLDivElement>(null);
+  const mobileCloseRef = useRef<HTMLButtonElement>(null);
+  const authSucceededRef = useRef(false);
 
-  // 로그아웃 처리
-  const handleLogout = async () => {
-    try {
-      await logout();
-      console.log("로그아웃되었습니다.");
-    } catch (error) {
-      console.error("로그아웃 중 오류가 발생했습니다.", error);
-    }
-  };
-
-  // 로그인이 필요한 페이지 네비게이션 처리
-  const handleProtectedNavigation = (href: string, e: React.MouseEvent) => {
-    if (href === "/quote-request/my-quotes") {
-      e.preventDefault();
-      console.log("Protected navigation - isLoggedIn:", isLoggedIn, "user:", user);
-      const canNavigate = checkLoginAndNavigate(isLoggedIn, href, () => {
-        setIsLoginModalOpen(true);
-      });
-      if (canNavigate) {
-        router.push(href);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+  const openLogin = useCallback(() => {
+    authSucceededRef.current = false;
+    setLoginOpen(true);
   }, []);
+  const openRegister = useCallback(() => {
+    authSucceededRef.current = false;
+    setRegisterOpen(true);
+  }, []);
+  const closeNavigation = useCallback(() => {
+    setActiveDropdown(null);
+    setMobileOpen(false);
+  }, []);
+  const isActive = (href: string) => pathname === href || (
+    href !== "/" && href !== "/quote-request" && pathname?.startsWith(`${href}/`)
+  );
+
+  // 내 요청을 누른 뒤 로그인했다면 원래 목적지로 간다. 소셜 로그인 새로고침도 이어진다.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    try {
+      if (sessionStorage.getItem(PENDING_QUOTES_KEY) !== "true") return;
+      if (pathname === MY_QUOTES) sessionStorage.removeItem(PENDING_QUOTES_KEY);
+      else router.replace(MY_QUOTES);
+    } catch {
+      // 보관이 차단돼도 로그인 후 상단의 내 견적 요청으로 이동할 수 있다.
+    }
+  }, [isLoggedIn, pathname, router]);
+
+  const navigate = (href: string, event: React.MouseEvent<HTMLAnchorElement>) => {
+    closeNavigation();
+    if (href !== MY_QUOTES || isLoggedIn) return;
+    event.preventDefault();
+    try { sessionStorage.setItem(PENDING_QUOTES_KEY, "true"); } catch { /* 선택 기능 */ }
+    openLogin();
+  };
+
+  const closeAuth = () => {
+    setLoginOpen(false);
+    setRegisterOpen(false);
+    if (authSucceededRef.current) return;
+    try { sessionStorage.removeItem(PENDING_QUOTES_KEY); } catch { /* 선택 기능 */ }
+  };
+
+  const authSucceeded = () => {
+    authSucceededRef.current = true;
+    setLoginOpen(false);
+    setRegisterOpen(false);
+    refreshAuth();
+  };
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    closeNavigation();
+    setLoggingOut(true);
+    try { sessionStorage.removeItem(PENDING_QUOTES_KEY); } catch { /* 보관이 차단돼도 로그아웃한다. */ }
+    try { await logout(); } finally { setLoggingOut(false); }
+  };
 
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-      // 모바일 메뉴가 열릴 때 메뉴 컨테이너를 최상단으로 스크롤
-      setTimeout(() => {
-        const mobileMenu = document.querySelector('[data-mobile-menu]');
-        if (mobileMenu) {
-          mobileMenu.scrollTop = 0;
-        }
-      }, 50);
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
+    const closeOutside = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) setActiveDropdown(null);
     };
-  }, [isMobileMenuOpen]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (mobileOpen) {
+          setMobileOpen(false);
+          mobileTriggerRef.current?.focus();
+        } else if (activeDropdown) {
+          setActiveDropdown(null);
+          dropdownTriggerRef.current?.focus();
+        }
+      }
+      if (event.key !== "Tab" || !mobileOpen) return;
+      const controls = mobilePanelRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex="0"]',
+      );
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [activeDropdown, mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = requestAnimationFrame(() => mobileCloseRef.current?.focus());
+    const media = window.matchMedia("(min-width: 1024px)");
+    const onResize = () => { if (media.matches) setMobileOpen(false); };
+    media.addEventListener("change", onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = previous;
+      media.removeEventListener("change", onResize);
+    };
+  }, [mobileOpen]);
+
+  const renderLink = (item: { title: string; href: string }, mobile = false) => (
+    <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? "page" : undefined}
+      onClick={(event) => navigate(item.href, event)}
+      className={mobile
+        ? `flex min-h-12 items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm transition-colors ${focusStyle} ${isActive(item.href) ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
+        : `${linkStyle} ${isActive(item.href) ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`}>
+      <span>{isLoggedIn && item.href === "/quote-request" ? "새 견적 요청" : item.title}</span>
+      {mobile && <ArrowRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />}
+    </Link>
+  );
 
   return (
     <>
-      {/* URL 파라미터 핸들러 (Suspense로 감싸서 빌드 오류 방지) */}
       <Suspense fallback={null}>
-        <URLParamHandler
-          isLoggedIn={isLoggedIn}
-          setIsLoginModalOpen={setIsLoginModalOpen}
-          setIsRegisterModalOpen={setIsRegisterModalOpen}
-        />
+        <URLParamHandler isLoggedIn={isLoggedIn} openLogin={openLogin} openRegister={openRegister} />
       </Suspense>
-      
-      <motion.header
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled
-            ? "bg-slate-900/90 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl"
-            : "bg-transparent"
-        } ${className}`}
-      >
-        <div className="container mx-auto" style={{ padding: '0 var(--spacing-4)' }}>
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex-shrink-0"
-            >
-              <Link href="/" className="flex items-center group" style={{ gap: 'var(--spacing-3)' }}>
-                <div className="relative">
-                  <Image src={"/logo.png"} alt="logo" width={40} height={40} className="sm:w-[50px] sm:h-[50px]" />
-                  <div className="absolute -top-0 -right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-slate-900 animate-pulse"></div>
-                </div>
-                <div className="block">
-                  <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                    {logo}
-                  </span>
-                  <div className="hidden sm:block text-xs text-slate-400" style={{ marginTop: 'var(--spacing-1)' }}>Professional Service</div>
-                </div>
+      <header ref={headerRef} className={`fixed inset-x-0 top-0 z-50 border-b border-slate-700/70 bg-slate-900 text-white ${className}`}>
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 lg:h-20 lg:gap-6 lg:px-6">
+          <Link href="/" aria-label="도배르만 홈" onClick={closeNavigation} className={`flex min-w-0 shrink-0 items-center gap-2 rounded-lg ${focusStyle}`}>
+            <Image src="/logo.png" alt="" width={36} height={36} className="h-8 w-8 rounded-lg sm:h-9 sm:w-9" />
+            <span className="min-w-0">
+              <span className="block max-w-[140px] truncate text-base font-bold tracking-tight sm:text-lg">{logo}</span>
+              <span className="hidden text-[11px] text-slate-400 sm:block">도배 비교견적</span>
+            </span>
+          </Link>
+          <nav aria-label="주요 메뉴" className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
+            {showAuth && isLoggedIn && (
+              <Link href={MY_QUOTES} aria-current={isActive(MY_QUOTES) ? "page" : undefined} onClick={closeNavigation}
+                className={`${linkStyle} mr-2 bg-blue-600 text-white hover:bg-blue-500`}>
+                <FileText className="h-4 w-4" aria-hidden="true" />내 견적 요청
               </Link>
-            </motion.div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center justify-center flex-1" style={{ padding: '0 var(--spacing-8)' }}>
-              <nav className="flex items-center bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50" style={{ gap: 'var(--spacing-2)', padding: 'var(--spacing-2)' }}>
-                {navigationItems.map((item, index) => (
-                  <motion.div
-                    key={item.title}
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="relative"
-                  >
-                    {item.items ? (
-                      // 드롭다운 메뉴가 있는 경우
-                      <div
-                        className="relative"
-                        onMouseEnter={() => openDropdown(item.title)}
-                        onMouseLeave={scheduleCloseDropdown}
-                      >
-                        <button
-                          className="group relative flex items-center rounded-xl text-slate-300 hover:text-white transition-all duration-300 hover:bg-slate-700/50"
-                          style={{ gap: 'var(--spacing-2)', padding: 'var(--spacing-4) var(--spacing-4)' }}
-                        >
-                          <span className="text-slate-400 group-hover:text-blue-400 transition-colors duration-300">
-                            {item.icon}
-                          </span>
-                          <span className="text-sm font-medium">{item.title}</span>
-                          <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-blue-400 transition-all duration-300" />
-                          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
-                        
-                        {/* 드롭다운 메뉴 */}
-                        <AnimatePresence>
-                          {activeDropdown === item.title && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                              transition={{ duration: 0.2 }}
-                              onMouseEnter={() => openDropdown(item.title)}
-                              onMouseLeave={scheduleCloseDropdown}
-                              className="absolute top-full left-0 pt-2 w-56 z-50"
-                            >
-                              <div className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl">
-                              <div className="p-2">
-                                {item.items.map((subItem, subIndex) => (
-                                  <motion.div
-                                    key={subItem.href}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: subIndex * 0.05 }}
-                                  >
-                                    <Link
-                                      href={subItem.href}
-                                      className="flex items-center px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200"
-                                      onClick={(e) => {
-                                        setActiveDropdown(null);
-                                        handleProtectedNavigation(subItem.href, e);
-                                      }}
-                                    >
-                                      <span className="text-sm font-medium">{subItem.title}</span>
-                                    </Link>
-                                  </motion.div>
-                                ))}
-                              </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    ) : (
-                      // 일반 링크
-                      <Link
-                        href={item.href || "#"}
-                        className="group relative flex items-center rounded-xl text-slate-300 hover:text-white transition-all duration-300 hover:bg-slate-700/50"
-                        style={{ gap: 'var(--spacing-2)', padding: 'var(--spacing-4) var(--spacing-4)' }}
-                      >
-                        <span className="text-slate-400 group-hover:text-blue-400 transition-colors duration-300">
-                          {item.icon}
-                        </span>
-                        <span className="text-sm font-medium">{item.title}</span>
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      </Link>
-                    )}
-                  </motion.div>
-                ))}
-              </nav>
-            </div>
-
-            {/* Desktop CTA and Auth */}
-            <div className="hidden lg:flex items-center" style={{ gap: 'var(--spacing-4)' }}>
-              {/* Notification Bell */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="relative p-2 text-slate-400 hover:text-white transition-colors duration-300"
-              >
-                <Bell className="w-5 h-5" />
-              </motion.button>
-
-              {/* Auth Buttons */}
-              {showAuth && (
-                <div className="flex items-center gap-3">
-                  {isLoggedIn ? (
-                    // 로그인된 상태
-                    <div className="flex items-center gap-3">
-                      <Link
-                        href="/profile"
-                        className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-700/50 transition-all duration-300"
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="text-sm font-medium text-white">
-                          {user?.customerName || "사용자"}
-                        </span>
-                      </Link>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleLogout}
-                        className="flex items-center text-slate-300 hover:text-white rounded-xl border border-red-700/50 hover:border-red-600/50 hover:bg-red-800/20 transition-all duration-300"
-                        style={{ gap: 'var(--spacing-2)', padding: 'var(--spacing-3) var(--spacing-4)' }}
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-sm font-medium">로그아웃</span>
-                      </motion.button>
-                    </div>
-                  ) : (
-                    // 로그인되지 않은 상태
-                    <>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setIsLoginModalOpen(true)}
-                        className="flex items-center text-slate-300 hover:text-white rounded-xl border border-slate-700/50 hover:border-slate-600/50 hover:bg-slate-800/50 transition-all duration-300"
-                        style={{ gap: 'var(--spacing-2)', padding: 'var(--spacing-3) var(--spacing-4)' }}
-                      >
-                        <User className="w-4 h-4" />
-                        <span className="text-sm font-medium">로그인</span>
-                      </motion.button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button and user info */}
-            <div className="lg:hidden flex items-center gap-3">
-              {/* Mobile User Info - 로그인된 경우에만 표시 */}
-              {showAuth && isLoggedIn && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-xl border border-slate-700/50"
-                >
-                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <User className="w-3 h-3 text-white" />
+            )}
+            {navigationItems.map((item, index) => item.items ? (
+              <div key={item.title} className="relative" onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node)) setActiveDropdown((current) => current === item.title ? null : current);
+              }}>
+                <button type="button" aria-expanded={activeDropdown === item.title} aria-controls={`header-links-${index}`}
+                  onClick={(event) => {
+                    dropdownTriggerRef.current = event.currentTarget;
+                    setActiveDropdown((current) => current === item.title ? null : item.title);
+                  }} className={`${linkStyle} text-slate-300 hover:bg-slate-800 hover:text-white`}>
+                  {item.title}<ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${activeDropdown === item.title ? "rotate-180" : ""}`} />
+                </button>
+                {activeDropdown === item.title && (
+                  <div id={`header-links-${index}`} className="absolute left-0 top-full mt-2 w-64 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-xl">
+                    {item.items.map((subItem) => <div key={subItem.href}>{renderLink(subItem, true)}</div>)}
                   </div>
-                  <span className="text-sm font-medium text-white truncate max-w-[80px]">
-                    {user?.customerName || "사용자"}
-                  </span>
-                </motion.div>
-              )}
-              
-              {/* Menu Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setIsMobileMenuOpen(!isMobileMenuOpen);
-                }}
-                className="relative p-3 text-slate-300 hover:text-white transition-colors duration-300 bg-slate-800/30 rounded-xl border border-slate-700/50"
-              >
-                <AnimatePresence mode="wait">
-                  {isMobileMenuOpen ? (
-                    <motion.div
-                      key="close"
-                      initial={{ rotate: -90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <X size={24} />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="menu"
-                      initial={{ rotate: 90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: -90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Menu size={24} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            </div>
+                )}
+              </div>
+            ) : item.href ? <React.Fragment key={item.href}>{renderLink({ title: item.title, href: item.href })}</React.Fragment> : null)}
+          </nav>
+          <div className="flex shrink-0 items-center gap-2">
+            {showAuth && isLoggedIn && (
+              <Link href={MY_QUOTES} onClick={closeNavigation} aria-current={isActive(MY_QUOTES) ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-500 lg:hidden ${focusStyle}`}>
+                내 견적 요청
+              </Link>
+            )}
+            {showAuth && (
+              <div className="hidden lg:block" aria-busy={isLoading}>
+                {isLoggedIn ? (
+                  <div className="relative" onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node)) setActiveDropdown((current) => current === "account" ? null : current);
+                  }}>
+                    <button type="button" aria-label="계정 메뉴" aria-expanded={activeDropdown === "account"} aria-controls="header-account-links"
+                      onClick={(event) => {
+                        dropdownTriggerRef.current = event.currentTarget;
+                        setActiveDropdown((current) => current === "account" ? null : "account");
+                      }} className={`${linkStyle} text-slate-300 hover:bg-slate-800 hover:text-white`}>
+                      <User aria-hidden="true" className="h-4 w-4" />
+                      <span className="max-w-24 truncate">{user?.customerName || "내 계정"}</span>
+                      <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
+                    {activeDropdown === "account" && (
+                      <div id="header-account-links" className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-xl">
+                        {renderLink({ title: "내 정보", href: "/profile" }, true)}
+                        <button type="button" disabled={loggingOut} onClick={() => void handleLogout()}
+                          className={`flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-sm text-slate-400 hover:bg-slate-800 hover:text-white ${focusStyle}`}>
+                          <LogOut aria-hidden="true" className="h-4 w-4" />{loggingOut ? "로그아웃 중…" : "로그아웃"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button type="button" onClick={openLogin} disabled={isLoading}
+                    className={`${linkStyle} border border-slate-600 text-slate-200 hover:bg-slate-800 disabled:opacity-50`}>
+                    {isLoading ? "확인 중…" : "로그인"}
+                  </button>
+                )}
+              </div>
+            )}
+            <button type="button" ref={mobileTriggerRef} onClick={() => { setActiveDropdown(null); setMobileOpen(true); }}
+              aria-label="메뉴 열기" aria-expanded={mobileOpen} aria-controls="customer-mobile-menu"
+              className={`flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 text-slate-200 hover:bg-slate-800 lg:hidden ${focusStyle}`}>
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </button>
           </div>
         </div>
-
-        {/* Mobile Navigation */}
+      </header>
+      {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998]"
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-              
-              {/* Mobile Menu - 풀스크린 */}
-              <motion.div
-                initial={{ opacity: 0, x: '100%' }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: '100%' }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="fixed inset-0 bg-slate-900 backdrop-blur-xl z-[9999] overflow-y-auto min-h-screen"
-                data-mobile-menu
-              >
-                {/* 모바일 메뉴 헤더 */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
-                  <div className="flex items-center gap-3">
-                    <Image src={"/logo.png"} alt="logo" width={32} height={32} />
-                    <span className="text-lg font-bold text-white">메뉴</span>
-                  </div>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 text-slate-400 hover:text-white transition-colors"
-                  >
-                    <X size={24} />
-                  </button>
+          {mobileOpen && (
+            <div className="fixed inset-0 z-[60] lg:hidden">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-950/70" aria-hidden="true" onClick={() => { setMobileOpen(false); mobileTriggerRef.current?.focus(); }} />
+              <motion.div id="customer-mobile-menu" ref={mobilePanelRef} role="dialog" aria-modal="true" aria-labelledby="customer-mobile-menu-title"
+                initial={{ x: reduceMotion ? 0 : "100%" }} animate={{ x: 0 }} exit={{ x: reduceMotion ? 0 : "100%" }}
+                transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
+                className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col border-l border-slate-700 bg-slate-900 text-white shadow-xl">
+                <div className="flex min-h-16 shrink-0 items-center justify-between border-b border-slate-800 px-5 pt-[env(safe-area-inset-top)]">
+                  <h2 id="customer-mobile-menu-title" className="text-base font-semibold">전체 메뉴</h2>
+                  <button ref={mobileCloseRef} type="button" aria-label="메뉴 닫기" onClick={() => { setMobileOpen(false); mobileTriggerRef.current?.focus(); }}
+                    className={`flex h-11 w-11 items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800 ${focusStyle}`}><X className="h-5 w-5" aria-hidden="true" /></button>
                 </div>
-
-                <div className="p-6 space-y-6">
-                  {/* Mobile Navigation Items */}
-                  {navigationItems.map((item, index) => (
-                    <motion.div
-                      key={item.title}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="space-y-3"
-                    >
-                      {item.items ? (
-                        // 드롭다운 메뉴가 있는 경우
-                        <div>
-                          <div className="flex items-center p-4 rounded-2xl text-slate-300 bg-slate-800/30 border border-slate-700/50">
-                            <span className="text-blue-400 mr-4 text-xl">
-                              {item.icon}
-                            </span>
-                            <span className="text-lg font-semibold">{item.title}</span>
-                          </div>
-                          {/* 서브메뉴 */}
-                          <div className="ml-4 mt-3 space-y-2">
-                            {item.items.map((subItem) => (
-                              <Link
-                                key={subItem.href}
-                                href={subItem.href}
-                                className="flex items-center p-4 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all duration-200 min-h-[56px]"
-                                onClick={(e) => {
-                                  setIsMobileMenuOpen(false);
-                                  handleProtectedNavigation(subItem.href, e);
-                                }}
-                              >
-                                <div className="w-2 h-2 bg-blue-400 rounded-full mr-4"></div>
-                                <span className="text-base font-medium">{subItem.title}</span>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        // 일반 링크
-                        <Link
-                          href={item.href || "#"}
-                          className="flex items-center p-4 rounded-2xl text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all duration-300 border border-slate-700/30 hover:border-blue-500/50 min-h-[64px]"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <span className="text-blue-400 mr-4 text-xl">
-                            {item.icon}
-                          </span>
-                          <span className="text-lg font-semibold">{item.title}</span>
-                        </Link>
-                      )}
-                    </motion.div>
-                  ))}
-                  
-                  {/* Mobile Auth Section */}
-                  <div className="border-t border-slate-700/50 pt-6 space-y-4">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-5">
+                  <nav aria-label="모바일 주요 메뉴" className="space-y-5">
                     {showAuth && (
-                      <div className="space-y-4">
-                        {isLoggedIn ? (
-                          // 로그인된 상태 (모바일)
-                          <>
-                            <Link
-                              href="/profile"
-                              className="flex items-center p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-700/50 transition-all duration-300"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                                <User className="w-6 h-6 text-white" />
-                              </div>
-                              <div>
-                                <div className="text-lg font-semibold text-white">
-                                  {user?.customerName || "사용자"}
-                                </div>
-                                <div className="text-sm text-slate-400">프로필 보기</div>
-                              </div>
-                            </Link>
-                            <motion.button
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.4 }}
-                              onClick={() => {
-                                handleLogout();
-                                setIsMobileMenuOpen(false);
-                              }}
-                              className="flex items-center justify-center w-full p-4 text-white rounded-2xl border border-red-700/50 hover:border-red-600/50 hover:bg-red-800/20 transition-all duration-300 min-h-[56px]"
-                            >
-                              <LogOut className="w-5 h-5 mr-3" />
-                              <span className="text-lg font-semibold">로그아웃</span>
-                            </motion.button>
-                          </>
-                        ) : (
-                          // 로그인되지 않은 상태 (모바일)
-                          <motion.button
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                            onClick={() => {
-                              setIsLoginModalOpen(true);
-                              setIsMobileMenuOpen(false);
-                            }}
-                            className="flex items-center justify-center w-full p-4 text-white rounded-2xl border border-blue-700/50 hover:border-blue-600/50 hover:bg-blue-800/20 transition-all duration-300 min-h-[56px]"
-                          >
-                            <User className="w-5 h-5 mr-3" />
-                            <span className="text-lg font-semibold">로그인</span>
-                          </motion.button>
-                        )}
+                      <div>
+                        <p className="mb-3 text-xs text-slate-400">{isLoggedIn ? `${user?.customerName || "고객"}님` : "이미 견적을 요청하셨나요?"}</p>
+                        <Link href={MY_QUOTES} onClick={(event) => navigate(MY_QUOTES, event)} aria-current={isActive(MY_QUOTES) ? "page" : undefined}
+                          className={`flex min-h-14 items-center gap-3 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500 ${focusStyle}`}>
+                          <FileText className="h-5 w-5" aria-hidden="true" /><span className="flex-1">내 견적 요청</span><ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                        <p className="mt-2 px-1 text-xs leading-relaxed text-slate-400">신청한 내역과 업체 답변을 확인하세요.</p>
                       </div>
                     )}
-
-                    {/* 모바일 전용 빠른 액션 */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="space-y-3"
-                    >
-                      <Link
-                        href="/quote-request"
-                        className="flex items-center justify-center w-full p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold shadow-lg transition-all duration-300 min-h-[56px] relative z-10 touch-manipulation"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsMobileMenuOpen(false);
-                          router.push('/quote-request');
-                        }}
-                      >
-                        <Sparkles className="w-5 h-5 mr-3" />
-                        <span className="text-lg">견적 요청하기</span>
-                      </Link>
-                    </motion.div>
-                  </div>
+                    {navigationItems.map((item) => item.items ? (
+                      <div key={item.title} className="border-t border-slate-800 pt-4">
+                        <p className="mb-1 px-3 text-xs font-medium text-slate-500">{item.title}</p>
+                        {item.items.map((subItem) => renderLink(subItem, true))}
+                      </div>
+                    ) : item.href ? <React.Fragment key={item.href}>{renderLink({ title: item.title, href: item.href }, true)}</React.Fragment> : null)}
+                  </nav>
+                  {showAuth && (
+                    <div className="mt-5 border-t border-slate-800 pt-4">
+                      {isLoggedIn ? <>
+                        {renderLink({ title: "내 정보", href: "/profile" }, true)}
+                        <button type="button" disabled={loggingOut} onClick={() => void handleLogout()}
+                          className={`flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-sm text-slate-400 hover:bg-slate-800 ${focusStyle}`}>
+                          <LogOut aria-hidden="true" className="h-4 w-4" />{loggingOut ? "로그아웃 중…" : "로그아웃"}
+                        </button>
+                      </> : <button type="button" onClick={() => { closeNavigation(); openLogin(); }}
+                        className={`flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-sm text-slate-200 hover:bg-slate-800 ${focusStyle}`}><User aria-hidden="true" className="h-4 w-4" />로그인</button>}
+                    </div>
+                  )}
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.header>
-
-      {/* Login Modal */}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={() => {
-          setIsLoginModalOpen(false);
-          // 약간의 지연 후 상태 새로고침 (토큰 저장 완료 대기)
-          setTimeout(() => {
-            refreshAuth();
-          }, 100);
-          console.log("로그인되었습니다!");
-        }}
-        onSwitchToRegister={() => {
-          setIsLoginModalOpen(false);
-          setIsRegisterModalOpen(true);
-        }}
-      />
-
-      {/* Register Modal */}
-      <RegisterModal 
-        isOpen={isRegisterModalOpen} 
-        onClose={() => setIsRegisterModalOpen(false)}
-        onRegisterSuccess={() => {
-          setIsRegisterModalOpen(false);
-          // 약간의 지연 후 상태 새로고침 (토큰 저장 완료 대기)
-          setTimeout(() => {
-            refreshAuth();
-          }, 100);
-          console.log("회원가입이 완료되었습니다!");
-        }}
-        onSwitchToLogin={() => {
-          setIsRegisterModalOpen(false);
-          setIsLoginModalOpen(true);
-        }}
-      />
+        </AnimatePresence>, document.body,
+      )}
+      <LoginModal isOpen={loginOpen} onClose={closeAuth} onLoginSuccess={authSucceeded}
+        onSwitchToRegister={() => { setLoginOpen(false); setRegisterOpen(true); }} />
+      <RegisterModal isOpen={registerOpen} onClose={closeAuth}
+        onRegisterSuccess={authSucceeded} onSwitchToLogin={() => { setRegisterOpen(false); setLoginOpen(true); }} />
     </>
   );
-};
-
-export default Header;
+}
