@@ -90,7 +90,7 @@ function AdminConsole({ scope }: { scope: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="boss-tax flex flex-col gap-4">
       {!issuanceOpen && (
         <Note tone="info">정식 오픈 전입니다. 승인해도 실제 발급은 열리지 않고, 문서 상태 조회는 막힐 수 있습니다.</Note>
       )}

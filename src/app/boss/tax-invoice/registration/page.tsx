@@ -8,6 +8,8 @@
 // 심사 대기 중에는 보이는 동안 정해진 횟수만 다시 읽어 결과를 반영한다(입력 · 요청 중에는 멈춘다).
 // 계정이 바뀌면(공용 PC) 화면을 새로 그리고, 앞 계정 요청의 응답은 넣지 않는다.
 // 시작 전 준비 안내는 화면을 옮기면 작성 중인 신청서가 사라지므로 같은 본문을 대화상자로 띄운다(조회 성패 · 로딩과 상관없이 열린다).
+// 정식 오픈 안내('곧 열립니다')는 맨 위 띠 한 곳에서만 한다 — 세금계산서 · 현금영수증을 따로 보고(taxOpen · cashOpen),
+// 한쪽만 열렸으면 닫힌 쪽만 "곧 열립니다"로 남긴다(2026-10-21). 진행 단계 · 인증서는 세금계산서 기준이다.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, RefreshCw } from 'lucide-react';
@@ -24,9 +26,9 @@ import { bossTaxInvoiceApi, type RegistrationCall } from '@/lib/api/boss/taxinvo
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { formatOpsDateTime } from '@/lib/boss/taxInvoiceOps';
-import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
+import { TAX_SUBSCRIPTION_CASH_ONLY, TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 import { EMPTY_SUPPLIER, daysUntil, effectiveStage, normalizeSupplier, registrationSteps, supplierFormValue, supplierFromCompany } from '@/lib/boss/taxInvoiceRegistration';
 import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
 import { REGISTRATION_STAGE_LABEL, type ElectronicRegistrationStatus, type RegistrationStage, type TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
@@ -41,9 +43,22 @@ export default function TaxInvoiceRegistrationPage() {
   return <RegistrationScreen key={scope} scope={scope} />;
 }
 
+/** 맨 위 띠 — 닫힌 문서 종류만 말한다. 둘 다 열렸으면 띄우지 않는다 */
+function launchBanner(taxOpen: boolean, cashOpen: boolean): string | null {
+  if (taxOpen && cashOpen) return null;
+  if (!taxOpen && !cashOpen) {
+    return '전자세금계산서 · 현금영수증 발급은 곧 정식 오픈합니다. 등록은 미리 해 둘 수 있고, 실제 발급은 오픈 후 열립니다.';
+  }
+  return taxOpen
+    ? '현금영수증 발급은 곧 열립니다. 전자세금계산서는 등록을 마치면 바로 발급할 수 있어요.'
+    : '전자세금계산서 발급은 곧 열립니다. 현금영수증은 등록을 마치면 바로 발급할 수 있어요.';
+}
+
 function RegistrationScreen({ scope }: { scope: string }) {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21) — 진행 단계 · 준비 완료는 세금계산서 기준
+  const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
+  const issuanceOpen = taxOpen;
+  const banner = launchBanner(taxOpen, cashOpen);
   const [status, setStatus] = useState<ElectronicRegistrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -208,7 +223,7 @@ function RegistrationScreen({ scope }: { scope: string }) {
   useBoundedRefresh({ enabled: pending && !editing && busy === null && !needsRefresh, run: refresh, refreshOnResume: false });
 
   return (
-    <div className="boss-touch flex flex-col gap-5">
+    <div className="boss-touch boss-tax flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <ButtonLink href="/boss/tax-invoice" variant="secondary" size="sm">계산서 목록</ButtonLink>
@@ -221,7 +236,7 @@ function RegistrationScreen({ scope }: { scope: string }) {
           <PreparationGuide />
         </OpsDialog>
       )}
-      {!issuanceOpen && <Note>전자세금계산서 · 현금영수증 발급은 곧 정식 오픈합니다. 등록 준비가 끝나도 실제 발급은 정식 오픈 후 이용할 수 있습니다.</Note>}
+      {banner && <Note>{banner}</Note>}
       {loadError && <Note tone="warn" live>{loadError} {status ? '아래는 마지막으로 확인한 상태입니다. 다시 확인 후 진행해 주세요.' : '현재 신청·연동은 진행할 수 없습니다. 다시 확인해 주세요.'}</Note>}
       {notice && <Note tone="ok" live>{notice}</Note>}
       {loading && !status ? <Skeleton className="h-64" /> : !status ? (
@@ -268,6 +283,7 @@ function RegistrationScreen({ scope }: { scope: string }) {
                     {status.stage === 'NEEDS_CERTIFICATE' ? (
                       <Note tone="ok">
                         <b>공동인증서를 등록한 날부터 1개월 무료</b>로 전자 발급할 수 있습니다. 이후에는 {TAX_SUBSCRIPTION_PRICE} 앱 구독이 필요합니다.
+                        <span className="mt-1 block">{TAX_SUBSCRIPTION_CASH_ONLY}</span>
                       </Note>
                     ) : (
                       <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
@@ -285,13 +301,13 @@ function RegistrationScreen({ scope }: { scope: string }) {
             </div>
             <div className="flex flex-col gap-5">
             <Panel title="현재 등록 상태">
-              <div className="mb-3 flex flex-wrap gap-2"><Tag tone={ready ? 'ok' : rejected ? 'bad' : 'warn'}>{stage ? REGISTRATION_STAGE_LABEL[stage] : ''}</Tag>{status.isTest && <Tag tone="warn">시험 환경 · 효력 없음</Tag>}</div>
+              {/* 시험 환경 표시는 주황 표 대신 작은 회색 글자로(2026-10-21 — '효력 없음'이 걱정을 불렀다) */}
+              <div className="mb-3 flex flex-wrap items-center gap-2"><Tag tone={ready ? 'ok' : rejected ? 'bad' : 'warn'}>{stage ? REGISTRATION_STAGE_LABEL[stage] : ''}</Tag>{status.isTest && <span className="text-[12px] text-boss-text-secondary">시험 환경</span>}</div>
               {ready ? <Note tone="ok">{issuanceOpen ? '발급 준비가 완료되었습니다.' : '등록 준비 완료 · 발급은 정식 오픈 후 이용'}</Note> : <p className="break-keep text-[13px] leading-relaxed text-boss-text-secondary">{status.reason || '다음 등록 단계를 진행해 주세요.'}</p>}
-              {!status.serviceConfigured && <p className="mt-3 text-[12px] leading-relaxed text-boss-text-secondary">발급 서비스의 연동 설정을 준비 중입니다. 권한 확인 신청은 저장할 수 있습니다.</p>}
               {status.stage === 'VERIFIED' && status.memberLinked === null && status.serviceConfigured && <Note tone="warn">팝빌 연동 여부를 확인하지 못했습니다. 다시 확인 후 진행해 주세요.</Note>}
               {status.reviewStatus === 'APPROVED' && status.reviewedAt && <p className="mt-3 text-[12px] text-boss-text-secondary">권한 승인: {formatOpsDateTime(status.reviewedAt) ?? '-'}</p>}
             </Panel>
-            <OperationsPanel refreshKey={checkedAt} scope={scope} />
+            <OperationsPanel refreshKey={checkedAt} scope={scope} stage={stage} />
             <SupportScope stage={status.stage} refreshKey={checkedAt} />
             </div>
           </div>

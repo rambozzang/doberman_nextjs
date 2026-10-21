@@ -12,6 +12,7 @@ import {
   SUPPLIER_FIELDS,
   SUPPLIER_LABEL,
   SUPPLIER_MAX,
+  formatSupplierPhone,
   validateSupplier,
   type SupplierField,
 } from '@/lib/boss/taxInvoiceRegistration';
@@ -130,10 +131,11 @@ export default function SupplierRegistrationForm({
         </p>
 
         {prefillNote && <Note tone="info">{prefillNote}</Note>}
+        {/* '준비 중' 안내는 화면 맨 위 띠 한 곳에서만 한다(2026-10-21) — 여기서는 지금 할 수 있는 것만 짧게 */}
         {!serviceConfigured && (
-          <Note tone="warn">
-            발급 서비스 연결을 준비하고 있습니다. 신청은 지금 저장해 둘 수 있고, 준비가 끝나면 이 화면에서 다음 단계를 이어 갑니다.
-          </Note>
+          <p className="break-keep text-[12.5px] leading-relaxed text-boss-text-secondary">
+            신청은 지금 해 둘 수 있어요. 다음 단계는 이 화면에서 이어 갑니다.
+          </p>
         )}
 
         {attempted && errorFields.length > 0 && (
@@ -155,7 +157,14 @@ export default function SupplierRegistrationForm({
                 className={WIDE.includes(f) ? 'sm:col-span-2' : ''}
                 value={value[f]}
                 onChange={(e) => set(f, e.target.value)}
-                onBlur={() => setTouched((t) => (t[f] ? t : { ...t, [f]: true }))}
+                onBlur={() => {
+                  setTouched((t) => (t[f] ? t : { ...t, [f]: true }));
+                  // 연락처는 칸을 벗어나면 010-1234-5678 모양으로(서버는 하이픈을 지우고 저장한다)
+                  if (f === 'phone') {
+                    const formatted = formatSupplierPhone(value.phone);
+                    if (formatted !== value.phone) onChange({ ...value, phone: formatted });
+                  }
+                }}
                 placeholder={PLACEHOLDER[f]}
                 maxLength={SUPPLIER_MAX[f]}
                 hideCounter

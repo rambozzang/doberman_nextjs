@@ -5,11 +5,13 @@
 //   안내 항목(서버가 고른 할 일) → 공동인증서(세금계산서 전용) → 구독 · 요금(2026-10-17) → 발급 비용 정책 → 자동 상태 확인
 //   읽기만 한다. 충전 · 결제 · 가입 버튼은 없다. 모르는 금액 · 날짜는 "확인 전"으로 둔다.
 //   refreshKey 가 바뀔 때마다(등록 화면의 다시 확인) 다시 읽는다. 늦게 온 이전 응답 · 다른 계정으로 바뀐 뒤 온 응답은 버린다.
+//   서버 안내 중 '정식 오픈 준비 중'(LAUNCH_PENDING)은 등록 화면 맨 위 띠가 이미 말하므로 여기서는 빼고(2026-10-21 — 한 화면에 네 번),
+//   자동 상태 확인은 세금계산서 · 현금영수증 중 하나라도 열리면 켜진 것으로 본다(문서 종류별 오픈 값 · 2026-10-21).
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { bossTaxInvoiceApi, type OpsCall } from '@/lib/api/boss/taxinvoice';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { isCurrentScope } from '@/lib/boss/bossScope';
 import {
   ISSUE_ACTION_LABEL,
@@ -19,8 +21,14 @@ import {
   certificateView,
   issueHref,
 } from '@/lib/boss/taxInvoiceOps';
-import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_POLICY, TAX_SUBSCRIPTION_WHERE, subscriptionView } from '@/lib/boss/taxInvoiceSubscription';
-import type { ElectronicOperations, TaxInvoiceSubscriptionStatus } from '@/types/boss-taxinvoice';
+import {
+  TAX_SUBSCRIPTION_CASH_ONLY,
+  TAX_SUBSCRIPTION_FREE_USES,
+  TAX_SUBSCRIPTION_POLICY,
+  TAX_SUBSCRIPTION_WHERE,
+  subscriptionView,
+} from '@/lib/boss/taxInvoiceSubscription';
+import type { ElectronicOperations, RegistrationStage, TaxInvoiceSubscriptionStatus } from '@/types/boss-taxinvoice';
 import { Panel, Skeleton, Tag, type StatusTone } from '@/components/boss/ui';
 import { Note } from './RegistrationParts';
 
@@ -74,6 +82,8 @@ function SubscriptionBlock({ status }: { status: TaxInvoiceSubscriptionStatus | 
       {!subscribed && !known && <p>{TAX_SUBSCRIPTION_POLICY}</p>}
       {!subscribed && (
         <>
+          {/* 현금영수증만 쓰는 사장님은 인증서를 등록하지 않는다 — 무료 시작일을 따로 알린다(2026-10-21) */}
+          <p>{TAX_SUBSCRIPTION_CASH_ONLY}</p>
           <p>{TAX_SUBSCRIPTION_WHERE}</p>
           <p className="text-[12px]">{TAX_SUBSCRIPTION_FREE_USES}</p>
         </>
@@ -82,10 +92,13 @@ function SubscriptionBlock({ status }: { status: TaxInvoiceSubscriptionStatus | 
   );
 }
 
-/** scope — 이 화면을 연 계정(부모가 계정이 바뀌면 key 로 새로 그린다) */
-export default function OperationsPanel({ refreshKey, scope }: { refreshKey: number; scope: string }) {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+/**
+ * scope — 이 화면을 연 계정(부모가 계정이 바뀌면 key 로 새로 그린다)
+ * stage — 등록 단계. 인증서 등록(4단계) 전이면 인증서 칸을 "확인하지 못함" 대신 "아직 등록 전"으로 쓴다
+ */
+export default function OperationsPanel({ refreshKey, scope, stage }: { refreshKey: number; scope: string; stage?: RegistrationStage | null }) {
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21)
+  const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   // 구독 상태 — 따로 읽는다(못 읽어도 운영 상태는 그대로 보인다). undefined: 읽는 중 · null: 못 읽음
   const [subscription, setSubscription] = useState<TaxInvoiceSubscriptionStatus | null | undefined>(undefined);
@@ -134,15 +147,16 @@ export default function OperationsPanel({ refreshKey, scope }: { refreshKey: num
   }
 
   const { data } = load;
-  const cert = certificateView(data.certificate);
+  const cert = certificateView(data.certificate, stage);
   const bill = billingView(data.billing);
-  const sync = autoSyncView(data.autoSync, issuanceOpen);
+  const sync = autoSyncView(data.autoSync, taxOpen || cashOpen);
+  const issues = data.issues.filter((i) => i.code !== 'LAUNCH_PENDING');
 
   return (
     <Panel kicker="운영 상태" title="발급 운영 준비">
-      {data.issues.length > 0 && (
+      {issues.length > 0 && (
         <ul aria-label="확인할 안내" className="mb-3 flex flex-col gap-2">
-          {data.issues.map((issue, i) => {
+          {issues.map((issue, i) => {
             const href = issueHref(issue);
             return (
               <li key={`${issue.code}-${i}`} className="border border-boss-border bg-boss-bg px-3 py-2.5">
@@ -152,7 +166,7 @@ export default function OperationsPanel({ refreshKey, scope }: { refreshKey: num
                 </div>
                 {issue.title && issue.message && <p className="mt-1 break-keep text-[12.5px] leading-relaxed text-boss-text-secondary">{issue.message}</p>}
                 {href && (
-                  <Link href={href} className="mt-1.5 inline-block text-[12.5px] font-semibold text-boss-primary hover:underline">
+                  <Link href={href} className="boss-touch-link mt-1.5 inline-block text-[12.5px] font-semibold text-boss-primary hover:underline">
                     {issue.invoiceId != null ? '문서 보기' : ISSUE_ACTION_LABEL[issue.action]}
                   </Link>
                 )}

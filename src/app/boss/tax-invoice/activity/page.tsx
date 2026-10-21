@@ -1,11 +1,11 @@
 'use client';
 
-// 세금계산서 알림 — 내 발급 · 국세청 전송 · 취소 결과, 권한 심사 결과, 인증서 만료 안내
+// 발급 알림(목록 단추 · 화면 제목과 같은 이름, 2026-10-21) — 내 발급 · 국세청 전송 · 취소 결과, 권한 심사 결과, 인증서 만료 안내
 //
 // 전체 / 안 읽음 · 쪽 넘김 · 새로고침. 행을 열면 읽음으로 표시하고 그 문서(없으면 발급 서비스 등록)로 간다.
 // 첫 쪽을 보는 동안에는 정해진 횟수만 다시 읽고(화면이 가려지면 멈춤), 화면으로 돌아오면 한 번 더 읽는다.
 // 출시 값과 상관없이 열린다(알림 읽기는 팝빌을 부르지 않는다). 계정이 바뀌면 새로 그린다.
-// 화면 제목은 셸 헤더(nav.ts PAGE_META)가 그린다.
+// 화면 제목은 셸 헤더(nav.ts PAGE_META)가 그린다. 손가락 화면에서 누르는 칸 44px(boss-touch), 작은 글자 12px(boss-tax).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BellRing, RefreshCw } from 'lucide-react';
@@ -85,21 +85,23 @@ function ActivityScreen({ scope }: { scope: string }) {
 
   if (failure?.notDeployed && !data) {
     return (
-      <EmptyState
-        icon={BellRing}
-        title="알림 모아 보기를 준비하고 있습니다"
-        description="발급 결과 · 권한 심사 · 인증서 만료 안내를 이 화면에서 모아 볼 수 있게 됩니다."
-        action={
-          <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm">
-            발급 서비스 등록 보기
-          </ButtonLink>
-        }
-      />
+      <div className="boss-touch boss-tax">
+        <EmptyState
+          icon={BellRing}
+          title="알림 모아 보기를 준비하고 있습니다"
+          description="발급 결과 · 권한 심사 · 인증서 만료 안내를 이 화면에서 모아 볼 수 있게 됩니다."
+          action={
+            <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm">
+              발급 서비스 등록 보기
+            </ButtonLink>
+          }
+        />
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="boss-touch boss-tax flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2.5">
         <ListTabs
           ariaLabel="알림 구분"

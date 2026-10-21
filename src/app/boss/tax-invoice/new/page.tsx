@@ -9,6 +9,9 @@
 // 저장은 "작성 완료(미발급)"일 뿐 발급이 아니다. 발급은 상세 화면에서 따로 한다.
 // 입력 검증은 저장을 누를 때 한 번에 보여 주고 첫 오류 칸으로 옮긴다. 서버가 거절해도 입력은 그대로 둔다.
 // 새 문서는 작성 중인 내용을 이 탭(sessionStorage)에 보관해 화면을 오가거나 새로고침해도 이어 쓴다.
+// 보관본은 주소의 문서 종류 · 고객과 맞을 때만 되살린다. 맞지 않으면 지우지 않고 따로 두어 "이어 쓰기"로 꺼낸다(2026-10-21).
+// 품목 날짜는 작성일자를 따른다 — 새 품목 · 견적 품목은 작성일자, 작성일자를 바꾸면 다른 달인 품목 날짜도 작성일자로(2026-10-21).
+// 고객을 고르면 지난 사업자 정보(프리필)를 먼저, 남은 빈 칸만 고객 기본 정보로 채운다. 다른 고객으로 바꾸면 앞 고객이 채운 칸은 비운다.
 //
 // ?id= 수정, ?customerId= 그 고객으로 시작, ?docType=CASH 현금영수증으로 시작.
 
@@ -23,6 +26,7 @@ import { bossEstimateApi } from '@/lib/api/boss/estimate';
 import { formatBizNo, isValidBizNo, maskBizNo } from '@/lib/boss/bizno';
 import { toKoreanAmountLabel } from '@/lib/boss/koreanAmount';
 import { kstToday } from '@/lib/boss/taxInvoiceDocument';
+import { useIssuanceOpenFor } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import {
   CASH_IDENTITY_TYPES_BY_USAGE,
   cashFieldsOf,
@@ -43,6 +47,7 @@ import {
   CASH_MAX_TOTAL,
   CASH_SELF_ISSUE_NUMBER,
   CASH_TAXATION_LABEL,
+  DOC_TYPE_LABEL,
   isProviderManaged,
   type CashIdentityType,
   type CashTaxationType,
@@ -59,7 +64,6 @@ import {
   CheckLine,
   Field,
   FieldLabel,
-  MetricBox,
   Panel,
   RadioOption,
   Segmented,
@@ -67,6 +71,8 @@ import {
   TextareaField,
 } from '@/components/boss/ui';
 import { useSubmitHotkey } from '@/components/boss/layout/BossSearchContext';
+import { useBossHeaderTitle } from '@/components/boss/layout/BossHeader';
+import AmountBoxes from '@/components/boss/taxinvoice/AmountBoxes';
 
 type Row = TaxInvoiceItem & {
   key: string;
@@ -85,12 +91,16 @@ const MEMO_MAX = 500;
 /** 서버 qty 는 정수(Int) */
 const QTY_MAX = 2_147_483_647;
 const DRAFT_KEY = 'boss:tax-invoice:draft';
+/** 주소의 문서 종류 · 고객과 맞지 않아 따로 둔 보관본 — "이어 쓰기"로 꺼낸다(2026-10-21) */
+const PARKED_DRAFT_KEY = 'boss:tax-invoice:draft:other';
 /** 현금영수증 고객명 — 선택 입력, 적으면 70자까지(팝빌 customerName · 서버 검증과 같다) */
 const CASH_NAME_MAX = 70;
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('ko-KR');
 // 새 문서 기본 날짜는 서버와 같은 한국시간 오늘
 const todayIso = () => kstToday();
+/** 같은 달인가 — yyyy-MM-dd 앞 7자리 */
+const sameMonth = (a?: string | null, b?: string | null) => Boolean(a && b && a.slice(0, 7) === b.slice(0, 7));
 let rowSeq = 0;
 /**
  * [fixedKey] — 첫 화면의 빈 줄만 쓴다. 서버 그림과 브라우저 그림의 칸 id 가 같아야 한다(2026-10-17):
@@ -202,8 +212,9 @@ function AmountInput({
  * 견적 품목 → 서식 행. 견적의 공급가액 · 세액이 있으면 그대로, 없으면 단가×수량으로 계산.
  * 부가세 포함 견적(수량×단가 = 공급가액+세액)은 합계를 지키며 공급가액 · 세액을 다시 나누고
  * 단가를 공급가 기준으로 바꾼다(2026-10-16) — 예전엔 "1 × 50,000 = 45,454" 로 찍히고 발급이 막혔다.
+ * 품목 날짜는 견적 작성일이 아니라 이 문서의 작성일자[date]다(2026-10-21 — 다른 달 날짜가 서식에 찍혔다).
  */
-function fromEstimateItem(it: BossEstimateItem): Row {
+function fromEstimateItem(it: BossEstimateItem, date: string): Row {
   const qty = it.quantity ?? 1;
   let unitPrice = it.unitPrice ?? 0;
   let supply = it.supplyAmount ?? qty * unitPrice;
@@ -222,13 +233,79 @@ function fromEstimateItem(it: BossEstimateItem): Row {
     unitPrice,
     supplyAmount: supply,
     vatAmount: vat,
-    date: (it.createdDt ?? '').slice(0, 10) || todayIso(),
+    date,
     taxFree,
     fixed: true,
   });
 }
 
+/** 견적의 0원 품목(단가 · 공급가액 · 세액 모두 0) — 가져올 때 뺀다. 모두 0원이면 빼지 않는다(2026-10-21) */
+const isZeroEstimateItem = (it: BossEstimateItem) => !(it.unitPrice ?? 0) && !(it.supplyAmount ?? 0) && !(it.vatAmount ?? 0);
+
 const rowHasContent = (r: Row) => Boolean((r.name ?? '').trim() || (r.spec ?? '').trim() || (r.supplyAmount ?? 0) > 0);
+
+/**
+ * 화면 · 저장에 쓰는 행 — 현금영수증은 문서 단위 과세 구분을 모든 품목에 적용한다(품목별 면세 선택은 세금계산서에서만).
+ * 행 자체는 바꾸지 않아 세금계산서로 돌아가면 품목별 선택이 그대로 남는다.
+ * '부가세 포함'으로 넣은 줄은 받을 돈(수량 × 포함 단가)을 지키며 과세 구분이 바뀌어도 다시 나눈다.
+ */
+function effectiveRowsOf(rows: Row[], isCash: boolean, cashTaxation: CashTaxationType, vatMode: VatMode): Row[] {
+  return rows.map((r) => {
+    const noVat = isCash ? cashTaxation === 'NON_TAXABLE' : r.taxFree;
+    if (vatMode === 'IN' && r.gross != null && !r.fixed) {
+      return { ...r, taxFree: noVat, ...fromGross(r.qty ?? 0, r.gross, noVat) };
+    }
+    if (!isCash) return r;
+    return {
+      ...r,
+      taxFree: noVat,
+      // 이미 10% 규칙에 맞는 과세 세액(부가세 포함 견적을 나눈 값 등)은 그대로 둔다 — 받은 돈(합계)이 1원 달라지지 않게
+      vatAmount:
+        cashTaxation === 'TAXABLE' && (r.vatAmount ?? 0) > 0 && isValidVat(r.supplyAmount ?? 0, r.vatAmount ?? 0)
+          ? (r.vatAmount ?? 0)
+          : cashVatOf(r.supplyAmount ?? 0, cashTaxation),
+    };
+  });
+}
+
+const totalOf = (rows: Row[]) => rows.reduce((a, r) => a + (r.supplyAmount ?? 0) + (r.vatAmount ?? 0), 0);
+
+/**
+ * 단가 입력 방식 바꾸기 — 직접 넣은 단가는 그 숫자를 새 방식으로 다시 읽는다(550,000 → 별도면 합계 605,000, 포함이면 550,000).
+ * 견적 · 저장 문서에서 가져온 금액과 빈 줄은 그대로 두고 칸에 보이는 단가만 새 방식에 맞춘다(앱과 같다).
+ */
+function rowsForVatMode(rows: Row[], mode: VatMode, isCash: boolean, cashTaxation: CashTaxationType): Row[] {
+  return rows.map((r) => {
+    if (r.fixed) return r;
+    if (mode === 'IN') {
+      const gross = r.unitPrice ?? 0;
+      if (gross <= 0) return { ...r, gross: null };
+      return { ...r, gross, ...fromGross(r.qty ?? 0, gross, isCash ? cashTaxation === 'NON_TAXABLE' : r.taxFree) };
+    }
+    if (r.gross == null) return r;
+    const unitPrice = r.gross;
+    const supplyAmount = Math.round((r.qty ?? 0) * unitPrice);
+    return { ...r, gross: null, unitPrice, supplyAmount, vatAmount: vatOf(supplyAmount, r.taxFree) };
+  });
+}
+
+/** 부가세 포함으로 넣어 단가 × 수량이 공급가액과 나누어떨어지지 않는 줄 — 저장 단가는 원 단위로 반올림된다(2026-10-21) */
+const unitPriceRounded = (r: Row, vatMode: VatMode) =>
+  vatMode === 'IN' && (r.qty ?? 0) > 1 && (r.unitPrice ?? 0) * (r.qty ?? 0) !== (r.supplyAmount ?? 0);
+
+/** 고객을 고르면 저절로 채우는 칸(지난 사업자 정보 · 고객 기본 정보) */
+type AutoField = 'buyerName' | 'buyerBizNo' | 'buyerCeo' | 'buyerAddress' | 'buyerBizType' | 'buyerBizKind' | 'buyerEmail' | 'buyerPhone';
+type AutoFilled = Partial<Record<AutoField, string>>;
+const EMPTY_FIELDS: Record<AutoField, string> = {
+  buyerName: '',
+  buyerBizNo: '',
+  buyerCeo: '',
+  buyerAddress: '',
+  buyerBizType: '',
+  buyerBizKind: '',
+  buyerEmail: '',
+  buyerPhone: '',
+};
 
 type FieldKey = 'buyerName' | 'buyerBizNo' | 'buyerEmail' | 'cashIdentityNum' | 'legacyConfirm' | 'items' | 'issueDate' | 'memo';
 type Problem = { field: FieldKey; message: string; /** 포커스를 옮길 요소 id */ target: string };
@@ -257,11 +334,13 @@ type Draft = {
   vatMode?: VatMode;
   rows: Row[];
   memo: string;
+  /** 고객을 골라 저절로 채운 칸 — 다른 고객으로 바꿀 때 비운다(예전 보관본에는 없다) */
+  autoFilled?: AutoFilled;
 };
 
-function readDraft(): Draft | null {
+function readDraft(key = DRAFT_KEY): Draft | null {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const d = JSON.parse(raw) as Draft;
     return d && Array.isArray(d.rows) && (d.docType === 'TAX' || d.docType === 'CASH') ? d : null;
@@ -270,13 +349,28 @@ function readDraft(): Draft | null {
   }
 }
 
-function clearDraft() {
+function writeDraft(key: string, d: Draft) {
   try {
-    sessionStorage.removeItem(DRAFT_KEY);
+    sessionStorage.setItem(key, JSON.stringify(d));
+  } catch {
+    // 저장소가 막혀 있으면 보관만 못 한다
+  }
+}
+
+function removeDraft(key: string) {
+  try {
+    sessionStorage.removeItem(key);
   } catch {
     // 저장소를 못 쓰면 보관본도 없다
   }
 }
+
+function clearDraft() {
+  removeDraft(DRAFT_KEY);
+}
+
+const draftIsEmpty = (d: Draft) =>
+  !d.customerId && !d.buyerName.trim() && !d.buyerBizNo.trim() && !d.cashIdentityNum.trim() && !d.memo.trim() && !d.rows.some(rowHasContent);
 
 /** 서버 오류 문구로 칸을 짐작한다 — 모르면 null(위 알림으로만) */
 function fieldFromServerMessage(msg: string, docType: TaxInvoiceDocType): FieldKey | null {
@@ -355,8 +449,14 @@ function TaxInvoiceForm() {
   const [rows, setRows] = useState<Row[]>(() => [newRow(undefined, 'r0')]);
   const [memo, setMemo] = useState('');
   const [itemsLoaded, setItemsLoaded] = useState<string | null>(null);
-  // 이미 적은 품목이 있으면 견적 품목으로 바로 덮지 않고 묻는다
-  const [pendingEstimate, setPendingEstimate] = useState<{ rows: Row[]; estimateId: number | null } | null>(null);
+  // 이미 적은 품목이 있으면 견적 품목으로 바로 덮지 않고 묻는다. skipped = 뺀 0원 품목 수
+  const [pendingEstimate, setPendingEstimate] = useState<{ rows: Row[]; estimateId: number | null; skipped: number } | null>(null);
+  // 견적에서 가져올 때 뺀 0원 품목 수 — 품목 칸 위에 한 줄로 알린다
+  const [skippedZero, setSkippedZero] = useState(0);
+  // 단가 입력 방식을 바꿔 합계가 바뀌었을 때 한 줄 안내(2026-10-21)
+  const [vatNotice, setVatNotice] = useState<string | null>(null);
+  // 주소의 문서 종류 · 고객과 맞지 않아 따로 둔 보관본 — "이어 쓰기"로 꺼낸다
+  const [otherDraft, setOtherDraft] = useState<Draft | null>(null);
   // 전자 발급한 문서는 고칠 수 없다 — 서버도 막지만 화면에서 먼저 닫는다
   const [providerLocked, setProviderLocked] = useState(false);
   // 예전 현금영수증 기록 — 용도 · 식별번호를 추정해 채웠다
@@ -376,6 +476,13 @@ function TaxInvoiceForm() {
   const mounted = useRef(true);
   // 늦게 온 견적 품목이 이미 적은 품목을 덮지 않았는지 볼 때 쓴다
   const rowsRef = useRef<Row[]>(rows);
+  // 견적에서 가져와 아직 손대지 않은 품목 — 다른 고객으로 바꾸면 비운다
+  const autoRows = useRef<Row[] | null>(null);
+  // 늦게 온 견적 품목의 날짜를 지금 작성일자로
+  const issueDateRef = useRef(issueDate);
+  // 고객을 골라 저절로 채운 칸 · 채우기 직전 칸 값(effect 안에서 최신 값을 읽으려고 둔다)
+  const autoFilled = useRef<AutoFilled>({});
+  const fieldsRef = useRef<Record<AutoField, string>>({ ...EMPTY_FIELDS });
   const serverErrorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -388,6 +495,67 @@ function TaxInvoiceForm() {
   useEffect(() => {
     rowsRef.current = rows;
   }, [rows]);
+
+  useEffect(() => {
+    issueDateRef.current = issueDate;
+  }, [issueDate]);
+
+  // 아래 채우기 effect 보다 먼저 둔다 — 같은 그림에서 최신 칸 값을 먼저 적어 둔다
+  useEffect(() => {
+    fieldsRef.current = { buyerName, buyerBizNo, buyerCeo, buyerAddress, buyerBizType, buyerBizKind, buyerEmail, buyerPhone };
+  }, [buyerName, buyerBizNo, buyerCeo, buyerAddress, buyerBizType, buyerBizKind, buyerEmail, buyerPhone]);
+
+  const setAutoField = useCallback((key: AutoField, value: string) => {
+    switch (key) {
+      case 'buyerName':
+        setBuyerName(value);
+        break;
+      case 'buyerBizNo':
+        setBuyerBizNo(value);
+        break;
+      case 'buyerCeo':
+        setBuyerCeo(value);
+        break;
+      case 'buyerAddress':
+        setBuyerAddress(value);
+        break;
+      case 'buyerBizType':
+        setBuyerBizType(value);
+        break;
+      case 'buyerBizKind':
+        setBuyerBizKind(value);
+        break;
+      case 'buyerEmail':
+        setBuyerEmail(value);
+        break;
+      case 'buyerPhone':
+        setBuyerPhone(value);
+        break;
+    }
+  }, []);
+
+  /** 비어 있는 칸만 채우고, 채운 값을 적어 둔다(다른 고객으로 바꿀 때 비우려고) */
+  const fillEmpty = useCallback(
+    (key: AutoField, value: string | null | undefined) => {
+      const v = (value ?? '').trim();
+      if (!v || fieldsRef.current[key].trim()) return;
+      fieldsRef.current = { ...fieldsRef.current, [key]: v };
+      autoFilled.current = { ...autoFilled.current, [key]: v };
+      setAutoField(key, v);
+    },
+    [setAutoField],
+  );
+
+  /** 앞 고객이 채운 칸 중 사장님이 고치지 않은 칸을 비운다 */
+  const clearAutoFilled = useCallback(() => {
+    const filled = autoFilled.current;
+    autoFilled.current = {};
+    (Object.keys(filled) as AutoField[]).forEach((key) => {
+      if (fieldsRef.current[key] !== filled[key]) return;
+      fieldsRef.current = { ...fieldsRef.current, [key]: '' };
+      setAutoField(key, '');
+    });
+  }, [setAutoField]);
 
   // 고객 목록
   useEffect(() => {
@@ -407,38 +575,97 @@ function TaxInvoiceForm() {
     };
   }, []);
 
-  // 새 문서 — 이 탭에 보관해 둔 작성본을 되살린다. 다른 고객으로 시작했으면 되살리지 않는다
+  /** 보관본을 칸에 넣는다 — 처음 열 때 · '이어 쓰기' */
+  const applyDraft = useCallback((d: Draft) => {
+    setDocType(d.docType);
+    setPayType(d.payType);
+    setPayTypeTouched(d.payTypeTouched);
+    setCustomerId(d.customerId);
+    setEstimateId(d.estimateId);
+    setIssueDate(d.issueDate || todayIso());
+    setBuyerName(d.buyerName);
+    setBuyerBizNo(d.buyerBizNo);
+    setBuyerCeo(d.buyerCeo);
+    setBuyerAddress(d.buyerAddress);
+    setBuyerBizType(d.buyerBizType);
+    setBuyerBizKind(d.buyerBizKind);
+    setBuyerEmail(d.buyerEmail);
+    setBuyerPhone(d.buyerPhone);
+    setCashUsage(d.cashUsage);
+    setCashIdentityType(d.cashIdentityType);
+    setCashIdentityNum(d.cashIdentityNum);
+    setCashTaxation(d.cashTaxation === 'NON_TAXABLE' ? 'NON_TAXABLE' : 'TAXABLE');
+    setVatMode(d.vatMode === 'IN' || d.vatMode === 'EX' ? d.vatMode : 'EX');
+    setRows(d.rows.length ? d.rows.map((r) => newRow({ ...r })) : [newRow({ date: d.issueDate || todayIso() })]);
+    setMemo(d.memo);
+    // 되살린 품목을 견적 품목으로 덮지 않게
+    setItemsLoaded(d.customerId || null);
+    setPendingEstimate(null);
+    setSkippedZero(0);
+    setVatNotice(null);
+    autoRows.current = null;
+    autoFilled.current = { ...(d.autoFilled ?? {}) };
+    setDraftRestored(true);
+  }, []);
+
+  /** 빈 양식 — 주소의 문서 종류 · 고객으로(보관본은 건드리지 않는다) */
+  const applyBlank = useCallback(() => {
+    const today = todayIso();
+    setDocType(presetDocType);
+    setPayType(presetDocType === 'CASH' ? 'RECEIPT' : 'CLAIM');
+    setPayTypeTouched(false);
+    setCustomerId(presetCustomerId ?? '');
+    setEstimateId(null);
+    setIssueDate(today);
+    setBuyerName('');
+    setBuyerBizNo('');
+    setBuyerCeo('');
+    setBuyerAddress('');
+    setBuyerBizType('');
+    setBuyerBizKind('');
+    setBuyerEmail('');
+    setBuyerPhone('');
+    setCashUsage('DEDUCTION');
+    setCashIdentityType('PHONE');
+    setCashIdentityNum('');
+    setCashTaxation('TAXABLE');
+    setVatMode(presetDocType === 'CASH' ? 'IN' : 'EX');
+    setRows([newRow({ date: today })]);
+    setMemo('');
+    setItemsLoaded(null);
+    setPendingEstimate(null);
+    setSkippedZero(0);
+    setVatNotice(null);
+    autoRows.current = null;
+    autoFilled.current = {};
+    setDraftRestored(false);
+  }, [presetDocType, presetCustomerId]);
+
+  // 새 문서 — 이 탭에 보관해 둔 작성본을 되살린다.
+  // 주소의 문서 종류(?docType=CASH 등) · 고객과 맞는 보관본만 되살리고, 맞지 않는 보관본은 지우지 않고 따로 두어
+  // 위에 "작성 중이던 세금계산서가 있어요 — 이어 쓰기"로 알린다(2026-10-21 — 현금영수증 작성을 눌러도 세금계산서 보관본이 열렸다).
   useEffect(() => {
     if (editId) return;
-    const d = readDraft();
-    if (d && (!presetCustomerId || presetCustomerId === d.customerId)) {
-      setDocType(d.docType);
-      setPayType(d.payType);
-      setPayTypeTouched(d.payTypeTouched);
-      setCustomerId(d.customerId);
-      setEstimateId(d.estimateId);
-      setIssueDate(d.issueDate || todayIso());
-      setBuyerName(d.buyerName);
-      setBuyerBizNo(d.buyerBizNo);
-      setBuyerCeo(d.buyerCeo);
-      setBuyerAddress(d.buyerAddress);
-      setBuyerBizType(d.buyerBizType);
-      setBuyerBizKind(d.buyerBizKind);
-      setBuyerEmail(d.buyerEmail);
-      setBuyerPhone(d.buyerPhone);
-      setCashUsage(d.cashUsage);
-      setCashIdentityType(d.cashIdentityType);
-      setCashIdentityNum(d.cashIdentityNum);
-      setCashTaxation(d.cashTaxation === 'NON_TAXABLE' ? 'NON_TAXABLE' : 'TAXABLE');
-      setVatMode(d.vatMode === 'IN' || d.vatMode === 'EX' ? d.vatMode : 'EX');
-      setRows(d.rows.length ? d.rows.map((r) => newRow({ ...r })) : [newRow()]);
-      setMemo(d.memo);
-      // 되살린 품목을 견적 품목으로 덮지 않게
-      setItemsLoaded(d.customerId || null);
-      setDraftRestored(true);
+    const main = readDraft(DRAFT_KEY);
+    const parked = readDraft(PARKED_DRAFT_KEY);
+    const fits = (d: Draft) => d.docType === presetDocType && (!presetCustomerId || presetCustomerId === d.customerId);
+    let other: Draft | null;
+    if (main && fits(main)) {
+      applyDraft(main);
+      other = parked;
+    } else if (parked && fits(parked)) {
+      applyDraft(parked);
+      other = main;
+    } else {
+      applyBlank();
+      other = main ?? parked;
     }
+    // 지금 칸(DRAFT_KEY)은 이 화면의 작성본이 쓴다 — 맞지 않는 보관본은 따로 둔 칸으로 옮겨 지킨다
+    if (other) writeDraft(PARKED_DRAFT_KEY, other);
+    else removeDraft(PARKED_DRAFT_KEY);
+    setOtherDraft(other);
     setDraftReady(true);
-  }, [editId, presetCustomerId]);
+  }, [editId, presetCustomerId, presetDocType, applyDraft, applyBlank]);
 
   // 수정 모드 — 기존 건 읽기
   useEffect(() => {
@@ -481,11 +708,24 @@ function TaxInvoiceForm() {
           const items = Array.isArray(d.items) ? d.items : [];
           // 저장된 단가는 공급가액 기준이라 '부가세 별도'로 보여 준다. 저장된 금액은 수량 · 단가를 고치기 전까지 그대로다
           setVatMode('EX');
+          // 날짜가 없는 품목은 작성일자로(2026-10-21 — 예전엔 오늘 날짜가 들어가 작성일자와 달이 어긋날 수 있었다)
+          const docDate = d.issueDate ?? todayIso();
           setRows(
             items.length > 0
               // 세액 0원이 과세로도 맞는 소액(공급가 9원 이하)은 면세로 짐작하지 않는다(2026-10-16)
-              ? items.map((it) => newRow({ ...it, fixed: true, taxFree: (it.vatAmount ?? 0) === 0 && !isValidVat(it.supplyAmount ?? 0, 0) }))
-              : [newRow({ supplyAmount: d.supplyAmount, vatAmount: d.vatAmount, name: d.itemSummary ?? '', fixed: true, taxFree: d.vatAmount === 0 && !isValidVat(d.supplyAmount, 0) })],
+              ? items.map((it) =>
+                  newRow({ ...it, date: it.date || docDate, fixed: true, taxFree: (it.vatAmount ?? 0) === 0 && !isValidVat(it.supplyAmount ?? 0, 0) }),
+                )
+              : [
+                  newRow({
+                    supplyAmount: d.supplyAmount,
+                    vatAmount: d.vatAmount,
+                    name: d.itemSummary ?? '',
+                    date: docDate,
+                    fixed: true,
+                    taxFree: d.vatAmount === 0 && !isValidVat(d.supplyAmount, 0),
+                  }),
+                ],
           );
           setItemsLoaded(d.customerId ? String(d.customerId) : null);
         } else {
@@ -502,17 +742,8 @@ function TaxInvoiceForm() {
     };
   }, [editId]);
 
-  // 고객 기본 정보(이름 · 전화 · 주소) — 이미 값이 있으면(보관본 · 수정 모드 · 직접 입력) 덮어쓰지 않는다
-  useEffect(() => {
-    if (!customerId) return;
-    const customer = customers.find((c) => String(c.id) === customerId);
-    if (!customer) return;
-    setBuyerName((v) => v || customer.name || '');
-    setBuyerPhone((v) => v || customer.phone || '');
-    setBuyerAddress((v) => v || [customer.address1, customer.address2].filter(Boolean).join(' '));
-  }, [customerId, customers]);
-
-  // 고객 선택 → 견적 품목 · 사업자 정보 프리필. 이미 읽은 고객이면 건너뛴다
+  // 고객 선택 → 견적 품목 · 지난 사업자 정보(프리필). 이미 읽은 고객이면 건너뛴다
+  // 프리필을 먼저 비어 있는 칸에 넣는다 — 예전엔 고객 기본 정보(이름 · 주소)가 먼저 들어가 프리필 상호 · 주소가 못 들어갔다(2026-10-21)
   useEffect(() => {
     if (!customerId || itemsLoaded === customerId || !draftReady) return;
     let alive = true;
@@ -525,26 +756,32 @@ function TaxInvoiceForm() {
         ]);
         if (!alive) return;
         if (itemsRes.success !== false && Array.isArray(itemsRes.data) && itemsRes.data.length > 0) {
-          const next = itemsRes.data.map(fromEstimateItem);
+          // 0원 품목(단가 · 공급가액 · 세액 모두 0)은 뺀다 — 모두 0원이면 빼지 않는다
+          const nonZero = itemsRes.data.filter((it) => !isZeroEstimateItem(it));
+          const picked = nonZero.length > 0 ? nonZero : itemsRes.data;
+          const skipped = itemsRes.data.length - picked.length;
+          const next = picked.map((it) => fromEstimateItem(it, issueDateRef.current || todayIso()));
           const nextEstimateId = itemsRes.data[0].estimateId ?? null;
           if (rowsRef.current.some(rowHasContent)) {
-            setPendingEstimate({ rows: next, estimateId: nextEstimateId });
+            setPendingEstimate({ rows: next, estimateId: nextEstimateId, skipped });
           } else {
+            autoRows.current = next;
             setRows(next);
             setEstimateId(nextEstimateId);
-            toast.success(`견적 품목 ${next.length}건을 불러왔습니다.`);
+            setSkippedZero(skipped);
+            toast.success(`견적 품목 ${next.length}건을 불러왔습니다.${skipped > 0 ? ` 0원 품목 ${skipped}건은 뺐습니다.` : ''}`);
           }
         }
         const p = prefillRes.success !== false ? prefillRes.data : null;
         if (p) {
-          setBuyerName((v) => v || p.buyerName || '');
-          setBuyerBizNo((v) => v || (p.buyerBizNo ? maskBizNo(p.buyerBizNo) : ''));
-          setBuyerCeo((v) => v || p.buyerCeo || '');
-          setBuyerAddress((v) => v || p.buyerAddress || '');
-          setBuyerBizType((v) => v || p.buyerBizType || '');
-          setBuyerBizKind((v) => v || p.buyerBizKind || '');
-          setBuyerEmail((v) => v || p.buyerEmail || '');
-          setBuyerPhone((v) => v || p.buyerPhone || '');
+          fillEmpty('buyerName', p.buyerName);
+          fillEmpty('buyerBizNo', p.buyerBizNo ? maskBizNo(p.buyerBizNo) : '');
+          fillEmpty('buyerCeo', p.buyerCeo);
+          fillEmpty('buyerAddress', p.buyerAddress);
+          fillEmpty('buyerBizType', p.buyerBizType);
+          fillEmpty('buyerBizKind', p.buyerBizKind);
+          fillEmpty('buyerEmail', p.buyerEmail);
+          fillEmpty('buyerPhone', p.buyerPhone);
         }
       } catch {
         // 품목 · 프리필 실패는 직접 입력으로 이어간다
@@ -555,53 +792,42 @@ function TaxInvoiceForm() {
     return () => {
       alive = false;
     };
-  }, [customerId, itemsLoaded, draftReady]);
+  }, [customerId, itemsLoaded, draftReady, fillEmpty]);
+
+  // 고객 기본 정보(이름 · 전화 · 주소) — 프리필을 읽은 뒤 남은 빈 칸만 채운다.
+  // 이미 값이 있으면(프리필 · 보관본 · 수정 모드 · 직접 입력) 덮어쓰지 않는다
+  useEffect(() => {
+    if (!customerId || itemsLoaded !== customerId) return;
+    const customer = customers.find((c) => String(c.id) === customerId);
+    if (!customer) return;
+    fillEmpty('buyerName', customer.name);
+    fillEmpty('buyerPhone', customer.phone);
+    fillEmpty('buyerAddress', [customer.address1, customer.address2].filter(Boolean).join(' '));
+  }, [customerId, customers, itemsLoaded, fillEmpty]);
+
+  // 지금 칸 값 그대로의 작성본
+  const currentDraft = useMemo<Draft>(
+    () => ({
+      docType, payType, payTypeTouched, customerId, estimateId, issueDate, buyerName, buyerBizNo, buyerCeo, buyerAddress,
+      buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation, vatMode, rows, memo,
+    }),
+    [
+      docType, payType, payTypeTouched, customerId, estimateId, issueDate, buyerName, buyerBizNo, buyerCeo, buyerAddress,
+      buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation, vatMode, rows, memo,
+    ],
+  );
 
   // 새 문서 작성본 보관 — 입력이 바뀔 때마다
   useEffect(() => {
     if (editId || !draftReady) return;
-    const draft: Draft = {
-      docType, payType, payTypeTouched, customerId, estimateId, issueDate, buyerName, buyerBizNo, buyerCeo, buyerAddress,
-      buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation, vatMode, rows, memo,
-    };
-    const empty =
-      !customerId && !buyerName.trim() && !buyerBizNo.trim() && !cashIdentityNum.trim() && !memo.trim() && !rows.some(rowHasContent);
-    try {
-      if (empty) sessionStorage.removeItem(DRAFT_KEY);
-      else sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    } catch {
-      // 저장소가 막혀 있으면 보관만 못 한다
-    }
-  }, [
-    editId, draftReady, docType, payType, payTypeTouched, customerId, estimateId, issueDate, buyerName, buyerBizNo, buyerCeo,
-    buyerAddress, buyerBizType, buyerBizKind, buyerEmail, buyerPhone, cashUsage, cashIdentityType, cashIdentityNum, cashTaxation,
-    vatMode, rows, memo,
-  ]);
+    if (draftIsEmpty(currentDraft)) removeDraft(DRAFT_KEY);
+    else writeDraft(DRAFT_KEY, { ...currentDraft, autoFilled: autoFilled.current });
+  }, [editId, draftReady, currentDraft]);
 
   const isCash = docType === 'CASH';
-  // 현금영수증은 문서 단위 과세 구분을 모든 품목에 적용한다(품목별 면세 선택은 세금계산서에서만).
-  // 행 자체는 바꾸지 않아 세금계산서로 돌아가면 품목별 선택이 그대로 남는다.
-  // '부가세 포함'으로 넣은 줄은 받을 돈(수량 × 포함 단가)을 지키며 과세 구분이 바뀌어도 다시 나눈다.
-  const effectiveRows = useMemo(
-    () =>
-      rows.map((r) => {
-        const noVat = isCash ? cashTaxation === 'NON_TAXABLE' : r.taxFree;
-        if (vatMode === 'IN' && r.gross != null && !r.fixed) {
-          return { ...r, taxFree: noVat, ...fromGross(r.qty ?? 0, r.gross, noVat) };
-        }
-        if (!isCash) return r;
-        return {
-          ...r,
-          taxFree: noVat,
-          // 이미 10% 규칙에 맞는 과세 세액(부가세 포함 견적을 나눈 값 등)은 그대로 둔다 — 받은 돈(합계)이 1원 달라지지 않게
-          vatAmount:
-            cashTaxation === 'TAXABLE' && (r.vatAmount ?? 0) > 0 && isValidVat(r.supplyAmount ?? 0, r.vatAmount ?? 0)
-              ? (r.vatAmount ?? 0)
-              : cashVatOf(r.supplyAmount ?? 0, cashTaxation),
-        };
-      }),
-    [isCash, rows, cashTaxation, vatMode],
-  );
+  // 이 문서 종류의 전자 발급이 열렸는지 — '작성부터 발급까지' 3단계 문장을 고른다(현금영수증은 따로 연다)
+  const issuanceOpenForDoc = useIssuanceOpenFor(docType);
+  const effectiveRows = useMemo(() => effectiveRowsOf(rows, isCash, cashTaxation, vatMode), [isCash, rows, cashTaxation, vatMode]);
   const contentRows = useMemo(() => effectiveRows.filter(rowHasContent), [effectiveRows]);
   const totals = useMemo(() => {
     const supply = effectiveRows.reduce((a, r) => a + (r.supplyAmount ?? 0), 0);
@@ -658,7 +884,8 @@ function TaxInvoiceForm() {
   };
 
   /** 품목 한 줄 고치기 — [price] 는 칸에 넣은 단가(입력 방식에 따라 부가세 별도 · 포함) */
-  const updateRow = (key: string, patch: Partial<Row> & { price?: number }) =>
+  const updateRow = (key: string, patch: Partial<Row> & { price?: number }) => {
+    setVatNotice(null);
     setRows((rs) =>
       rs.map((r) => {
         if (r.key !== key) return r;
@@ -683,34 +910,75 @@ function TaxInvoiceForm() {
         return next;
       }),
     );
+  };
 
   /**
-   * 단가 입력 방식 바꾸기 — 직접 넣은 단가는 그 숫자를 새 방식으로 다시 읽는다(550,000 → 별도면 합계 605,000, 포함이면 550,000).
-   * 견적 · 저장 문서에서 가져온 금액과 빈 줄은 그대로 두고 칸에 보이는 단가만 새 방식에 맞춘다(앱과 같다).
+   * 단가 입력 방식 바꾸기(규칙은 rowsForVatMode). 넣은 숫자는 그대로이고 뜻만 바뀌어 합계가 달라질 수 있어
+   * 바뀐 합계를 한 줄로 알린다(2026-10-21 — 3 × 600,000 별도 1,980,000 → 포함으로 바꾸면 조용히 1,800,000 이 됐다).
    */
   const changeVatMode = (mode: VatMode) => {
     if (mode === vatMode) return;
+    const next = rowsForVatMode(rows, mode, isCash, cashTaxation);
+    const before = totalOf(effectiveRowsOf(rows, isCash, cashTaxation, vatMode));
+    const after = totalOf(effectiveRowsOf(next, isCash, cashTaxation, mode));
+    if (autoRows.current === rows) autoRows.current = next;
     setVatMode(mode);
-    setRows((rs) =>
-      rs.map((r) => {
-        if (r.fixed) return r;
-        if (mode === 'IN') {
-          const gross = r.unitPrice ?? 0;
-          if (gross <= 0) return { ...r, gross: null };
-          return { ...r, gross, ...fromGross(r.qty ?? 0, gross, isCash ? cashTaxation === 'NON_TAXABLE' : r.taxFree) };
-        }
-        if (r.gross == null) return r;
-        const unitPrice = r.gross;
-        const supplyAmount = Math.round((r.qty ?? 0) * unitPrice);
-        return { ...r, gross: null, unitPrice, supplyAmount, vatAmount: vatOf(supplyAmount, r.taxFree) };
-      }),
-    );
+    setRows(next);
+    setVatNotice(before !== after ? `합계가 ${fmt(before)}원 → ${fmt(after)}원으로 바뀌었습니다.` : null);
   };
 
-  // 품목을 더하면 새 줄의 품목 칸으로 바로 옮긴다
+  /**
+   * 작성일자 바꾸기 — 품목 날짜는 작성일자를 따른다(2026-10-21, 서버도 막는다).
+   * 작성일자와 같던 품목 날짜는 함께 옮기고, 작성일자와 다른 달인 품목 날짜는 작성일자로 맞춘다.
+   */
+  const changeIssueDate = (next: string) => {
+    const prev = issueDate;
+    setIssueDate(next);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(next)) return;
+    const moved = rows.map((r) => (r.date === prev || !sameMonth(r.date, next) ? { ...r, date: next } : r));
+    if (autoRows.current === rows) autoRows.current = moved;
+    setRows(moved);
+  };
+
+  /** 고객 바꾸기 — 앞 고객이 채운 칸 · 앞 고객 견적에서 가져와 손대지 않은 품목은 비우고 새 고객 것을 읽는다 */
+  const changeCustomer = (next: string) => {
+    clearAutoFilled();
+    if (autoRows.current && autoRows.current === rowsRef.current) setRows([newRow({ date: issueDate || todayIso() })]);
+    autoRows.current = null;
+    setEstimateId(null);
+    setSkippedZero(0);
+    setCustomerId(next);
+    setItemsLoaded(null);
+    setPendingEstimate(null);
+  };
+
+  /** 따로 둔 보관본 이어 쓰기 — 지금 적던 내용이 있으면 그 자리에 바꿔 둔다(어느 쪽도 지우지 않는다) */
+  const resumeOtherDraft = () => {
+    if (!otherDraft) return;
+    const current: Draft = { ...currentDraft, autoFilled: autoFilled.current };
+    applyDraft(otherDraft);
+    if (draftIsEmpty(current)) {
+      removeDraft(PARKED_DRAFT_KEY);
+      setOtherDraft(null);
+    } else {
+      const parked = current;
+      writeDraft(PARKED_DRAFT_KEY, parked);
+      setOtherDraft(parked);
+    }
+    setShowErrors(false);
+    setServerError(null);
+    setServerFieldError(null);
+  };
+
+  const discardOtherDraft = () => {
+    removeDraft(PARKED_DRAFT_KEY);
+    setOtherDraft(null);
+  };
+
+  // 품목을 더하면 새 줄의 품목 칸으로 바로 옮긴다. 새 품목 날짜는 작성일자
   const focusRowKey = useRef<string | null>(null);
   const addRow = () => {
-    const r = newRow();
+    const r = newRow({ date: issueDate || todayIso() });
     focusRowKey.current = r.key;
     setRows((rs) => [...rs, r]);
   };
@@ -746,32 +1014,10 @@ function TaxInvoiceForm() {
     setServerFieldError(null);
   };
 
+  // 새로 작성 — 지금 보관본만 지운다(따로 둔 보관본은 남는다)
   const resetForm = () => {
     clearDraft();
-    setDraftRestored(false);
-    setDocType(presetDocType);
-    setPayType(presetDocType === 'CASH' ? 'RECEIPT' : 'CLAIM');
-    setPayTypeTouched(false);
-    setCustomerId(presetCustomerId ?? '');
-    setEstimateId(null);
-    setIssueDate(todayIso());
-    setBuyerName('');
-    setBuyerBizNo('');
-    setBuyerCeo('');
-    setBuyerAddress('');
-    setBuyerBizType('');
-    setBuyerBizKind('');
-    setBuyerEmail('');
-    setBuyerPhone('');
-    setCashUsage('DEDUCTION');
-    setCashIdentityType('PHONE');
-    setCashIdentityNum('');
-    setCashTaxation('TAXABLE');
-    setVatMode(presetDocType === 'CASH' ? 'IN' : 'EX');
-    setRows([newRow()]);
-    setMemo('');
-    setItemsLoaded(null);
-    setPendingEstimate(null);
+    applyBlank();
     setShowErrors(false);
     setServerError(null);
     setServerFieldError(null);
@@ -814,6 +1060,8 @@ function TaxInvoiceForm() {
         totalAmount: totals.total,
         items: contentRows.map(({ key: _k, taxFree: _t, gross: _g, fixed: _f, ...rest }) => ({
           ...rest,
+          // 품목 날짜는 작성일자와 같은 달로 — 예전 보관본 · 견적 날짜가 다른 달이면 작성일자로(서버도 막는다)
+          date: sameMonth(rest.date, issueDate) ? rest.date : issueDate,
           name: (rest.name ?? '').trim(),
           spec: (rest.spec ?? '').trim() || null,
         })),
@@ -864,6 +1112,8 @@ function TaxInvoiceForm() {
 
   const handleHotkey = useCallback(() => void submit('detail'), [submit]);
   useSubmitHotkey(handleHotkey, canSubmit);
+  // 수정 화면 머리 제목 — 문서를 읽으면 '세금계산서 수정' · '현금영수증 수정'(2026-10-21 — 예전엔 수정인데도 '작성')
+  useBossHeaderTitle(editId && !loadingEdit && !loadError ? `${DOC_TYPE_LABEL[docType]} 수정` : null, '저장한 내용을 고칩니다. 저장은 발급이 아닙니다.');
   // 저장 단축키 표시 — 서버 그림과 맞추려고 그린 뒤 정한다
   const [hotkeyLabel, setHotkeyLabel] = useState<string | null>(null);
   useEffect(() => {
@@ -898,8 +1148,35 @@ function TaxInvoiceForm() {
   const identityOptions = CASH_IDENTITY_TYPES_BY_USAGE[cashUsage];
   const errClass = (f: FieldKey) => (fieldError(f) ? 'text-boss-error' : '');
 
+  // 확인할 것(누르면 그 칸으로) — 넓은 화면은 오른쪽, 휴대폰 · 태블릿은 저장 단추 바로 위(2026-10-21 — 저장 단추 아래에 있어 지나쳐야 보였다)
+  const checklist = (className: string) => (
+    <Panel className={className} kicker="확인할 것" title={problems.length === 0 ? '저장할 수 있습니다' : `${problems.length}항목`}>
+      {problems.length === 0 ? (
+        <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+          {isCash
+            ? `${cashUsage === 'DEDUCTION' ? '소득공제용' : '지출증빙용'} · ${formatCashIdentity(cashIdentityType, cashIdentityType === 'SELF' ? CASH_SELF_ISSUE_NUMBER : cashIdentityNum)} · ${CASH_TAXATION_LABEL[cashTaxation]} · 합계 ${fmt(totals.total)}원`
+            : `${buyerName || '공급받는자'} · 합계 ${fmt(totals.total)}원`}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {problems.map((p, i) => (
+            <li key={`${p.target}-${i}`}>
+              <button
+                type="button"
+                className={`boss-touch-link text-left text-[12.5px] leading-snug hover:underline ${showErrors ? 'text-boss-error' : 'text-boss-text-secondary'}`}
+                onClick={() => focusTarget(p.target)}
+              >
+                · {p.message}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+
   return (
-    <div className="boss-touch grid max-w-[1180px] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <div className="boss-touch boss-tax grid max-w-[1180px] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
       <div className="flex min-w-0 flex-col gap-4">
         {serverError && (
           <div ref={serverErrorRef} tabIndex={-1} className="outline-none">
@@ -928,6 +1205,25 @@ function TaxInvoiceForm() {
             }
           >
             작성 중이던 내용을 불러왔습니다. 처음부터 쓰려면 새로 작성을 누르세요.
+          </AlertBanner>
+        )}
+        {otherDraft && !editId && (
+          <AlertBanner
+            tone="info"
+            action={
+              <div className="flex gap-2">
+                <Button variant="primary" size="sm" onClick={resumeOtherDraft}>
+                  이어 쓰기
+                </Button>
+                <Button variant="secondary" size="sm" onClick={discardOtherDraft}>
+                  버리기
+                </Button>
+              </div>
+            }
+          >
+            작성 중이던 {DOC_TYPE_LABEL[otherDraft.docType]}
+            {otherDraft.buyerName.trim() ? `(${otherDraft.buyerName.trim()})` : ''}
+            {otherDraft.docType === 'CASH' ? '이' : '가'} 있어요. 이어 쓰려면 이어 쓰기를 누르세요.
           </AlertBanner>
         )}
         {legacyInferred && isCash && (
@@ -969,11 +1265,7 @@ function TaxInvoiceForm() {
                   id="customerId"
                   className="boss-input"
                   value={customerId}
-                  onChange={(e) => {
-                    setCustomerId(e.target.value);
-                    setItemsLoaded(null);
-                    setPendingEstimate(null);
-                  }}
+                  onChange={(e) => changeCustomer(e.target.value)}
                   disabled={customersLoading}
                 >
                   <option value="">직접 입력 (고객 연결 없음)</option>
@@ -986,7 +1278,7 @@ function TaxInvoiceForm() {
                   ))}
                 </select>
                 <p className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">
-                  고르면 그 고객의 견적 품목과 이전에 받아 둔 사업자 정보를 채웁니다. 이미 적은 칸은 덮어쓰지 않습니다.
+                  고르면 그 고객의 견적 품목과 이전에 받아 둔 사업자 정보를 채웁니다. 이미 적은 칸은 덮어쓰지 않고, 다른 고객으로 바꾸면 앞 고객 정보는 지웁니다.
                 </p>
               </div>
             </div>
@@ -1219,8 +1511,13 @@ function TaxInvoiceForm() {
                         variant="primary"
                         size="sm"
                         onClick={() => {
-                          setRows(pendingEstimate.rows);
+                          // 기다리는 동안 작성일자를 바꿨을 수 있다 — 품목 날짜는 지금 작성일자로
+                          const next = pendingEstimate.rows.map((r) => ({ ...r, date: issueDate || todayIso() }));
+                          autoRows.current = next;
+                          setRows(next);
                           setEstimateId(pendingEstimate.estimateId);
+                          setSkippedZero(pendingEstimate.skipped);
+                          setVatNotice(null);
                           setPendingEstimate(null);
                         }}
                       >
@@ -1232,9 +1529,15 @@ function TaxInvoiceForm() {
                     </div>
                   }
                 >
-                  이 고객의 견적 품목 {pendingEstimate.rows.length}건이 있습니다. 이미 적은 품목을 바꿀까요?
+                  이 고객의 견적 품목 {pendingEstimate.rows.length}건이 있습니다
+                  {pendingEstimate.skipped > 0 ? `(0원 품목 ${pendingEstimate.skipped}건은 뺐습니다)` : ''}. 이미 적은 품목을 바꿀까요?
                 </AlertBanner>
               </div>
+            )}
+            {skippedZero > 0 && (
+              <p role="status" className="mb-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
+                견적의 0원 품목 {skippedZero}건은 뺐습니다.
+              </p>
             )}
             {fieldError('items') && (
               <p className={`mb-2 text-[12.5px] ${errClass('items')}`} role="alert">
@@ -1259,6 +1562,11 @@ function TaxInvoiceForm() {
                     ? '받을 금액(부가세 포함)을 단가에 넣으면 공급가액과 세액으로 나눠 드립니다.'
                     : '부가세를 뺀 금액을 단가에 넣으면 세액(10%)을 더해 드립니다.'}
                 </p>
+                {vatNotice && (
+                  <p role="status" className="mt-1 max-w-[440px] text-[12.5px] font-semibold leading-relaxed text-boss-pill-warn-fg">
+                    {vatNotice}
+                  </p>
+                )}
               </div>
               {isCash && (
                 <div>
@@ -1340,6 +1648,10 @@ function TaxInvoiceForm() {
                           aria-label={`${i + 1}번 단가 (${vatMode === 'IN' ? '부가세 포함' : '부가세 별도'})`}
                           aria-describedby="vat-mode-hint"
                         />
+                        {/* 휴대폰 카드 — 품목 바로 아래. 넓은 화면은 표 아래 한 줄로 모아 쓴다 */}
+                        {unitPriceRounded(r, vatMode) && (
+                          <p className="mt-1 text-[12px] leading-snug text-boss-text-secondary md:hidden">단가는 원 단위로 반올림해 적힙니다.</p>
+                        )}
                       </td>
                       <td className="stack-supply num text-boss-text" data-label="공급가액">
                         {fmt(r.supplyAmount)}
@@ -1371,6 +1683,16 @@ function TaxInvoiceForm() {
                   ))}
                 </tbody>
               </table>
+              {/* 부가세 포함 + 수량 여러 개 — 서식의 단가 × 수량이 공급가액과 1원 다를 수 있다(2026-10-21) */}
+              {effectiveRows.some((r) => unitPriceRounded(r, vatMode)) && (
+                <p className="mt-2 hidden text-[12px] leading-relaxed text-boss-text-secondary md:block">
+                  {effectiveRows
+                    .map((r, i) => (unitPriceRounded(r, vatMode) ? `${i + 1}번` : null))
+                    .filter(Boolean)
+                    .join(' · ')}{' '}
+                  품목: 단가는 원 단위로 반올림해 적힙니다(서식의 단가 × 수량이 공급가액과 1원 다를 수 있어요).
+                </p>
+              )}
               {/* 면세 거래는 세금계산서가 아니라 계산서 대상 — 저장 · 서식은 되지만 전자 발급은 막힌다(2026-10-16) */}
               {!isCash && rows.some((r) => r.taxFree && rowHasContent(r)) && (
                 <p role="note" className="mt-2 text-[12.5px] leading-relaxed text-boss-error">
@@ -1381,10 +1703,17 @@ function TaxInvoiceForm() {
             <Button variant="secondary" icon={Plus} onClick={addRow} className="mt-3 min-h-[44px] w-full md:hidden">
               품목 추가
             </Button>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <MetricBox label="공급가액" value={`${fmt(totals.supply)}원`} />
-              <MetricBox label={isCash ? `부가세 · ${CASH_TAXATION_LABEL[cashTaxation]}` : '세액 (10%)'} value={`${fmt(totals.vat)}원`} />
-              <MetricBox label="합계" value={`${fmt(totals.total)}원`} />
+            {/* 휴대폰은 세로 줄(왼쪽 이름 · 오른쪽 금액) — 세 칸이면 1억 원대 끝자리가 가려졌다(2026-10-21) */}
+            <div className="mt-4">
+              <AmountBoxes
+                rowsOnPhone
+                columns="sm:grid-cols-3"
+                items={[
+                  { label: '공급가액', value: `${fmt(totals.supply)}원` },
+                  { label: isCash ? `부가세 · ${CASH_TAXATION_LABEL[cashTaxation]}` : '세액 (10%)', value: `${fmt(totals.vat)}원` },
+                  { label: '합계', value: `${fmt(totals.total)}원` },
+                ]}
+              />
             </div>
             <p className="mt-2 font-boss-head text-[13px] text-boss-text-secondary">{toKoreanAmountLabel(totals.total)}</p>
           </Panel>
@@ -1398,7 +1727,7 @@ function TaxInvoiceForm() {
                 required
                 type="date"
                 value={issueDate}
-                onChange={(e) => setIssueDate(e.target.value)}
+                onChange={(e) => changeIssueDate(e.target.value)}
                 aria-invalid={Boolean(fieldError('issueDate'))}
                 hint={
                   fieldError('issueDate') ? (
@@ -1412,7 +1741,7 @@ function TaxInvoiceForm() {
                       `전자 발급은 거래일자가 오늘(${todayIso()})인 문서만 됩니다. 지난 날짜는 기록으로만 저장됩니다.`
                     )
                   ) : (
-                    '공급 시기와 작성일자를 확인해 주세요.'
+                    '공급 시기와 작성일자를 확인해 주세요. 품목 날짜는 작성일자를 따릅니다.'
                   )
                 }
               />
@@ -1458,6 +1787,8 @@ function TaxInvoiceForm() {
           </Panel>
         </fieldset>
 
+        {checklist('lg:hidden')}
+
         {/* ── 하단 액션 ── */}
         <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3">
           <span className="text-[12.5px] text-boss-text-secondary" aria-live="polite">
@@ -1489,29 +1820,7 @@ function TaxInvoiceForm() {
 
       {/* ── 우측 안내 ── */}
       <div className="flex flex-col gap-4">
-        <Panel kicker="확인할 것" title={problems.length === 0 ? '저장할 수 있습니다' : `${problems.length}항목`}>
-          {problems.length === 0 ? (
-            <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
-              {isCash
-                ? `${cashUsage === 'DEDUCTION' ? '소득공제용' : '지출증빙용'} · ${formatCashIdentity(cashIdentityType, cashIdentityType === 'SELF' ? CASH_SELF_ISSUE_NUMBER : cashIdentityNum)} · ${CASH_TAXATION_LABEL[cashTaxation]} · 합계 ${fmt(totals.total)}원`
-                : `${buyerName || '공급받는자'} · 합계 ${fmt(totals.total)}원`}
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {problems.map((p, i) => (
-                <li key={`${p.target}-${i}`}>
-                  <button
-                    type="button"
-                    className={`text-left text-[12.5px] leading-snug hover:underline ${showErrors ? 'text-boss-error' : 'text-boss-text-secondary'}`}
-                    onClick={() => focusTarget(p.target)}
-                  >
-                    · {p.message}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
+        {checklist('hidden lg:block')}
         <Panel kicker="순서" title="작성부터 발급까지">
           <ol className="flex flex-col gap-2 text-[12.5px] leading-relaxed text-boss-text-secondary">
             <li>
@@ -1520,9 +1829,12 @@ function TaxInvoiceForm() {
             <li>
               <span className="font-semibold text-boss-text">2. 미리보기 · PDF</span> — 실물 서식으로 확인하고 인쇄 · PDF로 보냅니다.
             </li>
+            {/* 문서 종류별 오픈 값을 따른다(2026-10-21 — 오픈 전에도 '상세에서 전자 발급'이라고 써서 상세의 '곧 오픈'과 맞지 않았다) */}
             <li>
-              <span className="font-semibold text-boss-text">3. 발급</span> — 상세 화면에서 전자 발급합니다. 홈택스에서 직접 발급했다면 상세에서
-              승인번호를 적어 둡니다.
+              <span className="font-semibold text-boss-text">3. 발급</span> —{' '}
+              {issuanceOpenForDoc
+                ? '상세 화면에서 전자 발급합니다. 홈택스에서 직접 발급했다면 상세에서 승인번호를 적어 둡니다.'
+                : '지금은 홈택스에서 발급한 뒤 상세에서 승인번호를 적어 둡니다 — 전자 발급은 곧 열립니다.'}
             </li>
           </ol>
         </Panel>

@@ -21,6 +21,7 @@ import type {
   OperationIssue,
   OperationSeverity,
   RegistrationReviewStatus,
+  RegistrationStage,
   TaxInvoice,
   TaxInvoiceActivity,
   TaxInvoiceActivityPage,
@@ -303,8 +304,14 @@ export interface StatusView {
   text: string;
 }
 
-/** 공동인증서 — 세금계산서 발급에만 필요하다 */
-export function certificateView(c: ElectronicOperations['certificate']): StatusView {
+/** 공동인증서 등록(4단계) 전 단계 — 이때 인증서를 모르는 것은 오류가 아니라 아직 등록하지 않은 것이다 */
+const BEFORE_CERTIFICATE: RegistrationStage[] = ['NEED_COMPANY', 'NOT_REGISTERED', 'PENDING_VERIFICATION', 'REJECTED', 'VERIFIED'];
+
+/**
+ * 공동인증서 — 세금계산서 발급에만 필요하다.
+ * [stage] 를 주면 등록 단계가 인증서 전일 때 "확인하지 못함" 대신 "아직 등록 전"으로 쓴다(2026-10-21 — 미신청 사장님에게 오류처럼 읽혔다).
+ */
+export function certificateView(c: ElectronicOperations['certificate'], stage?: RegistrationStage | null): StatusView {
   const date = formatOpsDate(c.expiresAt);
   const days = c.daysRemaining;
   switch (c.status) {
@@ -327,6 +334,9 @@ export function certificateView(c: ElectronicOperations['certificate']): StatusV
         text: `${date ? `${date}에 만료되었습니다. ` : '인증서가 만료되었습니다. '}갱신하기 전에는 세금계산서를 발급할 수 없습니다.`,
       };
     default:
+      if (stage && BEFORE_CERTIFICATE.includes(stage)) {
+        return { tone: 'neutral', tag: '아직 등록 전', text: '4단계(공동인증서 등록)에서 등록해요.' };
+      }
       return {
         tone: 'neutral',
         tag: '확인하지 못함',

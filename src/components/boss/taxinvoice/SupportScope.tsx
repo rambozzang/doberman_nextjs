@@ -5,11 +5,12 @@
 // 세금계산서: 사업자 권한 확인 → 팝빌 연동 → 공동인증서 등록이 끝나야 준비 완료.
 // 현금영수증: 공동인증서를 요구하지 않는다. 준비 상태는 서버 GET /electronic/config?docType=CASH 로만 판단한다.
 // 정식 오픈 값이 꺼져 있으면 준비가 끝나도 실제 발급은 열리지 않는다 — "완료"로 오해하지 않게 함께 적는다.
+// 오픈 값은 문서 종류별로 본다(세금계산서 taxOpen · 현금영수증 cashOpen, 2026-10-21) — 세금계산서만 먼저 열려도 현금영수증 줄은 "곧 열립니다"로 남는다.
 // 설정 조회는 권한 확인이 끝난 뒤에만 부른다(그 전에는 준비될 수 없다). 조회 실패는 "확인하지 못함"으로 둔다.
 
 import { useEffect, useRef, useState } from 'react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { Panel, Tag, type StatusTone } from '@/components/boss/ui';
 import type { ElectronicConfig, RegistrationStage } from '@/types/boss-taxinvoice';
 
@@ -31,8 +32,8 @@ function Row({ title, tone, tag, steps, note }: { title: string; tone: StatusTon
 }
 
 export default function SupportScope({ stage, refreshKey }: { stage: RegistrationStage; refreshKey: number }) {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21)
+  const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
   const [cash, setCash] = useState<CashCheck>({ state: 'idle', config: null, message: null });
   const seq = useRef(0);
   const verified = VERIFIED_STAGES.includes(stage);
@@ -56,9 +57,11 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
     })();
   }, [verified, refreshKey]);
 
-  const closed = issuanceOpen ? '' : ' 정식 오픈 전이라 준비가 끝나도 실제 발급은 열리지 않습니다.';
+  // 닫힌 종류만 꼬리말을 단다 — 한쪽만 열렸으면 "곧 열립니다", 둘 다 닫혔으면 정식 오픈 전
+  const closedTail = (open: boolean, label: string) =>
+    open ? '' : taxOpen || cashOpen ? ` ${label} 발급은 곧 열립니다.` : ' 정식 오픈 전이라 준비가 끝나도 실제 발급은 열리지 않습니다.';
   const taxReady = stage === 'READY';
-  const taxTag = taxReady ? (issuanceOpen ? '준비 완료' : '준비 완료 · 오픈 전') : verified ? '등록 진행 중' : '권한 확인 전';
+  const taxTag = taxReady ? (taxOpen ? '준비 완료' : '준비 완료 · 오픈 전') : verified ? '등록 진행 중' : '권한 확인 전';
 
   let cashTag = '권한 확인 전';
   let cashTone: StatusTone = 'neutral';
@@ -77,15 +80,19 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
       cashTone = 'neutral';
       cashNote = cash.config.reason || '현금영수증 발급 기능을 준비하고 있습니다.';
     } else if (cash.config?.ready) {
-      cashTag = issuanceOpen ? '준비 완료' : '준비 완료 · 오픈 전';
+      cashTag = cashOpen ? '준비 완료' : '준비 완료 · 오픈 전';
       cashTone = 'ok';
-      cashNote = `서버 확인 결과 현금영수증 발급 준비가 끝났습니다.${closed}`;
+      cashNote = `현금영수증 발급 준비가 끝났습니다.${closedTail(cashOpen, '현금영수증')}`;
     } else {
       cashTag = '준비 필요';
       cashTone = 'warn';
       cashNote = cash.config?.reason || '서비스 연동을 마쳐야 합니다.';
     }
   }
+  // 한쪽만 열렸으면 닫힌 쪽 줄에는 준비 상태와 상관없이 "곧 열립니다"를 남긴다(둘 다 닫힘은 화면 맨 위 띠가 말한다)
+  const oneSideOpen = taxOpen !== cashOpen;
+  const cashReady = verified && cash.state === 'done' && Boolean(cash.config?.enabled && cash.config.ready);
+  if (oneSideOpen && !cashOpen && !cashReady) cashNote += closedTail(false, '현금영수증');
 
   return (
     <Panel kicker="지원 범위" title="문서별 준비 상태">
@@ -94,7 +101,7 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
         tone={taxReady ? 'ok' : verified ? 'info' : 'neutral'}
         tag={taxTag}
         steps="사업자 권한 확인 → 팝빌 서비스 연동 → 공동인증서 등록"
-        note={`사업자 고객에게 보내는 일반(과세) 세금계산서를 발급합니다.${taxReady ? closed : ''}`}
+        note={`사업자 고객에게 보내는 일반(과세) 세금계산서를 발급합니다.${taxReady || (oneSideOpen && !taxOpen) ? closedTail(taxOpen, '전자세금계산서') : ''}`}
       />
       <Row
         title="현금영수증"
@@ -112,7 +119,14 @@ export default function SupportScope({ stage, refreshKey }: { stage: Registratio
         <p className="mt-1.5 break-keep">
           세금계산서: 국세청 전송 전이면 발행취소, 전송 후면 수정세금계산서(환입 · 계약의 해제 · 착오에 의한 이중발급) 1장을 발급합니다. 일부
           반품 · 공급가액 변동 · 기재사항 정정 · 영세율 전환 수정세금계산서와 역발행 · 대량 발급은 지원하지 않습니다. 현금영수증은 승인된 건의
-          전액 취소만 됩니다.{issuanceOpen ? '' : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
+          전액 취소만 됩니다.
+          {taxOpen && cashOpen
+            ? ''
+            : taxOpen
+              ? ' 현금영수증 발급 · 취소는 곧 열립니다.'
+              : cashOpen
+                ? ' 세금계산서 발급 · 취소는 곧 열립니다.'
+                : ' 발급 · 취소는 정식 오픈 후 열립니다.'}
         </p>
       </details>
     </Panel>

@@ -4,16 +4,18 @@
 //
 // 독립 화면(/boss/tax-invoice/guide)과 등록 화면의 안내 대화상자가 같은 본문을 쓴다.
 // 등록 화면은 작성 중인 신청서가 사라지지 않게 화면을 옮기지 않고 대화상자로 띄운다.
-// API · 개인정보 · 저장소를 쓰지 않는 정적 본문이라 훅이 없다(서버 · 클라이언트 어디서든 그린다).
+// API · 개인정보 · 저장소를 쓰지 않는다. 훅은 정식 오픈 값(문서 종류별) 하나만 쓴다.
 // "5초"는 준비물을 읽는 시간이다 — 등록 · 발급이 몇 초 만에 끝난다고 약속하지 않고, 소요 시간은 적지 않는다.
 // 진행 순서는 등록 화면의 5단계와 같은 이름 · 같은 순서다(2026-10-17 — 예전엔 3단계로 줄여 써서 실제 등록과 달랐다).
 // 요금(공동인증서 등록일부터 1개월 무료 · 이후 앱 구독)은 시작을 정하는 화면이라 먼저 알린다(앱 준비 안내와 같은 말).
+// 현금영수증만 쓰는 사장님은 첫 현금영수증 발급일부터 1개월 무료 · 같은 구독이다(2026-10-21).
+// 오픈 안내는 문서 종류별로 — 한쪽만 열렸으면 닫힌 쪽만 "곧 열립니다"(2026-10-21).
 // 320px · 큰 글꼴에서도 자르지 않고 줄바꿈으로 버틴다. 색은 boss-* 토큰만 쓴다.
 
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useElectronicTaxInvoiceOpen } from '@/lib/boss/electronicTaxInvoiceLaunch';
-import { TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
+import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
+import { TAX_SUBSCRIPTION_CASH_ONLY, TAX_SUBSCRIPTION_FREE_USES, TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 import { Note } from './RegistrationParts';
 
 // 등록 화면 진행 단계(taxInvoiceRegistration STEP_LABEL)와 같은 순서
@@ -41,14 +43,22 @@ const FAQ = [
   },
   {
     q: '현금영수증만 쓰고 싶어요',
-    a: '현금영수증은 공동인증서 등록 없이 이용할 수 있어요. 사업자 정보 등록과 서비스 연동을 마치면 발급 가능 여부를 안내해 드려요.',
+    a: `현금영수증은 공동인증서 등록 없이 이용할 수 있어요. 사업자 정보 등록과 서비스 연동을 마치면 발급 가능 여부를 안내해 드려요. 요금은 첫 현금영수증 발급일부터 1개월 무료, 이후 같은 구독(${TAX_SUBSCRIPTION_PRICE})이에요.`,
   },
 ];
 
 /** cta — 독립 화면은 등록 화면으로 가는 링크, 대화상자는 하단 버튼을 쓰므로 넘기지 않는다 */
 export default function PreparationGuide({ cta }: { cta?: ReactNode }) {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18)
-  const issuanceOpen = useElectronicTaxInvoiceOpen();
+  // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21)
+  const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
+  const launchNote =
+    taxOpen && cashOpen
+      ? null
+      : !taxOpen && !cashOpen
+        ? '곧 정식 오픈해요. 지금 미리 준비해 둘 수 있고, 실제 연동은 설정이 끝나면 안내해 드려요.'
+        : taxOpen
+          ? '현금영수증 발급은 곧 열립니다. 전자세금계산서는 등록을 마치면 바로 발급할 수 있어요.'
+          : '전자세금계산서 발급은 곧 열립니다. 현금영수증은 등록을 마치면 바로 발급할 수 있어요.';
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -100,9 +110,10 @@ export default function PreparationGuide({ cta }: { cta?: ReactNode }) {
           연간 구독은 2개월 할인이에요. 구독하면 전자세금계산서 · 현금영수증을 횟수 제한 없이 발급하고, 발급 비용(팝빌 포인트)은 도배르만이
           부담해서 따로 충전할 필요가 없어요. 구독은 도배르만 앱에서 해요.
         </p>
+        <p className="mt-2 break-keep text-[13.5px] font-semibold leading-relaxed text-boss-text">{TAX_SUBSCRIPTION_CASH_ONLY}</p>
       </section>
 
-      {!issuanceOpen && <Note>곧 정식 오픈해요. 지금 미리 준비해 둘 수 있고, 실제 연동은 설정이 끝나면 안내해 드려요.</Note>}
+      {launchNote && <Note>{launchNote}</Note>}
 
       {cta}
 

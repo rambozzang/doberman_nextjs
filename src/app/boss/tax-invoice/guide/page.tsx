@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: '시작 전 준비 안내' };
 
 export default function TaxInvoiceGuidePage() {
   return (
-    <section className="boss-card p-5 sm:p-6">
+    <section className="boss-tax boss-card p-5 sm:p-6">
       <PreparationGuide
         cta={
           <div>

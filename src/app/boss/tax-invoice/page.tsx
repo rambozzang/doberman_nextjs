@@ -5,6 +5,8 @@
 // 위: 작성 단추 두 개(세금계산서 · 현금영수증, 같은 크기 · 2026-10-17) → 발급 서비스 등록 진입(오픈 전엔 오픈 예정 안내)
 // 휴대폰은 표 대신 카드 목록(고객 · 합계 · 상태)을 보인다 — 9칸 표가 옆으로 밀려 상태 · 합계가 안 보였다.
 // 필터: 연도 · 분기 → 문서 종류 · 상태(미발급 · 발급 완료 · 확인 필요 · 취소) → 검색(고객 · 사업자번호 · 식별번호 · 승인번호)
+// 휴대폰은 필터를 한 줄 요약 단추("2026년 4분기 · 전체 ▾")로 접고, 등록 안내는 한 줄 띠로 줄여 첫 문서가 첫 화면에 보이게 한다(2026-10-21).
+// 휴대폰 상태 거르기는 두 줄 격자 — 옆으로 밀어야 보이던 '취소' 칸이 잘리지 않는다(2026-10-21).
 // 좌: 조회 합계 + 표(작성일 · 종류 · 고객 · 사업자번호/식별번호 · 공급가액 · 세액 · 합계 · 상태 · 승인번호)
 // 우: 기간 요약(서버 집계) · 부가세 예상 · 홈택스 바로가기
 //
@@ -17,10 +19,11 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BellRing, ChevronRight, ExternalLink, FilePlus2, Receipt, RefreshCw } from 'lucide-react';
+import { BellRing, ChevronDown, ChevronRight, ExternalLink, FilePlus2, Receipt, RefreshCw } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import AdminEntry from '@/components/boss/taxinvoice/AdminEntry';
+import AmountBoxes from '@/components/boss/taxinvoice/AmountBoxes';
 import RegistrationEntry from '@/components/boss/taxinvoice/RegistrationEntry';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
 import { awaitsServerUpdate } from '@/lib/boss/taxInvoiceOps';
@@ -202,8 +205,20 @@ function TaxInvoiceList() {
     setQuery('');
   };
 
+  // 휴대폰 거르기 접기 — 요약 단추에 지금 조건을 한 줄로
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterSummary = [
+    `${year}년 ${quarter ? `${quarter}분기` : '연간'}`,
+    doc === 'all' && tab === 'all' ? '전체' : null,
+    doc !== 'all' ? DOC_TYPE_LABEL[doc] : null,
+    tab !== 'all' ? DISPLAY_KEY_LABEL[tab] : null,
+    query.trim() ? `'${query.trim()}'` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <div className="boss-touch flex flex-col gap-4">
+    <div className="boss-touch boss-tax flex flex-col gap-4">
       {/* 작성 — 세금계산서 · 현금영수증을 같은 크기로 나란히(예전엔 현금영수증이 거르기 줄 끝 작은 단추라 휴대폰 첫 화면 밖이었다) */}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <ButtonLink href="/boss/tax-invoice/new" variant="primary" icon={FilePlus2} className="min-h-[44px] sm:min-w-[168px]">
@@ -217,70 +232,122 @@ function TaxInvoiceList() {
       {/* 발급 서비스 등록 진입 — 출시 값 · 목록 조회 성패와 상관없이 늘 보인다(오픈 전이면 오픈 예정 안내 포함) */}
       <RegistrationEntry />
 
-      {/* ── 기간 · 새로고침 ── */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Segmented
-          ariaLabel="연도"
-          value={String(year)}
-          onChange={(v) => setYear(Number(v))}
-          options={years.map((y) => ({ key: String(y), label: `${y}년` }))}
-        />
-        <Segmented
-          ariaLabel="분기"
-          value={String(quarter)}
-          onChange={(v) => setQuarter(Number(v))}
-          options={[
-            { key: '1', label: '1분기' },
-            { key: '2', label: '2분기' },
-            { key: '3', label: '3분기' },
-            { key: '4', label: '4분기' },
-            { key: '0', label: '연간' },
-          ]}
-        />
-        <span className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
-          {loading ? '불러오는 중…' : period ? `${period.from} ~ ${period.to} · ${all.length}건` : ''}
-        </span>
-        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => void load()} disabled={loading}>
-          새로고침
-        </Button>
+      {/* 휴대폰 — 거르기 요약 단추 · 발급 알림. 누르면 아래 거르기가 펼쳐진다 */}
+      <div className="flex gap-2 md:hidden">
+        <button
+          type="button"
+          aria-expanded={filtersOpen}
+          aria-controls="tax-invoice-filters"
+          onClick={() => setFiltersOpen((o) => !o)}
+          className="boss-btn boss-btn-md boss-btn-secondary min-h-[44px] min-w-0 flex-1 justify-between"
+        >
+          <span className="min-w-0 truncate">{filterSummary}</span>
+          <span className="flex flex-none items-center gap-1 font-boss-head font-normal tabular-nums text-boss-text-secondary">
+            {loading ? '…' : `${invoices.length}건`}
+            <ChevronDown
+              aria-hidden
+              size={15}
+              strokeWidth={1.75}
+              className={`transition-transform duration-[120ms] ${filtersOpen ? 'rotate-180' : ''}`}
+            />
+          </span>
+        </button>
+        <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" icon={BellRing} className="min-h-[44px]">
+          발급 알림
+        </ButtonLink>
       </div>
 
-      {/* ── 종류 · 상태 · 검색 ── */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Segmented
-          ariaLabel="문서 종류"
-          value={doc}
-          onChange={setDoc}
-          options={[
-            { key: 'all', label: '전체' },
-            { key: 'TAX', label: '세금계산서' },
-            { key: 'CASH', label: '현금영수증' },
-          ]}
-        />
-        <ListTabs
-          ariaLabel="상태"
-          tabs={TAB_ORDER.map((t) => ({ key: t, label: t === 'all' ? '전체 상태' : DISPLAY_KEY_LABEL[t], count: counts[t] }))}
-          active={tab}
-          onChange={setTab}
-        />
-        <SearchInput
-          value={query}
-          onChange={setQuery}
-          placeholder="고객 · 사업자번호 · 휴대폰 · 승인번호"
-          className="w-full sm:w-72"
-          hint={false}
-        />
-        {filtered && (
-          <Button variant="ghost" size="sm" onClick={resetFilters}>
-            조건 지우기
+      <div id="tax-invoice-filters" className={`${filtersOpen ? 'flex' : 'hidden'} flex-col gap-4 md:flex`}>
+        {/* ── 기간 · 새로고침 ── */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Segmented
+            ariaLabel="연도"
+            value={String(year)}
+            onChange={(v) => setYear(Number(v))}
+            options={years.map((y) => ({ key: String(y), label: `${y}년` }))}
+          />
+          <Segmented
+            ariaLabel="분기"
+            value={String(quarter)}
+            onChange={(v) => setQuarter(Number(v))}
+            options={[
+              { key: '1', label: '1분기' },
+              { key: '2', label: '2분기' },
+              { key: '3', label: '3분기' },
+              { key: '4', label: '4분기' },
+              { key: '0', label: '연간' },
+            ]}
+          />
+          <span className="ml-auto font-boss-head text-[13px] tabular-nums text-boss-text-secondary" aria-live="polite">
+            {loading ? '불러오는 중…' : period ? `${period.from} ~ ${period.to} · ${all.length}건` : ''}
+          </span>
+          <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => void load()} disabled={loading}>
+            새로고침
           </Button>
-        )}
-        <div className="ml-auto flex flex-wrap gap-2">
-          {scope && <AdminEntry key={scope} scope={scope} />}
-          {/* 머리의 종(전체 알림)과 다르다 — 세금계산서 발급 결과 알림만 */}
-          <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" size="sm" icon={BellRing}>
-            발급 알림
-          </ButtonLink>
+        </div>
+
+        {/* ── 종류 · 상태 · 검색 ── */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Segmented
+            ariaLabel="문서 종류"
+            value={doc}
+            onChange={setDoc}
+            options={[
+              { key: 'all', label: '전체' },
+              { key: 'TAX', label: '세금계산서' },
+              { key: 'CASH', label: '현금영수증' },
+            ]}
+          />
+          {/* 휴대폰 — 두 줄 격자(전체 · 미발급/확인 필요 · 발급 완료/취소). 넓은 화면은 한 줄 탭 */}
+          <div role="radiogroup" aria-label="상태" className="grid w-full grid-cols-2 gap-px border border-boss-border bg-boss-border md:hidden">
+            {TAB_ORDER.map((t, i) => {
+              const active = tab === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setTab(t)}
+                  className={`${i === 0 ? 'col-span-2' : ''} flex min-h-[44px] items-center justify-center gap-1.5 px-3 text-[13px] transition-colors duration-[120ms] ease-out ${
+                    active ? 'bg-boss-primary font-semibold text-boss-primary-foreground' : 'bg-boss-bg text-boss-text'
+                  }`}
+                >
+                  <span>{t === 'all' ? '전체 상태' : DISPLAY_KEY_LABEL[t]}</span>
+                  <span className={`font-boss-head text-[12px] tabular-nums ${active ? 'text-boss-primary-foreground/80' : 'text-boss-text-secondary'}`}>
+                    {counts[t].toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="hidden md:block">
+            <ListTabs
+              ariaLabel="상태"
+              tabs={TAB_ORDER.map((t) => ({ key: t, label: t === 'all' ? '전체 상태' : DISPLAY_KEY_LABEL[t], count: counts[t] }))}
+              active={tab}
+              onChange={setTab}
+            />
+          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="고객 · 사업자번호 · 휴대폰 · 승인번호"
+            className="w-full sm:w-72"
+            hint={false}
+          />
+          {filtered && (
+            <Button variant="ghost" size="sm" onClick={resetFilters}>
+              조건 지우기
+            </Button>
+          )}
+          <div className="ml-auto flex flex-wrap gap-2">
+            {scope && <AdminEntry key={scope} scope={scope} />}
+            {/* 머리의 종(전체 알림)과 다르다 — 세금계산서 발급 결과 알림만. 휴대폰은 위 요약 줄에 있다 */}
+            <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" size="sm" icon={BellRing} className="hidden md:inline-flex">
+              발급 알림
+            </ButtonLink>
+          </div>
         </div>
       </div>
 
@@ -314,11 +381,17 @@ function TaxInvoiceList() {
         {/* ── 목록 ── */}
         <div className="flex min-w-0 flex-col gap-3">
           {invoices.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-live="polite">
-              <MetricBox label="조회" value={`${fmt(shown.count)}건`} />
-              <MetricBox label="공급가액" value={`${fmt(shown.supply)}원`} />
-              <MetricBox label="세액" value={`${fmt(shown.vat)}원`} />
-              <MetricBox label="합계" value={`${fmt(shown.total)}원`} />
+            <div aria-live="polite">
+              {/* 칸 폭에 맞춰 금액 글자를 줄인다 — 1억 원대도 잘리지 않게(2026-10-21) */}
+              <AmountBoxes
+                columns="grid-cols-2 sm:grid-cols-4"
+                items={[
+                  { label: '조회', value: `${fmt(shown.count)}건` },
+                  { label: '공급가액', value: `${fmt(shown.supply)}원` },
+                  { label: '세액', value: `${fmt(shown.vat)}원` },
+                  { label: '합계', value: `${fmt(shown.total)}원` },
+                ]}
+              />
             </div>
           )}
           {invoices.length > 0 && (shown.excluded > 0 || shown.corrections > 0) && (
@@ -337,7 +410,7 @@ function TaxInvoiceList() {
             error ? (
               <EmptyState
                 title="목록을 불러오지 못했습니다"
-                description="네트워크 상태를 확인한 뒤 다시 시도하세요. 서버가 아직 이 기능을 배포하지 않았다면 잠시 뒤 다시 열어 주세요."
+                description="잠시 뒤 다시 시도해 주세요. 계속되면 고객센터에 알려 주세요."
                 action={
                   <Button variant="secondary" size="sm" onClick={() => void load()}>
                     다시 시도
@@ -539,7 +612,7 @@ function InvoiceCard({ inv }: { inv: TaxInvoice }) {
         </span>
         <span className="flex-none text-right">
           <span className="block font-boss-head text-[18px] font-semibold tabular-nums">{fmt(inv.totalAmount)}원</span>
-          {inv.approvalNo && <span className="block text-[11.5px] text-boss-text-secondary">승인 {inv.approvalNo.slice(-8)}</span>}
+          {inv.approvalNo && <span className="block text-[12px] text-boss-text-secondary">승인 {inv.approvalNo.slice(-8)}</span>}
         </span>
         <ChevronRight size={16} strokeWidth={1.75} className="flex-none text-boss-text-muted" aria-hidden />
       </Link>

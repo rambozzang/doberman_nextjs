@@ -1,7 +1,8 @@
 // 전자 발급 구독(2026-10-17 정책) — 앱과 같은 말 · 같은 값
 //
 // 공동인증서를 등록한 날부터 1개월 무료, 이후 월 16,800원 · 연 168,000원(2개월 할인) 앱 구독.
-// 구독 · 결제는 도배르만 앱에서만 한다(웹 결제 없음). 발급 비용(팝빌 포인트)은 도배르만이 부담한다.
+// 현금영수증만 쓰는 사장님은 공동인증서를 등록하지 않으므로 첫 현금영수증 발급일부터 1개월 무료다(2026-10-21).
+// 세금계산서 · 현금영수증은 같은 구독 하나로 쓴다. 구독 · 결제는 도배르만 앱에서만 한다(웹 결제 없음). 발급 비용(팝빌 포인트)은 도배르만이 부담한다.
 // 상태 판정은 서버(GET /taxinvoices/electronic/subscription)가 하고, 웹은 그대로 보여 주기만 한다.
 
 import type { TaxInvoiceSubscriptionStatus } from '@/types/boss-taxinvoice';
@@ -16,6 +17,9 @@ export const TAX_SUBSCRIPTION_PRICE = `월 ${won(TAX_SUBSCRIPTION_MONTHLY)} · �
 
 /** 정책 요약 — 안내 · 등록 · 운영 화면이 같은 문장을 쓴다 */
 export const TAX_SUBSCRIPTION_POLICY = `공동인증서를 등록한 날부터 1개월 무료, 이후 ${TAX_SUBSCRIPTION_PRICE}(연간은 2개월 할인) 앱 구독으로 횟수 제한 없이 전자 발급합니다.`;
+
+/** 현금영수증만 쓰는 사장님 — 공동인증서를 등록하지 않으니 첫 발급일부터 센다(2026-10-21) */
+export const TAX_SUBSCRIPTION_CASH_ONLY = '현금영수증만 쓰면 첫 현금영수증 발급일부터 1개월 무료, 이후 같은 구독(세금계산서 · 현금영수증 공통)입니다.';
 
 /** 구독하지 않아도 되는 것 */
 export const TAX_SUBSCRIPTION_FREE_USES = '세금계산서 · 현금영수증 작성, 서식 미리보기 · PDF, 발급 기록 관리는 구독 없이 계속 쓸 수 있습니다.';
@@ -51,7 +55,7 @@ export function subscriptionView(s: TaxInvoiceSubscriptionStatus | null | undefi
       return {
         tone: 'info',
         tag: '무료 1개월 · 시작 전',
-        text: `공동인증서를 등록한 날부터 1개월 동안 무료로 전자 발급합니다. 이후에는 ${TAX_SUBSCRIPTION_PRICE} 구독이 필요합니다.`,
+        text: `공동인증서를 등록한 날부터(현금영수증만 쓰면 첫 발급일부터) 1개월 동안 무료로 전자 발급합니다. 이후에는 ${TAX_SUBSCRIPTION_PRICE} 구독이 필요합니다.`,
         needsSubscription: false,
       };
     case 'FREE_PERIOD':

@@ -5,7 +5,7 @@
 import type { ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { formatBizNo } from '@/lib/boss/bizno';
-import { SUPPLIER_FIELDS, SUPPLIER_LABEL, type RegistrationStep, type StepState } from '@/lib/boss/taxInvoiceRegistration';
+import { SUPPLIER_FIELDS, SUPPLIER_LABEL, formatSupplierPhone, type RegistrationStep, type StepState } from '@/lib/boss/taxInvoiceRegistration';
 import type { TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
 
 type NoteTone = 'info' | 'warn' | 'bad' | 'ok';
@@ -96,7 +96,7 @@ export function RegistrationProgress({ steps }: { steps: RegistrationStep[] }) {
   );
 }
 
-/** 사업자 정보 요약 — 긴 주소 · 이메일도 자르지 않고 줄을 바꾼다 */
+/** 사업자 정보 요약 — 긴 주소 · 이메일도 자르지 않고 줄을 바꾼다. 사업자번호 · 연락처는 하이픈을 넣어 보인다 */
 export function SupplierSummary({ supplier }: { supplier: TaxInvoiceSupplier }) {
   return (
     <dl>
@@ -109,7 +109,7 @@ export function SupplierSummary({ supplier }: { supplier: TaxInvoiceSupplier }) 
           >
             <dt className="text-boss-text-secondary">{SUPPLIER_LABEL[f]}</dt>
             <dd className="min-w-0 break-words font-semibold text-boss-text [overflow-wrap:anywhere]">
-              {v ? (f === 'bizNo' ? formatBizNo(v) : v) : <span className="font-normal text-boss-text-muted">비어 있음</span>}
+              {v ? (f === 'bizNo' ? formatBizNo(v) : f === 'phone' ? formatSupplierPhone(v) : v) : <span className="font-normal text-boss-text-muted">비어 있음</span>}
             </dd>
           </div>
         );

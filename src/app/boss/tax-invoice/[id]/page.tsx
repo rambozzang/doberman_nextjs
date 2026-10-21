@@ -12,7 +12,7 @@
 // 전자 발급을 시도한 문서(provider 있음)는 수정 · 삭제 · 수기 상태 변경을 막고 상태 확인만 연다.
 // 정식 오픈 뒤 결과를 기다리는 문서는 보이는 동안 정해진 횟수만 상세를 다시 읽는다(서버 저장값만 — 팝빌 조회 아님, 대화상자가 열려 있으면 건너뜀).
 // 전자 발급 관련 문서는 좌측 아래 처리 이력(열 때만 불러옴)을 둔다.
-// 화면 제목 · ← 세금계산서 링크는 셸 헤더가 그린다.
+// 화면 제목 · ← 세금계산서 링크는 셸 헤더가 그린다. 제목은 문서 종류를 따른다(현금영수증이면 '현금영수증' · 2026-10-21).
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -36,6 +36,8 @@ import {
   kstToday,
 } from '@/lib/boss/taxInvoiceDocument';
 import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
+import { useBossHeaderTitle } from '@/components/boss/layout/BossHeader';
+import AmountBoxes from '@/components/boss/taxinvoice/AmountBoxes';
 import ElectronicIssuePanel, { TestTag } from '@/components/boss/taxinvoice/ElectronicIssuePanel';
 import { InvoiceHistoryPanel } from '@/components/boss/taxinvoice/HistoryList';
 import { TaxCancelLinkPanel } from '@/components/boss/taxinvoice/TaxCancelSection';
@@ -45,6 +47,7 @@ import { useBoundedRefresh } from '@/lib/boss/useBoundedRefresh';
 import {
   CASH_IDENTITY_LABEL,
   CASH_USAGE_LONG_LABEL,
+  DOC_TYPE_LABEL,
   PAY_TYPE_LABEL,
   STATUS_LABEL,
   isProviderManaged,
@@ -61,7 +64,6 @@ import {
   DescRow,
   EmptyState,
   Field,
-  MetricBox,
   Panel,
   Skeleton,
   Tag,
@@ -146,6 +148,8 @@ export default function BossTaxInvoiceDetailPage() {
     enabled: issuanceOpen && scope != null && data != null && awaitsServerUpdate(data),
     run: () => (isCurrentScope(scope) ? load() : undefined),
   });
+  // 머리 제목 — 예전엔 문서 종류와 상관없이 '세금계산서'였다
+  useBossHeaderTitle(data ? DOC_TYPE_LABEL[data.docType] : null);
 
   const changeStatus = async (status: TaxInvoiceStatus) => {
     if (!data?.id || busy.current || isProviderManaged(data)) return;
@@ -281,7 +285,7 @@ export default function BossTaxInvoiceDetailPage() {
       ];
 
   return (
-    <div className="boss-touch grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="boss-touch boss-tax grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       {/* 주요 행동은 화면 맨 위에 — 스크롤하지 않고 바로 누른다 */}
       <div className="lg:col-span-2">
         <DetailActions
@@ -332,12 +336,11 @@ export default function BossTaxInvoiceDetailPage() {
           <AlertBanner tone="warn">시험 환경에서 발급한 문서입니다. 효력이 없고 발급 · 부가세 집계에서 빠집니다.</AlertBanner>
         )}
 
+        {/* 홈택스 승인번호 안내는 '기록 상태' 칸 한 곳에서만 한다(2026-10-21 — 이 띠와 두 번 나왔다) */}
         {!managed && data.status === 'REQUESTED' && (
           <AlertBanner tone="info">
             작성 완료 · 아직 발급하지 않은 {docLabel}입니다.{' '}
-            {issuanceOpen
-              ? '전자 발급에서 바로 발급하거나, 홈택스에서 발급했다면 승인번호를 적어 두세요.'
-              : '홈택스에서 발급했다면 승인번호를 적어 두세요. 부가세 예상에 반영됩니다.'}
+            {issuanceOpen ? '전자 발급에서 바로 발급할 수 있습니다.' : '발급하면 부가세 예상에 들어갑니다.'}
           </AlertBanner>
         )}
 
@@ -406,11 +409,16 @@ export default function BossTaxInvoiceDetailPage() {
         )}
 
         <Panel kicker="금액" title={isTax ? '공급가액 · 세액' : '공급가액 · 부가세'}>
-          <div className="grid grid-cols-3 gap-2">
-            <MetricBox label="공급가액" value={`${fmt(data.supplyAmount)}원`} />
-            <MetricBox label={isTax ? '세액' : '부가세'} value={`${fmt(data.vatAmount)}원`} />
-            <MetricBox label="합계" value={`${fmt(data.totalAmount)}원`} />
-          </div>
+          {/* 휴대폰은 세로 줄(왼쪽 이름 · 오른쪽 금액) — 세 칸이면 1억 원대 끝자리가 가려졌다(2026-10-21) */}
+          <AmountBoxes
+            rowsOnPhone
+            columns="sm:grid-cols-3"
+            items={[
+              { label: '공급가액', value: `${fmt(data.supplyAmount)}원` },
+              { label: isTax ? '세액' : '부가세', value: `${fmt(data.vatAmount)}원` },
+              { label: '합계', value: `${fmt(data.totalAmount)}원` },
+            ]}
+          />
           <p className="mt-2 font-boss-head text-[13px] text-boss-text-secondary">{koreanAmountText(data.totalAmount)}</p>
           {correction && (
             <p className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">

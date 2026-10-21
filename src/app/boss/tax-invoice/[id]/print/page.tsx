@@ -9,6 +9,7 @@
 // 세금계산서는 A4 국세청 출력 서식, 현금영수증은 별도 영수증 서식(TaxInvoicePdf · CashReceiptPdf).
 // 화면 미리보기 · PDF 저장 · 이미지 · 인쇄가 모두 같은 PDF 에서 나온다. 미발급 · 시험 · 결과 불명 · 취소 표시는 종이 안에 찍힌다.
 // 수정세금계산서(취소분)는 사유 · 당초 승인번호 · 당초 작성일자(서버 orgIssueDate)를 찍고 음수 금액을 그대로 둔다.
+// 머리 제목은 문서 종류(세금계산서 · 현금영수증)로 바꾼다. 손가락 화면에서 단추 44px(boss-touch) — 2026-10-21.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -38,7 +39,8 @@ import type { PaperModel } from '@/components/boss/taxinvoice/pdf/paper';
 import DocumentPreview from '@/components/boss/taxinvoice/DocumentPreview';
 import { PrintActions } from '@/components/boss/print/PrintActions';
 import { AlertBanner, Button, ButtonLink, DetailActions, EmptyState, Skeleton, Tag } from '@/components/boss/ui';
-import { isProviderManaged, type TaxInvoice, type TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
+import { useBossHeaderTitle } from '@/components/boss/layout/BossHeader';
+import { DOC_TYPE_LABEL, isProviderManaged, type TaxInvoice, type TaxInvoiceSupplier } from '@/types/boss-taxinvoice';
 
 type Loaded = {
   invoice: TaxInvoice;
@@ -176,9 +178,11 @@ export default function BossTaxInvoicePrintPage() {
   const mismatch = inv ? amountMismatch(inv) : null;
   const legacyCash = inv?.docType === 'CASH' && cashIdentityLine(inv).inferred;
   const editable = inv ? !isProviderManaged(inv) : false;
+  // 머리 제목 — 현금영수증이면 '현금영수증'(예전엔 늘 '세금계산서')
+  useBossHeaderTitle(inv ? DOC_TYPE_LABEL[inv.docType] : null, '실물 서식으로 확인하고 PDF · 이미지로 저장하거나 인쇄합니다.');
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="boss-touch boss-tax flex flex-col gap-4">
       {/* 인쇄 — 종이 그림만 A4 한 쪽에 한 장씩. PDF 와 같은 쪽 수, 빈 쪽 0, 화면 UI 글자 0.
        *  모바일 폭에서는 셸의 상단 바(sticky) · 화면 머리글이 종이 앞에 자리를 차지해 첫 그림(297mm)이 다음 쪽으로 밀리고
        *  빈 첫 쪽이 생겼다. 하단 탭(position: fixed)은 쪽마다 찍혔다. 그래서 종이로 가는 길 밖의 요소는 모두 숨기고,

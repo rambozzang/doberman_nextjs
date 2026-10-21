@@ -339,8 +339,8 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/boss/tax-invoice/registration": {
     title: "발급 서비스 등록",
-    subtitle:
-      "전자세금계산서 발급에 필요한 사업자 권한 확인 · 팝빌 연동 · 공동인증서 등록을 진행하고 운영 상태를 확인합니다.",
+    // 기술 낱말(팝빌 연동 · 운영 상태)은 화면 안 단계에서 설명한다(2026-10-21)
+    subtitle: "전자 발급에 필요한 등록을 차례대로 마치고, 어디까지 했는지 확인합니다.",
   },
   "/boss/tax-invoice/guide": {
     // 본문 머리(준비물 확인은 5초 · 세금계산서, 시작은 간단하게)는 화면이 그린다. 등록 화면은 같은 본문을 대화상자로 띄운다
@@ -348,8 +348,9 @@ const PAGE_META: Record<string, PageMeta> = {
     width: "wide",
   },
   "/boss/tax-invoice/activity": {
-    title: "세금계산서 알림",
-    subtitle: "발급 결과 · 국세청 전송 · 권한 심사 · 인증서 만료 안내를 모아 봅니다.",
+    // 목록 단추 이름(발급 알림)과 같게(2026-10-21) — 머리의 종(전체 알림)과 다르다
+    title: "발급 알림",
+    subtitle: "세금계산서 · 현금영수증 발급 결과 · 국세청 전송 · 권한 심사 · 인증서 만료 안내를 모아 봅니다.",
     width: "wide",
   },
   "/boss/tax-invoice/admin": {

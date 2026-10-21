@@ -501,6 +501,109 @@ select.boss-input {
     min-height: 44px;
     font-size: 16px;
   }
+  /* 글자 링크(등록 단계 보기 등)도 누르는 칸은 44px — 글자 크기는 그대로(2026-10-21) */
+  .boss-touch .boss-touch-link {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+  }
+  /* 공통 머리 — '← 상위 화면' 링크 · 종 단추(2026-10-21, 모든 화면 머리). 링크는 위 여백으로 올려 머리 높이가 크게 늘지 않게 한다.
+   * 특정도를 .boss-page 로 올린다 — 이 파일은 Tailwind 유틸리티(inline-flex · h-[34px])보다 앞에 읽힌다. */
+  .boss-page .boss-header-back {
+    display: flex;
+    width: fit-content;
+    min-height: 44px;
+    margin-top: -12px;
+  }
+  .boss-page .boss-header-icon {
+    height: 44px;
+    width: 44px;
+  }
+}
+
+/* ───────────────────────────────────────────
+ * 세금계산서 화면(.boss-tax) 안 작은 글자 — 12px 이상 · 대비 4.5 이상(2026-10-21 점검 W13)
+ * 공용 부품(Panel 머리글 · MetricBox 제목 · 표 머리 · 목록 날짜 칸)은 그대로 두고 이 화면들 안에서만 키운다.
+ * 다른 화면 모양은 바뀌지 않는다. 대비: #416180/#f5f5f8 5.9 · 글자 62%/#f5f5f8 4.7 · #424244/표 머리 8.3
+ * ─────────────────────────────────────────── */
+.boss-tax .boss-kicker {
+  font-size: 12px;
+  color: rgb(var(--boss-primary-hover));
+}
+.boss-tax .boss-mono-label {
+  font-size: 12px;
+  color: rgb(var(--boss-text-secondary));
+}
+.boss-tax .boss-table thead th {
+  font-size: 12px;
+  color: rgb(var(--boss-text-dim));
+}
+/* 목록 날짜 칸의 '6일 전 · #8'(11px · 글자 52%) · 승인번호 */
+.boss-tax .boss-table td [class~='text-[11px]'] {
+  font-size: 12px;
+}
+.boss-tax .boss-table td .text-boss-text-muted {
+  color: rgb(var(--boss-text-secondary));
+}
+
+/* ── 세금계산서 금액 상자(AmountBoxes · 2026-10-21 점검 N5) ──
+ * 칸: 칸 폭에 맞춰 금액 글자를 14~22px 로 줄인다 — 1억 · 10억 원대도 잘리지 않는다. 컨테이너 단위를 모르는 브라우저는 18px.
+ * 휴대폰 세로 줄(.boss-amount-rows, 640px 미만): 한 상자 안에 왼쪽 이름 · 오른쪽 금액 줄을 쌓는다. */
+.boss-amount-grid {
+  display: grid;
+  gap: 8px;
+}
+.boss-amount-box {
+  container-type: inline-size;
+  min-width: 0;
+  border: 1px solid rgb(var(--boss-border));
+  background-color: rgb(var(--boss-inset));
+  padding: 10px 12px;
+}
+.boss-amount-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgb(var(--boss-text-secondary));
+}
+.boss-amount-value {
+  margin-top: 2px;
+  font-family: var(--boss-font-head);
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--boss-text));
+  font-size: 18px;
+  font-size: clamp(14px, 14cqw, 22px);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 639.98px) {
+  .boss-amount-rows {
+    gap: 0;
+    border: 1px solid rgb(var(--boss-border));
+    background-color: rgb(var(--boss-inset));
+  }
+  .boss-amount-rows .boss-amount-box {
+    container-type: normal;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border: 0;
+    border-bottom: 1px solid rgb(var(--boss-border-row));
+    padding: 9px 12px;
+  }
+  .boss-amount-rows .boss-amount-box:last-child {
+    border-bottom: 0;
+  }
+  .boss-amount-rows .boss-amount-label {
+    font-size: 13px;
+  }
+  .boss-amount-rows .boss-amount-value {
+    margin-top: 0;
+    font-size: 18px;
+    text-align: right;
+  }
 }
 
 /* 넓은 화면: 입력 표는 칸 사이를 좁혀 본문 폭(약 690px) 안에 면세 · 삭제까지 들어오게 한다 */

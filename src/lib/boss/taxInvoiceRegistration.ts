@@ -76,7 +76,26 @@ export function normalizeSupplier(s: TaxInvoiceSupplier): TaxInvoiceSupplier {
   };
 }
 
-/** 입력칸에 넣을 모양 — 사업자번호는 000-00-00000 */
+/**
+ * 연락처 보이는 모양 — 010-1234-5678 · 02-123-4567 · 031-123-4567 · 1588-1234(2026-10-21 — 등록 화면에 01024687272 로 보였다).
+ * 숫자 자릿수가 맞지 않으면 받은 그대로 둔다(지어내지 않는다). 하이픈은 서버가 지우므로 그대로 보내도 된다.
+ */
+export function formatSupplierPhone(v: string | null | undefined): string {
+  const raw = (v ?? '').trim();
+  const d = raw.replace(/\D/g, '');
+  if (d !== raw.replace(/[\s-]/g, '')) return raw;
+  if (d.startsWith('02')) {
+    if (d.length === 9) return `02-${d.slice(2, 5)}-${d.slice(5)}`;
+    if (d.length === 10) return `02-${d.slice(2, 6)}-${d.slice(6)}`;
+    return raw;
+  }
+  if (d.length === 8 && /^1[5-9]/.test(d)) return `${d.slice(0, 4)}-${d.slice(4)}`;
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+  return raw;
+}
+
+/** 입력칸에 넣을 모양 — 사업자번호는 000-00-00000, 연락처는 하이픈을 넣는다 */
 export function supplierFormValue(s: TaxInvoiceSupplier | null | undefined): TaxInvoiceSupplier {
   if (!s) return { ...EMPTY_SUPPLIER };
   return {
@@ -87,7 +106,7 @@ export function supplierFormValue(s: TaxInvoiceSupplier | null | undefined): Tax
     bizType: s.bizType ?? '',
     bizKind: s.bizKind ?? '',
     email: s.email ?? '',
-    phone: s.phone ?? '',
+    phone: formatSupplierPhone(s.phone),
   };
 }
 
@@ -109,7 +128,8 @@ export function supplierFromCompany(c: BossCompanyData): TaxInvoiceSupplier {
 export function sameSupplier(a: TaxInvoiceSupplier, b: TaxInvoiceSupplier): boolean {
   const x = normalizeSupplier(a);
   const y = normalizeSupplier(b);
-  return SUPPLIER_FIELDS.every((f) => x[f] === y[f]);
+  // 연락처 하이픈은 서버가 지운다 — 보이는 모양(010-1234-5678)과 저장값(01012345678)을 같게 본다
+  return SUPPLIER_FIELDS.every((f) => (f === 'phone' ? x[f].replace(/-/g, '') === y[f].replace(/-/g, '') : x[f] === y[f]));
 }
 
 export function validateSupplier(input: TaxInvoiceSupplier): SupplierErrors {

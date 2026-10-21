@@ -173,7 +173,7 @@ export function RecentActivity({ refreshKey, scope }: { refreshKey: number; scop
   );
 }
 
-/** 알림 센터 위 — 세금계산서 알림은 따로 모아 본다(안 읽은 건수를 알면 함께) */
+/** 알림 센터 위 — 세금계산서 · 현금영수증 발급 알림은 따로 모아 본다(안 읽은 건수를 알면 함께). 이름은 목록 단추 · 화면 제목과 같은 '발급 알림' */
 export function TaxActivityEntry({ scope }: { scope: string }) {
   const [unread, setUnread] = useState<number | null>(null);
   const [hidden, setHidden] = useState(false);
@@ -193,15 +193,15 @@ export function TaxActivityEntry({ scope }: { scope: string }) {
 
   if (hidden) return null;
   return (
-    <section aria-label="세금계산서 알림" className="boss-card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+    <section aria-label="발급 알림" className="boss-card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
       <BellRing aria-hidden size={16} strokeWidth={1.75} className="shrink-0 text-boss-primary" />
       <p className="min-w-0 flex-1 basis-[220px] break-keep text-[13px] leading-relaxed text-boss-text">
-        <span className="font-semibold">세금계산서 · 현금영수증 알림</span>
+        <span className="font-semibold">세금계산서 · 현금영수증 발급 알림</span>
         <span className="text-boss-text-secondary"> — 발급 결과 · 권한 심사 · 인증서 만료 안내는 따로 모아 봅니다.</span>
       </p>
       {unread != null && unread > 0 && <Tag tone="info">안 읽음 {unread}</Tag>}
       <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" size="sm">
-        알림 보기
+        발급 알림 보기
       </ButtonLink>
     </section>
   );
