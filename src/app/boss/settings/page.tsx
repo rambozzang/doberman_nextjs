@@ -382,7 +382,7 @@ export default function BossSettingsPage() {
               코드랩타이거(CodeLabTiger)
             </p>
             <p className="mt-[11px] font-boss-head text-[13px] tabular-nums text-boss-text-muted">
-              770-50-01045
+              744-50-01045
             </p>
           </Card>
 
