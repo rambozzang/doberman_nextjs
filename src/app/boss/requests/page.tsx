@@ -254,8 +254,10 @@ function RequestList() {
         {myRegions ? (
           <span className="text-[14px] font-semibold text-boss-text">{formatRegions(myRegions)}</span>
         ) : (
-          <span className="text-[13px] font-semibold text-boss-warning">
-            아직 지정하지 않았습니다 — 지역을 정해야 새 요청 알림을 받습니다
+          // 회사 미등록 · 지역 비움은 서버가 전국 요청을 보낸다(2026-10-18 TbUserRepository.findUserInfoByRegion).
+          // 예전 문구 "지역을 정해야 알림을 받습니다"는 반대로 읽혔다(2026-10-23)
+          <span className="text-[13px] font-semibold text-boss-text-secondary">
+            아직 지정하지 않았습니다 — 지금은 전국 요청 알림을 받습니다. 원하는 지역만 받으려면 지역을 정해 주세요
           </span>
         )}
         {isNationwide(myRegions) && (
