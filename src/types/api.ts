@@ -253,6 +253,21 @@ export interface CreateCustomerRequestRequest {
 export interface CreateCustomerRequestResponse {
   id: number;
   message: string;
+  /** 요청한 고객에게 소개하는 근처 사장님(연락처 공개에 동의한 곳만, 최대 3곳) — 2026-10-23 */
+  nearbyCompanies?: NearbyCompany[];
+}
+
+/** 견적 요청 고객에게 소개하는 사장님 한 곳 */
+export interface NearbyCompany {
+  companyId: number;
+  name: string;
+  /** 보여 줄 형식("010-1234-5678") */
+  phone: string;
+  /** 활동 지역("경기 화성시") */
+  area: string;
+  intro?: string | null;
+  /** 최근 30일 안에 웹견적을 보낸 사장님 */
+  recentlyAnswered: boolean;
 }
 
 // 문의하기 관련 타입들

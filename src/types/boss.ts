@@ -88,6 +88,20 @@ export interface BossCompanyData {
   region?: string;
 }
 
+// 내 연락처를 견적 요청 고객에게 소개 (GET/PUT /company/contact-open, 2026-10-23)
+export interface BossContactOpenStatus {
+  companyRegistered: boolean;
+  companyName?: string | null;
+  /** 고객에게 보일 대표 전화(회사 정보). 없으면 켤 수 없다 */
+  phone?: string | null;
+  open: boolean;
+  agreedAt?: string | null;
+  /** 최근 30일 소개된 요청 수 */
+  shown30: number;
+  /** 최근 30일 고객이 전화 버튼을 누른 횟수 */
+  calls30: number;
+}
+
 // 사용자 검색 (Flutter /user/search)
 export interface BossUserSearchRequest {
   searchWord: string;

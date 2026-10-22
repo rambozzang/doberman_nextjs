@@ -31,6 +31,7 @@ import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 import { bossCompanyApi } from '@/lib/api/boss/company';
 import { BossAuthManager } from '@/lib/bossAuth';
 import RegionPicker from '@/components/boss/RegionPicker';
+import ContactOpenCard from '@/components/boss/ContactOpenCard';
 import { formatRegions, matchesMyRegions, isNationwide } from '@/lib/boss/regions';
 import toast from 'react-hot-toast';
 import { MapPin, RefreshCw } from 'lucide-react';
@@ -289,6 +290,9 @@ function RequestList() {
         onCancel={() => setRegionOpen(false)}
         onSave={(r) => void saveRegions(r)}
       />
+
+      {/* 견적서 없이도 전화로 — 견적 요청 고객에게 내 연락처 소개(2026-10-23) */}
+      <ContactOpenCard />
 
       {/* 필터 한 줄 — 상태 탭 · (헤더 검색) · 우측 건수 */}
       <div className="flex flex-wrap items-center gap-2.5">

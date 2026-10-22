@@ -12,7 +12,8 @@ import {
   CustomerRequestStatisticsResponse,
   ContactSendRequest,
   ContactSendResponse,
-  AdoptAnswerResponse
+  AdoptAnswerResponse,
+  NearbyCompany
 } from '@/types/api';
 
 export class CustomerRequestService {
@@ -53,6 +54,16 @@ export class CustomerRequestService {
     requestData: CreateCustomerRequestRequest
   ): Promise<ApiResponse<CreateCustomerRequestResponse>> {
     return ApiClient.post<CreateCustomerRequestResponse>('/customer-request/non-login', requestData);
+  }
+
+  // 내 요청에 소개된 근처 사장님 (요청한 고객 본인만)
+  static async getNearbyCompanies(requestId: number): Promise<ApiResponse<NearbyCompany[]>> {
+    return ApiClient.postPrivate<NearbyCompany[]>(`/customer-request/${requestId}/contacts`, {});
+  }
+
+  // 소개된 사장님 전화 버튼 누름 기록 — 로그인 없이 요청한 고객도 누르므로 공개 주소
+  static async recordContactCall(requestId: number, companyId: number): Promise<ApiResponse<boolean>> {
+    return ApiClient.post<boolean>(`/customer-request/${requestId}/contact-call/${companyId}`, {});
   }
 
   // 견적 요청 통계 조회

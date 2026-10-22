@@ -540,6 +540,13 @@ export default function BossMyCompanyPage() {
               <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
               <span>로고 · 도장 · 소개는 고객에게 보이는 견적서 브랜딩에 쓰입니다.</span>
             </li>
+            <li className="flex gap-1.5">
+              <span className="mt-[7px] h-1 w-1 flex-none bg-boss-primary" aria-hidden />
+              <span>
+                대표 전화 · 회사 소개는 웹견적 화면의 &lsquo;고객에게 내 연락처 소개&rsquo;를 켠 경우에만 견적 요청 고객에게
+                보입니다.
+              </span>
+            </li>
           </ul>
         </section>
 

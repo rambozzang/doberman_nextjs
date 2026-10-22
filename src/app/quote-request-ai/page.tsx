@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthManager } from '@/lib/auth';
 import { CustomerRequestService } from '@/services/customerRequestService';
-import type { UserInfo } from '@/types/api';
+import type { CreateCustomerRequestResponse, UserInfo } from '@/types/api';
 import LoginModal from '@/components/LoginModal';
 import { useAIChat } from './hooks/useAIChat';
 import ChatPanel from './components/ChatPanel';
@@ -39,6 +39,8 @@ export default function QuoteRequestAIPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // 저장된 요청 — 완료 화면에서 근처 사장님 소개에 쓴다(2026-10-23)
+  const [created, setCreated] = useState<CreateCustomerRequestResponse | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -87,6 +89,7 @@ export default function QuoteRequestAIPage() {
         toast.dismiss('ai-auto-submit');
         if (res.success) {
           toast.success('AI 견적 신청이 완료되었습니다!', { position: 'top-center' });
+          setCreated(res.data ?? null);
           setSubmitted(true);
         } else {
           toast.error(res.message ?? '신청 중 오류가 발생했습니다.', { position: 'top-center' });
@@ -152,6 +155,7 @@ export default function QuoteRequestAIPage() {
       const res = await CustomerRequestService.createCustomerRequest(payload);
       if (res.success) {
         toast.success('AI 견적 신청이 완료되었습니다!', { position: 'top-center' });
+        setCreated(res.data ?? null);
         setSubmitted(true);
       } else {
         toast.error(res.message ?? '신청 중 오류가 발생했습니다.', { position: 'top-center' });
@@ -169,7 +173,8 @@ export default function QuoteRequestAIPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20">
         <CompletionScreen
           onGoHome={() => router.push('/')}
-          onReset={() => { setSubmitted(false); reset(); }}
+          onReset={() => { setSubmitted(false); setCreated(null); reset(); }}
+          created={created}
         />
       </div>
     );

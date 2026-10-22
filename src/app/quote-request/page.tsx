@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, Sparkles, MapPin, Home, Calendar, User } from "lucide-react";
 import { CustomerRequestService } from "@/services/customerRequestService";
-import { CreateCustomerRequestRequest, UserInfo } from "@/types/api";
+import { CreateCustomerRequestRequest, CreateCustomerRequestResponse, UserInfo } from "@/types/api";
+import NearbyCompanies from "@/components/NearbyCompanies";
 import { AuthManager } from "@/lib/auth";
 import { useAuth } from "@/providers/AuthProvider";
 import SocialAuthService from '@/services/socialAuthService';
@@ -549,6 +550,8 @@ export default function QuoteRequestPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  // 저장된 요청 — 완료 화면에서 근처 사장님 소개에 쓴다(2026-10-23)
+  const [created, setCreated] = useState<CreateCustomerRequestResponse | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // 중복 제출 방지용
@@ -660,6 +663,7 @@ export default function QuoteRequestPage() {
           toast.success('견적 요청이 완료되었습니다!', { duration: 2000, position: 'top-center' });
           clearFormDataFromStorage();
           clearAutosave();
+          setCreated(response.data ?? null);
           setIsComplete(true);
         } else if ('network' in response && response.network) {
           // 서버가 받았는지 모른다 — 대기 표시는 남겨 다음에 다시 보내고(서버가 중복을 막는다), 화면은 이어서 쓰게 둔다
@@ -1046,6 +1050,7 @@ export default function QuoteRequestPage() {
         console.log("견적 요청 성공:", response.data);
         clearFormDataFromStorage();
         clearAutosave();
+        setCreated(response.data ?? null);
         setIsComplete(true);
       } else {
         console.error("견적 요청 실패:", response.message);
@@ -1100,6 +1105,7 @@ export default function QuoteRequestPage() {
     });
     setCurrentStep(0);
     setIsComplete(false);
+    setCreated(null);
     setIsSubmitting(false);
     clearAutosave();
   };
@@ -1184,7 +1190,7 @@ export default function QuoteRequestPage() {
     return (
       <div className="flex flex-col min-h-screen">
         <main className="quote-main-content flex-grow w-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center py-8 md:py-12 px-4 pt-24">
-          <div className="max-w-lg mx-auto text-center p-6 md:p-8">
+          <div className="w-full max-w-lg mx-auto text-center p-6 md:p-8">
             {/* 성공 아이콘 */}
             <div className="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6">
               <div className="w-full h-full bg-gradient-to-br from-green-400 via-emerald-500 to-blue-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30">
@@ -1207,6 +1213,7 @@ export default function QuoteRequestPage() {
                 전문가들이 검토 후 <span className="text-blue-300 font-semibold">24시간 내</span>에<br />
                 맞춤 견적을 제공해드릴 예정입니다.
               </p>
+              <NearbyCompanies requestId={created?.id} companies={created?.nearbyCompanies} />
             </div>
 
             <div className="space-y-4">

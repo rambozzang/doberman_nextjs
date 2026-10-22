@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, Send, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { CustomerRequestService } from "@/services/customerRequestService";
-import { CreateCustomerRequestRequest } from "@/types/api";
+import { CreateCustomerRequestRequest, CreateCustomerRequestResponse } from "@/types/api";
+import NearbyCompanies from "@/components/NearbyCompanies";
 import { AuthManager } from "@/lib/auth";
 import { VendorDetail } from "@/types/vendor";
 
@@ -36,6 +37,8 @@ export default function QuotePanel({ vendor, onClear }: QuotePanelProps) {
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  // 저장된 요청 — 완료 화면에서 근처 사장님 소개에 쓴다(2026-10-23)
+  const [created, setCreated] = useState<CreateCustomerRequestResponse | null>(null);
 
   // 업체를 선택하면 지역을 자동 채워준다(사용자가 고칠 수 있음)
   useEffect(() => {
@@ -98,6 +101,7 @@ export default function QuotePanel({ vendor, onClear }: QuotePanelProps) {
         : await CustomerRequestService.createCustomerRequestNonLogin(payload);
 
       if (res.success) {
+        setCreated(res.data ?? null);
         setDone(true);
         toast.success("견적 요청이 접수되었습니다.");
       } else {
@@ -112,12 +116,13 @@ export default function QuotePanel({ vendor, onClear }: QuotePanelProps) {
 
   if (done) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-slate-900 p-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-3 overflow-y-auto bg-slate-900 p-6 text-center">
         <CheckCircle2 className="h-12 w-12 text-emerald-400" />
         <p className="text-lg font-bold text-white">견적 요청 완료</p>
         <p className="text-sm text-slate-400">
           업체에서 확인 후 연락드립니다. 요청 내역은 마이페이지에서 확인할 수 있습니다.
         </p>
+        <NearbyCompanies requestId={created?.id} companies={created?.nearbyCompanies} compact />
         <button
           onClick={() => setDone(false)}
           className="mt-2 rounded-lg bg-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-600"

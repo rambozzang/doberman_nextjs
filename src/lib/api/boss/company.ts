@@ -1,7 +1,7 @@
 // 사장님 회사(업체) 정보 API
 // Flutter company_repo.dart 에 1:1 대응
 import BossApiClient from '@/lib/bossApi';
-import type { BossCompanyData } from '@/types/boss';
+import type { BossCompanyData, BossContactOpenStatus } from '@/types/boss';
 
 export const bossCompanyApi = {
   // 회사 생성 — Flutter: CompanyRepo.create → POST /company
@@ -36,6 +36,13 @@ export const bossCompanyApi = {
       companyId: String(companyId),
       region,
     }),
+
+  // 내 연락처 소개 상태 — 회사는 로그인한 사장님 계정으로 서버가 찾는다(2026-10-23)
+  contactOpen: () => BossApiClient.getPrivate<BossContactOpenStatus>('/company/contact-open'),
+
+  // 내 연락처 소개 켜기 · 끄기
+  setContactOpen: (open: boolean) =>
+    BossApiClient.putPrivate<BossContactOpenStatus>('/company/contact-open', { open }),
 
   // 로고 삭제 — DELETE /company/deleteLogo/{id}
   deleteLogoPath: (companyId: number | string) =>

@@ -1,12 +1,16 @@
 'use client';
 import { CheckCircle2, Home, RotateCcw } from 'lucide-react';
+import NearbyCompanies from '@/components/NearbyCompanies';
+import type { CreateCustomerRequestResponse } from '@/types/api';
 
 interface Props {
   onGoHome: () => void;
   onReset: () => void;
+  /** 저장된 요청 — 근처 사장님 소개(2026-10-23) */
+  created?: CreateCustomerRequestResponse | null;
 }
 
-export default function CompletionScreen({ onGoHome, onReset }: Props) {
+export default function CompletionScreen({ onGoHome, onReset, created }: Props) {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-slate-900/60 backdrop-blur-xl border border-blue-400/30 rounded-3xl p-8 text-center shadow-2xl shadow-blue-500/10">
@@ -17,6 +21,7 @@ export default function CompletionScreen({ onGoHome, onReset }: Props) {
         <p className="text-slate-300 text-sm mb-6">
           24시간 이내에 매칭된 전문가들이 직접 연락드릴 거예요. 곧 만나요!
         </p>
+        <NearbyCompanies requestId={created?.id} companies={created?.nearbyCompanies} className="mb-6" />
         <div className="flex gap-2">
           <button
             type="button"
