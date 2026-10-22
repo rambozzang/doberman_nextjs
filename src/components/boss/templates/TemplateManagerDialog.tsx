@@ -17,6 +17,7 @@ import { getBossCustId } from '@/lib/api/boss/as';
 import { mergeWithDefaults } from '@/lib/boss/defaultTemplates';
 import type { BossTemplate, BossTemplateFormValue } from '@/types/boss-templates';
 import RichEditor from '@/components/boss/RichEditor';
+import { TEMPLATE_FIELDS } from '@/lib/boss/answerTemplate';
 import { Button, Field, FieldLabel, ConfirmDialog, Tag } from '@/components/boss/ui';
 
 export const DEFAULT_TEMPLATE_TITLE = '견적서 보내드립니다.';
@@ -30,13 +31,13 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** 양식 목록 — 기본 2개(앱과 같은 글) + 서버에 저장한 것. 답변 화면과 대화상자가 같이 쓴다 */
+/** 양식 목록 — 기본 3개(앱과 같은 글) + 서버에 저장한 것. 답변 화면과 대화상자가 같이 쓴다 */
 export async function loadTemplates(): Promise<{ list: BossTemplate[]; error?: string }> {
   const cid = getBossCustId();
   if (!cid) return { list: mergeWithDefaults([]), error: '로그인 정보가 없습니다.' };
   try {
     const res = await bossTemplatesApi.list(cid);
-    // 서버가 실패해도 기본 양식 2개는 남긴다 — 양식이 하나도 없는 사장님도 답변할 수 있어야 한다
+    // 서버가 실패해도 기본 양식 3개는 남긴다 — 양식이 하나도 없는 사장님도 답변할 수 있어야 한다
     if (!res.success) return { list: mergeWithDefaults([]), error: res.message || '양식을 불러오지 못했습니다.' };
     return { list: mergeWithDefaults((res.data ?? []) as BossTemplate[]) };
   } catch {
@@ -299,6 +300,9 @@ export default function TemplateManagerDialog({
                   placeholder="시공 범위 · 자재 · 일정 · AS 조건처럼 매번 적는 문구를 넣어 두세요."
                   minHeight={220}
                 />
+                <p className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">
+                  자동 채움 칸: {TEMPLATE_FIELDS.map((f) => `{${f}}`).join(' ')} — 답변할 때 요청 내용으로 바뀝니다. 값이 없는 칸이 든 줄은 빠집니다.
+                </p>
                 <p
                   className={`mt-1 text-right font-boss-head text-[12px] tabular-nums ${
                     form.content.length > TEMPLATE_CONTENT_MAX ? 'text-boss-error' : 'text-boss-text-muted'

@@ -7,7 +7,7 @@
 //   양식 고르기(제목 · 내용이 채워진다) · 양식 관리(⚙) · 지우기.
 // 양식은 답변 양식(/boss/templates)와 같은 저장소(/web-templates)를 쓴다.
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -24,6 +24,9 @@ import { BossAuthManager } from '@/lib/bossAuth';
 import { LIST_KEYS, markListDirty } from '@/lib/boss/listCache';
 import { amountInKorean } from '@/lib/boss/docMeta';
 import { useCompanyRegistered } from '@/lib/boss/useCompanyRegistered';
+import { DEFAULT_TEMPLATES } from '@/lib/boss/defaultTemplates';
+import { fillTemplate, fillTemplateHtml, fillTitle, templateValues } from '@/lib/boss/answerTemplate';
+import { useBossPortal } from '@/components/boss/layout/BossPortalContext';
 
 /** 자주 쓰는 금액 — 누르면 더해진다 */
 const QUICK_AMOUNTS = [50000, 100000, 500000, 1000000];
@@ -107,11 +110,33 @@ export default function BossAnswerPage() {
     };
   }, []);
 
-  const applyTemplate = useCallback((t: BossTemplate) => {
-    setTemplateId(String(t.id));
-    setTitle(t.title || '');
-    setBody(templateToHtml(t.content || ''));
-  }, []);
+  // 양식의 {지역} · {면적} 같은 칸은 이 요청 내용으로 채운다(2026-10-23, answerTemplate.ts)
+  const { company } = useBossPortal();
+  const companyName = company?.name ?? '';
+  const applyTemplate = useCallback(
+    (t: BossTemplate) => {
+      const values = templateValues(request, companyName);
+      setTemplateId(String(t.id));
+      setTitle(fillTitle(t.title || '', values));
+      const content = t.content || '';
+      setBody(
+        looksLikePlainText(content)
+          ? templateToHtml(fillTemplate(content, values))
+          : sanitizeHtml(fillTemplateHtml(content, values)),
+      );
+    },
+    [request, companyName],
+  );
+
+  // 처음 열면 '기본 견적'을 요청 내용으로 채워 둔다 — 금액만 넣어도 보낼 수 있게(앱과 같다).
+  // 맺음말에 회사 이름이 들어가므로 회사 정보까지 읽은 뒤 채운다. 사장님이 이미 고르거나 적기 시작했으면 건드리지 않는다
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !request || !company) return;
+    prefilled.current = true;
+    if (templateId || title || body) return;
+    applyTemplate(DEFAULT_TEMPLATES[0]);
+  }, [request, company, templateId, title, body, applyTemplate]);
 
   const clearForm = () => {
     setTemplateId('');
@@ -249,6 +274,7 @@ export default function BossAnswerPage() {
                   id="answer-template"
                   className="boss-input"
                   value={templateId}
+                  disabled={!request}
                   onChange={(e) => {
                     const t = templates.find((x) => String(x.id) === e.target.value);
                     if (t) applyTemplate(t);
@@ -415,6 +441,7 @@ export default function BossAnswerPage() {
 
         <Panel kicker="안내" title="잘 채택되는 답변">
           <ul className="flex flex-col gap-1.5 text-[12.5px] leading-relaxed text-boss-text-secondary">
+            <li>· 기본 견적에는 요청 내용이 자동으로 채워집니다. 내 시공과 맞지 않는 줄은 고치거나 지우고 보내세요.</li>
             <li>· 시공 범위(거실 · 방 · 천장)를 먼저 적습니다.</li>
             <li>· 벽지 종류와 브랜드를 명시합니다.</li>
             <li>· 시공 가능한 가장 빠른 날짜를 적습니다.</li>

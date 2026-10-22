@@ -21,6 +21,7 @@ import { mergeWithDefaults } from '@/lib/boss/defaultTemplates';
 import { TEMPLATE_CONTENT_MAX } from '@/components/boss/templates/TemplateManagerDialog';
 import type { BossTemplate, BossTemplateFormValue } from '@/types/boss-templates';
 import RichEditor from '@/components/boss/RichEditor';
+import { TEMPLATE_FIELDS } from '@/lib/boss/answerTemplate';
 import { sanitizeHtml, looksLikePlainText } from '@/lib/sanitizeHtml';
 import {
   SearchInput,
@@ -113,7 +114,7 @@ export default function BossTemplatesPage() {
     try {
       const res = await bossTemplatesApi.list(cid);
       if (res.success) {
-        // 기본 2개(앱과 같은 글)가 맨 앞, 그 뒤에 내가 만든 양식
+        // 기본 3개(앱과 같은 글)가 맨 앞, 그 뒤에 내가 만든 양식
         setTemplates(mergeWithDefaults((res.data ?? []) as BossTemplate[]));
       } else {
         setTemplates(mergeWithDefaults([]));
@@ -386,6 +387,9 @@ export default function BossTemplatesPage() {
                   placeholder="굵게 · 목록 · 링크를 써서 고객에게 보낼 답변을 작성하세요."
                   minHeight={260}
                 />
+                <p className="mt-1 text-[12px] leading-relaxed text-boss-text-secondary">
+                  자동 채움 칸: {TEMPLATE_FIELDS.map((f) => `{${f}}`).join(' ')} — 답변할 때 요청 내용으로 바뀝니다. 값이 없는 칸이 든 줄은 빠집니다.
+                </p>
                 <p
                   className={`mt-1 text-right font-boss-head text-[12px] tabular-nums ${
                     editor.value.content.length > TEMPLATE_CONTENT_MAX ? 'text-boss-error' : 'text-boss-text-muted'
