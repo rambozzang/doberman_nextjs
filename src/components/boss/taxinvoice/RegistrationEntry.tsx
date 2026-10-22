@@ -7,6 +7,7 @@ import { ButtonLink, Tag, type StatusTone } from '@/components/boss/ui';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
+import { effectiveStage } from '@/lib/boss/taxInvoiceRegistration';
 import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
 import { REGISTRATION_STAGE_LABEL, type RegistrationStage } from '@/types/boss-taxinvoice';
 
@@ -36,12 +37,18 @@ export default function RegistrationEntry() {
   const scope = useBossScope();
   // 지금 계정의 등록 단계(모르면 null)
   const [stage, setStage] = useState<RegistrationStage | null>(null);
+  // 단계를 읽는 동안 준비 전 문구가 먼저 보였다가 바뀌지 않게 — 읽기가 끝나면(성공 · 실패 모두) true
+  const [checked, setChecked] = useState(false);
   useEffect(() => {
     setStage(null);
+    setChecked(false);
     if (!open || !scope) return;
     let alive = true;
     void bossTaxInvoiceApi.operations().then((r) => {
-      if (alive && isCurrentScope(scope) && r.ok) setStage(r.data.registration?.stage ?? null);
+      if (!alive || !isCurrentScope(scope)) return;
+      // 등록 화면과 같은 판정 — 심사 반려는 서버 단계가 '권한 확인 중'이어도 '반려됨'으로 보인다(2026-10-23 점검)
+      if (r.ok) setStage(r.data.registration ? effectiveStage(r.data.registration) : null);
+      setChecked(true);
     });
     return () => {
       alive = false;
@@ -74,7 +81,9 @@ export default function RegistrationEntry() {
             {open && stage && <Tag tone={STAGE_TONE[stage]}>{REGISTRATION_STAGE_LABEL[stage]}</Tag>}
           </div>
           <p className="mt-1 break-keep text-[13px] leading-relaxed text-boss-text-secondary">
-            {open && ready
+            {open && scope && !checked
+              ? '등록 상태를 확인하는 중입니다.'
+              : open && ready
               ? `등록을 모두 마쳤습니다. 문서 상세에서 '미리보기 · 발급'으로 바로 발급할 수 있습니다.${
                   taxOpen && !cashOpen ? ' 현금영수증 발급은 곧 열립니다.' : !taxOpen && cashOpen ? ' 전자세금계산서 발급은 곧 열립니다.' : ''
                 }`

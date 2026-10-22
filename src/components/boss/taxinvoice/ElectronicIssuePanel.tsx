@@ -689,7 +689,9 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
                 ? '현금영수증 발급 준비가 끝났습니다. 공동인증서는 필요 없습니다.'
                 : '현금영수증은 공동인증서 없이 발급 서비스 연동이 끝나면 발급할 수 있습니다. 준비 상태는 서버가 판단합니다.'
               : config.certificateExpiresAt
-                ? `공동인증서가 등록되어 있습니다(${config.certificateExpiresAt.slice(0, 10)}까지). 갱신할 때만 '인증서 관리'를 눌러 주세요.`
+                ? config.certificateExpiresAt.slice(0, 10) < kstToday()
+                  ? `공동인증서가 만료되었습니다(${config.certificateExpiresAt.slice(0, 10)}). '인증서 관리'에서 새 인증서를 등록해 주세요.`
+                  : `공동인증서가 등록되어 있습니다(${config.certificateExpiresAt.slice(0, 10)}까지). 갱신할 때만 '인증서 관리'를 눌러 주세요.`
                 : '인증서 등록은 팝빌 회원으로 가입된 사업자만 할 수 있습니다. 가입은 자동으로 되지 않습니다.'}
           </p>
         </div>
