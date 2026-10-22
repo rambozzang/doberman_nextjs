@@ -402,7 +402,8 @@ export default function BossTaxInvoiceDetailPage() {
               />
               <DescRow label="거래일자(작성 기준)" value={data.issueDate || '미정'} />
               {data.providerTradeDate && <DescRow label="승인 거래일자" value={isoDateOf(data.providerTradeDate)} />}
-              <DescRow label="대금" value={data.payType === 'RECEIPT' ? '받음(영수)' : '아직 안 받음 — 발급 불가'} />
+              {/* 기록 · 서식은 그대로 쓸 수 있다 — 막히는 것은 전자 발급뿐(2026-10-22 리뷰) */}
+              <DescRow label="대금" value={data.payType === 'RECEIPT' ? '받음(영수)' : '아직 안 받음 — 대금을 받은 뒤 전자 발급할 수 있습니다'} />
               {data.customerId && <CustomerRow customerId={data.customerId} />}
             </dl>
           </Panel>

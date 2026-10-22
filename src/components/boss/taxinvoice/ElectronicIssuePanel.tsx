@@ -666,7 +666,8 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
             </Button>
             {!isCash && (
               <Button variant="secondary" size="sm" icon={ShieldCheck} onClick={() => void openCertificate()} disabled={certOpening}>
-                {certOpening ? '여는 중…' : '인증서 등록'}
+                {/* 이미 등록한 사장님에게는 갱신 · 관리 단추다(2026-10-22 준비 완료 화면 점검) */}
+                {certOpening ? '여는 중…' : config.certificateExpiresAt ? '인증서 관리' : '인증서 등록'}
               </Button>
             )}
             <Button variant="ghost" size="sm" icon={RefreshCw} onClick={() => void loadConfig()} disabled={loading}>
@@ -682,9 +683,14 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
             </p>
           )}
           <p className="text-[12.5px] leading-relaxed text-boss-text-secondary">
+            {/* 준비를 마친 사장님에게 준비 전 안내를 보이지 않는다(2026-10-22) */}
             {isCash
-              ? '현금영수증은 공동인증서 없이 발급 서비스 연동이 끝나면 발급할 수 있습니다. 준비 상태는 서버가 판단합니다.'
-              : '인증서 등록은 팝빌 회원으로 가입된 사업자만 할 수 있습니다. 가입은 자동으로 되지 않습니다.'}
+              ? config.ready
+                ? '현금영수증 발급 준비가 끝났습니다. 공동인증서는 필요 없습니다.'
+                : '현금영수증은 공동인증서 없이 발급 서비스 연동이 끝나면 발급할 수 있습니다. 준비 상태는 서버가 판단합니다.'
+              : config.certificateExpiresAt
+                ? `공동인증서가 등록되어 있습니다(${config.certificateExpiresAt.slice(0, 10)}까지). 갱신할 때만 '인증서 관리'를 눌러 주세요.`
+                : '인증서 등록은 팝빌 회원으로 가입된 사업자만 할 수 있습니다. 가입은 자동으로 되지 않습니다.'}
           </p>
         </div>
       ) : null}
