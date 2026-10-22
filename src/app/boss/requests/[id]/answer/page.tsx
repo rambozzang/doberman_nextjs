@@ -136,7 +136,7 @@ export default function BossAnswerPage() {
       return;
     }
     if (companyRegistered !== true) {
-      toast.error('회사 정보를 등록해야 웹견적서를 보낼 수 있습니다.');
+      toast.error('회사를 등록해야 견적을 보낼 수 있습니다.');
       return;
     }
     if (!title.trim() || !bodyText || !cost.trim()) {
@@ -202,7 +202,7 @@ export default function BossAnswerPage() {
   if (companyRegistered === false && !alreadyAnswered) {
     return (
       <EmptyState
-        title="회사 정보를 등록해야 웹견적서를 보낼 수 있습니다"
+        title="회사를 등록해야 견적을 보낼 수 있습니다"
         description="고객에게 가는 견적서에 회사 이름 · 연락처가 들어갑니다. 회사 정보를 등록하면 바로 이어서 쓸 수 있어요. 견적 요청은 등록하지 않아도 계속 받아 볼 수 있습니다."
         action={
           <div className="flex flex-wrap justify-center gap-2">

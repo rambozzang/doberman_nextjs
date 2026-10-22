@@ -215,7 +215,7 @@ export default function BossRequestDetailPage() {
                   // 회사 미등록 — 보내기 전에 회사 정보부터(2026-10-21)
                   <div className="mt-4 flex flex-col items-center gap-2">
                     <p className="text-[12.5px] font-semibold text-boss-pill-warn-fg">
-                      회사 정보를 등록해야 웹견적서를 보낼 수 있습니다.
+                      회사를 등록해야 견적을 보낼 수 있습니다.
                     </p>
                     <ButtonLink href="/boss/me/company" variant="primary" size="sm">
                       회사 정보 등록
