@@ -980,9 +980,13 @@ function Title({ children, sub }: { children: ReactNode; sub?: string }) {
   );
 }
 
-/** 아래 큰 단추 자리 — 휴대폰에서는 화면 아래에 붙는다 */
+/** 아래 큰 단추 자리 — 휴대폰에서는 화면 아래(하단 메뉴 56px 바로 위)에 붙는다 */
 function Bottom({ children }: { children: ReactNode }) {
-  return <div className="sticky bottom-0 -mx-1 mt-4 flex flex-col gap-2 bg-boss-bg px-1 pb-3 pt-3">{children}</div>;
+  return (
+    <div className="sticky bottom-[calc(56px+env(safe-area-inset-bottom))] -mx-1 mt-4 flex flex-col gap-2 bg-boss-bg px-1 pb-3 pt-3 lg:bottom-0">
+      {children}
+    </div>
+  );
 }
 
 function Big({ children, onClick, disabled }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
