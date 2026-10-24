@@ -756,7 +756,7 @@ function SetupFlow({ scope }: { scope: string }) {
       screen = (
         <>
           <Title sub="공동인증서를 등록하거나 팝빌에 직접 들어갈 때 필요해요. 도배르만은 비밀번호를 저장하지 않아요.">
-            아이디와 비밀번호를 꼭 적어 두세요
+            {'아이디와 비밀번호를\n꼭 적어 두세요'}
           </Title>
           <div className="flex items-center gap-3 border border-boss-border bg-boss-surface px-4 py-4">
             <span className="min-w-0 flex-1">
