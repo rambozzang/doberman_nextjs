@@ -632,8 +632,8 @@ function IssueReadyPanel({ invoice, reload }: { invoice: TaxInvoice; reload: () 
             <AlertBanner
               tone="warn"
               action={
-                <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm">
-                  발급 서비스 등록
+                <ButtonLink href="/boss/tax-invoice/start" variant="secondary" size="sm">
+                  전자 발급 시작하기
                 </ButtonLink>
               }
             >

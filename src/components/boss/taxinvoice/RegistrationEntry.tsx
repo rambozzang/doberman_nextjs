@@ -28,7 +28,7 @@ const STAGE_TONE: Record<RegistrationStage, StatusTone> = {
 // 사업자 정보 등록 · 권한 확인 신청은 정식 오픈 전에 미리 해 둘 수 있고, 팝빌 연동 · 인증서 등록은 연동 준비가 끝난 뒤다.
 // 오픈 전에는 앱과 같은 "곧 정식 오픈" 문구를 함께 싣는다.
 // 휴대폰(md 미만)은 한 줄 띠로 줄인다(2026-10-21 — 안내 카드 약 220px 때문에 첫 문서가 첫 화면 밖이었다).
-//   오픈 전: 준비 안내로(안내 끝에 등록 단추가 있다) · 오픈 뒤: 발급 서비스 등록으로
+//   오픈 전: 준비 안내로(안내 끝에 등록 단추가 있다) · 오픈 뒤: 준비 전이면 단계별 '전자 발급 시작하기'(2026-10-25), 끝났으면 발급 서비스 등록으로
 export default function RegistrationEntry() {
   // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21).
   const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
@@ -58,13 +58,13 @@ export default function RegistrationEntry() {
   return (
     <>
       <Link
-        href={open ? '/boss/tax-invoice/registration' : '/boss/tax-invoice/guide'}
+        href={!open ? '/boss/tax-invoice/guide' : ready ? '/boss/tax-invoice/registration' : '/boss/tax-invoice/start'}
         className="boss-card flex min-h-[44px] items-center gap-2 px-4 py-2.5 !text-boss-text active:bg-boss-elevated md:hidden"
       >
         {!open && <Tag tone="info">오픈 예정</Tag>}
         {open && stage && <Tag tone={STAGE_TONE[stage]}>{REGISTRATION_STAGE_LABEL[stage]}</Tag>}
         <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
-          {open ? (ready ? `${openedDocs} 발급 준비 완료` : `${openedDocs} 발급 서비스 등록`) : '전자 발급, 곧 정식 오픈 · 준비 안내'}
+          {open ? (ready ? `${openedDocs} 발급 준비 완료` : `${openedDocs} 전자 발급 시작하기`) : '전자 발급, 곧 정식 오픈 · 준비 안내'}
         </span>
         <ChevronRight size={16} strokeWidth={1.75} className="flex-none text-boss-text-muted" aria-hidden />
       </Link>
@@ -102,9 +102,16 @@ export default function RegistrationEntry() {
           <ButtonLink href="/boss/tax-invoice/guide" variant="secondary" size="sm" icon={BookOpen}>
             시작 전 준비 안내
           </ButtonLink>
-          <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm" icon={ShieldCheck}>
-            {ready ? '발급 준비 · 구독 확인' : '발급 서비스 등록'}
-          </ButtonLink>
+          {ready ? (
+            <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm" icon={ShieldCheck}>
+              발급 준비 · 구독 확인
+            </ButtonLink>
+          ) : (
+            // 한 화면에 한 가지만 묻는 단계별 절차(2026-10-25) — 한 화면에서 모두 보는 등록 화면은 그 안에서 이어진다
+            <ButtonLink href="/boss/tax-invoice/start" variant="primary" size="sm" icon={ShieldCheck}>
+              전자 발급 시작하기
+            </ButtonLink>
+          )}
         </div>
       </section>
     </>

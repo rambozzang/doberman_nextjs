@@ -17,8 +17,9 @@ export default function TaxInvoiceGuidePage() {
       <PreparationGuide
         cta={
           <div>
+            {/* 단계별로 하나씩 묻는 화면으로(2026-10-25) */}
             <Link
-              href="/boss/tax-invoice/registration"
+              href="/boss/tax-invoice/start"
               className="boss-btn boss-btn-md boss-btn-primary min-h-[44px] w-full whitespace-normal break-keep px-5 text-[15px] sm:w-auto"
             >
               준비됐어요, 등록하기
