@@ -15,7 +15,8 @@ import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
 import type { BossContactOpenStatus } from '@/types/boss';
 import { Button, ButtonLink, Toggle } from '@/components/boss/ui';
 
-export default function ContactOpenCard() {
+/** note — 카드 아래 한 줄 안내. 카드를 그리지 않을 때(읽기 전 · 실패)는 함께 숨는다(2026-10-27) */
+export default function ContactOpenCard({ note }: { note?: string } = {}) {
   const scope = useBossScope();
   const [status, setStatus] = useState<BossContactOpenStatus | null>(null);
   const [failed, setFailed] = useState(false);
@@ -62,69 +63,72 @@ export default function ContactOpenCard() {
   const canOpen = status.companyRegistered && !!status.phone;
 
   return (
-    <div
-      className={`border px-4 py-3 ${status.open ? 'border-boss-border bg-boss-surface' : 'border-boss-primary/30 bg-boss-primary/5'}`}
-    >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Phone size={15} strokeWidth={1.75} className="shrink-0 text-boss-text-secondary" />
-        <span className="boss-mono-label">고객에게 내 연락처 소개</span>
-        {status.open ? (
-          <span className="text-[13px] text-boss-text">
-            <span className="font-semibold">켜짐</span>
-            <span className="text-boss-text-secondary">
-              {' '}
-              — 최근 30일 {status.shown30}건 소개 · 전화 누름 {status.calls30}회
+    <div className="space-y-1.5">
+      <div
+        className={`border px-4 py-3 ${status.open ? 'border-boss-border bg-boss-surface' : 'border-boss-primary/30 bg-boss-primary/5'}`}
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Phone size={15} strokeWidth={1.75} className="shrink-0 text-boss-text-secondary" />
+          <span className="boss-mono-label">고객에게 내 연락처 소개</span>
+          {status.open ? (
+            <span className="text-[13px] text-boss-text">
+              <span className="font-semibold">켜짐</span>
+              <span className="text-boss-text-secondary">
+                {' '}
+                — 최근 30일 {status.shown30}건 소개 · 전화 누름 {status.calls30}회
+              </span>
             </span>
-          </span>
-        ) : (
-          <span className="text-[13px] text-boss-text-secondary">
-            켜면 견적을 요청한 내 지역 고객에게 업체명 · 대표 전화가 소개되어, 견적서 없이도 전화로 상담할 수 있습니다
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          {!status.companyRegistered ? (
-            <ButtonLink href="/boss/me/company" variant="secondary" size="sm">
-              회사 등록하기
-            </ButtonLink>
-          ) : !status.phone ? (
-            <ButtonLink href="/boss/me/company" variant="secondary" size="sm">
-              대표 전화 넣기
-            </ButtonLink>
           ) : (
-            <Toggle
-              checked={status.open}
-              disabled={saving}
-              label="고객에게 내 연락처 소개"
-              onChange={(next) => (next ? setConfirming(true) : void save(false))}
-            />
+            <span className="text-[13px] text-boss-text-secondary">
+              켜면 견적을 요청한 내 지역 고객에게 업체명 · 대표 전화가 소개되어, 견적서 없이도 전화로 상담할 수 있습니다
+            </span>
           )}
-        </div>
-      </div>
-
-      {confirming && canOpen && (
-        <div className="mt-3 border-t border-boss-border pt-3 text-[13px] text-boss-text">
-          <p className="font-semibold">견적을 요청한 고객에게 아래 정보가 보입니다.</p>
-          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-boss-text-secondary">
-            <li>
-              업체명 <span className="text-boss-text">{status.companyName}</span> · 대표 전화{' '}
-              <span className="text-boss-text">{status.phone}</span>
-            </li>
-            <li>활동 지역(회사 주소의 시 · 군 · 구)과 회사 소개 앞부분</li>
-            <li>한 요청에 3곳까지, 동의한 사장님 중에서 돌아가며 소개합니다</li>
-          </ul>
-          <p className="mt-1.5 text-boss-text-secondary">
-            언제든 끌 수 있고, 끄면 이미 소개된 요청에서도 바로 사라집니다.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Button variant="primary" size="sm" disabled={saving} onClick={() => void save(true)}>
-              동의하고 켜기
-            </Button>
-            <Button variant="secondary" size="sm" disabled={saving} onClick={() => setConfirming(false)}>
-              취소
-            </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {!status.companyRegistered ? (
+              <ButtonLink href="/boss/me/company" variant="secondary" size="sm">
+                회사 등록하기
+              </ButtonLink>
+            ) : !status.phone ? (
+              <ButtonLink href="/boss/me/company" variant="secondary" size="sm">
+                대표 전화 넣기
+              </ButtonLink>
+            ) : (
+              <Toggle
+                checked={status.open}
+                disabled={saving}
+                label="고객에게 내 연락처 소개"
+                onChange={(next) => (next ? setConfirming(true) : void save(false))}
+              />
+            )}
           </div>
         </div>
-      )}
+
+        {confirming && canOpen && (
+          <div className="mt-3 border-t border-boss-border pt-3 text-[13px] text-boss-text">
+            <p className="font-semibold">견적을 요청한 고객에게 아래 정보가 보입니다.</p>
+            <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-boss-text-secondary">
+              <li>
+                업체명 <span className="text-boss-text">{status.companyName}</span> · 대표 전화{' '}
+                <span className="text-boss-text">{status.phone}</span>
+              </li>
+              <li>활동 지역(회사 주소의 시 · 군 · 구)과 회사 소개 앞부분</li>
+              <li>한 요청에 3곳까지, 동의한 사장님 중에서 돌아가며 소개합니다</li>
+            </ul>
+            <p className="mt-1.5 text-boss-text-secondary">
+              언제든 끌 수 있고, 끄면 이미 소개된 요청에서도 바로 사라집니다.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button variant="primary" size="sm" disabled={saving} onClick={() => void save(true)}>
+                동의하고 켜기
+              </Button>
+              <Button variant="secondary" size="sm" disabled={saving} onClick={() => setConfirming(false)}>
+                취소
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      {note && <p className="text-[12px] text-boss-text-secondary">{note}</p>}
     </div>
   );
 }

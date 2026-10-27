@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { Settings2, Eraser } from 'lucide-react';
 import { bossRequestsApi } from '@/lib/api/boss/requests';
 import RichEditor from '@/components/boss/RichEditor';
+import ContactOpenCard from '@/components/boss/ContactOpenCard';
 import { Panel, Button, ButtonLink, EmptyState, Field, FieldLabel } from '@/components/boss/ui';
 import TemplateManagerDialog, { loadTemplates } from '@/components/boss/templates/TemplateManagerDialog';
 import type { BossTemplate } from '@/types/boss-templates';
@@ -374,6 +375,9 @@ export default function BossAnswerPage() {
             </div>
           </div>
         </Panel>
+
+        {/* 견적서 없이도 전화로 — 견적 요청 고객에게 내 연락처 소개. 답변을 보내기 전에 확인한다(2026-10-27 목록에서 옮김) */}
+        <ContactOpenCard note="이 설정은 현재 견적 한 건이 아닌 회사 전체에 적용됩니다." />
 
         {/* 하단 액션 패널 — 취소 secondary / 제출 primary 우측 */}
         <div className="boss-card flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
