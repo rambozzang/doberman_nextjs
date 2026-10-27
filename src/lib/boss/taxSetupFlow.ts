@@ -203,3 +203,38 @@ export function saveChoice(userId: string | null | undefined, choice: SetupChoic
     // 저장이 막혀도(사생활 보호 모드) 이번 화면에서는 그대로 진행된다
   }
 }
+
+// ── 세금계산서 첫 화면 맨 위에 무엇을 보일지 (2026-10-27) · 앱 tax_setup_flow.dart taxHomePhase 와 같은 규칙 ──
+// 사장님 요청: "승인 나면 승인 관련 내용은 모두 없애고 바로 쓰기 편하게." 준비 중에는 할 일 한 가지만, 끝나면 아무것도 없다.
+export type TaxHomePhase =
+  | 'unknown'
+  | 'start'
+  | 'rejected'
+  | 'pending'
+  | 'preparing'
+  | 'continueLink'
+  | 'continueCert'
+  | 'readyCash'
+  | 'ready';
+
+export function taxHomePhase(
+  s: Pick<ElectronicRegistrationStatus, 'stage' | 'reviewStatus' | 'serviceConfigured' | 'memberLinked'> | null,
+  cashReady: boolean,
+): TaxHomePhase {
+  if (!s) return 'unknown';
+  switch (effectiveStage(s)) {
+    case 'NEED_COMPANY':
+    case 'NOT_REGISTERED':
+      return 'start';
+    case 'REJECTED':
+      return 'rejected';
+    case 'PENDING_VERIFICATION':
+      return 'pending';
+    case 'VERIFIED':
+      return s.serviceConfigured && s.memberLinked === false ? 'continueLink' : 'preparing';
+    case 'NEEDS_CERTIFICATE':
+      return cashReady ? 'readyCash' : 'continueCert';
+    case 'READY':
+      return 'ready';
+  }
+}

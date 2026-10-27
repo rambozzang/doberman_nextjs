@@ -81,4 +81,18 @@ check('팝빌 아이디 추천 · 비밀번호 조건', () => {
   assert.deepEqual(f.passwordChecks('dobae2026!').map((c) => c.ok), [true, true, true, true, true]);
   assert.deepEqual(f.passwordChecks('한글비번').map((c) => c.ok), [false, false, false, false, false]);
 });
+check('첫 화면 단계 규칙(앱 taxHomePhase 와 같다)', () => {
+  assert.equal(f.taxHomePhase(null, false), 'unknown');
+  assert.equal(f.taxHomePhase(st('NEED_COMPANY'), false), 'start');
+  assert.equal(f.taxHomePhase(st('NOT_REGISTERED'), false), 'start');
+  assert.equal(f.taxHomePhase(st('REJECTED'), false), 'rejected');
+  assert.equal(f.taxHomePhase(st('PENDING_VERIFICATION', { reviewStatus: 'REJECTED' }), false), 'rejected');
+  assert.equal(f.taxHomePhase(st('PENDING_VERIFICATION'), false), 'pending');
+  assert.equal(f.taxHomePhase(st('VERIFIED', { memberLinked: false }), false), 'continueLink');
+  assert.equal(f.taxHomePhase(st('VERIFIED', { memberLinked: null }), false), 'preparing');
+  assert.equal(f.taxHomePhase(st('VERIFIED', { memberLinked: false, serviceConfigured: false }), false), 'preparing');
+  assert.equal(f.taxHomePhase(st('NEEDS_CERTIFICATE', { memberLinked: true }), false), 'continueCert');
+  assert.equal(f.taxHomePhase(st('NEEDS_CERTIFICATE', { memberLinked: true }), true), 'readyCash');
+  assert.equal(f.taxHomePhase(st('READY', { memberLinked: true }), true), 'ready');
+});
 console.log(`\n${checks} checks passed`);

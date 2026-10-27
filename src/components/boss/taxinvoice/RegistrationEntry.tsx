@@ -1,119 +1,233 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+// 세금계산서 첫 화면 — 작성 단추 아래 '지금 할 일' 한 칸 (2026-10-27) · 앱 TaxHomeStatus 와 같은 규칙(taxHomePhase)
+//
+// 사장님 요청: "승인 전에는 그 화면, 승인 나면 승인 관련 내용은 모두 없애고 바로 전자세금계산서 · 현금영수증을 쓰기 편하게.
+// 지금은 너무 많이 들어가 헷갈린다." 예전엔 준비를 마친 뒤에도 '발급 서비스' 안내 · 요금 · 등록 단추가 늘 위에 있었다.
+//   시작 전 → '전자 발급 시작하기' · 반려 → 사유와 '고쳐서 다시 신청' · 확인 중 → 한 칸 안내 · 팝빌/인증서 남음 → '이어서 하기'
+//   준비 끝 → 아무것도 그리지 않는다(공동인증서 만료가 다가올 때만 한 줄)
+// 단계별 화면은 /boss/tax-invoice/start, 인증서 · 구독 관리는 한 화면 등록 화면(/registration)이다.
+
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, ChevronRight, ShieldCheck } from 'lucide-react';
-import { ButtonLink, Tag, type StatusTone } from '@/components/boss/ui';
+import { AlertTriangle, CheckCircle2, Hourglass, RefreshCw } from 'lucide-react';
+import { ButtonLink } from '@/components/boss/ui';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { useElectronicTaxInvoiceLaunch } from '@/lib/boss/electronicTaxInvoiceLaunch';
 import { isCurrentScope, useBossScope } from '@/lib/boss/bossScope';
-import { effectiveStage } from '@/lib/boss/taxInvoiceRegistration';
-import { TAX_SUBSCRIPTION_PRICE } from '@/lib/boss/taxInvoiceSubscription';
-import { REGISTRATION_STAGE_LABEL, type RegistrationStage } from '@/types/boss-taxinvoice';
+import { daysUntil } from '@/lib/boss/taxInvoiceRegistration';
+import { taxHomePhase } from '@/lib/boss/taxSetupFlow';
+import type { ElectronicRegistrationStatus } from '@/types/boss-taxinvoice';
 
-// 등록 단계 표시 색 — 준비 완료만 초록, 반려는 빨강, 나머지는 할 일이 남은 상태
-const STAGE_TONE: Record<RegistrationStage, StatusTone> = {
-  NEED_COMPANY: 'warn',
-  NOT_REGISTERED: 'neutral',
-  PENDING_VERIFICATION: 'info',
-  REJECTED: 'bad',
-  VERIFIED: 'warn',
-  NEEDS_CERTIFICATE: 'warn',
-  READY: 'ok',
-};
+const START = '/boss/tax-invoice/start';
 
-// 세금계산서 목록 맨 위 — 발급 서비스 등록 진입 · 시작 전 준비 안내 진입.
-// 출시 값 · API 상태와 상관없이 늘 보인다. 오픈 뒤에는 운영 상태(서버가 팝빌 조회를 잠시 저장해 둔다)로 지금 등록 단계를 붙인다
-// (2026-10-22 — 등록 · 인증서까지 마친 사장님에게도 "팝빌 연동을 마치면…" 준비 전 문구가 보였다). 못 읽으면 예전 문구 그대로.
-// 사업자 정보 등록 · 권한 확인 신청은 정식 오픈 전에 미리 해 둘 수 있고, 팝빌 연동 · 인증서 등록은 연동 준비가 끝난 뒤다.
-// 오픈 전에는 앱과 같은 "곧 정식 오픈" 문구를 함께 싣는다.
-// 휴대폰(md 미만)은 한 줄 띠로 줄인다(2026-10-21 — 안내 카드 약 220px 때문에 첫 문서가 첫 화면 밖이었다).
-//   오픈 전: 준비 안내로(안내 끝에 등록 단추가 있다) · 오픈 뒤: 준비 전이면 단계별 '전자 발급 시작하기'(2026-10-25), 끝났으면 발급 서비스 등록으로
 export default function RegistrationEntry() {
-  // 정식 오픈 여부는 서버가 정한다(2026-10-18). 현금영수증은 따로 연다(2026-10-21).
-  const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
-  const open = taxOpen || cashOpen;
-  const openedDocs = taxOpen && cashOpen ? '전자세금계산서 · 현금영수증' : taxOpen ? '전자세금계산서' : '현금영수증';
   const scope = useBossScope();
-  // 지금 계정의 등록 단계(모르면 null)
-  const [stage, setStage] = useState<RegistrationStage | null>(null);
-  // 단계를 읽는 동안 준비 전 문구가 먼저 보였다가 바뀌지 않게 — 읽기가 끝나면(성공 · 실패 모두) true
+  const { taxOpen, cashOpen } = useElectronicTaxInvoiceLaunch();
+  const [status, setStatus] = useState<ElectronicRegistrationStatus | null>(null);
+  const [cashReady, setCashReady] = useState(false);
+  const [certExpiresAt, setCertExpiresAt] = useState<string | null>(null);
+  // 처음 읽기가 끝나기 전에는 아무것도 그리지 않는다 — 준비 끝난 사장님에게 안내가 잠깐 보였다 사라지지 않게
   const [checked, setChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!scope) return;
+    setLoading(true);
+    try {
+      const r = await bossTaxInvoiceApi.registrationStatus();
+      if (!isCurrentScope(scope)) return;
+      // 못 읽었으면 마지막으로 읽은 상태를 그대로 둔다
+      if (r.ok) {
+        setStatus(r.status);
+        if (r.status.stage === 'NEEDS_CERTIFICATE' || r.status.stage === 'READY') {
+          const cash = await bossTaxInvoiceApi.electronicConfig('CASH').catch(() => null);
+          if (!isCurrentScope(scope)) return;
+          setCashReady(!!(cash?.success && cash.data?.ready));
+        }
+        setCertExpiresAt(r.status.certificateExpiresAt ?? null);
+      }
+    } finally {
+      if (isCurrentScope(scope)) {
+        setChecked(true);
+        setLoading(false);
+      }
+    }
+  }, [scope]);
+
   useEffect(() => {
-    setStage(null);
+    setStatus(null);
     setChecked(false);
-    if (!open || !scope) return;
-    let alive = true;
-    void bossTaxInvoiceApi.operations().then((r) => {
-      if (!alive || !isCurrentScope(scope)) return;
-      // 등록 화면과 같은 판정 — 심사 반려는 서버 단계가 '권한 확인 중'이어도 '반려됨'으로 보인다(2026-10-23 점검)
-      if (r.ok) setStage(r.data.registration ? effectiveStage(r.data.registration) : null);
-      setChecked(true);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [open, scope]);
-  const ready = stage === 'READY';
+    void load();
+    // 팝빌 인증서 창 · 다른 탭에서 돌아오면 다시 읽는다(승인 · 인증서 등록을 바로 반영)
+    const onFocus = () => void load();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [load]);
+
+  if (!scope || !checked) return null;
+  const phase = taxHomePhase(status, cashReady);
+
+  switch (phase) {
+    case 'unknown':
+      return (
+        <Line icon={<RefreshCw size={16} strokeWidth={1.75} aria-hidden />} text="전자 발급 준비 상태를 확인하지 못했어요.">
+          <button type="button" className="font-semibold text-boss-primary" disabled={loading} onClick={() => void load()}>
+            {loading ? '확인 중…' : '다시 확인'}
+          </button>
+        </Line>
+      );
+    case 'start':
+      return (
+        <Card
+          title="전자 발급, 화면이 시키는 대로만 하면 돼요"
+          body="사업자 정보 확인 → 도배르만 확인 → 팝빌 계정 만들기 → (세금계산서만) 공동인증서. 처음 한 번만 하면 돼요."
+          action={{ href: START, label: '전자 발급 시작하기' }}
+        />
+      );
+    case 'rejected':
+      return (
+        <Card
+          tone="bad"
+          title="신청이 반려됐어요"
+          body={`${status?.reviewReason?.trim() ? `사유: ${status.reviewReason.trim()}\n` : ''}사유에 맞게 고쳐 다시 신청해 주세요.`}
+          action={{ href: START, label: '고쳐서 다시 신청' }}
+        />
+      );
+    case 'pending':
+      return (
+        <Card
+          tone="wait"
+          icon={<Hourglass size={17} strokeWidth={1.75} aria-hidden />}
+          title="신청을 확인하고 있어요"
+          body="확인이 끝나면 알림으로 알려 드려요. 그동안에도 작성 · 서식 미리보기 · PDF는 그대로 쓸 수 있어요."
+          link={{ href: START, label: '신청 내용 보기' }}
+        />
+      );
+    case 'preparing':
+      return (
+        <Card
+          tone="wait"
+          icon={<Hourglass size={17} strokeWidth={1.75} aria-hidden />}
+          title="발급 연결을 준비하고 있어요"
+          body="사업자 확인은 끝났어요. 도배르만이 발급 연결을 마치면 알려 드려요."
+        />
+      );
+    case 'continueLink':
+      return (
+        <Card
+          title="확인이 끝났어요. 한 단계만 하면 돼요"
+          body="발급용 팝빌 계정을 만들어요. 아이디 · 비밀번호만 정하면 돼요."
+          action={{ href: START, label: '이어서 하기' }}
+        />
+      );
+    case 'continueCert':
+      return (
+        <Card
+          title="마지막 한 단계, 공동인증서 등록"
+          body="세금계산서 전자 발급에 쓰는 사업자용 공동인증서를 등록해요. 현금영수증만 쓰시면 인증서 없이도 돼요."
+          action={{ href: START, label: '이어서 하기' }}
+        />
+      );
+    case 'readyCash':
+      return (
+        <Line
+          icon={<CheckCircle2 size={16} strokeWidth={1.75} className="text-boss-success" aria-hidden />}
+          text={
+            cashOpen
+              ? '현금영수증은 바로 발급할 수 있어요. 세금계산서 전자 발급은 공동인증서를 등록하면 열려요.'
+              : '현금영수증 발급은 곧 열려요. 세금계산서 전자 발급은 공동인증서를 등록하면 열려요.'
+          }
+        >
+          <Link href={START} className="font-semibold text-boss-primary">
+            인증서 등록
+          </Link>
+        </Line>
+      );
+    case 'ready': {
+      // 준비 끝 — 등록 · 승인 이야기는 보이지 않는다. 인증서 만료가 다가올 때만 한 줄
+      const left = daysUntil(certExpiresAt);
+      if (!taxOpen && !cashOpen) {
+        return <Line icon={<CheckCircle2 size={16} strokeWidth={1.75} className="text-boss-success" aria-hidden />} text="등록 준비를 마쳤어요. 정식 오픈하면 바로 발급할 수 있어요." />;
+      }
+      if (left === null || left > 30) return null;
+      return (
+        <Line
+          warn
+          icon={<AlertTriangle size={16} strokeWidth={1.75} aria-hidden />}
+          text={
+            left < 0
+              ? `공동인증서가 만료됐어요(${certExpiresAt?.slice(0, 10)}). 새 인증서를 등록해야 세금계산서를 발급할 수 있어요.`
+              : `공동인증서가 곧 만료돼요(${certExpiresAt?.slice(0, 10)}까지). 미리 갱신해 두세요.`
+          }
+        >
+          <Link href="/boss/tax-invoice/registration" className="font-semibold text-boss-primary">
+            {left < 0 ? '새로 등록' : '갱신'}
+          </Link>
+        </Line>
+      );
+    }
+  }
+}
+
+/** 할 일 카드 — 제목 · 한두 줄 설명 · 큰 단추 하나 */
+function Card({
+  title,
+  body,
+  action,
+  link,
+  icon,
+  tone = 'normal',
+}: {
+  title: string;
+  body: string;
+  action?: { href: string; label: string };
+  link?: { href: string; label: string };
+  icon?: React.ReactNode;
+  tone?: 'normal' | 'wait' | 'bad';
+}) {
+  const box =
+    tone === 'bad'
+      ? 'border-boss-error/40 bg-boss-error/5'
+      : tone === 'wait'
+        ? 'border-boss-border bg-boss-surface'
+        : 'border-boss-primary/30 bg-boss-primary/5';
   return (
-    <>
-      <Link
-        href={!open ? '/boss/tax-invoice/guide' : ready ? '/boss/tax-invoice/registration' : '/boss/tax-invoice/start'}
-        className="boss-card flex min-h-[44px] items-center gap-2 px-4 py-2.5 !text-boss-text active:bg-boss-elevated md:hidden"
-      >
-        {!open && <Tag tone="info">오픈 예정</Tag>}
-        {open && stage && <Tag tone={STAGE_TONE[stage]}>{REGISTRATION_STAGE_LABEL[stage]}</Tag>}
-        <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
-          {open ? (ready ? `${openedDocs} 발급 준비 완료` : `${openedDocs} 전자 발급 시작하기`) : '전자 발급, 곧 정식 오픈 · 준비 안내'}
-        </span>
-        <ChevronRight size={16} strokeWidth={1.75} className="flex-none text-boss-text-muted" aria-hidden />
-      </Link>
-      <section
-        aria-labelledby="tax-invoice-registration-entry"
-        className="boss-card hidden flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 md:flex"
-      >
-        <div className="min-w-0 flex-1 basis-[260px]">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h2 id="tax-invoice-registration-entry" className="boss-section-title break-keep">
-              {open ? `${openedDocs} 발급 서비스` : '전자 발급, 곧 정식 오픈합니다'}
-            </h2>
-            {!open && <Tag tone="info">오픈 예정</Tag>}
-            {open && stage && <Tag tone={STAGE_TONE[stage]}>{REGISTRATION_STAGE_LABEL[stage]}</Tag>}
-          </div>
-          <p className="mt-1 break-keep text-[13px] leading-relaxed text-boss-text-secondary">
-            {open && scope && !checked
-              ? '등록 상태를 확인하는 중입니다.'
-              : open && ready
-              ? `등록을 모두 마쳤습니다. 문서 상세에서 '미리보기 · 발급'으로 바로 발급할 수 있습니다.${
-                  taxOpen && !cashOpen ? ' 현금영수증 발급은 곧 열립니다.' : !taxOpen && cashOpen ? ' 전자세금계산서 발급은 곧 열립니다.' : ''
-                }`
-              : open
-              ? `사업자 권한 확인 · 팝빌 연동을 마치면 상세에서 바로 발급할 수 있습니다. 세금계산서는 공동인증서 등록도 필요합니다.${
-                  taxOpen && !cashOpen ? ' 현금영수증 발급은 곧 열립니다.' : !taxOpen && cashOpen ? ' 전자세금계산서 발급은 곧 열립니다.' : ''
-                }`
-              : '지금은 작성 · 서식 미리보기 · PDF와 발급 기록 관리를 쓸 수 있어요. 발급 서비스 등록은 미리 해 둘 수 있어요.'}
-          </p>
-          {/* 요금 한 줄(2026-10-17) — 자세한 내용은 시작 전 준비 안내. 현금영수증만 쓰면 첫 발급일부터(2026-10-21) */}
-          <p className="mt-1 break-keep text-[12.5px] leading-relaxed text-boss-text-secondary">
-            공동인증서를 등록한 날부터(현금영수증만 쓰면 첫 발급일부터) 1개월 무료 · 이후 {TAX_SUBSCRIPTION_PRICE} 앱 구독
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <ButtonLink href="/boss/tax-invoice/guide" variant="secondary" size="sm" icon={BookOpen}>
-            시작 전 준비 안내
-          </ButtonLink>
-          {ready ? (
-            <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm" icon={ShieldCheck}>
-              발급 준비 · 구독 확인
-            </ButtonLink>
-          ) : (
-            // 한 화면에 한 가지만 묻는 단계별 절차(2026-10-25) — 한 화면에서 모두 보는 등록 화면은 그 안에서 이어진다
-            <ButtonLink href="/boss/tax-invoice/start" variant="primary" size="sm" icon={ShieldCheck}>
-              전자 발급 시작하기
-            </ButtonLink>
-          )}
-        </div>
-      </section>
-    </>
+    <section className={`flex flex-wrap items-center gap-x-6 gap-y-3 border px-5 py-4 ${box}`} aria-label={title}>
+      <div className="min-w-0 flex-1 basis-[260px]">
+        <h2 className="flex items-center gap-2 break-keep text-[16px] font-semibold text-boss-text">
+          {icon}
+          {title}
+        </h2>
+        <p className="mt-1 whitespace-pre-line break-keep text-[13.5px] leading-relaxed text-boss-text-secondary">{body}</p>
+        {link && (
+          <Link href={link.href} className="mt-2 inline-block text-[13px] text-boss-text-secondary underline">
+            {link.label}
+          </Link>
+        )}
+      </div>
+      {action && (
+        <ButtonLink href={action.href} variant={tone === 'bad' ? 'danger' : 'primary'} className="min-h-[44px] w-full sm:w-auto">
+          {action.label}
+        </ButtonLink>
+      )}
+    </section>
+  );
+}
+
+/** 한 줄 알림 — 거의 끝났을 때 · 인증서 만료 · 확인 실패 */
+function Line({ icon, text, warn = false, children }: { icon: React.ReactNode; text: string; warn?: boolean; children?: React.ReactNode }) {
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-x-3 gap-y-1 border px-4 py-2.5 text-[13px] ${
+        warn ? 'border-boss-warning/40 bg-boss-warning/10 text-boss-text' : 'border-boss-border bg-boss-surface text-boss-text'
+      }`}
+    >
+      <span className="flex min-w-0 flex-1 items-start gap-2 break-keep leading-relaxed">
+        <span className="mt-[2px] flex-none">{icon}</span>
+        {text}
+      </span>
+      {children}
+    </div>
   );
 }

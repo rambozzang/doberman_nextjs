@@ -19,7 +19,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BellRing, ChevronDown, ChevronRight, ExternalLink, FilePlus2, Receipt, RefreshCw } from 'lucide-react';
+import { BellRing, ChevronDown, ChevronRight, ExternalLink, FilePlus2, Receipt, RefreshCw, Settings2 } from 'lucide-react';
 import { bossTaxInvoiceApi } from '@/lib/api/boss/taxinvoice';
 import { LIST_KEYS, readListSnapshot, useSaveListSnapshot } from '@/lib/boss/listCache';
 import AdminEntry from '@/components/boss/taxinvoice/AdminEntry';
@@ -229,7 +229,7 @@ function TaxInvoiceList() {
         </ButtonLink>
       </div>
 
-      {/* 발급 서비스 등록 진입 — 출시 값 · 목록 조회 성패와 상관없이 늘 보인다(오픈 전이면 오픈 예정 안내 포함) */}
+      {/* 지금 할 일 한 칸 — 준비 중에만 보이고, 준비가 끝나면 그리지 않는다(2026-10-27) */}
       <RegistrationEntry />
 
       {/* 휴대폰 — 거르기 요약 단추 · 발급 알림. 누르면 아래 거르기가 펼쳐진다 */}
@@ -254,6 +254,10 @@ function TaxInvoiceList() {
         </button>
         <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" icon={BellRing} className="min-h-[44px]">
           발급 알림
+        </ButtonLink>
+        {/* 등록 · 인증서 · 구독 관리는 첫 화면 카드가 아니라 여기로(2026-10-27, 앱 '관리'와 같다) */}
+        <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" icon={Settings2} className="min-h-[44px]" aria-label="발급 관리">
+          관리
         </ButtonLink>
       </div>
 
@@ -346,6 +350,9 @@ function TaxInvoiceList() {
             {/* 머리의 종(전체 알림)과 다르다 — 세금계산서 발급 결과 알림만. 휴대폰은 위 요약 줄에 있다 */}
             <ButtonLink href="/boss/tax-invoice/activity" variant="secondary" size="sm" icon={BellRing} className="hidden md:inline-flex">
               발급 알림
+            </ButtonLink>
+            <ButtonLink href="/boss/tax-invoice/registration" variant="secondary" size="sm" icon={Settings2} className="hidden md:inline-flex">
+              인증서 · 구독 관리
             </ButtonLink>
           </div>
         </div>
