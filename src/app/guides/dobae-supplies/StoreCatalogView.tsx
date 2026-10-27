@@ -2,8 +2,10 @@
 
 // 도배 용품 — 분류 탭 + 상품 카드. 서버가 넘긴 목록을 그리기만 한다.
 // "쿠팡에서 보기"는 새 창으로 파트너스 링크를 열고, 클릭 수만 조용히 센다.
+// 2026-10-27 사장님 요청 "물품은 매번 바꿔서 보여줘": 화면이 열린 뒤 상품 순서를 무작위로 섞는다.
+//   서버가 미리 그린 화면(검색 노출용)은 운영자 순서 그대로 두고, 브라우저에서만 섞는다(그리기 불일치 방지).
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ExternalLinkIcon, PackageIcon, RocketIcon, TruckIcon } from 'lucide-react';
 import { storeApi } from '@/lib/api/store';
 import { STORE_CATEGORY_ORDER, type StoreCatalog, type StoreProduct } from '@/types/store';
@@ -13,8 +15,23 @@ function won(n?: number | null): string {
   return `${n.toLocaleString('ko-KR')}원`;
 }
 
+/** 상품 순서만 섞은 복사본(피셔-예이츠) — 원본은 그대로 */
+export function shuffleProducts<T>(list: T[], random: () => number = Math.random): T[] {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export default function StoreCatalogView({ catalog }: { catalog: StoreCatalog }) {
   const [tab, setTab] = useState<string>('ALL');
+  // 처음 그림은 서버와 같은 순서, 열린 뒤 한 번 섞는다 — 들어올 때마다 앞에 보이는 상품이 달라진다
+  const [order, setOrder] = useState<StoreProduct[]>(catalog.products);
+  useEffect(() => {
+    setOrder(shuffleProducts(catalog.products));
+  }, [catalog.products]);
 
   const categories = useMemo(() => {
     const byCode = new Map(catalog.categories.map((c) => [c.code, c]));
@@ -24,8 +41,8 @@ export default function StoreCatalogView({ catalog }: { catalog: StoreCatalog })
   }, [catalog.categories]);
 
   const products = useMemo(
-    () => (tab === 'ALL' ? catalog.products : catalog.products.filter((p) => p.categoryCode === tab)),
-    [catalog.products, tab]
+    () => (tab === 'ALL' ? order : order.filter((p) => p.categoryCode === tab)),
+    [order, tab]
   );
 
   if (catalog.products.length === 0) {
