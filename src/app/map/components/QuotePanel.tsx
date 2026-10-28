@@ -7,6 +7,7 @@ import { CustomerRequestService } from "@/services/customerRequestService";
 import { CreateCustomerRequestRequest, CreateCustomerRequestResponse } from "@/types/api";
 import NearbyCompanies from "@/components/NearbyCompanies";
 import { AuthManager } from "@/lib/auth";
+import { useAuth } from "@/providers/AuthProvider";
 import { VendorDetail } from "@/types/vendor";
 
 // 라벨 값은 기존 견적 요청(/quote-request)과 동일하게 맞춘다.
@@ -23,6 +24,8 @@ interface QuotePanelProps {
 }
 
 export default function QuotePanel({ vendor, onClear }: QuotePanelProps) {
+  // 비로그인 요청 뒤 바로 로그인되면(2026-10-28) 헤더가 보는 공용 로그인 상태를 다시 읽게 한다
+  const { refreshAuth } = useAuth();
   const [buildingType, setBuildingType] = useState("아파트");
   const [scope, setScope] = useState("전체");
   const [wallpaper, setWallpaper] = useState("실크벽지");
@@ -101,6 +104,7 @@ export default function QuotePanel({ vendor, onClear }: QuotePanelProps) {
         : await CustomerRequestService.createCustomerRequestNonLogin(payload);
 
       if (res.success) {
+        if (!loggedIn && AuthManager.isLoggedIn()) refreshAuth();
         setCreated(res.data ?? null);
         setDone(true);
         toast.success("견적 요청이 접수되었습니다.");

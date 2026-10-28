@@ -1,4 +1,5 @@
 import ApiClient from '@/lib/api';
+import { AuthManager } from '@/lib/auth';
 import { 
   ApiResponse, 
   CustomerRequestListRequest, 
@@ -49,11 +50,19 @@ export class CustomerRequestService {
     return ApiClient.postPrivate<CreateCustomerRequestResponse>('/customer-request', requestData);
   }
 
-  // 견적 요청 생성 (비로그인 사용자)
+  // 견적 요청 생성 (비로그인 사용자) — 요청하면서 만든 계정으로 바로 로그인한다(2026-10-28).
+  // 사장님 요청: "견적을 요청하고 나면 로그인이 되어 있어야 한다." 회원가입(AuthService.register)과 같은 방식.
+  // 서버는 비밀번호가 그 계정과 맞을 때만 출입증을 준다. 부른 화면은 저장 뒤 로그인 상태를 다시 읽으면 된다.
   static async createCustomerRequestNonLogin(
     requestData: CreateCustomerRequestRequest
   ): Promise<ApiResponse<CreateCustomerRequestResponse>> {
-    return ApiClient.post<CreateCustomerRequestResponse>('/customer-request/non-login', requestData);
+    const response = await ApiClient.post<CreateCustomerRequestResponse>('/customer-request/non-login', requestData);
+    const login = response.success ? response.data?.login : undefined;
+    if (login?.token && login.userInfo) {
+      AuthManager.setToken(login.token);
+      AuthManager.setUserInfo(login.userInfo);
+    }
+    return response;
   }
 
   // 내 요청에 소개된 근처 사장님 (요청한 고객 본인만)

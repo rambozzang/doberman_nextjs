@@ -1048,6 +1048,12 @@ export default function QuoteRequestPage() {
 
       if (response.success) {
         console.log("견적 요청 성공:", response.data);
+        // 비로그인 요청이면 서버가 준 출입증으로 이미 로그인됐다(createCustomerRequestNonLogin) — 이 화면 · 헤더 상태를 다시 읽는다
+        if (!currentLoginStatus && AuthManager.isLoggedIn()) {
+          setIsLoggedIn(true);
+          setUserInfo(AuthManager.getUserInfo());
+          refreshAuthRef.current();
+        }
         clearFormDataFromStorage();
         clearAutosave();
         setCreated(response.data ?? null);
@@ -1213,13 +1219,29 @@ export default function QuoteRequestPage() {
                 전문가들이 검토 후 <span className="text-blue-300 font-semibold">24시간 내</span>에<br />
                 맞춤 견적을 제공해드릴 예정입니다.
               </p>
+              {created?.login && (
+                <p className="mt-4 text-base text-emerald-300 leading-relaxed break-keep">
+                  입력하신 정보로 가입하고 로그인했어요. 받은 견적은 &lsquo;내 견적&rsquo;에서 바로 볼 수 있어요.
+                </p>
+              )}
               <NearbyCompanies requestId={created?.id} companies={created?.nearbyCompanies} />
             </div>
 
             <div className="space-y-4">
+              {isLoggedIn && (
+                <button
+                  onClick={() => router.push('/quote-request/my-quotes')}
+                  className="w-full px-6 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-base md:text-lg rounded-xl shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 min-h-[48px] hover:scale-105"
+                >
+                  내 견적 보기
+                </button>
+              )}
+              {/* 로그인했으면 '내 견적 보기'가 첫 단추 — 홈은 아래 단추와 같은 모양으로 낮춘다 */}
               <button
                 onClick={() => router.push('/')}
-                className="w-full px-6 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-base md:text-lg rounded-xl shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 min-h-[48px] hover:scale-105"
+                className={isLoggedIn
+                  ? "w-full px-6 md:px-8 py-4 bg-slate-700/50 hover:bg-slate-600/60 text-white font-semibold text-base md:text-lg rounded-xl border border-slate-600 hover:border-slate-500 backdrop-blur-sm transition-all duration-300 min-h-[48px] hover:scale-105"
+                  : "w-full px-6 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-base md:text-lg rounded-xl shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 min-h-[48px] hover:scale-105"}
               >
                 홈으로 돌아가기
               </button>

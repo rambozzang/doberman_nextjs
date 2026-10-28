@@ -255,6 +255,8 @@ export interface CreateCustomerRequestResponse {
   message: string;
   /** 요청한 고객에게 소개하는 근처 사장님(연락처 공개에 동의한 곳만, 최대 3곳) — 2026-10-23 */
   nearbyCompanies?: NearbyCompany[];
+  /** 비로그인 요청으로 만든 계정의 로그인 출입증(2026-10-28) — 비밀번호가 맞을 때만 온다. userInfo 에 비밀번호 칸은 없다 */
+  login?: LoginResponse;
 }
 
 /** 견적 요청 고객에게 소개하는 사장님 한 곳 */
