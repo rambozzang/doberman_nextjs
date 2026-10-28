@@ -490,7 +490,8 @@ const buildLoggedInRequest = (saved: FormState, user: UserInfo): CreateCustomerR
   customerName: user.customerName,
   customerPhone: user.customerPhone,
   customerEmail: user.customerEmail,
-  customerPassword: user.customerPassword,
+  // 로그인한 고객은 서버가 출입증으로 확인한다 — 비밀번호를 보내지 않는다(2026-10-28)
+  customerPassword: "",
   agreeTerms: saved.privacyConsent,
   requestDate: new Date().toISOString(),
   status: "검토중",
@@ -1005,7 +1006,8 @@ export default function QuoteRequestPage() {
       const customerName = isLoggedIn && userInfo ? userInfo.customerName : formState.name;
       const customerPhone = isLoggedIn && userInfo ? userInfo.customerPhone : formState.phone;
       const customerEmail = isLoggedIn && userInfo ? userInfo.customerEmail : formState.email;
-      const customerPassword = isLoggedIn && userInfo ? userInfo.customerPassword : formState.password;
+      // 로그인했으면 비밀번호는 보내지 않는다(서버가 출입증으로 확인) — 2026-10-28
+      const customerPassword = isLoggedIn && userInfo ? "" : formState.password;
       const webCustomerId = isLoggedIn && userInfo ? userInfo.customerId : 0;
 
       // API 요청 데이터 구성

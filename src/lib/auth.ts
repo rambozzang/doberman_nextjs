@@ -3,6 +3,13 @@ import { JwtPayload, UserInfo } from '@/types/api';
 const TOKEN_KEY = 'auth_token';
 const USER_INFO_KEY = 'user_info';
 
+/** 저장 · 반환 전에 비밀번호 칸을 뺀다 */
+function withoutPassword(userInfo: UserInfo): UserInfo {
+  const rest = { ...(userInfo as UserInfo & { customerPassword?: unknown }) };
+  delete rest.customerPassword;
+  return rest;
+}
+
 export class AuthManager {
   // 토큰 저장
   static setToken(token: string): void {
@@ -27,11 +34,11 @@ export class AuthManager {
     }
   }
 
-  // 사용자 정보 저장
+  // 사용자 정보 저장 — 비밀번호 칸은 저장하지 않는다(2026-10-28).
+  // 예전 서버는 로그인 응답에 비밀번호 암호값까지 실어 보냈고, 그 값이 이 브라우저 저장소에 그대로 남았다.
   static setUserInfo(userInfo: UserInfo): void {
     if (typeof window !== 'undefined') {
-      console.log('AuthManager - 사용자 정보 저장:', userInfo);
-      localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo));
+      localStorage.setItem(USER_INFO_KEY, JSON.stringify(withoutPassword(userInfo)));
     }
   }
 
@@ -42,6 +49,12 @@ export class AuthManager {
       if (userInfoStr) {
         try {
           const userInfo = JSON.parse(userInfoStr) as UserInfo;
+          // 예전에 저장된 비밀번호 암호값은 읽을 때 지우고 다시 저장한다
+          if (userInfo && typeof userInfo === 'object' && 'customerPassword' in userInfo) {
+            const cleaned = withoutPassword(userInfo);
+            localStorage.setItem(USER_INFO_KEY, JSON.stringify(cleaned));
+            return cleaned;
+          }
           return userInfo;
         } catch (error) {
           console.error('AuthManager - 사용자 정보 파싱 실패:', error);

@@ -67,7 +67,7 @@ export interface UserInfo {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  customerPassword: string;
+  // customerPassword 는 없다 — 서버가 비밀번호 암호값을 응답으로 내보내지 않는다(2026-10-28)
   marketingAgree: boolean | null;
   provider: string | null;
   socialId: string | null;

@@ -72,7 +72,8 @@ export function slotsToCustomerRequest(
     customerName: user.customerName,
     customerPhone: user.customerPhone,
     customerEmail: user.customerEmail,
-    customerPassword: user.customerPassword,
+    // 로그인한 고객은 서버가 출입증으로 확인한다 — 비밀번호를 보내지 않는다(2026-10-28)
+    customerPassword: '',
     agreeTerms: true,
     requestDate: new Date().toISOString(),
     status: '검토중',
