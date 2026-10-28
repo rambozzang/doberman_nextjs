@@ -321,6 +321,7 @@ export default function BossRequestDetailPage() {
                 답변 작성
               </ButtonLink>
             )}
+            {isChoice && <ButtonLink href={`/boss/customers/new?sourceRequestId=${id}`} variant="primary" className="mt-4 w-full">채택 견적으로 고객 등록</ButtonLink>}
             {isChoice && rawPhone && (
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <a href={`tel:${rawPhone}`} className="boss-btn boss-btn-md boss-btn-secondary w-full">

@@ -24,14 +24,20 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { chatAuth } = useChatAuth();
+  const loadVersion = useRef(0);
+  const currentToken = useRef(chatAuth.token);
+  currentToken.current = chatAuth.token;
+  const invalidateLoad = useCallback(() => {loadVersion.current++;}, []);
 
   // 채팅방 목록 조회
   const loadChatRooms = useCallback(async () => {
+    if (currentToken.current !== chatAuth.token) return;
     if (!chatAuth.isAuthenticated) {
       console.log('채팅 인증이 되지 않아 채팅방 목록을 조회하지 않습니다.');
       return;
     }
 
+    const version = ++loadVersion.current;
     setIsLoading(true);
     setError(null);
 
@@ -43,6 +49,7 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
 
       const response = await chatApi.getChatRooms(chatAuth.userId || undefined, chatAuth.userType || undefined);
 
+      if (version !== loadVersion.current || currentToken.current !== chatAuth.token) return;
       if (response.success && response.data) {
         setChatRooms(response.data);
         console.log('채팅방 목록 조회 성공:', response.data.length, '개');
@@ -52,11 +59,12 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
         console.error('채팅방 목록 조회 실패:', errorMessage);
       }
     } catch (error) {
+      if (version !== loadVersion.current || currentToken.current !== chatAuth.token) return;
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       setError(errorMessage);
       console.error('채팅방 목록 조회 오류:', error);
     } finally {
-      setIsLoading(false);
+      if (version === loadVersion.current) setIsLoading(false);
     }
     }, [chatAuth.isAuthenticated, chatAuth.token, chatAuth.userId, chatAuth.userType]);
 
@@ -152,6 +160,8 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
 
   // 인증 상태 변경 시 채팅방 목록 로드
   useEffect(() => {
+    setChatRooms([]);
+    setError(null);
     if (chatAuth.isAuthenticated) {
       loadChatRooms();
     } else {
@@ -159,7 +169,8 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
       setChatRooms([]);
       setError(null);
     }
-  }, [chatAuth.isAuthenticated, loadChatRooms]);
+    return invalidateLoad;
+  }, [chatAuth.isAuthenticated, loadChatRooms, invalidateLoad]);
 
   // 목록 실시간 갱신 — 지금 열어 둔 방이 아닌 다른 방에 새 메시지가 와도 목록에 바로 뜨게 한다.
   // 지금까지는 REST 로 한 번 불러온 뒤 수동 새로고침 전엔 안 바뀌었다.
@@ -194,6 +205,7 @@ export const useChatRooms = (options?: { realtime?: boolean }) => {
       };
 
       socket.onmessage = (event) => {
+        if (disposed) return;
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'room_update' && data.room) {

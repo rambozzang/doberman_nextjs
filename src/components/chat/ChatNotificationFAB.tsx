@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useChatAuth } from '@/hooks/useChatAuth';
+import { useChatRooms } from '@/hooks/useChatRooms';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalChatNotification } from '@/hooks/useGlobalChatNotification';
 import { ChatRoom } from './types';
 import { FABChatModal } from './FABChatModal';
 
 export const ChatNotificationFAB: React.FC = () => {
+  const { chatAuth } = useChatAuth();
+  return <ChatNotificationFABContent key={`${chatAuth.userType}:${chatAuth.userId}`} />;
+};
+
+const ChatNotificationFABContent: React.FC = () => {
+  const { chatRooms } = useChatRooms();
+  const openedLink = useRef<number | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
 
   const { totalUnread, unreadRooms, isAuthenticated, userType } = useGlobalChatNotification({
@@ -15,6 +24,14 @@ export const ChatNotificationFAB: React.FC = () => {
       if (room) setSelectedRoom(room);
     },
   });
+
+  useEffect(() => {
+    if (!isAuthenticated || userType !== 'WEB') return;
+    const linked = Number(new URLSearchParams(window.location.search).get('roomId'));
+    if (!Number.isSafeInteger(linked) || linked <= 0 || openedLink.current === linked) return;
+    const room = chatRooms.find(item => item.roomId === linked);
+    if (room) {openedLink.current = linked;setSelectedRoom(room);}
+  }, [chatRooms, isAuthenticated, userType]);
 
   // 비로그인이거나 boss 유저(APP)이면 렌더링 안 함
   if (!isAuthenticated || userType !== 'WEB') {

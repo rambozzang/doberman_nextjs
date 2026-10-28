@@ -1,5 +1,6 @@
 "use client";
 
+import ConsultationShortcut from '@/components/chat/ConsultationShortcut';
 import Link from "next/link";
 import { ArrowRight, FileText } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -9,6 +10,8 @@ export default function CustomerQuoteShortcut() {
   const { isLoggedIn } = useAuth();
   if (!isLoggedIn) return null;
   return (
+    <>
+    <ConsultationShortcut />
     <section aria-labelledby="my-quote-shortcut-title" className="my-5 flex flex-col gap-4 rounded-xl border border-slate-600 bg-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:my-6 lg:px-6">
       <div className="flex min-w-0 items-start gap-3">
         <FileText className="mt-0.5 h-5 w-5 shrink-0 text-blue-300" aria-hidden="true" />
@@ -21,5 +24,6 @@ export default function CustomerQuoteShortcut() {
         요청 내역 보기<ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     </section>
+    </>
   );
 }

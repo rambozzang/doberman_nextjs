@@ -23,10 +23,14 @@ export const FABChatModal: React.FC<FABChatModalProps> = ({ room, onClose }) => 
     partnerTyping,
     messages,
     newMessage,
+    setNewMessage,
     uploadingFile,
     isConnected,
     connectionError,
     isLoading,
+    hasMoreMessages,
+    isLoadingMore,
+    loadMoreMessages,
     messagesEndRef,
     sendMessage,
     uploadFile,
@@ -53,6 +57,9 @@ export const FABChatModal: React.FC<FABChatModalProps> = ({ room, onClose }) => 
 
   return (
     <ChatModal
+      requestId={room.requestId ?? undefined}
+      expertId={room.partnerId ?? undefined}
+      onDraftMessage={setNewMessage}
       isOpen={isOpen}
       onClose={handleClose}
       chatPartner={syntheticPartner}
@@ -63,6 +70,9 @@ export const FABChatModal: React.FC<FABChatModalProps> = ({ room, onClose }) => 
       onKeyPress={handleKeyPress}
       onFileUpload={uploadFile}
       isLoading={isLoading}
+      hasMoreMessages={hasMoreMessages}
+      isLoadingMore={isLoadingMore}
+      onLoadMore={loadMoreMessages}
       isConnected={isConnected}
       connectionError={connectionError}
       isTyping={partnerTyping}

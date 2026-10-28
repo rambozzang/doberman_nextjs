@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Inbox, Send, ChevronRight } from 'lucide-react';
 import { useChatRooms } from '@/hooks/useChatRooms';
+import VisitPanel from '@/components/consultation/VisitPanel';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useChatAuth } from '@/hooks/useChatAuth';
@@ -373,6 +374,7 @@ export default function BossChatInboxPage() {
               </Link>
             </div>
 
+            {selected.requestId && chatAuth.userId && <VisitPanel key={`${selected.requestId}:${chatAuth.userId}`} requestId={selected.requestId} expertId={chatAuth.userId} role="APP" />}
             {/* 메시지 */}
             <div data-chat-scroll className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-boss-bg p-[18px]">
               {msgLoading && messages.length === 0 ? (

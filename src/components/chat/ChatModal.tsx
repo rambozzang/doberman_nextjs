@@ -4,9 +4,13 @@ import React, { useRef, useMemo, useEffect, useLayoutEffect, useState, useCallba
 import { ChatMessage, ChatApiMessage } from './types';
 import { CustomerRequestAnswer } from '@/types/api';
 import { useChatAuth } from '@/hooks/useChatAuth';
+import VisitPanel from '@/components/consultation/VisitPanel';
 import { resolveChatFileUrl, isImageFile, getFileName } from '@/lib/chatFile';
 
 interface ChatModalProps {
+  requestId?: number;
+  expertId?: string;
+  onDraftMessage?: (message: string) => void;
   isOpen: boolean;
   onClose: () => void;
   chatPartner: CustomerRequestAnswer | undefined;
@@ -40,6 +44,7 @@ const LOAD_MORE_THRESHOLD = 120;
 
 export const ChatModal: React.FC<ChatModalProps> = ({
   isOpen,
+  requestId, expertId, onDraftMessage,
   onClose,
   chatPartner,
   messages,
@@ -351,6 +356,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           </button>
         </div>
 
+        {requestId && expertId && <VisitPanel key={`${requestId}:${expertId}`} requestId={requestId} expertId={expertId} role="WEB" />}
         {/* 메시지 영역 */}
         <div className="relative flex-1 min-h-0">
           <div
@@ -506,6 +512,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           )}
         </div>
 
+        {onDraftMessage && <div className="flex flex-none flex-wrap gap-2 border-t border-slate-700 bg-slate-800 px-4 py-2" aria-label="빠른 상담 질문">
+          {['방문 견적 가능할까요?', '가격에 무엇이 포함되나요?', '일정 협의하고 싶어요'].map(question => <button type="button" key={question} onClick={() => {onDraftMessage(question);textareaRef.current?.focus();}} className="min-h-10 rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">{question}</button>)}
+          <p className="w-full text-xs text-slate-400">내용을 확인한 뒤 전송을 눌러 주세요.</p>
+        </div>}
         {/* 입력 영역 */}
         <div className="p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm sm:rounded-b-3xl flex-shrink-0">
           <div className="flex items-end gap-1.5">

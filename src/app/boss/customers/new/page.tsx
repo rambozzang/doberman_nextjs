@@ -25,6 +25,7 @@ import {
   Skeleton,
   AlertBanner,
 } from '@/components/boss/ui';
+import SourceCustomerForm from '@/components/consultation/SourceCustomerForm';
 import PostcodeField from '@/components/boss/PostcodeField';
 import { CUSTOMER_STATUS_OPTIONS, customerStatus } from '@/lib/boss/customerStatus';
 import { useSubmitHotkey } from '@/components/boss/layout/BossSearchContext';
@@ -47,9 +48,19 @@ export default function BossOrderQuickPage() {
   // useSearchParams 는 Suspense 안에서만 사전 렌더가 된다
   return (
     <Suspense fallback={null}>
-      <CustomerForm />
+      <CustomerFormRouter />
     </Suspense>
   );
+}
+
+function CustomerFormRouter() {
+  const source = useSearchParams().get('sourceRequestId');
+  if (source !== null) {
+    const id = Number(source);
+    if (!Number.isSafeInteger(id) || id <= 0) return <AlertBanner tone="bad">견적 번호가 올바르지 않습니다.</AlertBanner>;
+    return <SourceCustomerForm key={id} sourceRequestId={id} />;
+  }
+  return <CustomerForm />;
 }
 
 function CustomerForm() {

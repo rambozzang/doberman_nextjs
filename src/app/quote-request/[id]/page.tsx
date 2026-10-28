@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
   FileTextIcon,
@@ -79,6 +79,7 @@ const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) =>
 
 export default function QuoteRequestDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [customerRequest, setCustomerRequest] = useState<CustomerRequest | null>(null);
   const [answers, setAnswers] = useState<CustomerRequestAnswer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,6 +118,7 @@ export default function QuoteRequestDetailPage() {
     openChat,
     closeChat,
     newMessage,
+    setNewMessage,
     isLoading: isChatLoading,
     isLoadingMore: isChatLoadingMore,
     hasMoreMessages,
@@ -208,7 +210,8 @@ export default function QuoteRequestDetailPage() {
     loadAnswers();
   };
 
-  const handleStartChat = (answer: CustomerRequestAnswer) => {
+  const handleStartChat = (answer: CustomerRequestAnswer, draft = '') => {
+    setNewMessage(draft);
     setCurrentChatPartner(answer);
     setShouldOpenChat(true);
   };
@@ -290,6 +293,13 @@ export default function QuoteRequestDetailPage() {
             <p className="text-xs text-slate-500 mb-5">견적을 요청할 때 입력한 이메일로 로그인해 주세요.</p>
             <Link
               href={`/quote-request/${requestId ?? ''}?login=true`}
+              onClick={event => {
+                const roomId = Number(new URLSearchParams(window.location.search).get('roomId'));
+                if (Number.isSafeInteger(roomId) && roomId > 0) {
+                  event.preventDefault();
+                  router.push(`/quote-request/${requestId}?login=true&roomId=${roomId}`);
+                }
+              }}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-colors"
             >
               로그인하고 견적 보기
@@ -589,6 +599,9 @@ export default function QuoteRequestDetailPage() {
                           </button>
                         )}
                       </div>
+                      {answer.userId && <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-700/70 pt-3" aria-label={`${expertName}에게 빠른 상담`}>
+                        {['방문 견적 가능할까요?', '가격에 무엇이 포함되나요?', '일정 협의하고 싶어요'].map(question => <button type="button" key={question} onClick={() => handleStartChat(answer, question)} className="min-h-10 rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">{question}</button>)}
+                      </div>}
                     </li>
                   );
                 })}
@@ -666,6 +679,9 @@ export default function QuoteRequestDetailPage() {
 
       {/* 채팅 모달 */}
       <ChatModal
+        requestId={requestId ?? undefined}
+        expertId={currentChatPartner?.userId ? String(currentChatPartner.userId) : undefined}
+        onDraftMessage={setNewMessage}
         isOpen={isChatOpen}
         onClose={handleCloseChat}
         chatPartner={currentChatPartner}

@@ -15,6 +15,7 @@
 // 없는 지표는 지어내지 않는다 — 못 읽은 값은 0 이 아니라 '—' 로 둔다.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import ConsultationShortcut from '@/components/chat/ConsultationShortcut';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Download, RefreshCw } from 'lucide-react';
@@ -329,6 +330,7 @@ export default function BossDashboardPage() {
 
   return (
     <div className="flex flex-col gap-[22px]">
+      <ConsultationShortcut boss />
       {/* ───── 실패는 최상단에 상시 노출 (TRUST 원칙) ───── */}
       {error && !loading && (
         <AlertBanner

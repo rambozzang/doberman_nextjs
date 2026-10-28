@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import VisitPanel from '@/components/consultation/VisitPanel';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useChatRooms } from '@/hooks/useChatRooms';
@@ -116,6 +117,7 @@ export default function BossChatRoomPage() {
         </div>
       </div>
 
+      {room?.requestId && chatAuth.userId && <VisitPanel key={`${room.requestId}:${chatAuth.userId}`} requestId={room.requestId} expertId={chatAuth.userId} role="APP" />}
       {/* 메시지 */}
       <div data-chat-scroll className="boss-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-boss-bg p-[18px]">
         {isLoading && messages.length === 0 ? (
